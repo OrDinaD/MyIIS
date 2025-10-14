@@ -8,17 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    /// Получаем доступ к сервису аутентификации из окружения
+    @EnvironmentObject var authService: AuthenticationService
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        // Динамически показываем нужный экран в зависимости от состояния авторизации
+        if authService.currentUser != nil {
+            MainTabView()
+        } else {
+            LoginView()
         }
-        .padding()
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(AuthenticationService.shared)
 }
