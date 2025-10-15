@@ -15,12 +15,12 @@ struct LoginView: View {
     
     var body: some View {
         ZStack {
-            // Liquid Glass Background
+            // Liquid Glass Background - Адаптивный для Dark Mode
             LinearGradient(
                 colors: [
-                    Color.purple.opacity(0.1),
+                    Color.accentPurple.opacity(0.1),
                     Color(uiColor: .systemBackground),
-                    Color.purple.opacity(0.05)
+                    Color.accentPurple.opacity(0.05)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -35,24 +35,12 @@ struct LoginView: View {
                 VStack(spacing: 12) {
                     Image(systemName: "graduationcap.circle.fill")
                         .font(.system(size: 80))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.purple, .purple.opacity(0.7)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .shadow(color: .purple.opacity(0.3), radius: 20, x: 0, y: 10)
+                        .foregroundStyle(LinearGradient.iconGradient(.accentPurple))
+                        .liquidGlassShadow(color: .accentPurple, radius: 20)
                     
                     Text("MyIIS")
                         .font(.system(size: 42, weight: .bold, design: .rounded))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.primary, .primary.opacity(0.7)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .foregroundStyle(.primary)
                     
                     Text("БГУИР")
                         .font(.subheadline)
@@ -77,7 +65,7 @@ struct LoginView: View {
                                     .fill(.ultraThinMaterial)
                                     .overlay {
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(.purple.opacity(0.3), lineWidth: 1)
+                                            .stroke(Color.accentPurple.opacity(0.3), lineWidth: 1)
                                     }
                             }
                             .autocapitalization(.none)
@@ -99,7 +87,7 @@ struct LoginView: View {
                                     .fill(.ultraThinMaterial)
                                     .overlay {
                                         RoundedRectangle(cornerRadius: 12)
-                                            .stroke(.purple.opacity(0.3), lineWidth: 1)
+                                            .stroke(Color.accentPurple.opacity(0.3), lineWidth: 1)
                                     }
                             }
                             .textContentType(.password)
@@ -112,12 +100,12 @@ struct LoginView: View {
                             Text(errorMessage)
                                 .font(.caption)
                         }
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.statusError)
                         .padding(.horizontal)
                         .padding(.vertical, 8)
                         .background {
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(.red.opacity(0.1))
+                                .fill(Color.statusError.opacity(0.1))
                         }
                         .transition(.scale.combined(with: .opacity))
                     }
@@ -143,14 +131,14 @@ struct LoginView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(
                                     LinearGradient(
-                                        colors: [.purple, .purple.opacity(0.8)],
+                                        colors: Color.buttonGradient,
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
                                 )
                         }
                         .foregroundStyle(.white)
-                        .shadow(color: .purple.opacity(0.3), radius: 10, x: 0, y: 5)
+                        .liquidGlassShadow(color: .accentPurple, radius: 10)
                     }
                     .disabled(viewModel.isLoading)
                 }
@@ -160,16 +148,9 @@ struct LoginView: View {
                         .fill(.ultraThinMaterial)
                         .overlay {
                             RoundedRectangle(cornerRadius: 20)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [.white.opacity(0.5), .clear],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
+                                .stroke(LinearGradient.glassBorder, lineWidth: 1)
                         }
-                        .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                        .cardShadow()
                 }
                 .padding(.horizontal, 32)
                 
@@ -185,12 +166,12 @@ struct LoginView: View {
                     Button(action: { isDebugPanelVisible.toggle() }) {
                         Image(systemName: "ladybug.fill")
                             .font(.title2)
-                            .foregroundStyle(.purple)
+                            .foregroundStyle(Color.accentPurple)
                             .padding()
                             .background {
                                 Circle()
                                     .fill(.ultraThinMaterial)
-                                    .shadow(color: .black.opacity(0.1), radius: 5)
+                                    .shadow(color: Color.adaptiveShadow(opacity: 0.1), radius: 5)
                             }
                     }
                     .padding()

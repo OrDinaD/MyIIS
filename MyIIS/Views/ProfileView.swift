@@ -9,17 +9,14 @@ import SwiftUI
 
 struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
+    @State private var showContacts = false
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // Liquid Glass Background
+                // Liquid Glass Background - Адаптивный для Dark Mode
                 LinearGradient(
-                    colors: [
-                        Color(uiColor: .systemBackground),
-                        Color.purple.opacity(0.05),
-                        Color(uiColor: .secondarySystemBackground)
-                    ],
+                    colors: Color.gradientBackground,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -30,7 +27,7 @@ struct ProfileView: View {
                         VStack(spacing: 24) {
                             // MARK: - Header with Photo and Name
                             VStack(spacing: 16) {
-                                // Avatar
+                                // Avatar with Liquid Glass effect
                                 AsyncImage(url: user.photoURL) { image in
                                     image
                                         .resizable()
@@ -41,30 +38,59 @@ struct ProfileView: View {
                                             Circle()
                                                 .stroke(
                                                     LinearGradient(
-                                                        colors: [.purple.opacity(0.6), .purple.opacity(0.2)],
+                                                        colors: [
+                                                            Color.glassHighlight,
+                                                            Color.accentPurple.opacity(0.4),
+                                                            Color.accentPurple.opacity(0.2),
+                                                            Color.clear
+                                                        ],
                                                         startPoint: .topLeading,
                                                         endPoint: .bottomTrailing
                                                     ),
                                                     lineWidth: 3
                                                 )
                                         }
-                                        .shadow(color: .purple.opacity(0.3), radius: 20, x: 0, y: 10)
+                                        .liquidGlassShadow(color: .accentPurple, radius: 20)
                                 } placeholder: {
                                     ZStack {
                                         Circle()
-                                            .fill(
-                                                LinearGradient(
-                                                    colors: [.purple.opacity(0.2), .purple.opacity(0.05)],
-                                                    startPoint: .topLeading,
-                                                    endPoint: .bottomTrailing
-                                                )
-                                            )
+                                            .fill(.ultraThinMaterial)
+                                            .overlay {
+                                                Circle()
+                                                    .fill(
+                                                        LinearGradient(
+                                                            colors: [
+                                                                Color.accentPurple.opacity(0.25),
+                                                                Color.accentPurple.opacity(0.08)
+                                                            ],
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        )
+                                                    )
+                                            }
+                                            .overlay {
+                                                Circle()
+                                                    .stroke(
+                                                        LinearGradient(
+                                                            colors: [
+                                                                Color.glassHighlight,
+                                                                Color.accentPurple.opacity(0.3)
+                                                            ],
+                                                            startPoint: .topLeading,
+                                                            endPoint: .bottomTrailing
+                                                        ),
+                                                        lineWidth: 3
+                                                    )
+                                            }
                                             .frame(width: 120, height: 120)
                                         
                                         Text(user.initials)
-                                            .font(.system(size: 48, weight: .medium))
-                                            .foregroundStyle(.purple)
+                                            .font(.system(size: 48, weight: .semibold))
+                                            .foregroundStyle(
+                                                LinearGradient.iconGradient(.accentPurple)
+                                            )
                                     }
+                                    .liquidGlassShadow(color: .accentPurple, radius: 20)
                                 }
                                 
                                 // Name and Rating
@@ -74,15 +100,16 @@ struct ProfileView: View {
                                         .fontWeight(.bold)
                                         .multilineTextAlignment(.center)
                                     
-                                    // Всегда показываем рейтинг (5 звёзд)
-                                    HStack(spacing: 4) {
-                                        ForEach(0..<5) { index in
-                                            Image(systemName: index < user.rating ? "star.fill" : "star")
-                                                .foregroundStyle(index < user.rating ? .yellow : .gray.opacity(0.3))
-                                                .font(.system(size: 18))
+                                    // Рейтинг звездочками (если включено в настройках)
+                                    if user.settings.isShowRating {
+                                        HStack(spacing: 4) {
+                                            ForEach(0..<5) { index in
+                                                Image(systemName: "star.fill")
+                                                    .foregroundStyle(index < user.rating ? Color.ratingYellow : Color.secondary.opacity(0.3))
+                                                    .font(.system(size: 18))
+                                            }
                                         }
                                     }
-                                    .opacity(user.settings.isShowRating ? 1.0 : 0.5)
                                 }
                             }
                             .padding(.top, 20)
@@ -90,36 +117,77 @@ struct ProfileView: View {
                             // MARK: - Contacts Section
                             if viewModel.user != nil {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    SectionHeader(title: "Контакты", icon: "envelope.fill")
-                                    
-                                    GlassCard {
-                                        VStack(spacing: 12) {
-                                            if let email = viewModel.user?.email, !email.isEmpty {
-                                                HStack {
-                                                    Image(systemName: "envelope.fill")
-                                                        .foregroundStyle(.purple)
-                                                        .frame(width: 20)
-                                                    Text(email)
-                                                        .font(.body)
-                                                    Spacer()
-                                                }
+                                    HStack {
+                                        SectionHeader(title: "Контакты", icon: "envelope.fill")
+                                        Spacer()
+                                        // Кнопка показа/скрытия контактов
+                                        Button {
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                showContacts.toggle()
                                             }
-                                            
-                                            if let phone = viewModel.user?.phone, !phone.isEmpty {
-                                                if viewModel.user?.email != nil {
-                                                    Divider()
+                                        } label: {
+                                            Image(systemName: showContacts ? "eye.fill" : "eye.slash.fill")
+                                                .foregroundStyle(Color.accentPurple)
+                                                .font(.system(size: 16, weight: .semibold))
+                                                .frame(width: 32, height: 32)
+                                                .background {
+                                                    Circle()
+                                                        .fill(.ultraThinMaterial)
+                                                        .overlay {
+                                                            Circle()
+                                                                .fill(LinearGradient.glassOverlay)
+                                                        }
+                                                        .overlay {
+                                                            Circle()
+                                                                .stroke(
+                                                                    LinearGradient(
+                                                                        colors: [Color.glassHighlight, Color.accentPurple.opacity(0.2)],
+                                                                        startPoint: .topLeading,
+                                                                        endPoint: .bottomTrailing
+                                                                    ),
+                                                                    lineWidth: 1.5
+                                                                )
+                                                        }
+                                                        .shadow(color: Color.accentPurple.opacity(0.15), radius: 8, x: 0, y: 4)
                                                 }
-                                                HStack {
-                                                    Image(systemName: "phone.fill")
-                                                        .foregroundStyle(.purple)
-                                                        .frame(width: 20)
-                                                    Text(phone)
-                                                        .font(.body)
-                                                    Spacer()
-                                                }
-                                            }
                                         }
-                                        .padding()
+                                        .buttonStyle(.plain)
+                                    }
+                                    
+                                    if showContacts {
+                                        GlassCard {
+                                            VStack(spacing: 12) {
+                                                if let email = viewModel.user?.email, !email.isEmpty {
+                                                    HStack {
+                                                        Image(systemName: "envelope.fill")
+                                                            .foregroundStyle(Color.accentPurple)
+                                                            .frame(width: 20)
+                                                        Text(email)
+                                                            .font(.body)
+                                                        Spacer()
+                                                    }
+                                                }
+                                                
+                                                if let phone = viewModel.user?.phone, !phone.isEmpty {
+                                                    if viewModel.user?.email != nil {
+                                                        Divider()
+                                                    }
+                                                    HStack {
+                                                        Image(systemName: "phone.fill")
+                                                            .foregroundStyle(Color.accentPurple)
+                                                            .frame(width: 20)
+                                                        Text(phone)
+                                                            .font(.body)
+                                                        Spacer()
+                                                    }
+                                                }
+                                            }
+                                            .padding()
+                                        }
+                                        .transition(.asymmetric(
+                                            insertion: .scale.combined(with: .opacity),
+                                            removal: .scale.combined(with: .opacity)
+                                        ))
                                     }
                                 }
                                 .padding(.horizontal)
@@ -225,7 +293,7 @@ struct ProfileView: View {
                                 .padding(.horizontal)
                             }
                             
-                            // MARK: - Settings Section
+                            // MARK: - Settings Section (READ-ONLY из API)
                             VStack(alignment: .leading, spacing: 12) {
                                 SectionHeader(title: "Настройки профиля", icon: "gearshape.fill")
                                 
@@ -248,6 +316,19 @@ struct ProfileView: View {
                                             label: "Показывать рейтинг",
                                             isEnabled: user.settings.isShowRating
                                         )
+                                        
+                                        Divider()
+                                        
+                                        // Информационное сообщение
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "info.circle.fill")
+                                                .foregroundStyle(.secondary)
+                                                .font(.system(size: 14))
+                                            Text("Изменить настройки можно в веб-версии ИИС")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                        .padding(.top, 4)
                                     }
                                     .padding()
                                 }
@@ -275,33 +356,38 @@ struct ProfileView: View {
                     Button {
                         viewModel.logout()
                     } label: {
-                        // Liquid Glass кнопка выхода
+                        // Liquid Glass кнопка выхода - адаптивная
                         HStack(spacing: 6) {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .font(.system(size: 16, weight: .semibold))
+                                .font(.system(size: 15, weight: .semibold))
                             Text("Выйти")
-                                .font(.system(size: 15, weight: .medium))
+                                .font(.system(size: 15, weight: .semibold))
                         }
-                        .foregroundColor(.red)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
+                        .foregroundColor(Color.statusError)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 9)
                         .background {
-                            RoundedRectangle(cornerRadius: 12)
+                            Capsule()
                                 .fill(.ultraThinMaterial)
                                 .overlay {
-                                    RoundedRectangle(cornerRadius: 12)
+                                    Capsule()
+                                        .fill(LinearGradient.glassOverlay)
+                                }
+                                .overlay {
+                                    Capsule()
                                         .stroke(
                                             LinearGradient(
-                                                colors: [.white.opacity(0.3), .clear],
+                                                colors: [Color.glassHighlight, Color.statusError.opacity(0.1)],
                                                 startPoint: .topLeading,
                                                 endPoint: .bottomTrailing
                                             ),
-                                            lineWidth: 1
+                                            lineWidth: 1.5
                                         )
                                 }
-                                .shadow(color: .red.opacity(0.2), radius: 8, x: 0, y: 4)
+                                .liquidGlassShadow(color: .statusError, radius: 10)
                         }
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
@@ -339,6 +425,43 @@ struct ProfileView: View {
 
 // MARK: - Supporting Views
 
+struct QuickActionButton: View {
+    let icon: String
+    let label: String
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(LinearGradient.iconGradient(color))
+                
+                Text(label)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 90)
+            .background {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(LinearGradient.glassOverlay)
+                    }
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(LinearGradient.glassBorder, lineWidth: 1.5)
+                    }
+                    .shadow(color: color.opacity(0.12), radius: 12, x: 0, y: 6)
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 struct SectionHeader: View {
     let title: String
     let icon: String
@@ -346,7 +469,7 @@ struct SectionHeader: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
-                .foregroundStyle(.purple)
+                .foregroundStyle(Color.accentPurple)
             Text(title)
                 .font(.headline)
         }
@@ -366,17 +489,16 @@ struct GlassCard<Content: View>: View {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(.ultraThinMaterial)
                     .overlay {
+                        // Верхний блик для Liquid Glass эффекта - адаптивный
                         RoundedRectangle(cornerRadius: 16)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [.white.opacity(0.3), .clear],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1
-                            )
+                            .fill(LinearGradient.glassOverlay)
                     }
-                    .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 5)
+                    .overlay {
+                        // Граница с адаптивным градиентом
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(LinearGradient.glassBorder, lineWidth: 1.5)
+                    }
+                    .cardShadow()
             }
     }
 }
@@ -403,23 +525,41 @@ struct SkillTag: View {
     
     var body: some View {
         Text(name)
-            .font(.subheadline)
-            .fontWeight(.medium)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(Color.accentPurple)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .background {
                 Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [.purple.opacity(0.2), .purple.opacity(0.1)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-            )
-            .overlay {
-                Capsule()
-                    .stroke(.purple.opacity(0.3), lineWidth: 1)
+                    .fill(.ultraThinMaterial)
+                    .overlay {
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color.accentPurple.opacity(0.15),
+                                        Color.accentPurple.opacity(0.05)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+                    .overlay {
+                        Capsule()
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.glassHighlight,
+                                        Color.accentPurple.opacity(0.3)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.5
+                            )
+                    }
+                    .shadow(color: Color.accentPurple.opacity(0.08), radius: 6, x: 0, y: 3)
             }
     }
 }
@@ -432,12 +572,12 @@ struct SettingRow: View {
     var body: some View {
         HStack {
             Image(systemName: icon)
-                .foregroundStyle(isEnabled ? .purple : .gray)
+                .foregroundStyle(isEnabled ? Color.accentPurple : Color.secondary)
             Text(label)
                 .font(.body)
             Spacer()
             Image(systemName: isEnabled ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundStyle(isEnabled ? .green : .red.opacity(0.6))
+                .foregroundStyle(isEnabled ? Color.statusSuccess : Color.statusError.opacity(0.6))
         }
     }
 }
