@@ -32,17 +32,8 @@
 5. **Компоненты:** Используй нативные SwiftUI компоненты
 6. **Анимации:** Плавные, естественные переходы
 7. **Типографика:** Системные шрифты SF Pro
-8. **Цвета:** Адаптивные цвета для Dark/Light режимов
+8. **Цвета:** Адаптивные цвета для Dark/Light режимов, можешь сделать акцентный цвет фиолетовый.
 
-### Пример запроса в начале чата:
-
-```
-Пожалуйста, используй MCP Context7 для изучения последних Apple Human Interface Guidelines 
-для iOS 26. Мне нужно разработать [описание фичи] в стиле Liquid Glass с максимальным 
-минимализмом, соответствующим последним стандартам Apple.
-```
-
----
 
 ## 🏗️ Архитектура и паттерн проектирования
 
@@ -53,129 +44,25 @@
 ```
 MyIIS/
 ├── Models/           # Модели данных
-│   ├── User.swift
-│   ├── Group.swift
-│   └── Schedule.swift
 ├── Views/            # SwiftUI Views
-│   ├── LoginView.swift
-│   ├── HomeView.swift
-│   └── Components/
 ├── ViewModels/       # Бизнес-логика
-│   ├── LoginViewModel.swift
-│   └── ScheduleViewModel.swift
 ├── Services/         # API и сервисы
-│   ├── APIService.swift
-│   └── NetworkManager.swift
 ├── Tests/            # Тестовые файлы
-│   └── APITests/
 └── Resources/        # Ресурсы
 ```
 
-### Принципы MVVM:
-
-1. **Model** - Чистые данные, без бизнес-логики
-2. **View** - Только отображение, минимум логики
-3. **ViewModel** - Вся бизнес-логика, ObservableObject
-4. **Разделение ответственности** - каждый слой выполняет свою роль
-5. **Reactive programming** - использование Combine или async/await
-
-### Пример структуры ViewModel:
-
-```swift
-@MainActor
-class LoginViewModel: ObservableObject {
-    @Published var username: String = ""
-    @Published var password: String = ""
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    
-    private let apiService: APIService
-    
-    func login() async {
-        // Бизнес-логика
-    }
-}
-```
-
----
-
 ## 🌐 API Integration
 
-### Источник API документации:
+Данные моего профиля: 
 
-**Swagger:** https://app.swaggerhub.com/apis-docs/N1ghtF1re/BsuirAdditionalApi/1.0.0
-
-### ⚠️ КРИТИЧЕСКИ ВАЖНО:
-
-- **100% соответствие** API документации на SwaggerHub
-- Все endpoint'ы, параметры, response models должны **точно** совпадать с документацией
-- Проверяй типы данных, обязательные поля, форматы запросов
-
-### Тестовые данные (защищенная информация):
-
-**Хранить в:** `Config/Credentials.swift` (добавить в .gitignore!)
-
-```swift
-// НЕ КОММИТИТЬ В РЕПОЗИТОРИЙ!
-enum TestCredentials {
-    static let login = "42850012"
-    static let password = "Bsuirinyouv.12_"
-}
-```
-
-### Процесс работы с API:
-
-1. **Изучи документацию** на SwaggerHub для конкретного endpoint
-2. **Создай модели данных** согласно схеме в Swagger
-3. **Создай отдельный тестовый файл** в `Tests/APITests/`
-4. **Протестируй API** с тестовыми credentials
-5. **После успешного теста** интегрируй в основной код
-
-### Пример workflow:
-
-```
-1. Работаешь с Login API
-2. Создай: Tests/APITests/LoginAPITest.swift
-3. Реализуй тест с реальными запросами
-4. Проверь response, обработку ошибок
-5. После успешного теста -> Services/AuthService.swift
-6. Интегрируй в ViewModels
-```
-
-### Пример тестового файла:
-
-```swift
-// Tests/APITests/LoginAPITest.swift
-import Foundation
-
-@MainActor
-class LoginAPITest {
-    static func testLogin() async {
-        let credentials = TestCredentials()
-        let apiService = APIService()
-        
-        do {
-            let result = try await apiService.login(
-                username: credentials.login,
-                password: credentials.password
-            )
-            print("✅ Login successful: \(result)")
-        } catch {
-            print("❌ Login failed: \(error)")
-        }
-    }
-}
-```
-
----
+login = "42850012"
+password = "Bsuirinyouv.12_"
 
 ## 📱 MCP iOS Simulator - Полное руководство
 
 ### UUID симулятора для проекта:
 
-```
 iPhone 17 Pro UUID: 20AA9E8D-A469-4634-96FB-C80A9F80D3BF
-```
 
 ### Доступные MCP iOS Simulator инструменты:
 
@@ -441,80 +328,6 @@ iPhone 17 Pro UUID: 20AA9E8D-A469-4634-96FB-C80A9F80D3BF
 
 ---
 
-## 🔄 Git Workflow
-
-### Стратегия ветвления:
-
-#### Для доработки существующего функционала:
-
-```bash
-# Работаешь в текущей ветке (обычно main/develop)
-# После завершения работы над экраном/фичей:
-git add .
-git commit -m "feat: обновлен LoginView с Liquid Glass стилем"
-git push
-```
-
-#### Для нового экрана или фичи:
-
-```bash
-# Создай отдельную ветку
-git checkout -b feature/schedule-view
-# Работай над фичей
-git add .
-git commit -m "feat: добавлен ScheduleView с расписанием"
-git push -u origin feature/schedule-view
-# Создай Pull Request для ревью и слияния
-```
-
-### Правила коммитов:
-
-**Формат:** `type: описание`
-
-**Типы:**
-- `feat:` - новая фича
-- `fix:` - исправление бага
-- `refactor:` - рефакторинг кода
-- `style:` - изменения стилей (UI)
-- `docs:` - документация
-- `test:` - добавление тестов
-- `chore:` - рутинные задачи
-
-**Примеры:**
-```bash
-git commit -m "feat: добавлен LoginView с анимацией"
-git commit -m "fix: исправлена ошибка парсинга JSON в APIService"
-git commit -m "style: обновлены цвета для соответствия Liquid Glass"
-git commit -m "refactor: переработан ScheduleViewModel с async/await"
-git commit -m "test: добавлены тесты для LoginAPI"
-```
-
-### Workflow по шагам:
-
-#### Новая фича (новый экран):
-```bash
-1. git checkout -b feature/profile-screen
-2. Разработка ProfileView
-3. git add .
-4. git commit -m "feat: добавлен ProfileScreen с информацией пользователя"
-5. Тестирование через MCP iOS Simulator
-6. git commit -m "test: добавлены скриншоты ProfileScreen"
-7. git push -u origin feature/profile-screen
-8. Создать PR на GitHub
-9. После ревью -> merge в main
-```
-
-#### Доработка существующего:
-```bash
-1. Остаешься в текущей ветке (main)
-2. Улучшение LoginView
-3. git add .
-4. git commit -m "style: улучшена анимация кнопки Login"
-5. git push
-```
-
----
-
 ## ⚠️ КРИТИЧЕСКИ ВАЖНО: НЕ СОЗДАВАЙ ДОКУМЕНТАЦИЮ!
 
 **🚫 ЗАПРЕЩЕНО создавать:**
@@ -536,7 +349,7 @@ git commit -m "test: добавлены тесты для LoginAPI"
 - [ ] Код соответствует MVVM паттерну
 - [ ] Следует HIG и Liquid Glass стилю (проверено через Context7)
 - [ ] API соответствует документации на SwaggerHub
-- [ ] Созданы и пройдены API тесты (если работа с API)
+- [ ] Созданы и пройденy API тесты (если работа с API)
 - [ ] Проведено тестирование через MCP iOS Simulator
 - [ ] Сделаны скриншоты результата (в Tests/Screenshots/)
 - [ ] Нет hardcoded credentials (проверь!)
@@ -545,58 +358,3 @@ git commit -m "test: добавлены тесты для LoginAPI"
 - [ ] **НЕ СОЗДАНО новых .md файлов!** ⚠️
 
 ---
-
-## 🚀 Быстрый старт для нового чата с Copilot:
-
-```
-1. "Используй MCP Context7 для изучения Apple HIG для iOS 26"
-
-2. "Мне нужно разработать [описание] в стиле Liquid Glass"
-
-3. "UUID симулятора: 20AA9E8D-A469-4634-96FB-C80A9F80D3BF"
-
-4. "API документация: https://app.swaggerhub.com/apis-docs/N1ghtF1re/BsuirAdditionalApi/1.0.0"
-
-5. "Паттерн: MVVM, Swift 6.0, iOS 26, SwiftUI"
-
-6. "Сначала создай тест API в Tests/APITests/, потом интегрируй в код"
-
-7. "После разработки протестируй через MCP iOS Simulator"
-
-8. "Если новая фича - создай ветку feature/[название]"
-
-9. "⚠️ НЕ СОЗДАВАЙ .md файлы! Только .swift код!"
-```
-
----
-
-## 📚 Дополнительные ресурсы:
-
-- **Swagger API:** https://app.swaggerhub.com/apis-docs/N1ghtF1re/BsuirAdditionalApi/1.0.0
-- **Apple HIG:** Через MCP Context7 (актуальная версия)
-- **SwiftUI:** Через MCP Context7 для iOS 26
-- **MVVM Pattern:** Стандартная реализация для SwiftUI
-
----
-
-## 🔐 Безопасность:
-
-⚠️ **НИКОГДА не коммить:**
-- `Config/Credentials.swift` - тестовые credentials
-- `.env` файлы с секретами
-- Персональные данные пользователей
-- API ключи и токены
-
-**Добавь в .gitignore:**
-```
-Config/Credentials.swift
-.env
-*.pem
-*.p12
-```
-
----
-
-**Последнее обновление:** 13 октября 2025  
-**Версия инструкций:** 1.0  
-**UUID симулятора:** 20AA9E8D-A469-4634-96FB-C80A9F80D3BF

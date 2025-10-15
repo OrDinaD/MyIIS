@@ -1,0 +1,27 @@
+[
+  {
+    "url": "https://iis.bsuir.by/api/v1/auth/login",
+    "base_url": "https://iis.bsuir.by/api/v1",
+    "path": "/auth/login",
+    "response": {
+      "username": "42850012",
+      "fio": "Василевский Владислав Валерьевич",
+      "email": "vlad.vasilevskiy.07@gmail.com",
+      "authorities": [],
+      "accountType": "STUDENT",
+      "phone": "+375299605390",
+      "group": "420603",
+      "photoUrl": "https://storage.googleapis.com/students-bsuir.appspot.com/public_ids/c7ee6f20-d5e3-4a75-81e2-456e4e9b77e8id=26198.jpg",
+      "isGroupHead": false,
+      "canStudentNote": false,
+      "hasNotConfirmedContact": false,
+      "hasProfiling": false,
+      "_cookies": {
+        "SESSION": "MDc2N2ZiYzAtZWMxNS00YzkxLTgxODQtYzQ4ZmYxMGVhOTQ5"
+      },
+      "_headers": {
+        "Set-Cookie": "SESSION=MDc2N2ZiYzAtZWMxNS00YzkxLTgxODQtYzQ4ZmYxMGVhOTQ5; Path=/api/v1; Secure; HttpOnly; SameSite=None"
+      }
+    }
+  }
+]
