@@ -16,11 +16,12 @@ class LoginAPITest {
         let password = "Bsuirinyouv.12_"
         
         do {
-            let user = try await apiService.login(username: username, password: password)
+            let loginResponse = try await apiService.login(username: username, password: password)
             print("✅ Login successful!")
-            print("   - User: \(user.fullName)")
-            print("   - Email: \(user.email)")
-            print("   - Group: \(user.academicGroup ?? "N/A")")
+            print("   - Username: \(loginResponse.username)")
+            print("   - Full name: \(loginResponse.fio)")
+            print("   - Email: \(loginResponse.email)")
+            print("   - Group: \(loginResponse.group)")
         } catch let error as APIError {
             print("❌ Login failed with API error: \(error.localizedDescription)")
         } catch {
