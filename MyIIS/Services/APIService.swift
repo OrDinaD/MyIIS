@@ -125,23 +125,23 @@ class APIService {
         urlComponents?.queryItems = [
             URLQueryItem(name: "studentGroup", value: group)
         ]
-        
+
         guard let url = urlComponents?.url else {
             throw APIError.invalidURL
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        
+
         logRequestDetails(request)
-        
+
         let scheduleResponse: ScheduleResponse = try await performRequest(request)
-        
+
         // Преобразуем в упрощённую структуру
         guard let dto = scheduleResponse.studentGroupDto else {
             return nil
         }
-        
+
         return ScheduleInfo(
             facultyAbbrev: dto.facultyAbbrev,
             facultyName: dto.facultyName,
@@ -149,6 +149,27 @@ class APIService {
             specialityName: dto.specialityName,
             course: dto.course
         )
+    }
+
+    /// Получение рейтинга студентов по номеру группы
+    /// - Parameter group: Номер учебной группы
+    /// - Returns: Список студентов с показателями рейтинга
+    func getRating(group: String) async throws -> [StudentRating] {
+        var urlComponents = URLComponents(url: baseURL.appendingPathComponent("rating"), resolvingAgainstBaseURL: false)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "group", value: group)
+        ]
+
+        guard let url = urlComponents?.url else {
+            throw APIError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+
+        logRequestDetails(request)
+
+        return try await performRequest(request)
     }
 
     private func performRequest<T: Decodable>(_ request: URLRequest) async throws -> T {
