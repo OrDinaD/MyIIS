@@ -151,6 +151,23 @@ class APIService {
         )
     }
 
+    /// Получение зачётной книжки студента
+    /// - Parameter studentId: Идентификатор студента (обычно совпадает с username)
+    /// - Returns: Структура Gradebook с семестрами, дисциплинами и попытками
+    func getGradebook(for studentId: String) async throws -> Gradebook {
+        let endpoint = baseURL
+            .appendingPathComponent("gradebook")
+            .appendingPathComponent(studentId)
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "GET"
+
+        logRequestDetails(request)
+
+        let gradebook: Gradebook = try await performRequest(request)
+        return gradebook.normalized()
+    }
+
     private func performRequest<T: Decodable>(_ request: URLRequest) async throws -> T {
         do {
             let (data, response) = try await session.data(for: request)
