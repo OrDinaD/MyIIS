@@ -70,6 +70,74 @@ struct ScheduleInfo {
     let course: Int
 }
 
+struct OmissionApplication: Decodable, Identifiable {
+    let id: Int
+    let status: String
+    let number: Int
+    let createdDate: Date
+    let rejectionReason: String?
+    let omissionCertificateType: String
+    let dateFrom: Date
+    let dateTo: Date
+    let placeOfStay: String?
+    let signature: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, status, number, rejectionReason, omissionCertificateType, placeOfStay, signature
+        case createdDate, dateFrom, dateTo
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        status = try container.decode(String.self, forKey: .status)
+        number = try container.decode(Int.self, forKey: .number)
+        rejectionReason = try container.decodeIfPresent(String.self, forKey: .rejectionReason)
+        omissionCertificateType = try container.decode(String.self, forKey: .omissionCertificateType)
+        placeOfStay = try container.decodeIfPresent(String.self, forKey: .placeOfStay)
+        signature = try container.decodeIfPresent(String.self, forKey: .signature)
+        createdDate = try container.decodeMillisecondsDate(forKey: .createdDate)
+        dateFrom = try container.decodeMillisecondsDate(forKey: .dateFrom)
+        dateTo = try container.decodeMillisecondsDate(forKey: .dateTo)
+    }
+}
+
+struct OmissionCertificate: Decodable, Identifiable {
+    let id: Int
+    let dateFrom: Date
+    let dateTo: Date
+    let note: String?
+    let name: String
+    let term: String
+
+    private enum CodingKeys: String, CodingKey {
+        case id, note, name, term
+        case dateFrom, dateTo
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        note = try container.decodeIfPresent(String.self, forKey: .note)
+        name = try container.decode(String.self, forKey: .name)
+        term = try container.decode(String.self, forKey: .term)
+        dateFrom = try container.decodeMillisecondsDate(forKey: .dateFrom)
+        dateTo = try container.decodeMillisecondsDate(forKey: .dateTo)
+    }
+}
+
+struct OmissionsByStudentResponse: Decodable {
+    let omissionDtoList: [OmissionCertificate]
+    let faculty: String
+}
+
+struct MonthlyOmissionCount: Decodable, Identifiable {
+    let month: String
+    let omissionCount: Int
+
+    var id: String { month }
+}
+
 struct ErrorResponse: Codable {
     let msg: String
 }
@@ -141,7 +209,7 @@ class APIService {
         guard let dto = scheduleResponse.studentGroupDto else {
             return nil
         }
-        
+
         return ScheduleInfo(
             facultyAbbrev: dto.facultyAbbrev,
             facultyName: dto.facultyName,
@@ -149,6 +217,30 @@ class APIService {
             specialityName: dto.specialityName,
             course: dto.course
         )
+    }
+
+    /// Заявки на пропуски по ОРВИ (ОРН)
+    func getOmissionApplications() async throws -> [OmissionApplication] {
+        let endpoint = baseURL.appendingPathComponent("omissions-by-student-application")
+        let request = URLRequest(url: endpoint)
+        logRequestDetails(request)
+        return try await performRequest(request)
+    }
+
+    /// Количество пропусков студента по месяцам семестра
+    func getMonthlyOmissionCounts() async throws -> [MonthlyOmissionCount] {
+        let endpoint = baseURL.appendingPathComponent("omission-count-by-student-for-semester")
+        let request = URLRequest(url: endpoint)
+        logRequestDetails(request)
+        return try await performRequest(request)
+    }
+
+    /// Информация о справках и пропусках по уважительной причине
+    func getOmissionsByStudent() async throws -> OmissionsByStudentResponse {
+        let endpoint = baseURL.appendingPathComponent("omissions-by-student")
+        let request = URLRequest(url: endpoint)
+        logRequestDetails(request)
+        return try await performRequest(request)
     }
 
     private func performRequest<T: Decodable>(_ request: URLRequest) async throws -> T {
@@ -259,5 +351,12 @@ enum APIError: LocalizedError {
         case .networkError(let error):
             return "Сетевая ошибка: \(error.localizedDescription)"
         }
+    }
+}
+
+private extension KeyedDecodingContainer {
+    func decodeMillisecondsDate(forKey key: K) throws -> Date {
+        let timestamp = try decode(Double.self, forKey: key)
+        return Date(timeIntervalSince1970: timestamp / 1000)
     }
 }
