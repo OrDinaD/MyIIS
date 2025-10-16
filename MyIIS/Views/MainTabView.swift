@@ -100,10 +100,12 @@ struct MainTabView: View {
     }
 }
 
-enum Tab: Hashable {
+enum Tab: String, CaseIterable, Identifiable {
     case rating
     case attendance
     case profile
+
+    var id: String { rawValue }
     
     var icon: String {
         switch self {
