@@ -7,13 +7,28 @@
 
 import SwiftUI
 
+enum MenuItem: Identifiable {
+    case gradebook
+    case study
+    case group
+    case library
+    case announcements
+    case diploma
+    case dormitory
+    case penalties
+    case activities
+    case settings
+
+    var id: String { String(describing: self) }
+}
+
 struct MainTabView: View {
     @State private var selectedTab: Tab = .rating
     @State private var isMenuOpen = false
     @State private var selectedMenuItem: MenuItem?
     
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             // Основной контент
             TabView(selection: $selectedTab) {
                 RatingView()
@@ -26,10 +41,11 @@ struct MainTabView: View {
                     .tag(Tab.profile)
             }
             .toolbar(.hidden, for: .tabBar)
+            .ignoresSafeArea(edges: .bottom)
             
             // Оверлей с затемнением при открытом меню - адаптивный
             if isMenuOpen {
-                Color.adaptiveShadow(opacity: 0.3)
+                Color.black.opacity(0.3)
                     .ignoresSafeArea()
                     .onTapGesture {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -40,23 +56,16 @@ struct MainTabView: View {
             }
             
             // Кастомный Tab Bar с кнопкой меню
-            VStack {
-                Spacer()
+            TabBarContainer {
                 HStack(spacing: 12) {
-                    // Компактный Tab Bar слева
                     CustomTabBar(selectedTab: $selectedTab)
-                        .frame(maxWidth: 200)
                     
-                    Spacer()
-                    
-                    // Кнопка меню справа на одном уровне
                     MenuButton(
                         isMenuOpen: $isMenuOpen,
                         selectedMenuItem: $selectedMenuItem
                     )
                 }
                 .padding(.horizontal, 12)
-                .padding(.bottom, 8)
             }
         }
         .sheet(item: $selectedMenuItem) { item in
@@ -91,7 +100,7 @@ struct MainTabView: View {
     }
 }
 
-enum Tab {
+enum Tab: Hashable {
     case rating
     case attendance
     case profile
@@ -124,27 +133,6 @@ struct CustomTabBar: View {
             TabBarButton(tab: .attendance, selectedTab: $selectedTab, animation: animation)
             TabBarButton(tab: .profile, selectedTab: $selectedTab, animation: animation)
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 6)
-        .background {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .strokeBorder(
-                            LinearGradient(
-                                colors: [
-                                    .white.opacity(0.3),
-                                    .white.opacity(0.1)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                }
-                .shadow(color: .black.opacity(0.1), radius: 10, y: 5)
-        }
     }
 }
 
@@ -160,27 +148,27 @@ struct TabBarButton: View {
     
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.8)) {
                 selectedTab = tab
             }
         } label: {
-            VStack(spacing: 3) {
+            VStack(spacing: 4) {
                 Image(systemName: tab.icon)
-                    .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? .blue : .secondary)
-                    .frame(height: 16)
+                    .font(.system(size: isSelected ? 17 : 16, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
+                    .frame(height: 18)
                 
                 Text(tab.title)
-                    .font(.system(size: 9, weight: isSelected ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? .blue : .secondary)
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? Color.accentColor : .secondary)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 5)
-            .padding(.horizontal, 4)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 6)
             .background {
                 if isSelected {
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(.blue.opacity(0.12))
+                        .fill(Color.accentColor.opacity(0.12))
                         .matchedGeometryEffect(id: "TAB_BACKGROUND", in: animation)
                 }
             }
@@ -189,6 +177,61 @@ struct TabBarButton: View {
     }
 }
 
+struct TabBarContainer<Content: View>: View {
+    // Removed: @Environment(\.safeAreaInsets) private var insets
+    let content: Content
+    
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Верхний разделитель
+            Divider()
+                .background(Color.black.opacity(0.08))
+                .blendMode(.overlay)
+            
+            HStack { content }
+                .frame(height: 56)
+                .safeAreaPadding(.bottom, 0)
+                .padding(.bottom, 8)
+                .background {
+                    // Стеклянный фон
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .overlay {
+                            Rectangle().fill(LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color.white.opacity(0.15),
+                                    Color.white.opacity(0.05)
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ))
+                        }
+                        .overlay {
+                            Rectangle()
+                                .strokeBorder(
+                                    LinearGradient(
+                                        colors: [
+                                            .white.opacity(0.35),
+                                            .white.opacity(0.1)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 0.8
+                                )
+                        }
+                        .shadow(color: .black.opacity(0.12), radius: 14, y: -2)
+                }
+        }
+        .ignoresSafeArea(edges: .bottom)
+    }
+}
+
 #Preview {
     MainTabView()
 }
+
