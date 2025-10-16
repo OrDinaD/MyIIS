@@ -193,18 +193,18 @@ class APIService {
         urlComponents?.queryItems = [
             URLQueryItem(name: "studentGroup", value: group)
         ]
-        
+
         guard let url = urlComponents?.url else {
             throw APIError.invalidURL
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        
+
         logRequestDetails(request)
-        
+
         let scheduleResponse: ScheduleResponse = try await performRequest(request)
-        
+
         // Преобразуем в упрощённую структуру
         guard let dto = scheduleResponse.studentGroupDto else {
             return nil
@@ -236,6 +236,27 @@ class APIService {
         return gradebook.normalized()
     }
 
+    /// Получение рейтинга студентов по номеру группы
+    /// - Parameter group: Номер учебной группы
+    /// - Returns: Список студентов с показателями рейтинга
+    func getRating(group: String) async throws -> [StudentRating] {
+        var urlComponents = URLComponents(url: baseURL.appendingPathComponent("rating"), resolvingAgainstBaseURL: false)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "group", value: group)
+        ]
+
+        guard let url = urlComponents?.url else {
+            throw APIError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+
+        logRequestDetails(request)
+
+        return try await performRequest(request)
+    }
+
     /// Заявки на пропуски по ОРВИ (ОРН)
     func getOmissionApplications() async throws -> [OmissionApplication] {
         let endpoint = baseURL.appendingPathComponent("omissions-by-student-application")
@@ -259,8 +280,6 @@ class APIService {
         logRequestDetails(request)
         return try await performRequest(request)
     }
-    }
-
     private func performRequest<T: Decodable>(_ request: URLRequest) async throws -> T {
         do {
             let (data, response) = try await session.data(for: request)
