@@ -132,7 +132,9 @@ struct RatingSummary: Equatable {
 private extension KeyedDecodingContainer {
     func decodeString(forKeys keys: [K]) -> String? {
         for key in keys {
-            if let value = try? decodeIfPresent(String.self, forKey: key), let value, !value.isEmpty {
+            if let value = try? decodeIfPresent(String.self, forKey: key),
+               let value,
+               !value.isEmpty {
                 return value
             }
             if let value = try? decodeIfPresent(Int.self, forKey: key) {
@@ -150,7 +152,8 @@ private extension KeyedDecodingContainer {
             if let value = try? decodeIfPresent(Double.self, forKey: key) {
                 return value
             }
-            if let stringValue = try? decodeIfPresent(String.self, forKey: key), let stringValue {
+            if let stringValue = try? decodeIfPresent(String.self, forKey: key),
+               let stringValue {
                 let sanitized = stringValue
                     .replacingOccurrences(of: " ", with: "")
                     .replacingOccurrences(of: ",", with: ".")
@@ -171,7 +174,8 @@ private extension KeyedDecodingContainer {
             if let doubleValue = try? decodeIfPresent(Double.self, forKey: key) {
                 return Int(doubleValue)
             }
-            if let stringValue = try? decodeIfPresent(String.self, forKey: key), let stringValue {
+            if let stringValue = try? decodeIfPresent(String.self, forKey: key),
+               let stringValue {
                 let sanitized = stringValue
                     .replacingOccurrences(of: " ", with: "")
                     .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -185,7 +189,8 @@ private extension KeyedDecodingContainer {
 
     func decodeArray<T: Decodable>(_ type: T.Type, forKeys keys: [K]) -> [T] {
         for key in keys {
-            if let value = try? decodeIfPresent([T].self, forKey: key), let value {
+            if let value = try? decodeIfPresent([T].self, forKey: key),
+               let value {
                 return value
             }
         }

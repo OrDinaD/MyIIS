@@ -18,7 +18,7 @@ class LoginViewModel: ObservableObject {
         authService.errorMessage
     }
     
-    init(authService: AuthenticationService = .shared) {
+    init(authService: AuthenticationService) {
         self.authService = authService
         
 #if DEBUG
@@ -26,6 +26,11 @@ class LoginViewModel: ObservableObject {
         self.username = "42850012"
         self.password = "Bsuirinyouv.12_"
 #endif
+    }
+    
+    @MainActor
+    convenience init() {
+        self.init(authService: .shared)
     }
     
     func login() async {
@@ -48,3 +53,4 @@ class LoginViewModel: ObservableObject {
         return true
     }
 }
+

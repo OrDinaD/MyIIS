@@ -1,8 +1,8 @@
 import Foundation
+import Combine
 
 @MainActor
 class AttendanceViewModel: ObservableObject {
-
     @Published var applications: [OmissionApplication] = []
     @Published var certificates: [OmissionCertificate] = []
     @Published var monthlyCounts: [MonthlyOmissionCount] = []
@@ -17,13 +17,8 @@ class AttendanceViewModel: ObservableObject {
         self.apiService = apiService
     }
 
-    func loadDataIfNeeded() async {
-        await loadData(force: false)
-    }
-
-    func reload() async {
-        await loadData(force: true)
-    }
+    func loadDataIfNeeded() async { await loadData(force: false) }
+    func reload() async { await loadData(force: true) }
 
     private func loadData(force: Bool) async {
         if isLoading { return }
@@ -38,9 +33,7 @@ class AttendanceViewModel: ObservableObject {
             async let certificatesTask = apiService.getOmissionsByStudent()
 
             let (applications, counts, certificatesResponse) = try await (
-                applicationsTask,
-                countsTask,
-                certificatesTask
+                applicationsTask, countsTask, certificatesTask
             )
 
             self.applications = applications.sorted { $0.createdDate > $1.createdDate }

@@ -7,21 +7,6 @@
 
 import SwiftUI
 
-enum MenuItem: Identifiable {
-    case gradebook
-    case study
-    case group
-    case library
-    case announcements
-    case diploma
-    case dormitory
-    case penalties
-    case activities
-    case settings
-
-    var id: String { String(describing: self) }
-}
-
 struct MainTabView: View {
     @State private var selectedTab: Tab = .rating
     @State private var isMenuOpen = false
@@ -236,4 +221,3 @@ struct TabBarContainer<Content: View>: View {
 #Preview {
     MainTabView()
 }
-

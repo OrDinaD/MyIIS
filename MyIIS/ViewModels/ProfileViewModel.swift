@@ -10,8 +10,12 @@ class ProfileViewModel: ObservableObject {
         authService.currentUser
     }
     
-    init(authService: AuthenticationService = .shared) {
+    init(authService: AuthenticationService) {
         self.authService = authService
+    }
+    
+    convenience init() {
+        self.init(authService: AuthenticationService.shared)
     }
     
     func logout() {
