@@ -46,7 +46,7 @@ struct StudentRating: Identifiable, Decodable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
-        self.recordBookNumber = try container.decodeString(forKeys: [.recordBookNumber, .recordBook]) ?? UUID().uuidString
+        self.recordBookNumber = container.decodeString(forKeys: [.recordBookNumber, .recordBook]) ?? UUID().uuidString
         self.studentName = container.decodeString(forKeys: [.studentName, .studentFio])
         self.averageGrade = container.decodeDouble(forKeys: [.averageGrade, .averageMark])
         self.missedHours = container.decodeInt(forKeys: [.missedHours, .missedLessons])
@@ -132,16 +132,15 @@ struct RatingSummary: Equatable {
 private extension KeyedDecodingContainer {
     func decodeString(forKeys keys: [K]) -> String? {
         for key in keys {
-            if let value = try? decodeIfPresent(String.self, forKey: key),
-               let value,
-               !value.isEmpty {
-                return value
+            if let stringValue = try? decodeIfPresent(String.self, forKey: key),
+               !stringValue.isEmpty {
+                return stringValue
             }
-            if let value = try? decodeIfPresent(Int.self, forKey: key) {
-                return String(value)
+            if let intValue = try? decodeIfPresent(Int.self, forKey: key) {
+                return String(intValue)
             }
-            if let value = try? decodeIfPresent(Double.self, forKey: key) {
-                return String(value)
+            if let doubleValue = try? decodeIfPresent(Double.self, forKey: key) {
+                return String(doubleValue)
             }
         }
         return nil
@@ -152,8 +151,7 @@ private extension KeyedDecodingContainer {
             if let value = try? decodeIfPresent(Double.self, forKey: key) {
                 return value
             }
-            if let stringValue = try? decodeIfPresent(String.self, forKey: key),
-               let stringValue {
+            if let stringValue = try? decodeIfPresent(String.self, forKey: key) {
                 let sanitized = stringValue
                     .replacingOccurrences(of: " ", with: "")
                     .replacingOccurrences(of: ",", with: ".")
@@ -174,8 +172,7 @@ private extension KeyedDecodingContainer {
             if let doubleValue = try? decodeIfPresent(Double.self, forKey: key) {
                 return Int(doubleValue)
             }
-            if let stringValue = try? decodeIfPresent(String.self, forKey: key),
-               let stringValue {
+            if let stringValue = try? decodeIfPresent(String.self, forKey: key) {
                 let sanitized = stringValue
                     .replacingOccurrences(of: " ", with: "")
                     .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -189,9 +186,8 @@ private extension KeyedDecodingContainer {
 
     func decodeArray<T: Decodable>(_ type: T.Type, forKeys keys: [K]) -> [T] {
         for key in keys {
-            if let value = try? decodeIfPresent([T].self, forKey: key),
-               let value {
-                return value
+            if let array = try? decodeIfPresent([T].self, forKey: key) {
+                return array
             }
         }
         return []

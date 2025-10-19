@@ -204,7 +204,7 @@ private struct CertificatesSection: View {
                     VStack(spacing: 0) {
                         certificateHeader
                         Divider()
-                        ForEach(groupedCertificates(), id: \._0) { term, items in
+                        ForEach(groupedCertificates(), id: \.0) { term, items in
                             TermHeader(term: term)
                             ForEach(items) { certificate in
                                 certificateRow(certificate)

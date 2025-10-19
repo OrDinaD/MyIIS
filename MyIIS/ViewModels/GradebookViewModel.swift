@@ -14,8 +14,8 @@ final class GradebookViewModel: ObservableObject {
     private var studentId: String?
     private let numberFormatter: NumberFormatter
 
-    init(apiService: APIService = APIService(), initialGradebook: Gradebook? = nil) {
-        self.apiService = apiService
+    init(apiService: APIService? = nil, initialGradebook: Gradebook? = nil) {
+        self.apiService = apiService ?? APIService()
         let normalized = initialGradebook?.normalized()
         self.gradebook = normalized
         self.semesters = normalized?.semesters ?? []
@@ -87,3 +87,4 @@ extension GradebookViewModel {
     }
 }
 #endif
+

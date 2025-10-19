@@ -12,8 +12,12 @@ struct GradebookView: View {
     @EnvironmentObject private var authService: AuthenticationService
     @StateObject private var viewModel: GradebookViewModel
 
-    init(viewModel: GradebookViewModel = GradebookViewModel()) {
+    @MainActor init(viewModel: GradebookViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    @MainActor init() {
+        _viewModel = StateObject(wrappedValue: GradebookViewModel())
     }
 
     var body: some View {
@@ -245,7 +249,7 @@ struct GradebookView: View {
         }
     }
 
-    private func loadIfNeeded() async {
+    @MainActor private func loadIfNeeded() async {
         guard let userId = authService.currentUser?.id else {
             return
         }
@@ -257,7 +261,7 @@ struct GradebookView: View {
         await viewModel.loadGradebook(for: String(userId))
     }
 
-    private func reload(force: Bool = false) async {
+    @MainActor private func reload(force: Bool = false) async {
         guard let userId = authService.currentUser?.id else {
             return
         }

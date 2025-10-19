@@ -4,7 +4,13 @@ struct RatingView: View {
     @EnvironmentObject private var authService: AuthenticationService
     @StateObject private var viewModel: RatingViewModel
 
-    init(viewModel: RatingViewModel = RatingViewModel()) {
+    @MainActor
+    init() {
+        _viewModel = StateObject(wrappedValue: RatingViewModel())
+    }
+
+    @MainActor
+    init(viewModel: RatingViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
@@ -390,7 +396,7 @@ private struct RatingTableView: View {
                 VStack(spacing: 0) {
                     headerRow
                     Divider().opacity(0.4)
-                    ForEach(Array(zip(students.indices, students)), id: \.1) { index, student in
+                    ForEach(Array(zip(students.indices, students)), id: \.1.id) { index, student in
                         row(for: student, index: index)
                             .background(index.isMultiple(of: 2) ? Color.accentPurple.opacity(0.05) : Color.clear)
                     }
@@ -605,7 +611,7 @@ private struct RatingInfoBanner: View {
 #if DEBUG
 struct RatingView_Previews: PreviewProvider {
     static var previews: some View {
-        RatingView(viewModel: .preview)
+        RatingView(viewModel: RatingViewModel.preview)
             .environmentObject(AuthenticationService.shared)
             .onAppear {
                 AuthenticationService.shared.currentUser = .mock
