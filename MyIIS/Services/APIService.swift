@@ -70,6 +70,206 @@ struct ScheduleInfo {
     let course: Int
 }
 
+struct GroupMemberResponse: Codable {
+    let id: Int?
+    let firstName: String?
+    let lastName: String?
+    let middleName: String?
+    let fio: String?
+    let phone: String?
+    let mobilePhone: String?
+    let email: String?
+    let photoUrl: String?
+    let role: String?
+    let roles: [String]?
+    let isHead: Bool?
+    let isDeputy: Bool?
+    let isMonitor: Bool?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case studentId
+        case personId
+        case firstName
+        case name
+        case lastName
+        case surname
+        case middleName
+        case middle
+        case patronymic
+        case fio
+        case studentFio
+        case phone
+        case mobilePhone
+        case homePhone
+        case email
+        case mail
+        case photoUrl
+        case imageUrl
+        case avatarUrl
+        case photo
+        case groupRole
+        case role
+        case roles
+        case isGroupHead
+        case headman
+        case deputyHead
+        case deputy
+        case monitor
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        if let explicitId = try container.decodeIfPresent(Int.self, forKey: .id) {
+            self.id = explicitId
+        } else if let studentId = try container.decodeIfPresent(Int.self, forKey: .studentId) {
+            self.id = studentId
+        } else if let personId = try container.decodeIfPresent(Int.self, forKey: .personId) {
+            self.id = personId
+        } else {
+            self.id = nil
+        }
+
+        self.firstName = container.decodeIfPresent(String.self, forKey: .firstName)
+            ?? container.decodeIfPresent(String.self, forKey: .name)
+
+        self.lastName = container.decodeIfPresent(String.self, forKey: .lastName)
+            ?? container.decodeIfPresent(String.self, forKey: .surname)
+
+        self.middleName = container.decodeIfPresent(String.self, forKey: .middleName)
+            ?? container.decodeIfPresent(String.self, forKey: .patronymic)
+            ?? container.decodeIfPresent(String.self, forKey: .middle)
+
+        self.fio = container.decodeIfPresent(String.self, forKey: .fio)
+            ?? container.decodeIfPresent(String.self, forKey: .studentFio)
+
+        self.phone = container.decodeIfPresent(String.self, forKey: .phone)
+            ?? container.decodeIfPresent(String.self, forKey: .mobilePhone)
+            ?? container.decodeIfPresent(String.self, forKey: .homePhone)
+
+        self.mobilePhone = container.decodeIfPresent(String.self, forKey: .mobilePhone)
+            ?? container.decodeIfPresent(String.self, forKey: .phone)
+
+        self.email = container.decodeIfPresent(String.self, forKey: .email)
+            ?? container.decodeIfPresent(String.self, forKey: .mail)
+
+        self.photoUrl = container.decodeIfPresent(String.self, forKey: .photoUrl)
+            ?? container.decodeIfPresent(String.self, forKey: .imageUrl)
+            ?? container.decodeIfPresent(String.self, forKey: .avatarUrl)
+            ?? container.decodeIfPresent(String.self, forKey: .photo)
+
+        self.role = container.decodeIfPresent(String.self, forKey: .groupRole)
+            ?? container.decodeIfPresent(String.self, forKey: .role)
+
+        self.roles = try container.decodeIfPresent([String].self, forKey: .roles)
+
+        self.isHead = container.decodeIfPresent(Bool.self, forKey: .isGroupHead)
+            ?? container.decodeIfPresent(Bool.self, forKey: .headman)
+
+        self.isDeputy = container.decodeIfPresent(Bool.self, forKey: .deputyHead)
+            ?? container.decodeIfPresent(Bool.self, forKey: .deputy)
+
+        self.isMonitor = container.decodeIfPresent(Bool.self, forKey: .monitor)
+    }
+}
+
+struct GroupCuratorResponse: Codable {
+    let fio: String?
+    let phone: String?
+    let mobilePhone: String?
+    let email: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case fio
+        case fullName
+        case name
+        case phone
+        case mobilePhone
+        case homePhone
+        case email
+        case mail
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.fio = container.decodeIfPresent(String.self, forKey: .fio)
+            ?? container.decodeIfPresent(String.self, forKey: .fullName)
+            ?? container.decodeIfPresent(String.self, forKey: .name)
+
+        self.phone = container.decodeIfPresent(String.self, forKey: .phone)
+            ?? container.decodeIfPresent(String.self, forKey: .mobilePhone)
+            ?? container.decodeIfPresent(String.self, forKey: .homePhone)
+
+        self.mobilePhone = container.decodeIfPresent(String.self, forKey: .mobilePhone)
+            ?? container.decodeIfPresent(String.self, forKey: .phone)
+
+        self.email = container.decodeIfPresent(String.self, forKey: .email)
+            ?? container.decodeIfPresent(String.self, forKey: .mail)
+    }
+}
+
+struct GroupResponse: Codable {
+    let groupNumber: String?
+    let course: Int?
+    let faculty: String?
+    let speciality: String?
+    let curator: GroupCuratorResponse?
+    let members: [GroupMemberResponse]
+
+    private enum CodingKeys: String, CodingKey {
+        case groupNumber
+        case number
+        case group
+        case name
+        case course
+        case faculty
+        case facultyName
+        case facultyAbbrev
+        case speciality
+        case specialityName
+        case specialityAbbrev
+        case curator
+        case teacher
+        case members
+        case students
+        case studentGroupMembers
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.groupNumber = container.decodeIfPresent(String.self, forKey: .groupNumber)
+            ?? container.decodeIfPresent(String.self, forKey: .number)
+            ?? container.decodeIfPresent(String.self, forKey: .group)
+            ?? container.decodeIfPresent(String.self, forKey: .name)
+
+        self.course = container.decodeIfPresent(Int.self, forKey: .course)
+
+        self.faculty = container.decodeIfPresent(String.self, forKey: .faculty)
+            ?? container.decodeIfPresent(String.self, forKey: .facultyName)
+            ?? container.decodeIfPresent(String.self, forKey: .facultyAbbrev)
+
+        self.speciality = container.decodeIfPresent(String.self, forKey: .speciality)
+            ?? container.decodeIfPresent(String.self, forKey: .specialityName)
+            ?? container.decodeIfPresent(String.self, forKey: .specialityAbbrev)
+
+        self.curator = try container.decodeIfPresent(GroupCuratorResponse.self, forKey: .curator)
+            ?? container.decodeIfPresent(GroupCuratorResponse.self, forKey: .teacher)
+
+        if let members = try container.decodeIfPresent([GroupMemberResponse].self, forKey: .members) {
+            self.members = members
+        } else if let students = try container.decodeIfPresent([GroupMemberResponse].self, forKey: .students) {
+            self.members = students
+        } else if let groupMembers = try container.decodeIfPresent([GroupMemberResponse].self, forKey: .studentGroupMembers) {
+            self.members = groupMembers
+        } else {
+            self.members = []
+        }
+    }
+}
+
 struct OmissionApplication: Decodable, Identifiable {
     let id: Int
     let status: String
@@ -217,6 +417,23 @@ class APIService {
             specialityName: dto.specialityName,
             course: dto.course
         )
+    }
+
+    /// Получение списка студентов группы
+    /// - Parameter group: Номер учебной группы
+    /// - Returns: Информация о группе и списке студентов
+    func getGroupMembers(group: String) async throws -> GroupResponse {
+        let endpoint = baseURL
+            .appendingPathComponent("student-groups")
+            .appendingPathComponent(group)
+            .appendingPathComponent("students")
+
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "GET"
+
+        logRequestDetails(request)
+
+        return try await performRequest(request)
     }
 
     /// Получение зачётной книжки студента
