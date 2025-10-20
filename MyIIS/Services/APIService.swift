@@ -280,10 +280,14 @@ class APIService {
         logRequestDetails(request)
         return try await performRequest(request)
     }
+
+    func execute<T: Decodable>(_ request: URLRequest) async throws -> T {
+        try await performRequest(request)
+    }
     private func performRequest<T: Decodable>(_ request: URLRequest) async throws -> T {
         do {
             let (data, response) = try await session.data(for: request)
-            
+
             // Логируем ответ
             if let responseString = String(data: data, encoding: .utf8) {
                 logService.log("Response Data: \(responseString)")
