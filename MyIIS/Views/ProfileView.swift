@@ -356,38 +356,46 @@ struct ProfileView: View {
                     Button {
                         viewModel.logout()
                     } label: {
-                        // Liquid Glass кнопка выхода - адаптивная
-                        HStack(spacing: 6) {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .font(.system(size: 15, weight: .semibold))
+                        Label {
                             Text("Выйти")
                                 .font(.system(size: 15, weight: .semibold))
+                        } icon: {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 15, weight: .semibold))
                         }
-                        .foregroundColor(Color.statusError)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 9)
-                        .background {
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                                .overlay {
-                                    Capsule()
-                                        .fill(LinearGradient.glassOverlay)
-                                }
-                                .overlay {
-                                    Capsule()
-                                        .stroke(
-                                            LinearGradient(
-                                                colors: [Color.glassHighlight, Color.statusError.opacity(0.1)],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            ),
-                                            lineWidth: 1.5
-                                        )
-                                }
-                                .liquidGlassShadow(color: .statusError, radius: 10)
-                        }
+                        .labelStyle(.titleAndIcon)
+                        .foregroundStyle(LinearGradient(
+                            colors: [
+                                Color.statusError,
+                                Color.statusError.opacity(0.85)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 10)
                     }
                     .buttonStyle(.plain)
+                    .background(
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .overlay {
+                                Capsule()
+                                    .strokeBorder(
+                                        LinearGradient(
+                                            colors: [
+                                                Color.white.opacity(0.55),
+                                                Color.statusError.opacity(0.2)
+                                            ],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1
+                                    )
+                                    .blendMode(.overlay)
+                            }
+                            .shadow(color: Color.black.opacity(0.12), radius: 12, y: 6)
+                    )
                 }
             }
         }

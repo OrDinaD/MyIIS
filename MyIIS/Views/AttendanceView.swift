@@ -21,13 +21,13 @@ struct AttendanceView: View {
                         }
                     }
 
-                    ApplicationsSection(applications: viewModel.applications,
-                                        isLoading: viewModel.isLoading,
-                                        onRetry: reloadIfNeeded)
-
                     MonthlySummarySection(counts: viewModel.monthlyCounts,
                                           isLoading: viewModel.isLoading,
                                           onRetry: reloadIfNeeded)
+
+                    ApplicationsSection(applications: viewModel.applications,
+                                        isLoading: viewModel.isLoading,
+                                        onRetry: reloadIfNeeded)
 
                     CertificatesSection(certificates: viewModel.certificates,
                                         faculty: viewModel.faculty,
@@ -64,12 +64,12 @@ private struct ApplicationsSection: View {
     private let columns: [CGFloat] = [130, 120, 190, 160, 200]
 
     var body: some View {
-        AttendanceCard(title: "Заявления по ОРН", icon: "doc.text.fill") {
+        AttendanceCard(title: "Заявления по ОРВИ", icon: "doc.text.fill") {
             if isLoading && applications.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, alignment: .center)
             } else if applications.isEmpty {
-                EmptyStateView(message: "У вас пока нет заявлений по ОРН.", action: onRetry)
+                EmptyStateView(message: "У вас пока нет заявлений по ОРВИ.", action: onRetry)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     VStack(spacing: 0) {
@@ -137,19 +137,19 @@ private struct MonthlySummarySection: View {
     }
 
     var body: some View {
-        AttendanceCard(title: "Пропуски по уважительной причине", icon: "calendar") {
+        AttendanceCard(title: "Пропуски по неуважительной причине", icon: "calendar") {
             if isLoading && counts.isEmpty {
                 ProgressView()
                     .frame(maxWidth: .infinity, alignment: .center)
             } else if counts.isEmpty {
-                EmptyStateView(message: "Нет статистики по пропускам за текущий семестр.", action: onRetry)
+                EmptyStateView(message: "Нет статистики по неуважительным пропускам за текущий семестр.", action: onRetry)
             } else {
                 VStack(spacing: 16) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: max(min(counts.count, 4), 1)), spacing: 16) {
                         ForEach(counts) { item in
                             VStack(spacing: 8) {
                                 Text(item.month)
-                                    .font(.subheadline)
+                                    .font(.footnote)
                                     .fontWeight(.semibold)
                                 Text("\(item.omissionCount) ч.")
                                     .font(.title3)
@@ -186,7 +186,7 @@ private struct CertificatesSection: View {
     let isLoading: Bool
     let onRetry: () -> Void
 
-    private let columns: [CGFloat] = [160, 120, 120, 200]
+    private let columns: [CGFloat] = [180, 160, 220]
 
     var body: some View {
         AttendanceCard(title: "Информация о справках", icon: "doc.plaintext") {
@@ -221,10 +221,18 @@ private struct CertificatesSection: View {
 
     private var certificateHeader: some View {
         HStack(spacing: 16) {
-            Text("Тип документа").font(.caption).fontWeight(.semibold).frame(width: columns[0], alignment: .leading)
-            Text("Дата начала").font(.caption).fontWeight(.semibold).frame(width: columns[1], alignment: .leading)
-            Text("Дата окончания").font(.caption).fontWeight(.semibold).frame(width: columns[2], alignment: .leading)
-            Text("Примечание").font(.caption).fontWeight(.semibold).frame(width: columns[3], alignment: .leading)
+            Text("Тип документа")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .frame(width: columns[0], alignment: .leading)
+            Text("Период действия")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .frame(width: columns[1], alignment: .center)
+            Text("Примечание")
+                .font(.caption)
+                .fontWeight(.semibold)
+                .frame(width: columns[2], alignment: .leading)
         }
         .foregroundStyle(.secondary)
         .padding(.horizontal, 12)
@@ -234,13 +242,16 @@ private struct CertificatesSection: View {
         HStack(spacing: 16) {
             Text(certificate.name)
                 .frame(width: columns[0], alignment: .leading)
-            Text(certificate.dateFrom.formattedDate)
-                .frame(width: columns[1], alignment: .leading)
-            Text(certificate.dateTo.formattedDate)
-                .frame(width: columns[2], alignment: .leading)
+            VStack(spacing: 4) {
+                Text("Начало: \(certificate.dateFrom.formattedDate)")
+                    .fontWeight(.semibold)
+                Text("Окончание: \(certificate.dateTo.formattedDate)")
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: columns[1], alignment: .center)
             Text(certificate.note?.isEmpty == false ? certificate.note! : "—")
                 .foregroundStyle(certificate.note?.isEmpty == false ? .primary : .secondary)
-                .frame(width: columns[3], alignment: .leading)
+                .frame(width: columns[2], alignment: .leading)
         }
         .font(.footnote)
         .padding(.vertical, 8)
@@ -254,7 +265,7 @@ private struct CertificatesSection: View {
         let sortedTerms = grouped.keys.sorted { (lhs, rhs) -> Bool in
             let leftValue = Int(lhs) ?? 0
             let rightValue = Int(rhs) ?? 0
-            return leftValue < rightValue
+            return leftValue > rightValue
         }
         return sortedTerms.map { term in
             let items = grouped[term, default: []].sorted { $0.dateFrom > $1.dateFrom }
@@ -397,10 +408,12 @@ private struct TermHeader: View {
 
     var body: some View {
         Text("\(term) семестр")
-            .font(.footnote.weight(.semibold))
+            .font(.subheadline)
+            .fontWeight(.semibold)
             .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
             .padding(.horizontal, 12)
     }
 }

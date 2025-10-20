@@ -56,9 +56,12 @@ struct StudentGroupDto: Codable {
     let facultyId: Int
     let facultyAbbrev: String
     let facultyName: String
+    let specialityDepartmentEducationFormId: Int?
     let specialityName: String
     let specialityAbbrev: String
     let course: Int
+    let id: Int?
+    let educationDegree: Int?
 }
 
 // Упрощённая структура для передачи данных
@@ -68,6 +71,9 @@ struct ScheduleInfo {
     let specialityAbbrev: String
     let specialityName: String
     let course: Int
+    let specialityDepartmentEducationFormId: Int?
+    let studentGroupId: Int?
+    let educationDegree: Int?
 }
 
 struct OmissionApplication: Decodable, Identifiable {
@@ -215,7 +221,10 @@ class APIService {
             facultyName: dto.facultyName,
             specialityAbbrev: dto.specialityAbbrev,
             specialityName: dto.specialityName,
-            course: dto.course
+            course: dto.course,
+            specialityDepartmentEducationFormId: dto.specialityDepartmentEducationFormId,
+            studentGroupId: dto.id,
+            educationDegree: dto.educationDegree
         )
     }
 
@@ -261,9 +270,26 @@ class APIService {
     /// - Parameter group: Номер учебной группы
     /// - Returns: Список студентов с показателями рейтинга
     func getRating(group: String) async throws -> [StudentRating] {
-        var urlComponents = URLComponents(url: baseURL.appendingPathComponent("rating"), resolvingAgainstBaseURL: false)
+        let trimmedGroup = group.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedGroup.isEmpty else {
+            throw APIError.serverError(statusCode: 400, message: "Не указан номер группы")
+        }
+
+        guard let scheduleInfo = try await getScheduleInfo(group: trimmedGroup),
+              let specialityId = scheduleInfo.specialityDepartmentEducationFormId else {
+            throw APIError.serverError(
+                statusCode: 400,
+                message: "Не удалось определить данные специальности для группы \(trimmedGroup)"
+            )
+        }
+
+        var urlComponents = URLComponents(
+            url: baseURL.appendingPathComponent("rating"),
+            resolvingAgainstBaseURL: false
+        )
         urlComponents?.queryItems = [
-            URLQueryItem(name: "group", value: group)
+            URLQueryItem(name: "sdef", value: "\(specialityId)"),
+            URLQueryItem(name: "course", value: "\(scheduleInfo.course)")
         ]
 
         guard let url = urlComponents?.url else {
@@ -275,7 +301,66 @@ class APIService {
 
         logRequestDetails(request)
 
-        return try await performRequest(request)
+        let remoteRatings: [RemoteStudentRating] = try await performRequest(request)
+        return remoteRatings.map { $0.toStudentRating() }
+    }
+
+    private struct RemoteStudentRating: Decodable {
+        let studentCardNumber: String
+        let average: Double?
+        let hours: Int?
+        let averageShift: Double?
+        let checkpoints: [RatingCheckpoint]
+
+        enum CodingKeys: String, CodingKey {
+            case studentCardNumber
+            case average
+            case hours
+            case averageShift
+            case firstAverage, firstHours
+            case secondAverage, secondHours
+            case thirdAverage, thirdHours
+            case fourthAverage, fourthHours
+            case fifthAverage, fifthHours
+            case sixthAverage, sixthHours
+        }
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            studentCardNumber = try container.decode(String.self, forKey: .studentCardNumber)
+            average = try container.decodeIfPresent(Double.self, forKey: .average)
+            hours = try container.decodeIfPresent(Int.self, forKey: .hours)
+            averageShift = try container.decodeIfPresent(Double.self, forKey: .averageShift)
+
+            let descriptor: [(CodingKeys, CodingKeys, Int)] = [
+                (.firstAverage, .firstHours, 1),
+                (.secondAverage, .secondHours, 2),
+                (.thirdAverage, .thirdHours, 3),
+                (.fourthAverage, .fourthHours, 4),
+                (.fifthAverage, .fifthHours, 5),
+                (.sixthAverage, .sixthHours, 6)
+            ]
+
+            checkpoints = try descriptor.compactMap { averageKey, hoursKey, number in
+                let avg = try container.decodeIfPresent(Double.self, forKey: averageKey)
+                let missed = try container.decodeIfPresent(Int.self, forKey: hoursKey)
+                if avg == nil && missed == nil {
+                    return nil
+                }
+                return RatingCheckpoint(number: number, averageGrade: avg, missedHours: missed)
+            }
+        }
+
+        func toStudentRating() -> StudentRating {
+            StudentRating(
+                recordBookNumber: studentCardNumber,
+                studentName: nil,
+                averageGrade: average,
+                missedHours: hours,
+                averageShift: averageShift,
+                checkpoints: checkpoints
+            )
+        }
     }
 
     /// Заявки на пропуски по ОРВИ (ОРН)
@@ -422,3 +507,4 @@ private extension KeyedDecodingContainer {
         return Date(timeIntervalSince1970: timestamp / 1000)
     }
 }
+
