@@ -219,6 +219,27 @@ class APIService {
         )
     }
 
+    /// Получение полного учебного плана группы со списком дисциплин и расписанием
+    /// - Parameter group: Номер учебной группы
+    /// - Returns: Структура StudyPlan с данными расписания
+    func getStudyPlan(for group: String) async throws -> StudyPlan {
+        var urlComponents = URLComponents(url: baseURL.appendingPathComponent("schedule"), resolvingAgainstBaseURL: false)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "studentGroup", value: group)
+        ]
+
+        guard let url = urlComponents?.url else {
+            throw APIError.invalidURL
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+
+        logRequestDetails(request)
+
+        return try await performRequest(request)
+    }
+
     /// Получение зачётной книжки студента
     /// - Parameter studentId: Идентификатор студента (обычно совпадает с username)
     /// - Returns: Структура Gradebook с семестрами, дисциплинами и попытками
