@@ -31,6 +31,14 @@ struct UserSettings: Codable, Equatable {
     let isShowRating: Bool
 }
 
+extension UserSettings {
+    static let `default` = UserSettings(
+        isPublicProfile: true,
+        isSearchJob: false,
+        isShowRating: true
+    )
+}
+
 // MARK: - Education
 
 struct Education: Codable, Equatable {
@@ -79,6 +87,27 @@ struct User: Codable, Identifiable, Equatable {
     /// Отображаемый рейтинг (с учетом настроек)
     var displayRating: Int {
         settings.isShowRating ? rating : 0
+    }
+}
+
+extension User {
+    func updatingSettings(_ settings: UserSettings) -> User {
+        User(
+            id: id,
+            firstName: firstName,
+            lastName: lastName,
+            middleName: middleName,
+            birthDay: birthDay,
+            email: email,
+            phone: phone,
+            photo: photo,
+            summary: summary,
+            rating: rating,
+            education: education,
+            skills: skills,
+            references: references,
+            settings: settings
+        )
     }
 }
 
