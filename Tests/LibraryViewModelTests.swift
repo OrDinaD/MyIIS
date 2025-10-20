@@ -43,7 +43,7 @@ final class LibraryViewModelTests: XCTestCase {
 }
 
 private struct MockLibraryService: LibraryServicing {
-    func fetchCatalog(searchQuery: String?) async throws -> [LibraryItem] {
+    func fetchCatalog(searchQuery: String?) async throws -> [MyIIS.LibraryItem] {
         LibraryItem.previewCatalog
     }
 

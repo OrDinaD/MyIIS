@@ -13,7 +13,7 @@ protocol AnnouncementsServicing {
     func markAnnouncementRead(id: String) async throws
 }
 
-struct AnnouncementPage: Codable, Equatable {
+struct AnnouncementPage: Decodable, Equatable {
     let items: [Announcement]
     let page: Int
     let pageSize: Int
@@ -63,13 +63,13 @@ struct AnnouncementPage: Codable, Equatable {
         totalItems = try container.decodeIfPresent(Int.self, forKey: .totalItems)
             ?? container.decodeIfPresent(Int.self, forKey: .totalElements)
             ?? items.count
-        totalPages = try container.decodeIfPresent(Int.self, forKey: .totalPages) ?? {
-            guard pageSize > 0 else {
-                return 0
-            }
-            let pages = Double(totalItems) / Double(pageSize)
-            return Int(ceil(pages))
-        }()
+        if let decodedTotalPages = try container.decodeIfPresent(Int.self, forKey: .totalPages) {
+            totalPages = decodedTotalPages
+        } else if pageSize > 0 {
+            totalPages = Int(ceil(Double(totalItems) / Double(pageSize)))
+        } else {
+            totalPages = 0
+        }
     }
 }
 

@@ -470,7 +470,7 @@ struct QuickActionButton: View {
     }
 }
 
-struct SectionHeader: View {
+private struct SectionHeader: View {
     let title: String
     let icon: String
     
@@ -511,7 +511,7 @@ struct GlassCard<Content: View>: View {
     }
 }
 
-struct InfoRow: View {
+private struct InfoRow: View {
     let label: String
     let value: String
     
@@ -528,7 +528,7 @@ struct InfoRow: View {
     }
 }
 
-struct SkillTag: View {
+private struct SkillTag: View {
     let name: String
     
     var body: some View {

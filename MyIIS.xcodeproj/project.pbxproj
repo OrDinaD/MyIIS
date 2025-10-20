@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		F59436CF2E9CF9DA00A3E835 /* MyIIS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyIIS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +17,22 @@
 			path = MyIIS;
 			sourceTree = "<group>";
 		};
+		F59436E32E9CF9DD00A3E835 /* Tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Tests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		F59436CC2E9CF9DA00A3E835 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F59436E12E9CF9DD00A3E835 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +46,7 @@
 			isa = PBXGroup;
 			children = (
 				F59436D12E9CF9DA00A3E835 /* MyIIS */,
+				F59436E32E9CF9DD00A3E835 /* Tests */,
 				F59436D02E9CF9DA00A3E835 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +55,7 @@
 			isa = PBXGroup;
 			children = (
 				F59436CF2E9CF9DA00A3E835 /* MyIIS.app */,
+				F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -70,6 +85,29 @@
 			productReference = F59436CF2E9CF9DA00A3E835 /* MyIIS.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F59436DE2E9CF9DD00A3E835 /* MyIISTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F59436E82E9CF9DD00A3E835 /* Build configuration list for PBXNativeTarget "MyIISTests" */;
+			buildPhases = (
+				F59436DF2E9CF9DD00A3E835 /* Sources */,
+				F59436E12E9CF9DD00A3E835 /* Frameworks */,
+				F59436E02E9CF9DD00A3E835 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F59436E52E9CF9DD00A3E835 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F59436E32E9CF9DD00A3E835 /* Tests */,
+			);
+			name = MyIISTests;
+			packageProductDependencies = (
+			);
+			productName = MyIISTests;
+			productReference = F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -82,6 +120,10 @@
 				TargetAttributes = {
 					F59436CE2E9CF9DA00A3E835 = {
 						CreatedOnToolsVersion = 26.0.1;
+					};
+					F59436DE2E9CF9DD00A3E835 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = F59436CE2E9CF9DA00A3E835;
 					};
 				};
 			};
@@ -100,12 +142,20 @@
 			projectRoot = "";
 			targets = (
 				F59436CE2E9CF9DA00A3E835 /* MyIIS */,
+				F59436DE2E9CF9DD00A3E835 /* MyIISTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F59436CD2E9CF9DA00A3E835 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F59436E02E9CF9DD00A3E835 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +172,32 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F59436DF2E9CF9DD00A3E835 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXContainerItemProxy section */
+		F59436E42E9CF9DD00A3E835 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F59436CE2E9CF9DA00A3E835;
+			remoteInfo = MyIIS;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXTargetDependency section */
+		F59436E52E9CF9DD00A3E835 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F59436CE2E9CF9DA00A3E835 /* MyIIS */;
+			targetProxy = F59436E42E9CF9DD00A3E835 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F59436D82E9CF9DD00A3E835 /* Debug */ = {
@@ -318,6 +393,54 @@
 			};
 			name = Release;
 		};
+		F59436E62E9CF9DD00A3E835 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIISTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MyIIS.app/MyIIS";
+			};
+			name = Debug;
+		};
+		F59436E72E9CF9DD00A3E835 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIISTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MyIIS.app/MyIIS";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -335,6 +458,15 @@
 			buildConfigurations = (
 				F59436DB2E9CF9DD00A3E835 /* Debug */,
 				F59436DC2E9CF9DD00A3E835 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F59436E82E9CF9DD00A3E835 /* Build configuration list for PBXNativeTarget "MyIISTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F59436E62E9CF9DD00A3E835 /* Debug */,
+				F59436E72E9CF9DD00A3E835 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -1,31 +1,9 @@
-import Foundation
+import XCTest
 @testable import MyIIS
 
-struct TestFailure: Error {
-    let message: String
-}
-
-@main
-enum StudyViewModelTests {
-    static func main() async {
-        do {
-            try await MainActor.run {
-                try runTests()
-            }
-            print("StudyViewModel tests passed")
-        } catch {
-            fputs("StudyViewModel tests failed: \(error)\n", stderr)
-            exit(1)
-        }
-    }
-
-    @MainActor
-    private static func runTests() throws {
-        try testFilterSelection()
-    }
-
-    @MainActor
-    private static func testFilterSelection() throws {
+@MainActor
+final class StudyViewModelTests: XCTestCase {
+    func testFilterSelectionAdjustsDaySchedulesAndSummaries() {
         let calendar = Calendar(identifier: .gregorian)
         let start = calendar.startOfDay(for: Date())
         let end = calendar.date(byAdding: .day, value: 30, to: start)
@@ -132,29 +110,27 @@ enum StudyViewModelTests {
             ]
         )
 
-        let viewModel = StudyViewModel(initialPlan: plan)
+        let viewModel = StudyViewModel(service: StudyServiceMock(), initialPlan: plan)
 
-        try assert(viewModel.availableFilters == [.all, .week(1), .week(2)], "Unexpected filters: \(viewModel.availableFilters)")
-        try assert(viewModel.daySchedules.count == 1, "Week 1 should have one day of lessons")
-        try assert(viewModel.daySchedules.first?.lessons.count == 1, "Week 1 should contain only lecture")
+        XCTAssertEqual(viewModel.availableFilters, [.all, .week(1), .week(2)])
+        XCTAssertEqual(viewModel.daySchedules.count, 1)
+        XCTAssertEqual(viewModel.daySchedules.first?.lessons.count, 1)
 
         viewModel.selectedFilter = .week(2)
 
-        try assert(viewModel.daySchedules.count == 2, "Week 2 should include two days")
-        try assert(viewModel.daySchedules.first?.lessons.count == 2, "Week 2 Monday should include two lessons")
-        try assert(viewModel.disciplineSummaries.count == 2, "Should aggregate two disciplines")
+        XCTAssertEqual(viewModel.daySchedules.count, 2)
+        XCTAssertEqual(viewModel.daySchedules.first?.lessons.count, 2)
+        XCTAssertEqual(viewModel.disciplineSummaries.count, 2)
 
-        guard let mathSummary = viewModel.disciplineSummaries.first(where: { $0.title.contains("Математ") }) else {
-            throw TestFailure(message: "Не найден сводный объект по математике")
-        }
-
-        try assert(mathSummary.lessonTypes.contains("ЛК"), "Должен содержать лекции")
-        try assert(mathSummary.lessonTypes.contains("ПЗ"), "Должен содержать практики")
+        let mathSummary = viewModel.disciplineSummaries.first { $0.title.contains("Математ") }
+        XCTAssertNotNil(mathSummary)
+        XCTAssertTrue(mathSummary?.lessonTypes.contains("ЛК") ?? false)
+        XCTAssertTrue(mathSummary?.lessonTypes.contains("ПЗ") ?? false)
     }
+}
 
-    private static func assert(_ condition: @autoclosure () -> Bool, _ message: @autoclosure () -> String) throws {
-        if !condition() {
-            throw TestFailure(message: message())
-        }
+private struct StudyServiceMock: StudyServiceProtocol {
+    func fetchStudyPlan(for group: String) async throws -> StudyPlan {
+        throw APIError.serviceUnavailable(message: "Не использовать сетевой слой в тесте")
     }
 }

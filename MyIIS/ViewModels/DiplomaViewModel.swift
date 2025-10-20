@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 @MainActor
@@ -7,12 +8,12 @@ final class DiplomaViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published private(set) var progress: DiplomaProgress?
 
-    private let diplomaService: DiplomaService
+    private let diplomaService: DiplomaServicing
     private let logService = LogService.shared
     private var currentUserIdentifier: String?
     private let isPreview: Bool
 
-    init(diplomaService: DiplomaService = DiplomaService(), isPreview: Bool = false) {
+    init(diplomaService: DiplomaServicing = DiplomaService(), isPreview: Bool = false) {
         self.diplomaService = diplomaService
         self.isPreview = isPreview
 
@@ -127,7 +128,7 @@ final class DiplomaViewModel: ObservableObject {
 #if DEBUG
 extension DiplomaViewModel {
     static var preview: DiplomaViewModel {
-        DiplomaViewModel(diplomaService: .preview, isPreview: true)
+        DiplomaViewModel(diplomaService: DiplomaService.preview, isPreview: true)
     }
 }
 #endif

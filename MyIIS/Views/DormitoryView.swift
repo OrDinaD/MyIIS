@@ -3,12 +3,17 @@ import SwiftUI
 import UIKit
 #endif
 
+@MainActor
 struct DormitoryView: View {
 
     @StateObject private var viewModel: DormitoryViewModel
 
-    init(viewModel: DormitoryViewModel = DormitoryViewModel()) {
+    init(viewModel: DormitoryViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    init() {
+        self.init(viewModel: DormitoryViewModel())
     }
 
     var body: some View {
@@ -45,7 +50,7 @@ struct DormitoryView: View {
                         if !viewModel.history.isEmpty {
                             HistorySection(history: viewModel.history)
                         } else if !viewModel.isLoading && viewModel.errorMessage == nil {
-                            GlassCard {
+                            DormitoryGlassCard {
                                 VStack(spacing: 12) {
                                     Image(systemName: "clock.badge.questionmark")
                                         .font(.largeTitle)
@@ -107,7 +112,7 @@ private struct BackgroundView: View {
     }
 }
 
-private struct GlassCard<Content: View>: View {
+private struct DormitoryGlassCard<Content: View>: View {
     let content: () -> Content
 
     init(@ViewBuilder content: @escaping () -> Content) {
@@ -144,7 +149,7 @@ private struct DormitorySummaryCard: View {
     }()
 
     var body: some View {
-        GlassCard {
+        DormitoryGlassCard {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top, spacing: 16) {
                     Image(systemName: info.status.systemImageName)
@@ -235,7 +240,7 @@ private struct PaymentStatusCard: View {
     }()
 
     var body: some View {
-        GlassCard {
+        DormitoryGlassCard {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(alignment: .firstTextBaseline) {
                     Text("Баланс")
@@ -299,7 +304,7 @@ private struct HistorySection: View {
     let history: [ResidenceHistory]
 
     var body: some View {
-        GlassCard {
+        DormitoryGlassCard {
             VStack(alignment: .leading, spacing: 16) {
                 Label("История", systemImage: "clock.arrow.circlepath")
                     .font(.headline)
@@ -371,7 +376,7 @@ private struct ActionsSection: View {
     let onAction: (DormitoryAction) -> Void
 
     var body: some View {
-        GlassCard {
+        DormitoryGlassCard {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Доступные действия")
                     .font(.headline)
@@ -421,7 +426,7 @@ private struct ErrorCard: View {
     let retry: () -> Void
 
     var body: some View {
-        GlassCard {
+        DormitoryGlassCard {
             VStack(spacing: 16) {
                 Label("Не удалось загрузить данные", systemImage: "exclamationmark.triangle.fill")
                     .font(.headline)

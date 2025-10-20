@@ -1,10 +1,15 @@
 import SwiftUI
 
+@MainActor
 struct ActivitiesView: View {
     @StateObject private var viewModel: ActivitiesViewModel
 
-    init(viewModel: ActivitiesViewModel = ActivitiesViewModel()) {
+    init(viewModel: ActivitiesViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    init() {
+        self.init(viewModel: ActivitiesViewModel())
     }
 
     var body: some View {

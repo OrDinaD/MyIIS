@@ -1,25 +1,9 @@
-import Foundation
+import XCTest
+@testable import MyIIS
 
-struct AnnouncementsTestFailure: Error, CustomStringConvertible {
-    let message: String
-
-    var description: String { message }
-}
-
-@main
-enum AnnouncementsFilteringTests {
-    static func main() async {
-        do {
-            try await runSortingTest()
-            try await runFilteringTest()
-            print("Announcements filtering tests passed")
-        } catch {
-            fputs("Announcements filtering tests failed: \(error)\n", stderr)
-            exit(1)
-        }
-    }
-
-    private static func runSortingTest() async throws {
+@MainActor
+final class AnnouncementsViewModelTests: XCTestCase {
+    func testSortingKeepsPinnedAndUnreadRecentFirst() async throws {
         let now = Date()
         let categories = sampleCategories()
         let announcements = [
@@ -77,29 +61,16 @@ enum AnnouncementsFilteringTests {
             )
         ]
 
-        let suite = "AnnouncementsSortingTest.\(UUID().uuidString)"
-        guard let defaults = UserDefaults(suiteName: suite) else {
-            throw AnnouncementsTestFailure(message: "Не удалось создать UserDefaults для теста сортировки")
-        }
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let service = MockAnnouncementsTestingService(categories: categories, announcements: announcements)
-        let viewModel = await MainActor.run {
-            AnnouncementsViewModel(service: service, userDefaults: defaults, pageSize: 10)
-        }
+        let (viewModel, defaults) = makeViewModel(categories: categories, announcements: announcements)
+        defer { defaults.removePersistentDomain(forName: defaultsSuiteName) }
 
         await viewModel.loadInitial()
 
-        let orderedIDs = await MainActor.run {
-            viewModel.announcements.map { $0.id }
-        }
-
-        let expectedOrder = ["pinned", "unread_recent", "unread_old", "read_new"]
-        guard orderedIDs == expectedOrder else {
-            throw AnnouncementsTestFailure(message: "Неверная сортировка объявлений: \(orderedIDs)")
-        }
+        let orderedIDs = viewModel.announcements.map(\.id)
+        XCTAssertEqual(orderedIDs, ["pinned", "unread_recent", "unread_old", "read_new"])
     }
 
-    private static func runFilteringTest() async throws {
+    func testCategoryAndUnreadFiltering() async throws {
         let now = Date()
         let categories = sampleCategories()
         let important = categories.first { $0.id == "important" }!
@@ -158,39 +129,30 @@ enum AnnouncementsFilteringTests {
             )
         ]
 
-        let suite = "AnnouncementsFilteringTest.\(UUID().uuidString)"
-        guard let defaults = UserDefaults(suiteName: suite) else {
-            throw AnnouncementsTestFailure(message: "Не удалось создать UserDefaults для теста фильтрации")
-        }
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let service = MockAnnouncementsTestingService(categories: categories, announcements: announcements)
-        let viewModel = await MainActor.run {
-            AnnouncementsViewModel(service: service, userDefaults: defaults, pageSize: 10)
-        }
+        let (viewModel, defaults) = makeViewModel(categories: categories, announcements: announcements)
+        defer { defaults.removePersistentDomain(forName: defaultsSuiteName) }
 
         await viewModel.loadInitial()
         await viewModel.selectCategory(important)
-
-        let filteredIDs = await MainActor.run {
-            viewModel.announcements.map { $0.id }
-        }
-
-        guard filteredIDs == ["pinned", "read", "unread_old"] else {
-            throw AnnouncementsTestFailure(message: "Категорийный фильтр не сработал: \(filteredIDs)")
-        }
+        XCTAssertEqual(viewModel.announcements.map(\.id), ["pinned", "read", "unread_old"])
 
         await viewModel.setShowOnlyUnread(true)
-
-        let unreadIDs = await MainActor.run {
-            viewModel.announcements.map { $0.id }
-        }
-
-        guard unreadIDs == ["pinned", "unread_old"] else {
-            throw AnnouncementsTestFailure(message: "Фильтр по непрочитанным не сработал: \(unreadIDs)")
-        }
+        XCTAssertEqual(viewModel.announcements.map(\.id), ["pinned", "unread_old"])
     }
 
-    private static func sampleCategories() -> [AnnouncementCategory] {
+    private let defaultsSuiteName = "AnnouncementsTests.\(UUID().uuidString)"
+
+    private func makeViewModel(
+        categories: [AnnouncementCategory],
+        announcements: [Announcement]
+    ) -> (AnnouncementsViewModel, UserDefaults) {
+        let defaults = UserDefaults(suiteName: defaultsSuiteName)!
+        let service = MockAnnouncementsTestingService(categories: categories, announcements: announcements)
+        let viewModel = AnnouncementsViewModel(service: service, userDefaults: defaults, pageSize: 10)
+        return (viewModel, defaults)
+    }
+
+    private func sampleCategories() -> [AnnouncementCategory] {
         [
             .all,
             AnnouncementCategory(id: "important", title: "Важно", iconName: "exclamationmark.circle"),

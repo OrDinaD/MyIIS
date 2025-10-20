@@ -18,11 +18,14 @@ class AuthenticationService: ObservableObject {
 
     static let shared = AuthenticationService()
     
-    private let apiService = APIService()
-    private let logService = LogService.shared
+    private let apiService: APIService
+    private let logService: LogService
     private var token: String?
     
-    private init() {}
+    init(apiService: APIService = APIService(), logService: LogService = .shared) {
+        self.apiService = apiService
+        self.logService = logService
+    }
     
     func login(username: String, password: String) async {
         logService.log("Attempting to log in user: \(username)")

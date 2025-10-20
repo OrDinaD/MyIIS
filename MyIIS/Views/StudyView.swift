@@ -7,14 +7,18 @@
 
 import SwiftUI
 
+@MainActor
 struct StudyView: View {
 
     @EnvironmentObject private var authService: AuthenticationService
     @StateObject private var viewModel: StudyViewModel
 
-    @MainActor
-    init(viewModel: StudyViewModel = StudyViewModel()) {
+    init(viewModel: StudyViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    init() {
+        self.init(viewModel: StudyViewModel())
     }
 
     var body: some View {
@@ -149,7 +153,7 @@ struct StudyView: View {
                 .padding(.vertical, 8)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(isSelected ? selectedFilterBackground : Color.white.opacity(0.12))
+                        .fill(filterBackgroundStyle(isSelected: isSelected))
                 )
                 .foregroundStyle(isSelected ? Color.accentColor : Color.primary)
         }
@@ -366,6 +370,14 @@ struct StudyView: View {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+
+    private func filterBackgroundStyle(isSelected: Bool) -> AnyShapeStyle {
+        if isSelected {
+            return AnyShapeStyle(selectedFilterBackground)
+        } else {
+            return AnyShapeStyle(Color.white.opacity(0.12))
+        }
     }
 
     private func loadIfNeeded() async {

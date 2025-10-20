@@ -1,10 +1,15 @@
 import SwiftUI
 
+@MainActor
 struct PenaltiesView: View {
     @StateObject private var viewModel: PenaltiesViewModel
 
-    init(viewModel: PenaltiesViewModel = PenaltiesViewModel()) {
+    init(viewModel: PenaltiesViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    init() {
+        self.init(viewModel: PenaltiesViewModel())
     }
 
     var body: some View {

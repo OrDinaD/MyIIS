@@ -1,10 +1,16 @@
 import Foundation
 import SwiftUI
 
+@MainActor
 struct AnnouncementsView: View {
     @StateObject private var viewModel: AnnouncementsViewModel
-    init(viewModel: AnnouncementsViewModel = AnnouncementsViewModel()) {
+
+    init(viewModel: AnnouncementsViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    init() {
+        self.init(viewModel: AnnouncementsViewModel())
     }
 
     private var backgroundGradient: some View {
@@ -17,6 +23,14 @@ struct AnnouncementsView: View {
             endPoint: .bottomTrailing
         )
         .ignoresSafeArea()
+    }
+
+    private func categoryBackgroundStyle(isSelected: Bool) -> AnyShapeStyle {
+        if isSelected {
+            return AnyShapeStyle(Color.purple.opacity(0.85))
+        } else {
+            return AnyShapeStyle(Material.ultraThin)
+        }
     }
 
     private var errorMessage: String? {
@@ -253,7 +267,7 @@ struct AnnouncementsView: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(isSelected ? Color.purple.opacity(0.85) : .ultraThinMaterial)
+                    .fill(categoryBackgroundStyle(isSelected: isSelected))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)

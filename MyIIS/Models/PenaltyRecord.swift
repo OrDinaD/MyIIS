@@ -160,7 +160,7 @@ extension PenaltyRecord {
 // MARK: - Codable Support
 
 extension PenaltyRecord {
-    private enum CodingKeys: String, CodingKey {
+    enum CodingKeys: String, CodingKey {
         case recordID = "id"
         case type
         case title

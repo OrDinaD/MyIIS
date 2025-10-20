@@ -1,7 +1,43 @@
-import Foundation
+import XCTest
+@testable import MyIIS
 
-struct SettingsViewModelTestFailure: Error {
-    let message: String
+@MainActor
+final class SettingsViewModelTests: XCTestCase {
+    func testNotificationToggleSave() async {
+        let mockService = SettingsServiceMock(
+            userSettings: UserSettings(isPublicProfile: true, isSearchJob: false, isShowRating: true),
+            security: SecuritySettings(isTwoFactorEnabled: false),
+            notifications: NotificationSettings(academicUpdates: false, eventsAndNews: false)
+        )
+
+        let viewModel = SettingsViewModel(service: mockService)
+        XCTAssertFalse(viewModel.hasPendingChanges)
+
+        viewModel.setToggle(for: .academicNotifications, to: true)
+        XCTAssertTrue(viewModel.academicNotificationsEnabled)
+        XCTAssertTrue(viewModel.hasPendingChanges)
+
+        await viewModel.saveChanges()
+
+        XCTAssertEqual(mockService.updateCallCount, 1)
+        XCTAssertTrue(mockService.currentNotificationSettings.academicUpdates)
+        XCTAssertFalse(viewModel.hasPendingChanges)
+    }
+
+    func testChangePasswordSuccess() async {
+        let mockService = SettingsServiceMock()
+        let viewModel = SettingsViewModel(service: mockService)
+
+        await viewModel.changePassword(
+            currentPassword: "Current123",
+            newPassword: "NewPassword1",
+            confirmPassword: "NewPassword1"
+        )
+
+        XCTAssertEqual(mockService.changePasswordCallCount, 1)
+        XCTAssertEqual(viewModel.alert?.title, "Пароль обновлен")
+        XCTAssertFalse(viewModel.isPresentingChangePasswordSheet)
+    }
 }
 
 @MainActor
@@ -42,57 +78,5 @@ final class SettingsServiceMock: SettingsServiceProtocol {
 
     func logout() {
         logoutCallCount += 1
-    }
-}
-
-@main
-enum SettingsViewModelTests {
-    static func main() async {
-        do {
-            try await testNotificationToggleSave()
-            try await testChangePasswordSuccess()
-            print("SettingsViewModel tests passed")
-        } catch {
-            fputs("SettingsViewModel tests failed: \(error)\n", stderr)
-            exit(1)
-        }
-    }
-
-    static func assert(_ condition: @autoclosure () -> Bool, _ message: @autoclosure () -> String) throws {
-        if !condition() {
-            throw SettingsViewModelTestFailure(message: message())
-        }
-    }
-
-    static func testNotificationToggleSave() async throws {
-        let mockService = SettingsServiceMock(
-            userSettings: UserSettings(isPublicProfile: true, isSearchJob: false, isShowRating: true),
-            security: SecuritySettings(isTwoFactorEnabled: false),
-            notifications: NotificationSettings(academicUpdates: false, eventsAndNews: false)
-        )
-
-        let viewModel = SettingsViewModel(service: mockService)
-        try assert(viewModel.hasPendingChanges == false, "Не должно быть несохраненных изменений сразу после инициализации")
-
-        viewModel.setToggle(for: .academicNotifications, to: true)
-        try assert(viewModel.academicNotificationsEnabled == true, "Переключатель уведомлений должен стать активным")
-        try assert(viewModel.hasPendingChanges == true, "После изменения настроек должно появиться несохраненное состояние")
-
-        await viewModel.saveChanges()
-
-        try assert(mockService.updateCallCount == 1, "Ожидалось одно обновление настроек")
-        try assert(mockService.currentNotificationSettings.academicUpdates == true, "Сервис должен получить обновленное значение уведомлений")
-        try assert(viewModel.hasPendingChanges == false, "После сохранения несохраненные изменения должны исчезнуть")
-    }
-
-    static func testChangePasswordSuccess() async throws {
-        let mockService = SettingsServiceMock()
-        let viewModel = SettingsViewModel(service: mockService)
-
-        await viewModel.changePassword(currentPassword: "Current123", newPassword: "NewPassword1", confirmPassword: "NewPassword1")
-
-        try assert(mockService.changePasswordCallCount == 1, "Метод смены пароля должен вызываться")
-        try assert(viewModel.alert?.title == "Пароль обновлен", "После успешной смены пароля должно показываться подтверждение")
-        try assert(viewModel.isPresentingChangePasswordSheet == false, "Лист смены пароля должен закрываться")
     }
 }

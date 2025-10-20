@@ -1,12 +1,17 @@
 import SwiftUI
 
+@MainActor
 struct DiplomaView: View {
 
     @EnvironmentObject private var authService: AuthenticationService
     @StateObject private var viewModel: DiplomaViewModel
 
-    @MainActor init(viewModel: DiplomaViewModel = DiplomaViewModel()) {
+    init(viewModel: DiplomaViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    init() {
+        self.init(viewModel: DiplomaViewModel())
     }
 
     var body: some View {

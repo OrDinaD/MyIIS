@@ -1,10 +1,15 @@
 import SwiftUI
 
+@MainActor
 struct LibraryView: View {
     @StateObject private var viewModel: LibraryViewModel
 
-    init(viewModel: LibraryViewModel = LibraryViewModel()) {
+    init(viewModel: LibraryViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    init() {
+        self.init(viewModel: LibraryViewModel())
     }
 
     var body: some View {

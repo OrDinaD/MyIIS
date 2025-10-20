@@ -1,6 +1,10 @@
 import Foundation
 
-final class DiplomaService {
+protocol DiplomaServicing {
+    func fetchDiplomaProgress(for userIdentifier: String) async throws -> DiplomaProgress
+}
+
+final class DiplomaService: DiplomaServicing {
 
     private let baseURL = URL(string: "https://iis.bsuir.by/api/v1")!
     private let session: URLSession
