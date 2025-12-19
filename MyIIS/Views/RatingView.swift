@@ -26,10 +26,11 @@ struct RatingView: View {
 
                 content
                     .padding(.horizontal, 16)
-                    .padding(.vertical, 24)
+                    .padding(.bottom, 36)
             }
             .navigationTitle("Рейтинг")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         }
     }
 
@@ -57,27 +58,36 @@ struct RatingView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollIndicators(.hidden)
+            .glassScrollPadding(top: 32)
             .task(id: user.education.group) {
-                await viewModel.loadRating(forGroup: user.education.group)
+                await viewModel.loadRating(forEducation: user.education)
             }
             .refreshable {
-                await viewModel.refresh(forGroup: user.education.group)
+                await viewModel.refresh(forEducation: user.education)
             }
         } else {
-            GlassCard {
-                VStack(spacing: 12) {
-                    Image(systemName: "person.text.rectangle")
-                        .font(.system(size: 44))
-                        .foregroundStyle(.secondary)
-                    Text("Чтобы увидеть рейтинг, выполните вход")
-                        .font(.headline)
-                    Text("Авторизуйтесь в аккаунте, после чего данные группы будут загружены автоматически.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+            ScrollView {
+                VStack(spacing: 24) {
+                    GlassCard {
+                        VStack(spacing: 12) {
+                            Image(systemName: "person.text.rectangle")
+                                .font(.system(size: 44))
+                                .foregroundStyle(.secondary)
+                            Text("Чтобы увидеть рейтинг, выполните вход")
+                                .font(.headline)
+                            Text("Авторизуйтесь в аккаунте, после чего данные группы будут загружены автоматически.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(32)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-                .padding(32)
+                .frame(maxWidth: .infinity)
             }
+            .scrollIndicators(.hidden)
+            .glassScrollPadding(top: 32)
         }
     }
 
@@ -104,11 +114,11 @@ struct RatingView: View {
                     }
 
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Рейтинг по контрольным точкам")
+                        Text("Мой рейтинг")
                             .font(.title3)
                             .fontWeight(.semibold)
 
-                        Text("Группа \(user.education.group) · \(user.education.speciality) · \(user.education.faculty)")
+                        Text("Группа \(user.education.group)")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -128,15 +138,15 @@ struct RatingView: View {
                 HStack(spacing: 16) {
                     RatingHeaderMetric(
                         title: "Средний балл",
-                        value: formattedGrade(viewModel.summary?.averageGrade)
+                        value: formattedGrade(viewModel.students.first?.averageGrade)
                     )
                     RatingHeaderMetric(
                         title: "Пропущено часов",
-                        value: formattedMissed(viewModel.summary?.totalMissedHours)
+                        value: formattedMissed(viewModel.students.first?.missedHours)
                     )
                     RatingHeaderMetric(
                         title: "Средний сдвиг",
-                        value: formattedShift(viewModel.summary?.averageShift)
+                        value: formattedShift(viewModel.students.first?.averageShift)
                     )
                 }
                 .frame(maxWidth: .infinity)
@@ -152,7 +162,7 @@ struct RatingView: View {
                 VStack(spacing: 16) {
                     ProgressView()
                         .progressViewStyle(.circular)
-                    Text("Загружаем рейтинг группы \(group)...")
+                    Text("Загружаем рейтинг...")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

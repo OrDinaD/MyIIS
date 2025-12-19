@@ -20,14 +20,31 @@ class AuthenticationService: ObservableObject {
     
     private let apiService: APIService
     private let logService: LogService
+    private let credentialStore = CredentialStore.shared
+    private static let cachedUserDefaultsKey = "MyIIS.cachedUser"
     private var token: String?
     
     init(apiService: APIService = APIService(), logService: LogService = .shared) {
         self.apiService = apiService
         self.logService = logService
+
+        if let cachedUserData = UserDefaults.standard.data(forKey: Self.cachedUserDefaultsKey),
+           let cachedUser = try? JSONDecoder().decode(User.self, from: cachedUserData) {
+            self.currentUser = cachedUser
+            logService.log("🔐 Restored cached user profile for \(cachedUser.fullName)")
+        }
+
+        Task { [weak self] in
+            await self?.restoreSessionIfPossible()
+        }
     }
     
-    func login(username: String, password: String) async {
+    func login(
+        username: String,
+        password: String,
+        persistCredentials: Bool = true,
+        isSilent: Bool = false
+    ) async {
         logService.log("Attempting to log in user: \(username)")
         isLoading = true
         errorMessage = nil
@@ -54,17 +71,71 @@ class AuthenticationService: ObservableObject {
                 scheduleInfo: scheduleInfo
             )
             self.currentUser = user
+            cacheUser(user)
+
+            if persistCredentials {
+                do {
+                    try credentialStore.save(StoredCredentials(username: username, password: password))
+                    logService.log("🔒 Credentials saved to Keychain.")
+                } catch {
+                    logService.log("⚠️ Failed to store credentials: \(error.localizedDescription)")
+                }
+            }
+
             logService.log("✅ User profile loaded: \(user.fullName)")
             
         } catch let error as APIError {
             self.errorMessage = error.localizedDescription
             logService.log("❌ API Error: \(error.localizedDescription)")
+
+            if case .unauthorized = error {
+                currentUser = nil
+            }
+
+            if isSilent, case .unauthorized = error {
+                try? credentialStore.clear()
+                clearCachedUser()
+            }
         } catch {
             self.errorMessage = "Произошла непредвиденная ошибка."
             logService.log("❌ Unexpected Error: \(error.localizedDescription)")
         }
         
         isLoading = false
+    }
+    
+    func restoreSessionIfPossible() async {
+        guard !isLoading else { return }
+        
+        do {
+            guard let credentials = try credentialStore.retrieve() else {
+                logService.log("ℹ️ No stored credentials found for auto-login.")
+                return
+            }
+            
+            logService.log("🔁 Attempting silent login with stored credentials.")
+            await login(
+                username: credentials.username,
+                password: credentials.password,
+                persistCredentials: true,
+                isSilent: true
+            )
+        } catch {
+            logService.log("⚠️ Failed to access stored credentials: \(error.localizedDescription)")
+        }
+    }
+    
+    private func cacheUser(_ user: User) {
+        guard let encoded = try? JSONEncoder().encode(user) else {
+            logService.log("⚠️ Failed to encode user for caching.")
+            return
+        }
+        
+        UserDefaults.standard.set(encoded, forKey: Self.cachedUserDefaultsKey)
+    }
+    
+    private func clearCachedUser() {
+        UserDefaults.standard.removeObject(forKey: Self.cachedUserDefaultsKey)
     }
     
     /// Конвертирует данные из API в модель User
@@ -107,7 +178,8 @@ class AuthenticationService: ObservableObject {
                 faculty: scheduleInfo?.facultyAbbrev ?? loginResponse.group,
                 course: personalInfo.course ?? 1,
                 speciality: scheduleInfo?.specialityAbbrev ?? "Не указано",
-                group: loginResponse.group
+                group: loginResponse.group,
+                specialityDepartmentEducationFormId: scheduleInfo?.specialityDepartmentEducationFormId
             ),
             skills: [], // Пока пустой массив - можно будет добавить позже
             references: [], // Пока пустой массив
@@ -121,6 +193,16 @@ class AuthenticationService: ObservableObject {
     func logout() {
         self.currentUser = nil
         self.token = nil
+        clearCachedUser()
+        
+        do {
+            try credentialStore.clear()
+            logService.log("🔓 Stored credentials cleared.")
+        } catch {
+            logService.log("⚠️ Failed to clear stored credentials: \(error.localizedDescription)")
+        }
+        
+        AttendanceWidgetDataStore.clear()
         logService.log("User logged out.")
     }
 }

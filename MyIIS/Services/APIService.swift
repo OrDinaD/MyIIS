@@ -283,13 +283,23 @@ class APIService {
             )
         }
 
+        return try await getRatingDirect(specialityId: specialityId, course: scheduleInfo.course)
+    }
+    
+    /// Оптимизированное получение рейтинга напрямую с параметрами
+    /// Используется когда specialityId и course уже известны (например, из кэша User)
+    /// - Parameters:
+    ///   - specialityId: ID формы обучения специальности
+    ///   - course: Номер курса
+    /// - Returns: Список студентов с показателями рейтинга
+    func getRatingDirect(specialityId: Int, course: Int) async throws -> [StudentRating] {
         var urlComponents = URLComponents(
             url: baseURL.appendingPathComponent("rating"),
             resolvingAgainstBaseURL: false
         )
         urlComponents?.queryItems = [
             URLQueryItem(name: "sdef", value: "\(specialityId)"),
-            URLQueryItem(name: "course", value: "\(scheduleInfo.course)")
+            URLQueryItem(name: "course", value: "\(course)")
         ]
 
         guard let url = urlComponents?.url else {

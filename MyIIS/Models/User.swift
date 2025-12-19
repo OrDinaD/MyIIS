@@ -46,6 +46,16 @@ struct Education: Codable, Equatable {
     let course: Int
     let speciality: String
     let group: String
+    /// ID формы обучения специальности (для API рейтинга)
+    let specialityDepartmentEducationFormId: Int?
+    
+    init(faculty: String, course: Int, speciality: String, group: String, specialityDepartmentEducationFormId: Int? = nil) {
+        self.faculty = faculty
+        self.course = course
+        self.speciality = speciality
+        self.group = group
+        self.specialityDepartmentEducationFormId = specialityDepartmentEducationFormId
+    }
 }
 
 // MARK: - User Model
@@ -129,7 +139,8 @@ extension User {
             faculty: "КСиС",
             course: 1,
             speciality: "ПОИТ",
-            group: "851001"
+            group: "851001",
+            specialityDepartmentEducationFormId: 26198
         ),
         skills: [
             UserSkill(id: 1, name: "ИИ"),

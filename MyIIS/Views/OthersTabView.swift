@@ -27,9 +27,9 @@ struct OthersTabView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 24)
                 .padding(.bottom, 32)
             }
+            .glassScrollPadding(top: 32)
             .background(
                 LinearGradient(
                     colors: Color.gradientBackground,
@@ -39,8 +39,7 @@ struct OthersTabView: View {
                 .ignoresSafeArea()
             )
             .navigationTitle("Остальные")
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
         }
         .navigationDestination(for: MenuItem.self) { item in
             item.destinationView

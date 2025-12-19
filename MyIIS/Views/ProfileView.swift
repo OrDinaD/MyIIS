@@ -14,105 +14,56 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Liquid Glass Background - Адаптивный для Dark Mode
-                LinearGradient(
-                    colors: Color.gradientBackground,
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
                 if let user = viewModel.user {
                     ScrollView {
-                        VStack(spacing: 24) {
+                        VStack(spacing: 20) {
+                            
                             // MARK: - Header with Photo and Name
-                            VStack(spacing: 16) {
-                                // Avatar with Liquid Glass effect
+                            VStack(spacing: 12) {
+                                // Avatar - чистый без размытия
                                 AsyncImage(url: user.photoURL) { image in
                                     image
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
-                                        .frame(width: 120, height: 120)
+                                        .frame(width: 100, height: 100)
                                         .clipShape(Circle())
                                         .overlay {
                                             Circle()
-                                                .stroke(
-                                                    LinearGradient(
-                                                        colors: [
-                                                            Color.glassHighlight,
-                                                            Color.accentPurple.opacity(0.4),
-                                                            Color.accentPurple.opacity(0.2),
-                                                            Color.clear
-                                                        ],
-                                                        startPoint: .topLeading,
-                                                        endPoint: .bottomTrailing
-                                                    ),
-                                                    lineWidth: 3
-                                                )
+                                                .stroke(Color.accentPurple.opacity(0.3), lineWidth: 2)
                                         }
-                                        .liquidGlassShadow(color: .accentPurple, radius: 20)
                                 } placeholder: {
-                                    ZStack {
-                                        Circle()
-                                            .fill(.ultraThinMaterial)
-                                            .overlay {
-                                                Circle()
-                                                    .fill(
-                                                        LinearGradient(
-                                                            colors: [
-                                                                Color.accentPurple.opacity(0.25),
-                                                                Color.accentPurple.opacity(0.08)
-                                                            ],
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        )
-                                                    )
-                                            }
-                                            .overlay {
-                                                Circle()
-                                                    .stroke(
-                                                        LinearGradient(
-                                                            colors: [
-                                                                Color.glassHighlight,
-                                                                Color.accentPurple.opacity(0.3)
-                                                            ],
-                                                            startPoint: .topLeading,
-                                                            endPoint: .bottomTrailing
-                                                        ),
-                                                        lineWidth: 3
-                                                    )
-                                            }
-                                            .frame(width: 120, height: 120)
-                                        
-                                        Text(user.initials)
-                                            .font(.system(size: 48, weight: .semibold))
-                                            .foregroundStyle(
-                                                LinearGradient.iconGradient(.accentPurple)
-                                            )
-                                    }
-                                    .liquidGlassShadow(color: .accentPurple, radius: 20)
+                                    Circle()
+                                        .fill(Color.accentPurple.opacity(0.15))
+                                        .frame(width: 100, height: 100)
+                                        .overlay {
+                                            Text(user.initials)
+                                                .font(.system(size: 36, weight: .semibold))
+                                                .foregroundStyle(Color.accentPurple)
+                                        }
+                                        .overlay {
+                                            Circle()
+                                                .stroke(Color.accentPurple.opacity(0.3), lineWidth: 2)
+                                        }
                                 }
                                 
-                                // Name and Rating
-                                VStack(spacing: 8) {
-                                    Text(user.fullName)
-                                        .font(.title)
-                                        .fontWeight(.bold)
-                                        .multilineTextAlignment(.center)
-                                    
-                                    // Рейтинг звездочками (если включено в настройках)
-                                    if user.settings.isShowRating {
-                                        HStack(spacing: 4) {
-                                            ForEach(0..<5) { index in
-                                                Image(systemName: "star.fill")
-                                                    .foregroundStyle(index < user.rating ? Color.ratingYellow : Color.secondary.opacity(0.3))
-                                                    .font(.system(size: 18))
-                                            }
+                                // Name
+                                Text(user.fullName)
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .multilineTextAlignment(.center)
+                                
+                                // Рейтинг звездочками (если включено)
+                                if user.settings.isShowRating {
+                                    HStack(spacing: 4) {
+                                        ForEach(0..<5) { index in
+                                            Image(systemName: "star.fill")
+                                                .foregroundStyle(index < user.rating ? Color.yellow : Color.secondary.opacity(0.3))
+                                                .font(.system(size: 14))
                                         }
                                     }
                                 }
                             }
-                            .padding(.top, 20)
+                            .padding(.top, 8)
                             
                             // MARK: - Contacts Section
                             if viewModel.user != nil {
@@ -338,6 +289,7 @@ struct ProfileView: View {
                             Spacer(minLength: 32)
                         }
                     }
+                    .glassScrollPadding(top: 16)
                 } else {
                     VStack(spacing: 16) {
                         Image(systemName: "person.crop.circle.badge.xmark")
@@ -349,53 +301,24 @@ struct ProfileView: View {
                     }
                 }
             }
+            .background(
+                LiquidBackground()
+                    .ignoresSafeArea()
+            )
             .navigationTitle("Профиль")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
             .toolbar {
-                if viewModel.user != nil {
-                    Button {
-                        viewModel.logout()
-                    } label: {
-                        Label {
-                            Text("Выйти")
-                                .font(.system(size: 15, weight: .semibold))
-                        } icon: {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if viewModel.user != nil {
+                        Button {
+                            viewModel.logout()
+                        } label: {
                             Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(size: 17, weight: .medium))
+                                .foregroundStyle(.red)
                         }
-                        .labelStyle(.titleAndIcon)
-                        .foregroundStyle(LinearGradient(
-                            colors: [
-                                Color.statusError,
-                                Color.statusError.opacity(0.85)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ))
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 10)
                     }
-                    .buttonStyle(.plain)
-                    .background(
-                        Capsule()
-                            .fill(.ultraThinMaterial)
-                            .overlay {
-                                Capsule()
-                                    .strokeBorder(
-                                        LinearGradient(
-                                            colors: [
-                                                Color.white.opacity(0.55),
-                                                Color.statusError.opacity(0.2)
-                                            ],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1
-                                    )
-                                    .blendMode(.overlay)
-                            }
-                            .shadow(color: Color.black.opacity(0.12), radius: 12, y: 6)
-                    )
                 }
             }
         }
@@ -432,6 +355,74 @@ struct ProfileView: View {
 }
 
 // MARK: - Supporting Views
+
+private struct LiquidBackground: View {
+    var body: some View {
+        LinearGradient(
+            colors: Color.gradientBackground,
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+        .overlay {
+            ZStack {
+                Circle()
+                    .fill(Color.white.opacity(0.20))
+                    .blur(radius: 40)
+                    .frame(width: 220, height: 220)
+                    .offset(x: 140, y: -120)
+
+                Circle()
+                    .fill(Color.white.opacity(0.12))
+                    .blur(radius: 60)
+                    .frame(width: 260, height: 260)
+                    .offset(x: -100, y: 40)
+            }
+            .allowsHitTesting(false)
+        }
+        .zIndex(0)
+    }
+}
+
+struct GlassCapsuleStyle: ButtonStyle {
+    var tint: Color = .accentColor
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+            .foregroundStyle(tint)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay {
+                Capsule()
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.7),
+                                Color.white.opacity(0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            }
+            .overlay(alignment: .topLeading) {
+                Circle()
+                    .fill(Color.white.opacity(0.30))
+                    .blur(radius: 8)
+                    .frame(width: 22, height: 22)
+                    .offset(x: 6, y: 4)
+            }
+            .shadow(
+                color: tint.opacity(configuration.isPressed ? 0.15 : 0.25),
+                radius: configuration.isPressed ? 2 : 6,
+                y: 3
+            )
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.8), value: configuration.isPressed)
+    }
+}
 
 struct QuickActionButton: View {
     let icon: String

@@ -22,8 +22,6 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                background
-
                 content
             }
             .navigationTitle("Настройки")
@@ -36,18 +34,7 @@ struct SettingsView: View {
                 Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("Ок")))
             }
         }
-    }
-
-    private var background: some View {
-        LinearGradient(
-            colors: [
-                Color(uiColor: .systemBackground),
-                Color(uiColor: .secondarySystemBackground)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
+        .appBackground()
     }
 
     private var content: some View {

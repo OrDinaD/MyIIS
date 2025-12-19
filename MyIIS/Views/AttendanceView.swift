@@ -35,18 +35,16 @@ struct AttendanceView: View {
                                         onRetry: reloadIfNeeded)
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 24)
+                .padding(.bottom, 36)
             }
-            .background(LinearGradient(colors: [
-                Color(uiColor: .systemGroupedBackground),
-                Color(uiColor: .secondarySystemGroupedBackground)
-            ], startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea())
+            .glassScrollPadding(top: 32)
             .navigationTitle("Пропуски")
             .navigationBarTitleDisplayMode(.large)
+            .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
             .task { await viewModel.loadDataIfNeeded() }
             .refreshable { await viewModel.reload() }
         }
+        .appBackground()
     }
 
     private func reloadIfNeeded() {

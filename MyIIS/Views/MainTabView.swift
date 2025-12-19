@@ -44,6 +44,7 @@ struct MainTabView: View {
         .tint(Color.accentPurple)
         .toolbarBackground(.ultraThinMaterial, for: .tabBar)
         .toolbarBackground(.visible, for: .tabBar)
+        .appBackground()
     }
 }
 

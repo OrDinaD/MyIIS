@@ -73,7 +73,12 @@ private final class AuthenticationServiceMock: AuthenticationService {
         super.init(apiService: APIService(), logService: LogService.shared)
     }
 
-    override func login(username: String, password: String) async {
+    override func login(
+        username: String,
+        password: String,
+        persistCredentials: Bool,
+        isSilent: Bool
+    ) async {
         loginCallCount += 1
         lastCredentials = (username, password)
     }

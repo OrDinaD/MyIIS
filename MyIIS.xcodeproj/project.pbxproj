@@ -6,10 +6,29 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		F5A5EE102F1C801900D2B7A1 /* MyIISWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidget.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		F59436CF2E9CF9DA00A3E835 /* MyIIS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyIIS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidget.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = MyIISWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F5A5EE112F1C801900D2B7A1 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F5A5EE102F1C801900D2B7A1 /* MyIISWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		F59436D12E9CF9DA00A3E835 /* MyIIS */ = {
@@ -20,6 +39,16 @@
 		F59436E32E9CF9DD00A3E835 /* Tests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Tests;
+			sourceTree = "<group>";
+		};
+		F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MyIISWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -39,6 +68,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F5A5EE052F1C7E2A00D2B7A1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -47,6 +83,8 @@
 			children = (
 				F59436D12E9CF9DA00A3E835 /* MyIIS */,
 				F59436E32E9CF9DD00A3E835 /* Tests */,
+				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
+				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
 				F59436D02E9CF9DA00A3E835 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +94,7 @@
 			children = (
 				F59436CF2E9CF9DA00A3E835 /* MyIIS.app */,
 				F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */,
+				F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidget.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -69,14 +108,17 @@
 			buildPhases = (
 				F59436CB2E9CF9DA00A3E835 /* Sources */,
 				F59436CC2E9CF9DA00A3E835 /* Frameworks */,
+				F5A5EE112F1C801900D2B7A1 /* Embed App Extensions */,
 				F59436CD2E9CF9DA00A3E835 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F5A5EE122F1C801900D2B7A1 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				F59436D12E9CF9DA00A3E835 /* MyIIS */,
+				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
 			);
 			name = MyIIS;
 			packageProductDependencies = (
@@ -108,6 +150,29 @@
 			productReference = F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		F5A5EE032F1C7E2A00D2B7A1 /* MyIISWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5A5EE092F1C7E2A00D2B7A1 /* Build configuration list for PBXNativeTarget "MyIISWidgetExtension" */;
+			buildPhases = (
+				F5A5EE042F1C7E2A00D2B7A1 /* Sources */,
+				F5A5EE052F1C7E2A00D2B7A1 /* Frameworks */,
+				F5A5EE062F1C7E2A00D2B7A1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
+				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
+			);
+			name = MyIISWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = MyIISWidgetExtension;
+			productReference = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -124,6 +189,10 @@
 					F59436DE2E9CF9DD00A3E835 = {
 						CreatedOnToolsVersion = 26.0.1;
 						TestTargetID = F59436CE2E9CF9DA00A3E835;
+					};
+					F5A5EE032F1C7E2A00D2B7A1 = {
+						CreatedOnToolsVersion = 26.0.1;
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -143,6 +212,7 @@
 			targets = (
 				F59436CE2E9CF9DA00A3E835 /* MyIIS */,
 				F59436DE2E9CF9DD00A3E835 /* MyIISTests */,
+				F5A5EE032F1C7E2A00D2B7A1 /* MyIISWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -156,6 +226,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F59436E02E9CF9DD00A3E835 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5A5EE062F1C7E2A00D2B7A1 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -179,6 +256,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F5A5EE042F1C7E2A00D2B7A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXContainerItemProxy section */
@@ -189,6 +273,13 @@
 			remoteGlobalIDString = F59436CE2E9CF9DA00A3E835;
 			remoteInfo = MyIIS;
 		};
+		F5A5EE132F1C801900D2B7A1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F5A5EE032F1C7E2A00D2B7A1;
+			remoteInfo = MyIISWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXTargetDependency section */
@@ -196,6 +287,11 @@
 			isa = PBXTargetDependency;
 			target = F59436CE2E9CF9DA00A3E835 /* MyIIS */;
 			targetProxy = F59436E42E9CF9DD00A3E835 /* PBXContainerItemProxy */;
+		};
+		F5A5EE122F1C801900D2B7A1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F5A5EE032F1C7E2A00D2B7A1 /* MyIISWidgetExtension */;
+			targetProxy = F5A5EE132F1C801900D2B7A1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -328,6 +424,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MyIIS/MyIIS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
@@ -363,6 +460,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MyIIS/MyIIS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
@@ -441,6 +539,60 @@
 			};
 			name = Release;
 		};
+		F5A5EE072F1C7E2A00D2B7A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = MyIISWidget/MyIISWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Configs/MyIISWidgetExtension-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F5A5EE082F1C7E2A00D2B7A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = MyIISWidget/MyIISWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Configs/MyIISWidgetExtension-Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -467,6 +619,15 @@
 			buildConfigurations = (
 				F59436E62E9CF9DD00A3E835 /* Debug */,
 				F59436E72E9CF9DD00A3E835 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F5A5EE092F1C7E2A00D2B7A1 /* Build configuration list for PBXNativeTarget "MyIISWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F5A5EE072F1C7E2A00D2B7A1 /* Debug */,
+				F5A5EE082F1C7E2A00D2B7A1 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
