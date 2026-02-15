@@ -244,79 +244,40 @@ struct ProfileView: View {
                                 .padding(.horizontal)
                             }
 
-                            // MARK: - Settings Section (READ-ONLY из API)
+                            // MARK: - Logout Button
                             VStack(alignment: .leading, spacing: 12) {
-                                SectionHeader(title: "Настройки профиля", icon: "gearshape.fill")
-
-                                GlassCard {
-                                    VStack(spacing: 12) {
-                                        SettingRow(
-                                            icon: "eye.fill",
-                                            label: "Публичный профиль",
-                                            isEnabled: user.settings.isPublicProfile
-                                        )
-                                        Divider()
-                                        SettingRow(
-                                            icon: "briefcase.fill",
-                                            label: "Ищу работу",
-                                            isEnabled: user.settings.isSearchJob
-                                        )
-                                        Divider()
-                                        SettingRow(
-                                            icon: "star.fill",
-                                            label: "Показывать рейтинг",
-                                            isEnabled: user.settings.isShowRating
-                                        )
-
-                                        Divider()
-
-                                        // Информационное сообщение
-                                        HStack(spacing: 8) {
-                                            Image(systemName: "info.circle.fill")
-                                                .foregroundStyle(.secondary)
-                                                .font(.system(size: 14))
-                                            Text("Изменить настройки можно в веб-версии ИИС")
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                        }
-                                        .padding(.top, 4)
+                                SectionHeader(title: "Аккаунт", icon: "person.badge.key.fill")
+                                
+                                Button {
+                                    withAnimation {
+                                        viewModel.logout()
+                                    }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                                            .foregroundStyle(.red)
+                                        Text("Выйти из системы")
+                                            .fontWeight(.medium)
+                                            .foregroundStyle(.primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
                                     }
                                     .padding()
+                                    .background {
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .fill(.ultraThinMaterial)
+                                            .overlay {
+                                                RoundedRectangle(cornerRadius: 16)
+                                                    .stroke(Color.red.opacity(0.2), lineWidth: 1)
+                                            }
+                                    }
                                 }
                             }
                             .padding(.horizontal)
 
-                            // MARK: - Logout Button
-                            Button {
-                                withAnimation {
-                                    viewModel.logout()
-                                }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "rectangle.portrait.and.arrow.right")
-                                    Text("Выйти из аккаунта")
-                                        .fontWeight(.semibold)
-                                }
-                                .foregroundStyle(.red)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background {
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .fill(.ultraThinMaterial)
-                                        .overlay {
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .fill(Color.red.opacity(0.05))
-                                        }
-                                        .overlay {
-                                            RoundedRectangle(cornerRadius: 16)
-                                                .stroke(Color.red.opacity(0.2), lineWidth: 1.5)
-                                        }
-                                }
-                            }
-                            .padding(.horizontal)
-                            .padding(.top, 8)
-
-                            Spacer(minLength: 100) // Отступ для кастомного таб-бара
+                            Spacer(minLength: 120) // Отступ для парящего таб-бара
                         }
                     }
                     .glassScrollPadding(top: 16)
@@ -331,10 +292,6 @@ struct ProfileView: View {
                     }
                 }
             }
-            .background(
-                LiquidBackground()
-                    .ignoresSafeArea()
-            )
             .navigationTitle("Профиль")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackgroundVisibility(.hidden, for: .navigationBar)

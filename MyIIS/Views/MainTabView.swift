@@ -13,6 +13,9 @@ struct MainTabView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
+            // Фон приложения должен быть в самом низу
+            // Но ProfileView и другие уже имеют свой фон, поэтому убедимся, что они прозрачные или используют общий
+            
             TabView(selection: $selectedTab) {
                 ProfileView()
                     .tag(Tab.profile)
@@ -30,13 +33,12 @@ struct MainTabView: View {
                     .tag(Tab.others)
                     .toolbar(.hidden, for: .tabBar)
             }
+            .ignoresSafeArea() // Позволяем контенту заходить под таб-бар
             
             // Кастомный парящий TabBar
             CustomTabBar(selectedTab: $selectedTab)
-                .padding(.bottom, 10) // Отступ от самого низа экрана
         }
         .appBackground()
-        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
