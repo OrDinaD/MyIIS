@@ -121,7 +121,8 @@ final class LibraryViewModel: ObservableObject {
     }
 }
 
-#if DEBUG
+// MARK: - Previews
+
 extension LibraryViewModel {
     static var preview: LibraryViewModel {
         LibraryViewModel(
@@ -148,4 +149,3 @@ private struct PreviewLibraryService: LibraryServicing {
         BorrowHistoryEntry.previewActive + BorrowHistoryEntry.previewArchive
     }
 }
-#endif

@@ -270,7 +270,8 @@ extension GradeValue: Codable {
     }
 }
 
-#if DEBUG
+// MARK: - Previews
+
 extension Gradebook {
     static let previewData = Gradebook(
         semesters: [
@@ -363,4 +364,3 @@ extension Gradebook {
     )
     .normalized()
 }
-#endif

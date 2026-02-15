@@ -176,7 +176,8 @@ private extension DateFormatter {
     }
 }
 
-#if DEBUG
+// MARK: - Previews
+
 extension DormitoryInfo {
     static let previewValue: DormitoryInfo = {
         let calendar = Calendar(identifier: .gregorian)
@@ -247,4 +248,3 @@ extension DormitoryAction {
          DormitoryAction(type: .submitMaintenance)]
     }
 }
-#endif

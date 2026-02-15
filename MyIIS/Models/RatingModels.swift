@@ -196,7 +196,6 @@ private extension KeyedDecodingContainer {
 
 // MARK: - Preview Support
 
-#if DEBUG
 extension StudentRating {
     static let previewData: [StudentRating] = {
         let checkpoints1 = [
@@ -243,4 +242,3 @@ extension StudentRating {
         ]
     }()
 }
-#endif

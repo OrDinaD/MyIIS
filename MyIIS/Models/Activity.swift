@@ -118,7 +118,8 @@ struct Activity: Codable, Identifiable, Equatable {
     }
 }
 
-#if DEBUG
+// MARK: - Previews
+
 extension Activity {
     static func preview(
         id: Int,
@@ -214,4 +215,3 @@ extension Activity {
         )
     ]
 }
-#endif

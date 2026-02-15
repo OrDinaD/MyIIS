@@ -14,7 +14,8 @@ struct ActivityCategory: Codable, Identifiable, Hashable {
     }
 }
 
-#if DEBUG
+// MARK: - Previews
+
 extension ActivityCategory {
     static let volunteering = ActivityCategory(
         id: 1,
@@ -51,4 +52,3 @@ extension ActivityCategory {
         .science
     ]
 }
-#endif

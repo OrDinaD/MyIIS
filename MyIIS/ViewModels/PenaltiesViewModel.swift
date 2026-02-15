@@ -168,7 +168,8 @@ extension PenaltiesViewModel {
     }
 }
 
-#if DEBUG
+// MARK: - Previews
+
 extension PenaltiesViewModel {
     static var preview: PenaltiesViewModel {
         let records: [PenaltyRecord] = [
@@ -225,4 +226,3 @@ private final class PreviewPenaltiesService: PenaltiesServicing {
         records
     }
 }
-#endif

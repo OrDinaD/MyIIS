@@ -416,7 +416,8 @@ private extension Date {
     }
 }
 
-#if DEBUG
+// MARK: - Preview Support
+
 extension DiplomaProgress {
     static let preview: DiplomaProgress = {
         let calendar = Calendar.current
@@ -475,4 +476,3 @@ extension DiplomaProgress {
         )
     }()
 }
-#endif
