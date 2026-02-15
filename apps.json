@@ -13,6 +13,13 @@
       "screenshotURLs": [],
       "versions": [
         {
+          "version": "1.0.7",
+          "date": "2026-02-15T17:23:50Z",
+          "size": 21716226,
+          "downloadURL": "https://ordinad.github.io/MyIIS/MyIIS.ipa",
+          "localizedDescription": "Релиз версии 1.0.7"
+        },
+        {
           "version": "1.0.6",
           "date": "2026-02-15T17:17:08Z",
           "size": 21716225,
