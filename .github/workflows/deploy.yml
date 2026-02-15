@@ -84,64 +84,71 @@ jobs:
           import os
           from datetime import datetime, timezone
           
-          # Читаем текущий apps.json
-          with open('apps.json', 'r', encoding='utf-8') as f:
-              data = json.load(f)
-          
-          # Данные
-          version = "${{ steps.version.outputs.version }}"
-          file_size = int("${{ steps.build.outputs.ipa_size }}")
-          # Используем URL GitHub Pages вместо GitHub Releases для приватного репозитория
-          download_url = "https://ordinad.github.io/MyIIS/MyIIS.ipa"
-          icon_url = "https://ordinad.github.io/MyIIS/icon.png"
-          
-          # Текущая дата в ISO 8601
-          current_date = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-          
-          # Создаем новую версию
-          new_version = {
-              "version": version,
-              "date": current_date,
-              "size": file_size,
-              "downloadURL": download_url,
-              "localizedDescription": f"Релиз версии {version}"
-          }
-          
-          # Обновляем данные приложения
-          for app in data['apps']:
-              if app['bundleIdentifier'] == 'com.OrDinaD.MyIIS':
-                  app['iconURL'] = icon_url
-                  
-                  # Проверяем существующие версии
-                  existing_versions = [v['version'] for v in app['versions']]
-                  if version not in existing_versions:
-                      app['versions'].insert(0, new_version)
-                  else:
-                      for i, v in enumerate(app['versions']):
-                          if v['version'] == version:
-                              app['versions'][i] = new_version
-                              break
-                  
-                  app['versions'] = app['versions'][:10]
-                  break
-          
-          # Сохраняем
-          with open('apps.json', 'w', encoding='utf-8') as f:
-              json.dump(data, f, indent=2, ensure_ascii=False)
-              f.write('\n')
+          try:
+              # Читаем текущий apps.json
+              with open('apps.json', 'r', encoding='utf-8') as f:
+                  data = json.load(f)
+              
+              # Данные из окружения GitHub Actions
+              version = os.environ.get('APP_VERSION', '0.0.0')
+              file_size_str = os.environ.get('IPA_SIZE', '0')
+              file_size = int(file_size_str) if file_size_str else 0
+              
+              download_url = "https://ordinad.github.io/MyIIS/MyIIS.ipa"
+              icon_url = "https://ordinad.github.io/MyIIS/icon.png"
+              
+              current_date = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+              
+              new_version = {
+                  "version": version,
+                  "date": current_date,
+                  "size": file_size,
+                  "downloadURL": download_url,
+                  "localizedDescription": f"Релиз версии {version}"
+              }
+              
+              for app in data['apps']:
+                  if app['bundleIdentifier'] == 'com.OrDinaD.MyIIS':
+                      app['iconURL'] = icon_url
+                      
+                      existing_versions = [v['version'] for v in app['versions']]
+                      if version not in existing_versions:
+                          app['versions'].insert(0, new_version)
+                      else:
+                          for i, v in enumerate(app['versions']):
+                              if v['version'] == version:
+                                  app['versions'][i] = new_version
+                                  break
+                      
+                      app['versions'] = app['versions'][:10]
+                      break
+              
+              with open('apps.json', 'w', encoding='utf-8') as f:
+                  json.dump(data, f, indent=2, ensure_ascii=False)
+                  f.write('\n')
+              print(f"Successfully updated apps.json to version {version}")
+          except Exception as e:
+              print(f"Error updating apps.json: {e}")
+              exit(1)
           EOF
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          IPA_SIZE: ${{ steps.build.outputs.ipa_size }}
 
       - name: Commit and push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Добавляем все измененные файлы для GitHub Pages
+          # Переключаемся на main, так как мы в состоянии detached HEAD (из-за тега)
+          git fetch origin main
+          git checkout main
+          
           git add apps.json MyIIS.ipa icon.png
           
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Update SideStore release: v${{ steps.version.outputs.version }}"
-            git push origin HEAD:main
+            git push origin main
           fi
