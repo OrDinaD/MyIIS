@@ -140,15 +140,16 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          # Переключаемся на main, так как мы в состоянии detached HEAD (из-за тега)
-          git fetch origin main
-          git checkout main
-          
+          # Добавляем файлы
           git add apps.json MyIIS.ipa icon.png
+          
+          # Проверяем статус для отладки
+          git status
           
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Update SideStore release: v${{ steps.version.outputs.version }}"
-            git push origin main
+            # Пушим текущее состояние HEAD прямо в main
+            git push origin HEAD:main --force
           fi
