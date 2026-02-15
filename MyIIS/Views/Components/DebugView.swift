@@ -6,6 +6,7 @@ struct DebugView: View {
     
     @StateObject private var logService = LogService.shared
     @State private var isTestRunning = false
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationStack {
@@ -80,6 +81,13 @@ struct DebugView: View {
             .navigationTitle("Панель отладки")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        Label("Назад", systemImage: "chevron.left")
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         logService.clearLogs()

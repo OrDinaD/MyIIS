@@ -294,7 +294,7 @@ struct DisciplineSchedule: Decodable, Identifiable, Equatable {
         auditories.joined(separator: ", ")
     }
 
-    static func sortingComparator(lhs: DisciplineSchedule, rhs: DisciplineSchedule) -> Bool {
+    nonisolated static func sortingComparator(lhs: DisciplineSchedule, rhs: DisciplineSchedule) -> Bool {
         if lhs.startLessonTime == rhs.startLessonTime {
             return lhs.endLessonTime < rhs.endLessonTime
         }

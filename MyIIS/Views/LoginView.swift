@@ -234,11 +234,8 @@ struct LoginView: View {
             }
             Spacer()
         }
-
-        if isDebugPanelVisible {
+        .sheet(isPresented: $isDebugPanelVisible) {
             DebugView()
-                .background(.ultraThickMaterial)
-                .transition(.move(edge: .bottom))
         }
     }
 #endif

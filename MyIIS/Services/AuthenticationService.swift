@@ -24,7 +24,7 @@ class AuthenticationService: ObservableObject {
     private static let cachedUserDefaultsKey = "MyIIS.cachedUser"
     private var token: String?
     
-    init(apiService: APIService = APIService(), logService: LogService = .shared) {
+    init(apiService: APIService = APIService(), logService: LogService = LogService.shared) {
         self.apiService = apiService
         self.logService = logService
 

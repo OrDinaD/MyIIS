@@ -1,0 +1,173 @@
+name: Build and Deploy to SideStore
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Build unsigned IPA
+        run: |
+          # Создаем директорию для сборки
+          mkdir -p build
+          
+          # Собираем проект для iOS (ad-hoc, без подписи)
+          xcodebuild clean archive \
+            -project MyIIS.xcodeproj \
+            -scheme MyIIS \
+            -configuration Release \
+            -archivePath build/MyIIS.xcarchive \
+            -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO
+          
+          # Экспортируем IPA
+          mkdir -p build/Payload
+          cp -r build/MyIIS.xcarchive/Products/Applications/MyIIS.app build/Payload/
+          
+          # Создаем IPA
+          cd build
+          zip -r MyIIS.ipa Payload
+          cd ..
+          
+          # Получаем размер файла
+          FILE_SIZE=$(stat -f%z build/MyIIS.ipa)
+          echo "ipa_size=$FILE_SIZE" >> $GITHUB_OUTPUT
+          echo "IPA size: $FILE_SIZE bytes"
+        id: build
+      
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/MyIIS.ipa
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          body: |
+            ## MyIIS v${{ steps.version.outputs.version }}
+            
+            ### Установка через SideStore:
+            1. Откройте этот репозиторий в SideStore
+            2. Или добавьте source: `https://ordinad.github.io/MyIIS/apps.json`
+            3. Установите приложение
+            
+            ### Прямая загрузка:
+            Скачайте MyIIS.ipa из Assets ниже
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Update apps.json
+        run: |
+          python3 << 'EOF'
+          import json
+          import os
+          from datetime import datetime, timezone
+          
+          # Читаем текущий apps.json
+          with open('apps.json', 'r', encoding='utf-8') as f:
+              data = json.load(f)
+          
+          # Получаем данные из environment
+          version = "${{ steps.version.outputs.version }}"
+          file_size = int("${{ steps.build.outputs.ipa_size }}")
+          download_url = "${{ steps.create_release.outputs.assets[0].browser_download_url }}"
+          
+          # Если URL не получен из релиза, формируем его вручную
+          if not download_url or download_url == "":
+              repo = "${{ github.repository }}"
+              tag = "${{ github.ref_name }}"
+              download_url = f"https://github.com/{repo}/releases/download/{tag}/MyIIS.ipa"
+          
+          # Текущая дата в ISO 8601
+          current_date = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+          
+          # Создаем новую версию
+          new_version = {
+              "version": version,
+              "date": current_date,
+              "size": file_size,
+              "downloadURL": download_url,
+              "localizedDescription": f"Релиз версии {version}"
+          }
+          
+          # Находим приложение MyIIS
+          for app in data['apps']:
+              if app['bundleIdentifier'] == 'com.OrDinaD.MyIIS':
+                  # Проверяем, существует ли уже эта версия
+                  existing_versions = [v['version'] for v in app['versions']]
+                  
+                  if version not in existing_versions:
+                      # Добавляем новую версию в начало списка
+                      app['versions'].insert(0, new_version)
+                      print(f"✅ Added version {version} to apps.json")
+                  else:
+                      # Обновляем существующую версию
+                      for i, v in enumerate(app['versions']):
+                          if v['version'] == version:
+                              app['versions'][i] = new_version
+                              print(f"✅ Updated version {version} in apps.json")
+                              break
+                  
+                  # Оставляем только последние 10 версий
+                  app['versions'] = app['versions'][:10]
+                  break
+          
+          # Сохраняем обновленный JSON
+          with open('apps.json', 'w', encoding='utf-8') as f:
+              json.dump(data, f, indent=2, ensure_ascii=False)
+              f.write('\n')  # Добавляем перевод строки в конце файла
+          
+          print("📝 apps.json updated successfully")
+          EOF
+      
+      - name: Commit and push updated apps.json
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add apps.json
+          
+          # Проверяем, есть ли изменения
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update apps.json for version ${{ steps.version.outputs.version }}"
+            git push origin HEAD:main
+            echo "✅ apps.json committed and pushed to main"
+          fi
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          keep_files: false
+          enable_jekyll: false

@@ -2,8 +2,7 @@
 import Foundation
 import Combine
 
-@MainActor
-class LogService: ObservableObject {
+final class LogService: ObservableObject, @unchecked Sendable {
     
     @Published private(set) var messages: [String] = []
     
@@ -11,14 +10,19 @@ class LogService: ObservableObject {
     
     private init() {}
     
-    func log(_ message: String) {
+    nonisolated func log(_ message: String) {
         let timestamp = Date().formatted(date: .omitted, time: .standard)
         let formattedMessage = "[\(timestamp)] \(message)"
-        messages.append(formattedMessage)
+        
+        Task { @MainActor [weak self] in
+            self?.messages.append(formattedMessage)
+        }
+        
         print("[MyIIS_DEBUG] \(formattedMessage)")
         NSLog("[MyIIS_DEBUG] \(formattedMessage)")
     }
     
+    @MainActor
     func clearLogs() {
         messages.removeAll()
     }

@@ -14,7 +14,7 @@ class LoginAPITest {
         
         // Используем реальные учетные данные, предоставленные пользователем
         let username = "42850012"
-        let password = "Bsuirinyouv.12_"
+        let password = "tyhfu1-jamhup-xehGow"
         
         do {
             let loginResponse = try await apiService.login(username: username, password: password)

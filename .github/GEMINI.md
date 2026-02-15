@@ -56,7 +56,7 @@ MyIIS/
 Данные моего профиля: 
 
 login = "42850012"
-password = "Bsuirinyouv.12_"
+password = "tyhfu1-jamhup-xehGow"
 
 ## 📱 MCP iOS Simulator - Полное руководство
 

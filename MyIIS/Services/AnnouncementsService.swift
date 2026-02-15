@@ -101,7 +101,7 @@ final class AnnouncementsService: AnnouncementsServicing {
     private let session: URLSession
     private let logService: LogService
 
-    init(session: URLSession = .shared, logService: LogService = .shared) {
+    init(session: URLSession = .shared, logService: LogService = LogService.shared) {
         self.session = session
         self.logService = logService
     }

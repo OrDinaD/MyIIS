@@ -55,13 +55,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        if let shortcutItem = launchOptions?[.shortcutItem] as? UIApplicationShortcutItem {
-            Task { @MainActor [weak shortcutRouter] in
-                _ = shortcutRouter?.handle(shortcutItem)
-            }
-            // Returning false tells the system the action is handled separately.
-            return false
-        }
         return true
     }
 

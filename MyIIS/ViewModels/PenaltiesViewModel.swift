@@ -55,7 +55,7 @@ final class PenaltiesViewModel: ObservableObject {
             let penalties = try await service.fetchPenalties()
             apply(records: penalties)
         } catch let apiError as APIError {
-            status = .failed(message: apiError.localizedDescription ?? "Не удалось загрузить взыскания")
+            status = .failed(message: apiError.localizedDescription)
         } catch {
             status = .failed(message: "Не удалось загрузить взыскания")
         }

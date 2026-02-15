@@ -158,7 +158,7 @@ extension Activity {
         )
     }
 
-    static let previewActivities: [Activity] = [
+    nonisolated(unsafe) static let previewActivities: [Activity] = [
         .preview(
             id: 100,
             title: "IT Волонтёры",

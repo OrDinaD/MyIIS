@@ -24,7 +24,7 @@ class LoginViewModel: ObservableObject {
 #if DEBUG
         // Auto-fill credentials for faster debugging
         self.username = "42850012"
-        self.password = "Bsuirinyouv.12_"
+        self.password = "tyhfu1-jamhup-xehGow"
 #endif
     }
     

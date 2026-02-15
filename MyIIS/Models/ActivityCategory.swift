@@ -44,7 +44,7 @@ extension ActivityCategory {
         iconSystemName: "atom"
     )
 
-    static let previewCategories: [ActivityCategory] = [
+    nonisolated(unsafe) static let previewCategories: [ActivityCategory] = [
         .volunteering,
         .sport,
         .culture,

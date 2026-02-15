@@ -20,7 +20,7 @@ class AuthAPITest {
         
         // Тестовые данные из инструкций
         let username = "42850012"
-        let password = "Bsuirinyouv.12_"
+        let password = "tyhfu1-jamhup-xehGow"
         
         do {
             // Шаг 1: Логин

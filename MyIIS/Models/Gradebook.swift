@@ -68,7 +68,7 @@ struct GradebookSemester: Codable, Identifiable, Equatable, Hashable {
         disciplines.sorted(by: GradebookDiscipline.defaultSort)
     }
 
-    static func defaultSort(lhs: GradebookSemester, rhs: GradebookSemester) -> Bool {
+    nonisolated static func defaultSort(lhs: GradebookSemester, rhs: GradebookSemester) -> Bool {
         if lhs.number != rhs.number {
             return lhs.number > rhs.number
         }
@@ -123,7 +123,7 @@ struct GradebookDiscipline: Codable, Identifiable, Equatable, Hashable {
         return bestAttempt.grade.displayValue
     }
 
-    static func defaultSort(lhs: GradebookDiscipline, rhs: GradebookDiscipline) -> Bool {
+    nonisolated static func defaultSort(lhs: GradebookDiscipline, rhs: GradebookDiscipline) -> Bool {
         let lhsGrade = lhs.bestGradeValue ?? -Double.infinity
         let rhsGrade = rhs.bestGradeValue ?? -Double.infinity
 
@@ -152,7 +152,7 @@ struct GradeAttempt: Codable, Identifiable, Equatable, Hashable {
         "Попытка \(attempt)"
     }
 
-    static func bestAttemptSort(lhs: GradeAttempt, rhs: GradeAttempt) -> Bool {
+    nonisolated static func bestAttemptSort(lhs: GradeAttempt, rhs: GradeAttempt) -> Bool {
         let lhsValue = lhs.grade.numericValue ?? -Double.infinity
         let rhsValue = rhs.grade.numericValue ?? -Double.infinity
 
