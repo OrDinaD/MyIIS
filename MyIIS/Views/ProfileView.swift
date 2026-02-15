@@ -286,7 +286,37 @@ struct ProfileView: View {
                             }
                             .padding(.horizontal)
 
-                            Spacer(minLength: 32)
+                            // MARK: - Logout Button
+                            Button {
+                                withAnimation {
+                                    viewModel.logout()
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                                    Text("Выйти из аккаунта")
+                                        .fontWeight(.semibold)
+                                }
+                                .foregroundStyle(.red)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background {
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay {
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .fill(Color.red.opacity(0.05))
+                                        }
+                                        .overlay {
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .stroke(Color.red.opacity(0.2), lineWidth: 1.5)
+                                        }
+                                }
+                            }
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+
+                            Spacer(minLength: 100) // Отступ для кастомного таб-бара
                         }
                     }
                     .glassScrollPadding(top: 16)
@@ -308,19 +338,6 @@ struct ProfileView: View {
             .navigationTitle("Профиль")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackgroundVisibility(.hidden, for: .navigationBar)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    if viewModel.user != nil {
-                        Button {
-                            viewModel.logout()
-                        } label: {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .font(.system(size: 17, weight: .medium))
-                                .foregroundStyle(.red)
-                        }
-                    }
-                }
-            }
         }
     }
 
