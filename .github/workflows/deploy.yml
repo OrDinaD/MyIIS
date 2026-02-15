@@ -114,6 +114,7 @@ jobs:
               for app in data['apps']:
                   if app['bundleIdentifier'] == 'com.OrDinaD.MyIIS':
                       app['iconURL'] = icon_url
+                      app['version'] = version  # Обновляем версию на верхнем уровне
                       
                       existing_versions = [v['version'] for v in app['versions']]
                       if version not in existing_versions:

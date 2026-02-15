@@ -6,6 +6,7 @@
       "name": "MyIIS",
       "bundleIdentifier": "com.OrDinaD.MyIIS",
       "developerName": "OrDinaD",
+      "version": "1.0.7",
       "subtitle": "БГУИР Student Portal",
       "localizedDescription": "Мобильное iOS-приложение для студентов БГУИР. Доступ к расписанию, оценкам, посещаемости, библиотеке и всем сервисам iis.bsuir.by прямо с вашего iPhone.",
       "iconURL": "https://ordinad.github.io/MyIIS/icon.png",
@@ -13,18 +14,11 @@
       "screenshotURLs": [],
       "versions": [
         {
-          "version": "1.0.6",
-          "date": "2026-02-15T17:17:08Z",
+          "version": "1.0.7",
+          "date": "2026-02-15T17:35:00Z",
           "size": 21716225,
           "downloadURL": "https://ordinad.github.io/MyIIS/MyIIS.ipa",
-          "localizedDescription": "Релиз версии 1.0.6"
-        },
-        {
-          "version": "1.0.0",
-          "date": "2026-02-15T00:00:00Z",
-          "size": 0,
-          "downloadURL": "https://ordinad.github.io/MyIIS/MyIIS.ipa",
-          "localizedDescription": "Первый релиз приложения MyIIS"
+          "localizedDescription": "Релиз версии 1.0.7"
         }
       ]
     }
