@@ -56,12 +56,16 @@ jobs:
           zip -r MyIIS.ipa Payload
           cd ..
           
+          # Копируем файлы в корень для GitHub Pages
+          cp build/MyIIS.ipa ./MyIIS.ipa
+          cp MyIIS/Assets.xcassets/AppIcon.appiconset/Icon-iOS-Default-1024x1024@1x.png ./icon.png
+          
           # Получаем размер файла
           FILE_SIZE=$(stat -f%z build/MyIIS.ipa)
           echo "ipa_size=$FILE_SIZE" >> $GITHUB_OUTPUT
           echo "IPA size: $FILE_SIZE bytes"
         id: build
-      
+
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
@@ -70,19 +74,9 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
-          body: |
-            ## MyIIS v${{ steps.version.outputs.version }}
-            
-            ### Установка через SideStore:
-            1. Откройте этот репозиторий в SideStore
-            2. Или добавьте source: `https://ordinad.github.io/MyIIS/apps.json`
-            3. Установите приложение
-            
-            ### Прямая загрузка:
-            Скачайте MyIIS.ipa из Assets ниже
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Update apps.json
         run: |
           python3 << 'EOF'
@@ -94,16 +88,12 @@ jobs:
           with open('apps.json', 'r', encoding='utf-8') as f:
               data = json.load(f)
           
-          # Получаем данные из environment
+          # Данные
           version = "${{ steps.version.outputs.version }}"
           file_size = int("${{ steps.build.outputs.ipa_size }}")
-          download_url = "${{ steps.create_release.outputs.assets[0].browser_download_url }}"
-          
-          # Если URL не получен из релиза, формируем его вручную
-          if not download_url or download_url == "":
-              repo = "${{ github.repository }}"
-              tag = "${{ github.ref_name }}"
-              download_url = f"https://github.com/{repo}/releases/download/{tag}/MyIIS.ipa"
+          # Используем URL GitHub Pages вместо GitHub Releases для приватного репозитория
+          download_url = "https://ordinad.github.io/MyIIS/MyIIS.ipa"
+          icon_url = "https://ordinad.github.io/MyIIS/icon.png"
           
           # Текущая дата в ISO 8601
           current_date = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -117,57 +107,41 @@ jobs:
               "localizedDescription": f"Релиз версии {version}"
           }
           
-          # Находим приложение MyIIS
+          # Обновляем данные приложения
           for app in data['apps']:
               if app['bundleIdentifier'] == 'com.OrDinaD.MyIIS':
-                  # Проверяем, существует ли уже эта версия
-                  existing_versions = [v['version'] for v in app['versions']]
+                  app['iconURL'] = icon_url
                   
+                  # Проверяем существующие версии
+                  existing_versions = [v['version'] for v in app['versions']]
                   if version not in existing_versions:
-                      # Добавляем новую версию в начало списка
                       app['versions'].insert(0, new_version)
-                      print(f"✅ Added version {version} to apps.json")
                   else:
-                      # Обновляем существующую версию
                       for i, v in enumerate(app['versions']):
                           if v['version'] == version:
                               app['versions'][i] = new_version
-                              print(f"✅ Updated version {version} in apps.json")
                               break
                   
-                  # Оставляем только последние 10 версий
                   app['versions'] = app['versions'][:10]
                   break
           
-          # Сохраняем обновленный JSON
+          # Сохраняем
           with open('apps.json', 'w', encoding='utf-8') as f:
               json.dump(data, f, indent=2, ensure_ascii=False)
-              f.write('\n')  # Добавляем перевод строки в конце файла
-          
-          print("📝 apps.json updated successfully")
+              f.write('\n')
           EOF
-      
-      - name: Commit and push updated apps.json
+
+      - name: Commit and push changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           
-          git add apps.json
+          # Добавляем все измененные файлы для GitHub Pages
+          git add apps.json MyIIS.ipa icon.png
           
-          # Проверяем, есть ли изменения
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update apps.json for version ${{ steps.version.outputs.version }}"
+            git commit -m "Update SideStore release: v${{ steps.version.outputs.version }}"
             git push origin HEAD:main
-            echo "✅ apps.json committed and pushed to main"
           fi
-      
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          publish_branch: gh-pages
-          keep_files: false
-          enable_jekyll: false
