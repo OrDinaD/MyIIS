@@ -1,4 +1,3 @@
-
 //
 //  User.swift
 //  MyIIS
@@ -48,7 +47,7 @@ struct Education: Codable, Equatable {
     let group: String
     /// ID формы обучения специальности (для API рейтинга)
     let specialityDepartmentEducationFormId: Int?
-    
+
     init(faculty: String, course: Int, speciality: String, group: String, specialityDepartmentEducationFormId: Int? = nil) {
         self.faculty = faculty
         self.course = course
@@ -75,25 +74,25 @@ struct User: Codable, Identifiable, Equatable {
     let skills: [UserSkill]
     let references: [UserReference]
     let settings: UserSettings
-    
+
     /// Полное имя для отображения
     var fullName: String {
         "\(lastName) \(firstName) \(middleName)"
     }
-    
+
     /// Инициалы
     var initials: String {
         let firstInitial = firstName.first.map(String.init) ?? ""
         let lastInitial = lastName.first.map(String.init) ?? ""
         return "\(firstInitial)\(lastInitial)"
     }
-    
+
     /// URL фотографии
     var photoURL: URL? {
         guard let photo = photo else { return nil }
         return URL(string: photo)
     }
-    
+
     /// Отображаемый рейтинг (с учетом настроек)
     var displayRating: Int {
         settings.isShowRating ? rating : 0

@@ -1,4 +1,3 @@
-
 //
 //  AuthenticationService.swift
 //  MyIIS
@@ -11,19 +10,19 @@ import Combine
 
 @MainActor
 class AuthenticationService: ObservableObject {
-    
+
     @Published var currentUser: User?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
     static let shared = AuthenticationService()
-    
+
     private let apiService: APIService
     private let logService: LogService
     private let credentialStore = CredentialStore.shared
     private static let cachedUserDefaultsKey = "MyIIS.cachedUser"
     private var token: String?
-    
+
     init(apiService: APIService = APIService(), logService: LogService = LogService.shared) {
         self.apiService = apiService
         self.logService = logService
@@ -38,7 +37,7 @@ class AuthenticationService: ObservableObject {
             await self?.restoreSessionIfPossible()
         }
     }
-    
+
     func login(
         username: String,
         password: String,
@@ -48,22 +47,22 @@ class AuthenticationService: ObservableObject {
         logService.log("Attempting to log in user: \(username)")
         isLoading = true
         errorMessage = nil
-        
+
         do {
             logService.log("Sending login request to API...")
             let loginResponse = try await apiService.login(username: username, password: password)
             logService.log("✅ Successfully logged in!")
-            
+
             // Получаем дополнительные данные профиля
             logService.log("Fetching additional profile data...")
             let personalInfo = try await apiService.getPersonalInformation()
             logService.log("✅ Personal information received")
-            
+
             // Получаем данные из расписания (для факультета и специальности)
             logService.log("Fetching schedule to get faculty/speciality data...")
             let scheduleInfo = try await apiService.getScheduleInfo(group: loginResponse.group)
             logService.log("✅ Schedule information received")
-            
+
             // Создаём User из всех полученных данных
             let user = convertToUser(
                 loginResponse: loginResponse,
@@ -83,7 +82,7 @@ class AuthenticationService: ObservableObject {
             }
 
             logService.log("✅ User profile loaded: \(user.fullName)")
-            
+
         } catch let error as APIError {
             self.errorMessage = error.localizedDescription
             logService.log("❌ API Error: \(error.localizedDescription)")
@@ -100,19 +99,19 @@ class AuthenticationService: ObservableObject {
             self.errorMessage = "Произошла непредвиденная ошибка."
             logService.log("❌ Unexpected Error: \(error.localizedDescription)")
         }
-        
+
         isLoading = false
     }
-    
+
     func restoreSessionIfPossible() async {
         guard !isLoading else { return }
-        
+
         do {
             guard let credentials = try credentialStore.retrieve() else {
                 logService.log("ℹ️ No stored credentials found for auto-login.")
                 return
             }
-            
+
             logService.log("🔁 Attempting silent login with stored credentials.")
             await login(
                 username: credentials.username,
@@ -124,20 +123,20 @@ class AuthenticationService: ObservableObject {
             logService.log("⚠️ Failed to access stored credentials: \(error.localizedDescription)")
         }
     }
-    
+
     private func cacheUser(_ user: User) {
         guard let encoded = try? JSONEncoder().encode(user) else {
             logService.log("⚠️ Failed to encode user for caching.")
             return
         }
-        
+
         UserDefaults.standard.set(encoded, forKey: Self.cachedUserDefaultsKey)
     }
-    
+
     private func clearCachedUser() {
         UserDefaults.standard.removeObject(forKey: Self.cachedUserDefaultsKey)
     }
-    
+
     /// Конвертирует данные из API в модель User
     private func convertToUser(
         loginResponse: LoginResponse,
@@ -149,7 +148,7 @@ class AuthenticationService: ObservableObject {
         let lastName = nameComponents.first ?? ""
         let firstName = nameComponents.count > 1 ? nameComponents[1] : ""
         let middleName = nameComponents.count > 2 ? nameComponents[2] : ""
-        
+
         // Форматируем дату рождения (если есть)
         var formattedBirthDay = "Не указана"
         if let birthDay = personalInfo.birthDay {
@@ -162,7 +161,7 @@ class AuthenticationService: ObservableObject {
                 formattedBirthDay = formatter.string(from: date)
             }
         }
-        
+
         return User(
             id: Int(loginResponse.username) ?? 0,
             firstName: firstName,
@@ -194,14 +193,14 @@ class AuthenticationService: ObservableObject {
         self.currentUser = nil
         self.token = nil
         clearCachedUser()
-        
+
         do {
             try credentialStore.clear()
             logService.log("🔓 Stored credentials cleared.")
         } catch {
             logService.log("⚠️ Failed to clear stored credentials: \(error.localizedDescription)")
         }
-        
+
         AttendanceWidgetDataStore.clear()
         logService.log("User logged out.")
     }

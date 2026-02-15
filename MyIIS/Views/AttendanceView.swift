@@ -257,8 +257,7 @@ private struct CertificatesSection: View {
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 
-    private func groupedCertificates() -> [(String, [OmissionCertificate])]
-    {
+    private func groupedCertificates() -> [(String, [OmissionCertificate])] {
         let grouped = Dictionary(grouping: certificates) { $0.term }
         let sortedTerms = grouped.keys.sorted { (lhs, rhs) -> Bool in
             let leftValue = Int(lhs) ?? 0

@@ -20,17 +20,17 @@ struct GroupView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-                
+
                 VStack(spacing: 20) {
                     Image(systemName: "person.3.fill")
                         .font(.system(size: 80))
                         .foregroundStyle(.cyan.gradient)
                         .symbolEffect(.pulse)
-                    
+
                     Text("Группа")
                         .font(.largeTitle)
                         .fontWeight(.bold)
-                    
+
                     Text("Здесь будет информация о группе")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)

@@ -206,8 +206,8 @@ struct ActivitiesView: View {
 
 private struct FilterChip: View {
     let title: String
-    var subtitle: String? = nil
-    var systemImage: String? = nil
+    var subtitle: String?
+    var systemImage: String?
     let isSelected: Bool
     let action: () -> Void
 

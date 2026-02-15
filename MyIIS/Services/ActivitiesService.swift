@@ -118,8 +118,8 @@ actor ActivitiesService: ActivitiesServiceProtocol {
     }
 }
 
-#if DEBUG
+// MARK: - Previews
+
 extension ActivitiesService {
     static let preview = ActivitiesService(responseDelay: 0)
 }
-#endif

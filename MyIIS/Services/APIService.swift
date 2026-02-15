@@ -181,15 +181,15 @@ class APIService {
     /// - Returns: PersonalInformation с дополнительными данными
     func getPersonalInformation() async throws -> PersonalInformation {
         let endpoint = baseURL.appendingPathComponent("personal-information")
-        
+
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
-        
+
         logRequestDetails(request)
-        
+
         return try await performRequest(request)
     }
-    
+
     /// Получение информации о факультете и специальности из расписания группы
     /// - Parameter group: Номер группы (например, "420603")
     /// - Returns: ScheduleInfo с данными о факультете и специальности
@@ -285,7 +285,7 @@ class APIService {
 
         return try await getRatingDirect(specialityId: specialityId, course: scheduleInfo.course)
     }
-    
+
     /// Оптимизированное получение рейтинга напрямую с параметрами
     /// Используется когда specialityId и course уже известны (например, из кэша User)
     /// - Parameters:
@@ -412,7 +412,7 @@ class APIService {
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw APIError.invalidResponse
             }
-            
+
             logService.log("Status Code: \(httpResponse.statusCode)")
 
             // Обработка различных кодов ответа
@@ -426,7 +426,7 @@ class APIService {
                     logService.log("❌ Decoding Error: \(error)")
                     throw APIError.decodingError(error)
                 }
-                
+
             case 401:
                 // Неверные учетные данные
                 if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
@@ -435,7 +435,7 @@ class APIService {
                 } else {
                     throw APIError.unauthorized(message: "Неверный логин или пароль")
                 }
-                
+
             case 418:
                 // IIS недоступен
                 if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
@@ -444,7 +444,7 @@ class APIService {
                 } else {
                     throw APIError.serviceUnavailable(message: "Сервис ИИС недоступен")
                 }
-                
+
             default:
                 // Другие ошибки сервера
                 if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
@@ -461,7 +461,7 @@ class APIService {
             throw APIError.networkError(error)
         }
     }
-    
+
     private func logRequestDetails(_ request: URLRequest) {
         logService.log("--- New Request ---")
         if let url = request.url?.absoluteString {
@@ -517,4 +517,3 @@ private extension KeyedDecodingContainer {
         return Date(timeIntervalSince1970: timestamp / 1000)
     }
 }
-

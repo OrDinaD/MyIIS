@@ -1,13 +1,12 @@
-
 import SwiftUI
 
 /// View для отображения логов из `LogService` с возможностью запуска API тестов.
 struct DebugView: View {
-    
+
     @StateObject private var logService = LogService.shared
     @State private var isTestRunning = false
     @Environment(\.dismiss) private var dismiss
-    
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -18,7 +17,7 @@ struct DebugView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
                         .padding(.top)
-                    
+
                     HStack(spacing: 12) {
                         Button {
                             runAuthFlowTest()
@@ -28,7 +27,7 @@ struct DebugView: View {
                         }
                         .buttonStyle(.borderedProminent)
                         .disabled(isTestRunning)
-                        
+
                         Button {
                             runInvalidCredentialsTest()
                         } label: {
@@ -42,9 +41,9 @@ struct DebugView: View {
                     .padding(.bottom)
                 }
                 .background(Color(uiColor: .secondarySystemBackground))
-                
+
                 Divider()
-                
+
                 // Logs Section
                 if logService.messages.isEmpty {
                     VStack(spacing: 12) {
@@ -102,7 +101,7 @@ struct DebugView: View {
                     ZStack {
                         Color.black.opacity(0.3)
                             .ignoresSafeArea()
-                        
+
                         VStack(spacing: 16) {
                             ProgressView()
                                 .scaleEffect(1.5)
@@ -121,31 +120,31 @@ struct DebugView: View {
             }
         }
     }
-    
+
     // MARK: - Test Methods
-    
+
     private func runAuthFlowTest() {
         isTestRunning = true
         logService.clearLogs()
-        
+
         Task {
             let test = AuthAPITest()
             await test.testFullAuthFlow()
-            
+
             await MainActor.run {
                 isTestRunning = false
             }
         }
     }
-    
+
     private func runInvalidCredentialsTest() {
         isTestRunning = true
         logService.clearLogs()
-        
+
         Task {
             let test = AuthAPITest()
             await test.testInvalidCredentials()
-            
+
             await MainActor.run {
                 isTestRunning = false
             }

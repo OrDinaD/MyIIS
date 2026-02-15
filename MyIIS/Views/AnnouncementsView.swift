@@ -83,7 +83,7 @@ struct AnnouncementsView: View {
                     await viewModel.applySearchQuery()
                 }
             }
-            .onChange(of: viewModel.searchQuery) { oldValue, newValue in
+            .onChange(of: viewModel.searchQuery) { _, newValue in
                 viewModel.scheduleSearchRefresh(for: newValue)
             }
         }

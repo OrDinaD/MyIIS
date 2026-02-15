@@ -4,11 +4,6 @@ struct LibraryItem: Identifiable, Codable, Equatable {
     struct Availability: Codable, Equatable {
         let total: Int
         let available: Int
-
-        init(total: Int, available: Int) {
-            self.total = total
-            self.available = available
-        }
     }
 
     enum ItemType: String, Codable, CaseIterable {
