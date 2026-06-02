@@ -1,0 +1,22 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Generate App Store screenshots using UI tests"
+  lane :screenshots do
+    project_root = File.expand_path("..", __dir__)
+    ENV["SHOWCASE_SCREENSHOT_OUTPUT_DIR"] = File.join(project_root, "fastlane", "screenshots", "ru-RU")
+
+    capture_screenshots(
+      scheme: "MyIIS",
+      devices: ["iPhone 17"],
+      languages: ["ru-RU"],
+      output_directory: "./fastlane/screenshots",
+      clear_previous_screenshots: true,
+      erase_simulator: true,
+      reinstall_app: true,
+      concurrent_simulators: false,
+      stop_after_first_error: false,
+      number_of_retries: 1,
+    )
+  end
+end

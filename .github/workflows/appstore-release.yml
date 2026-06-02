@@ -1,0 +1,139 @@
+name: Build and Upload to App Store Connect
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Optional MARKETING_VERSION override (e.g. 1.2.3)"
+        required: false
+        type: string
+      upload_to_testflight:
+        description: "Upload exported IPA to App Store Connect"
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  appstore-release:
+    runs-on: macos-latest
+    env:
+      APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+      APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+      APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          test -n "$APPSTORE_API_KEY_ID"
+          test -n "$APPSTORE_API_ISSUER_ID"
+          test -n "$APPSTORE_API_PRIVATE_KEY"
+
+      - name: Prepare App Store Connect API key
+        id: asc_key
+        shell: bash
+        run: |
+          KEY_DIR="$HOME/.appstoreconnect/private_keys"
+          KEY_PATH="$KEY_DIR/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+
+          mkdir -p "$KEY_DIR"
+          printf '%s\n' "$APPSTORE_API_PRIVATE_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+
+          echo "key_path=$KEY_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Optionally override MARKETING_VERSION for this run
+        if: ${{ inputs.release_version != '' }}
+        shell: bash
+        run: |
+          VERSION="${{ inputs.release_version }}"
+          sed -i '' "s/MARKETING_VERSION = .*;/MARKETING_VERSION = $VERSION;/g" MyIIS.xcodeproj/project.pbxproj
+
+      - name: Archive signed app for App Store
+        shell: bash
+        run: |
+          mkdir -p build
+          xcodebuild clean archive \
+            -project MyIIS.xcodeproj \
+            -scheme MyIIS \
+            -configuration Release \
+            -archivePath build/MyIIS.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "${{ steps.asc_key.outputs.key_path }}" \
+            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID"
+
+      - name: Create ExportOptions for App Store
+        shell: bash
+        run: |
+          cat > build/ExportOptions-AppStore.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>signingStyle</key>
+            <string>automatic</string>
+            <key>teamID</key>
+            <string>Y85TSUMM4F</string>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>uploadSymbols</key>
+            <true/>
+            <key>manageAppVersionAndBuildNumber</key>
+            <false/>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Export App Store IPA
+        shell: bash
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/MyIIS.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist build/ExportOptions-AppStore.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "${{ steps.asc_key.outputs.key_path }}" \
+            -authenticationKeyID "$APPSTORE_API_KEY_ID" \
+            -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID"
+
+          ls -la build/export
+
+      - name: Upload IPA to App Store Connect (TestFlight processing)
+        if: ${{ inputs.upload_to_testflight }}
+        shell: bash
+        run: |
+          IPA_PATH=$(find build/export -maxdepth 1 -name '*.ipa' -print -quit)
+          if [ -z "$IPA_PATH" ]; then
+            echo "No IPA found in build/export"
+            exit 1
+          fi
+
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA_PATH" \
+            --apiKey "$APPSTORE_API_KEY_ID" \
+            --apiIssuer "$APPSTORE_API_ISSUER_ID"
+
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: appstore-export
+          path: |
+            build/MyIIS.xcarchive
+            build/export
+            build/ExportOptions-AppStore.plist

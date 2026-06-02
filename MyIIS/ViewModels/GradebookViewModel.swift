@@ -1,0 +1,170 @@
+import Combine
+import Foundation
+
+@MainActor
+final class GradebookViewModel: ObservableObject {
+
+    @Published var markbook: MarkbookResponse?
+    @Published var semesterKeys: [String] = []
+    @Published var selectedSemesterKey: String?
+    @Published var currentCourse: Int?
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
+    @Published var lastUpdateTime: Date?
+    @Published var isShowingStaleDataWarning = false
+
+    private let apiService: APIService
+
+    private static let cacheKey = "gradebook_offline_cache_v1"
+
+    private struct GradebookCacheModel: Codable {
+        let markbook: MarkbookResponse
+        let currentCourse: Int?
+        let updatedAt: Date
+    }
+
+    init(apiService: APIService? = nil) {
+        self.apiService = apiService ?? APIService()
+        loadCache()
+    }
+
+    var selectedSemester: MarkbookSemester? {
+        guard let key = selectedSemesterKey else { return nil }
+        return markbook?.markPages[key]
+    }
+
+    var numberText: String {
+        markbook?.number ?? "—"
+    }
+
+    var overallAverageText: String {
+        guard let value = markbook?.averageMark else { return "—" }
+        return value.formatted(.number.precision(.fractionLength(2)))
+    }
+
+    var semesterAverageText: String {
+        guard let value = selectedSemester?.averageMark else { return "—" }
+        return value.formatted(.number.precision(.fractionLength(2)))
+    }
+
+    var marksForSelectedSemester: [MarkbookMark] {
+        selectedSemester?.marks ?? []
+    }
+
+    func load() async {
+        if isLoading { return }
+        isLoading = true
+        errorMessage = nil
+        isShowingStaleDataWarning = false
+
+        do {
+            async let markbookRequest = apiService.getMarkbook()
+            async let personalRequest = apiService.getPersonalProfile()
+
+            let (markbook, personal) = try await (markbookRequest, personalRequest)
+            let now = Date()
+            apply(markbook: markbook, personalProfile: personal)
+            lastUpdateTime = now
+            saveCache(markbook: markbook, currentCourse: personal.course, updatedAt: now)
+        } catch let apiError as APIError {
+            if self.markbook != nil {
+                isShowingStaleDataWarning = true
+                errorMessage = apiError.localizedDescription
+            } else {
+                errorMessage = apiError.localizedDescription
+            }
+        } catch {
+            let fallbackMessage = error.localizedDescription
+            if self.markbook != nil {
+                isShowingStaleDataWarning = true
+                errorMessage = fallbackMessage
+            } else {
+                errorMessage = fallbackMessage
+            }
+        }
+
+        isLoading = false
+    }
+
+    func refresh() async {
+        await load()
+    }
+
+    func selectSemester(_ key: String) {
+        guard semesterKeys.contains(key) else { return }
+        selectedSemesterKey = key
+    }
+
+    private func apply(markbook: MarkbookResponse, personalProfile: PersonalProfile) {
+        self.markbook = markbook
+        self.currentCourse = personalProfile.course
+        MyIISDataStore.update(averageScore: markbook.averageMark)
+
+        semesterKeys = sortSemesterKeys(markbook.markPages.keys)
+        selectedSemesterKey = latestSemesterKey(from: semesterKeys)
+    }
+
+    private func applyCached(markbook: MarkbookResponse, currentCourse: Int?, updatedAt: Date) {
+        self.markbook = markbook
+        self.currentCourse = currentCourse
+        self.lastUpdateTime = updatedAt
+        MyIISDataStore.update(averageScore: markbook.averageMark)
+
+        semesterKeys = sortSemesterKeys(markbook.markPages.keys)
+        selectedSemesterKey = latestSemesterKey(from: semesterKeys)
+    }
+
+    private func sortSemesterKeys<S: Sequence>(_ keys: S) -> [String] where S.Element == String {
+        keys.sorted { lhs, rhs in
+            (Int(lhs) ?? Int.min) < (Int(rhs) ?? Int.min)
+        }
+    }
+
+    private func latestSemesterKey(from keys: [String]) -> String? {
+        keys.last
+    }
+
+    private func saveCache(markbook: MarkbookResponse, currentCourse: Int?, updatedAt: Date) {
+        let snapshot = GradebookCacheModel(markbook: markbook, currentCourse: currentCourse, updatedAt: updatedAt)
+        guard let data = try? JSONEncoder().encode(snapshot) else { return }
+        _ = UserDefaultsPayloadStore.save(data, forKey: Self.cacheKey, in: .standard)
+    }
+
+    private func loadCache() {
+        guard let data = UserDefaultsPayloadStore.load(forKey: Self.cacheKey, from: .standard),
+              let snapshot = try? JSONDecoder().decode(GradebookCacheModel.self, from: data)
+        else {
+            return
+        }
+
+        applyCached(markbook: snapshot.markbook, currentCourse: snapshot.currentCourse, updatedAt: snapshot.updatedAt)
+    }
+}
+
+#if DEBUG
+extension GradebookViewModel {
+    static var preview: GradebookViewModel {
+        let viewModel = GradebookViewModel()
+        viewModel.markbook = MarkbookResponse(number: "42850012", averageMark: 9.59, markPages: [
+            "3": MarkbookSemester(averageMark: 10.0, marks: [
+                MarkbookMark(
+                    subject: "АПЭЦ", formOfControl: "Зачет",
+                    fullSubject: "Автоматизированное проектирование электрических цепей",
+                    hours: "108.0", credits: 3.0, mark: "зач", date: "30.12.2025",
+                    teacher: "Шилин Л. Ю.", commonMark: nil, commonRetakes: nil, retakesCount: 0
+                ),
+                MarkbookMark(
+                    subject: "ООП", formOfControl: "Курс. работа",
+                    fullSubject: "Объектно-ориентированное программирование",
+                    hours: "30.0", credits: 1.0, mark: "10", date: "29.12.2025",
+                    teacher: "Ючков А. К.", commonMark: 7.49, commonRetakes: 0.025, retakesCount: 0
+                )
+            ])
+        ])
+        viewModel.semesterKeys = ["3"]
+        viewModel.selectedSemesterKey = "3"
+        viewModel.currentCourse = 3
+        return viewModel
+    }
+}
+#endif

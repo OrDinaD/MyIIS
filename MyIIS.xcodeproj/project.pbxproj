@@ -1,0 +1,973 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F51DC97C2FB0920300EA90E3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */; };
+		F51DCBB12FB09EC400EA90E3 /* MyIISIntents.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F51DCE312FB0E1D900EA90E3 /* pink.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2B2FB0E1D900EA90E3 /* pink.icon */; };
+		F51DCE322FB0E1D900EA90E3 /* purple.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2C2FB0E1D900EA90E3 /* purple.icon */; };
+		F51DCE332FB0E1D900EA90E3 /* 1964.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2D2FB0E1D900EA90E3 /* 1964.icon */; };
+		F51DCE342FB0E1D900EA90E3 /* bright.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2E2FB0E1D900EA90E3 /* bright.icon */; };
+		F51DCE352FB0E1D900EA90E3 /* KSIS.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */; };
+		F51DCE362FB0E1D900EA90E3 /* Default.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE302FB0E1D900EA90E3 /* Default.icon */; };
+		F55B9F662FB7432C00779F6C /* MyIIS/Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = F55B9F652FB7432C00779F6C /* MyIIS/Settings.bundle */; };
+		F5A5EE102F1C801900D2B7A1 /* MyIISWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F51DCBAF2FB09EC400EA90E3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F51DCBA72FB09EC400EA90E3;
+			remoteInfo = MyIISIntents;
+		};
+		F59436E42E9CF9DD00A3E835 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F59436CE2E9CF9DA00A3E835;
+			remoteInfo = MyIIS;
+		};
+		F5A5EE132F1C801900D2B7A1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F5A5EE032F1C7E2A00D2B7A1;
+			remoteInfo = MyIISWidgetExtension;
+		};
+		F5EE36362FB1ED94004B7BD8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F59436CE2E9CF9DA00A3E835;
+			remoteInfo = MyIIS;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F51DCBB62FB09EC400EA90E3 /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				F51DCBB12FB09EC400EA90E3 /* MyIISIntents.appex in Embed ExtensionKit Extensions */,
+			);
+			name = "Embed ExtensionKit Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5A5EE112F1C801900D2B7A1 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F5A5EE102F1C801900D2B7A1 /* MyIISWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = MyIISIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F51DCE2B2FB0E1D900EA90E3 /* pink.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = pink.icon; sourceTree = "<group>"; };
+		F51DCE2C2FB0E1D900EA90E3 /* purple.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = purple.icon; sourceTree = "<group>"; };
+		F51DCE2D2FB0E1D900EA90E3 /* 1964.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = 1964.icon; sourceTree = "<group>"; };
+		F51DCE2E2FB0E1D900EA90E3 /* bright.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = bright.icon; sourceTree = "<group>"; };
+		F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = KSIS.icon; sourceTree = "<group>"; };
+		F51DCE302FB0E1D900EA90E3 /* Default.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Default.icon; sourceTree = "<group>"; };
+		F55B9F652FB7432C00779F6C /* MyIIS/Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = MyIIS/Settings.bundle; sourceTree = "<group>"; };
+		F59436CF2E9CF9DA00A3E835 /* MyIIS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyIIS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		F51DCBB22FB09EC400EA90E3 /* Exceptions for "MyIISIntents" folder in "MyIISIntents" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F51DCBA72FB09EC400EA90E3 /* MyIISIntents */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		F51DCBA92FB09EC400EA90E3 /* MyIISIntents */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F51DCBB22FB09EC400EA90E3 /* Exceptions for "MyIISIntents" folder in "MyIISIntents" target */,
+			);
+			path = MyIISIntents;
+			sourceTree = "<group>";
+		};
+		F59436D12E9CF9DA00A3E835 /* MyIIS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MyIIS;
+			sourceTree = "<group>";
+		};
+		F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MyIISWidget;
+			sourceTree = "<group>";
+		};
+		F5B1AA102FC70D9D00A56D01 /* MyIISTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MyIISTests;
+			sourceTree = "<group>";
+		};
+		F5EE36312FB1ED94004B7BD8 /* MyIISUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MyIISUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F51DCBA52FB09EC400EA90E3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F59436CC2E9CF9DA00A3E835 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F59436E12E9CF9DD00A3E835 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5A5EE052F1C7E2A00D2B7A1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5EE362D2FB1ED94004B7BD8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F51DCE2A2FB0D4BB00EA90E3 /* logos */ = {
+			isa = PBXGroup;
+			children = (
+				F51DCE2B2FB0E1D900EA90E3 /* pink.icon */,
+				F51DCE2C2FB0E1D900EA90E3 /* purple.icon */,
+				F51DCE2D2FB0E1D900EA90E3 /* 1964.icon */,
+				F51DCE2E2FB0E1D900EA90E3 /* bright.icon */,
+				F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */,
+				F51DCE302FB0E1D900EA90E3 /* Default.icon */,
+			);
+			path = logos;
+			sourceTree = "<group>";
+		};
+		F59436C62E9CF9DA00A3E835 = {
+			isa = PBXGroup;
+			children = (
+				F55B9F652FB7432C00779F6C /* MyIIS/Settings.bundle */,
+				F59436D12E9CF9DA00A3E835 /* MyIIS */,
+				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
+				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
+				F51DCBA92FB09EC400EA90E3 /* MyIISIntents */,
+				F5B1AA102FC70D9D00A56D01 /* MyIISTests */,
+				F5EE36312FB1ED94004B7BD8 /* MyIISUITests */,
+				F59436D02E9CF9DA00A3E835 /* Products */,
+				F51DCE2A2FB0D4BB00EA90E3 /* logos */,
+				F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */,
+			);
+			sourceTree = "<group>";
+		};
+		F59436D02E9CF9DA00A3E835 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F59436CF2E9CF9DA00A3E835 /* MyIIS.app */,
+				F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */,
+				F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */,
+				F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */,
+				F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F51DCBA72FB09EC400EA90E3 /* MyIISIntents */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F51DCBB32FB09EC400EA90E3 /* Build configuration list for PBXNativeTarget "MyIISIntents" */;
+			buildPhases = (
+				F51DCBA42FB09EC400EA90E3 /* Sources */,
+				F51DCBA52FB09EC400EA90E3 /* Frameworks */,
+				F51DCBA62FB09EC400EA90E3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F51DCBA92FB09EC400EA90E3 /* MyIISIntents */,
+				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
+			);
+			name = MyIISIntents;
+			packageProductDependencies = (
+			);
+			productName = MyIISIntents;
+			productReference = F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
+		};
+		F59436CE2E9CF9DA00A3E835 /* MyIIS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F59436DA2E9CF9DD00A3E835 /* Build configuration list for PBXNativeTarget "MyIIS" */;
+			buildPhases = (
+				F59436CB2E9CF9DA00A3E835 /* Sources */,
+				F59436CC2E9CF9DA00A3E835 /* Frameworks */,
+				F5A5EE112F1C801900D2B7A1 /* Embed Foundation Extensions */,
+				F59436CD2E9CF9DA00A3E835 /* Resources */,
+				F51DCBB62FB09EC400EA90E3 /* Embed ExtensionKit Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F5A5EE122F1C801900D2B7A1 /* PBXTargetDependency */,
+				F51DCBB02FB09EC400EA90E3 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F59436D12E9CF9DA00A3E835 /* MyIIS */,
+				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
+			);
+			name = MyIIS;
+			packageProductDependencies = (
+			);
+			productName = MyIIS;
+			productReference = F59436CF2E9CF9DA00A3E835 /* MyIIS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F59436DE2E9CF9DD00A3E835 /* MyIISTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F59436E82E9CF9DD00A3E835 /* Build configuration list for PBXNativeTarget "MyIISTests" */;
+			buildPhases = (
+				F59436DF2E9CF9DD00A3E835 /* Sources */,
+				F59436E12E9CF9DD00A3E835 /* Frameworks */,
+				F59436E02E9CF9DD00A3E835 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F59436E52E9CF9DD00A3E835 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F5B1AA102FC70D9D00A56D01 /* MyIISTests */,
+			);
+			name = MyIISTests;
+			packageProductDependencies = (
+			);
+			productName = MyIISTests;
+			productReference = F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		F5A5EE032F1C7E2A00D2B7A1 /* MyIISWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5A5EE092F1C7E2A00D2B7A1 /* Build configuration list for PBXNativeTarget "MyIISWidgetExtension" */;
+			buildPhases = (
+				F5A5EE042F1C7E2A00D2B7A1 /* Sources */,
+				F5A5EE052F1C7E2A00D2B7A1 /* Frameworks */,
+				F5A5EE062F1C7E2A00D2B7A1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
+				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
+			);
+			name = MyIISWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = MyIISWidgetExtension;
+			productReference = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		F5EE362F2FB1ED94004B7BD8 /* MyIISUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F5EE36382FB1ED94004B7BD8 /* Build configuration list for PBXNativeTarget "MyIISUITests" */;
+			buildPhases = (
+				F5EE362C2FB1ED94004B7BD8 /* Sources */,
+				F5EE362D2FB1ED94004B7BD8 /* Frameworks */,
+				F5EE362E2FB1ED94004B7BD8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F5EE36372FB1ED94004B7BD8 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F5EE36312FB1ED94004B7BD8 /* MyIISUITests */,
+			);
+			name = MyIISUITests;
+			packageProductDependencies = (
+			);
+			productName = MyIISUITests;
+			productReference = F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F59436C72E9CF9DA00A3E835 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2640;
+				LastUpgradeCheck = 2640;
+				TargetAttributes = {
+					F51DCBA72FB09EC400EA90E3 = {
+						CreatedOnToolsVersion = 26.4.1;
+					};
+					F59436CE2E9CF9DA00A3E835 = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+					F59436DE2E9CF9DD00A3E835 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = F59436CE2E9CF9DA00A3E835;
+					};
+					F5A5EE032F1C7E2A00D2B7A1 = {
+						CreatedOnToolsVersion = 26.0.1;
+						ProvisioningStyle = Automatic;
+					};
+					F5EE362F2FB1ED94004B7BD8 = {
+						CreatedOnToolsVersion = 26.4.1;
+						TestTargetID = F59436CE2E9CF9DA00A3E835;
+					};
+				};
+			};
+			buildConfigurationList = F59436CA2E9CF9DA00A3E835 /* Build configuration list for PBXProject "MyIIS" */;
+			developmentRegion = ru;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				uk,
+				ru,
+				be,
+			);
+			mainGroup = F59436C62E9CF9DA00A3E835;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = F59436D02E9CF9DA00A3E835 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F59436CE2E9CF9DA00A3E835 /* MyIIS */,
+				F59436DE2E9CF9DD00A3E835 /* MyIISTests */,
+				F5A5EE032F1C7E2A00D2B7A1 /* MyIISWidgetExtension */,
+				F51DCBA72FB09EC400EA90E3 /* MyIISIntents */,
+				F5EE362F2FB1ED94004B7BD8 /* MyIISUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		F51DCBA62FB09EC400EA90E3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F59436CD2E9CF9DA00A3E835 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F51DCE312FB0E1D900EA90E3 /* pink.icon in Resources */,
+				F51DCE322FB0E1D900EA90E3 /* purple.icon in Resources */,
+				F51DCE332FB0E1D900EA90E3 /* 1964.icon in Resources */,
+				F51DCE342FB0E1D900EA90E3 /* bright.icon in Resources */,
+				F51DCE352FB0E1D900EA90E3 /* KSIS.icon in Resources */,
+				F51DCE362FB0E1D900EA90E3 /* Default.icon in Resources */,
+				F55B9F662FB7432C00779F6C /* MyIIS/Settings.bundle in Resources */,
+				F51DC97C2FB0920300EA90E3 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F59436E02E9CF9DD00A3E835 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5A5EE062F1C7E2A00D2B7A1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5EE362E2FB1ED94004B7BD8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F51DCBA42FB09EC400EA90E3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F59436CB2E9CF9DA00A3E835 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F59436DF2E9CF9DD00A3E835 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5A5EE042F1C7E2A00D2B7A1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5EE362C2FB1ED94004B7BD8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F51DCBB02FB09EC400EA90E3 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F51DCBA72FB09EC400EA90E3 /* MyIISIntents */;
+			targetProxy = F51DCBAF2FB09EC400EA90E3 /* PBXContainerItemProxy */;
+		};
+		F59436E52E9CF9DD00A3E835 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F59436CE2E9CF9DA00A3E835 /* MyIIS */;
+			targetProxy = F59436E42E9CF9DD00A3E835 /* PBXContainerItemProxy */;
+		};
+		F5A5EE122F1C801900D2B7A1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F5A5EE032F1C7E2A00D2B7A1 /* MyIISWidgetExtension */;
+			targetProxy = F5A5EE132F1C801900D2B7A1 /* PBXContainerItemProxy */;
+		};
+		F5EE36372FB1ED94004B7BD8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F59436CE2E9CF9DA00A3E835 /* MyIIS */;
+			targetProxy = F5EE36362FB1ED94004B7BD8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		F51DCBB42FB09EC400EA90E3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MyIISIntents/MyIISIntents.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 52;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MyIISIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MyIISIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.6.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F51DCBB52FB09EC400EA90E3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MyIISIntents/MyIISIntents.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 52;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MyIISIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MyIISIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.6.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F59436D82E9CF9DD00A3E835 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		F59436D92E9CF9DD00A3E835 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F59436DB2E9CF9DD00A3E835 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MyIIS/MyIIS.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 52;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "ИИС";
+				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleURLName = \"by.bsuir.MyIIS\";\n    CFBundleURLSchemes =     (\n        myiis\n    );\n}";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Нам нужен доступ к камере для обновления вашего фото профиля.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Нам нужен доступ к галерее для выбора вашего фото профиля.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.6.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F59436DC2E9CF9DD00A3E835 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MyIIS/MyIIS.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 52;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "ИИС";
+				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleURLName = \"by.bsuir.MyIIS\";\n    CFBundleURLSchemes =     (\n        myiis\n    );\n}";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Нам нужен доступ к камере для обновления вашего фото профиля.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Нам нужен доступ к галерее для выбора вашего фото профиля.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.6.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F59436E62E9CF9DD00A3E835 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.6.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIISTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MyIIS.app/MyIIS";
+			};
+			name = Debug;
+		};
+		F59436E72E9CF9DD00A3E835 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.6.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIISTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MyIIS.app/MyIIS";
+			};
+			name = Release;
+		};
+		F5A5EE072F1C7E2A00D2B7A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = MyIISWidget/MyIISWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 52;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Configs/MyIISWidgetExtension-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.6.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F5A5EE082F1C7E2A00D2B7A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = MyIISWidget/MyIISWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 52;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_PREVIEWS = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = "Configs/MyIISWidgetExtension-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.6.7;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F5EE36392FB1ED94004B7BD8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = OrDinaD.MyIISUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = MyIIS;
+			};
+			name = Debug;
+		};
+		F5EE363A2FB1ED94004B7BD8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = OrDinaD.MyIISUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = MyIIS;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F51DCBB32FB09EC400EA90E3 /* Build configuration list for PBXNativeTarget "MyIISIntents" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F51DCBB42FB09EC400EA90E3 /* Debug */,
+				F51DCBB52FB09EC400EA90E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F59436CA2E9CF9DA00A3E835 /* Build configuration list for PBXProject "MyIIS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F59436D82E9CF9DD00A3E835 /* Debug */,
+				F59436D92E9CF9DD00A3E835 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F59436DA2E9CF9DD00A3E835 /* Build configuration list for PBXNativeTarget "MyIIS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F59436DB2E9CF9DD00A3E835 /* Debug */,
+				F59436DC2E9CF9DD00A3E835 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F59436E82E9CF9DD00A3E835 /* Build configuration list for PBXNativeTarget "MyIISTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F59436E62E9CF9DD00A3E835 /* Debug */,
+				F59436E72E9CF9DD00A3E835 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F5A5EE092F1C7E2A00D2B7A1 /* Build configuration list for PBXNativeTarget "MyIISWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F5A5EE072F1C7E2A00D2B7A1 /* Debug */,
+				F5A5EE082F1C7E2A00D2B7A1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F5EE36382FB1ED94004B7BD8 /* Build configuration list for PBXNativeTarget "MyIISUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F5EE36392FB1ED94004B7BD8 /* Debug */,
+				F5EE363A2FB1ED94004B7BD8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F59436C72E9CF9DA00A3E835 /* Project object */;
+}

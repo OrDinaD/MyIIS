@@ -1,0 +1,154 @@
+name: Build and Deploy to SideStore
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Extract version from tag
+        id: version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+          # Локально в CI обновляем marketing version для артефактов SideStore
+          sed -i '' "s/MARKETING_VERSION = .*;/MARKETING_VERSION = $VERSION;/g" MyIIS.xcodeproj/project.pbxproj
+
+      - name: Build unsigned IPA
+        id: build
+        shell: bash
+        run: |
+          mkdir -p build
+
+          xcodebuild clean archive \
+            -project MyIIS.xcodeproj \
+            -scheme MyIIS \
+            -configuration Release \
+            -archivePath build/MyIIS.xcarchive \
+            -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            ONLY_ACTIVE_ARCH=NO
+
+          mkdir -p build/Payload
+          cp -R build/MyIIS.xcarchive/Products/Applications/MyIIS.app build/Payload/
+
+          # Для SideStore больше не удаляем extension bundles и App Intents metadata.
+          # IPA должен соответствовать содержимому App Store-сборки по составу бандлов.
+          (cd build && zip -r MyIIS.ipa Payload)
+
+          cp build/MyIIS.ipa ./MyIIS.ipa
+          cp MyIIS/Assets.xcassets/AppIcon.appiconset/Icon-iOS-Default-1024x1024@1x.png ./icon.png
+
+          FILE_SIZE=$(stat -f%z build/MyIIS.ipa)
+          echo "ipa_size=$FILE_SIZE" >> "$GITHUB_OUTPUT"
+          echo "IPA size: $FILE_SIZE bytes"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/MyIIS.ipa
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update apps.json
+        shell: bash
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          IPA_SIZE: ${{ steps.build.outputs.ipa_size }}
+        run: |
+          python3 << 'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+
+          with open('apps.json', 'r', encoding='utf-8') as f:
+              data = json.load(f)
+
+          version = os.environ.get('APP_VERSION', '0.0.0')
+          file_size = int(os.environ.get('IPA_SIZE', '0') or 0)
+
+          download_url = "https://ordinad.github.io/MyIIS/MyIIS.ipa"
+          icon_url = "https://ordinad.github.io/MyIIS/icon.png"
+          current_date = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+          new_version = {
+              "version": version,
+              "date": current_date,
+              "size": file_size,
+              "downloadURL": download_url,
+              "localizedDescription": f"Релиз версии {version}"
+          }
+
+          for app in data.get('apps', []):
+              if app.get('bundleIdentifier') == 'com.OrDinaD.MyIIS':
+                  app['iconURL'] = icon_url
+                  versions = app.get('versions', [])
+                  existing_versions = [v.get('version') for v in versions]
+
+                  if version not in existing_versions:
+                      versions.insert(0, new_version)
+                  else:
+                      for i, v in enumerate(versions):
+                          if v.get('version') == version:
+                              versions[i] = new_version
+                              break
+
+                  app['versions'] = versions[:10]
+                  break
+
+          with open('apps.json', 'w', encoding='utf-8') as f:
+              json.dump(data, f, indent=2, ensure_ascii=False)
+              f.write('\n')
+
+          print(f"Successfully updated apps.json to version {version}")
+          PY
+
+      - name: Stage feed artifacts
+        run: git add -f apps.json MyIIS.ipa icon.png
+
+      - name: Create PR for feed update
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: sidestore/release-v${{ steps.version.outputs.version }}
+          delete-branch: true
+          commit-message: "Update SideStore feed: v${{ steps.version.outputs.version }}"
+          title: "SideStore feed update v${{ steps.version.outputs.version }}"
+          body: |
+            Automated SideStore feed update.
+
+            - updates `apps.json`
+            - refreshes `MyIIS.ipa`
+            - refreshes `icon.png`
+
+            This flow intentionally avoids force-push to `main`.
+          add-paths: |
+            apps.json
+            MyIIS.ipa
+            icon.png

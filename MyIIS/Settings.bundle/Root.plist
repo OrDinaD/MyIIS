@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>StringsTable</key>
+	<string>Root</string>
+	<key>PreferenceSpecifiers</key>
+	<array>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Начальный экран</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSMultiValueSpecifier</string>
+			<key>Title</key>
+			<string>Открывать при запуске</string>
+			<key>Key</key>
+			<string>initial_startup_tab</string>
+			<key>DefaultValue</key>
+			<string>profile</string>
+			<key>Titles</key>
+			<array>
+				<string>Профиль</string>
+				<string>Посещаемость</string>
+				<string>Рейтинг</string>
+				<string>Сервисы (Главная)</string>
+				<string>СЭО (Главная)</string>
+				<string>--- Учеба ---</string>
+				<string>Зачетка</string>
+				<string>Учебный план</string>
+				<string>СЭО (Сервис)</string>
+				<string>Расписание</string>
+				<string>Диплом</string>
+				<string>Моя группа</string>
+				<string>Староста</string>
+				<string>--- Ресурсы ---</string>
+				<string>Общежитие</string>
+				<string>Библиотека</string>
+			</array>
+			<key>Values</key>
+			<array>
+				<string>profile</string>
+				<string>attendance</string>
+				<string>rating</string>
+				<string>others</string>
+				<string>home</string>
+				<string>others</string>
+				<string>gradebook</string>
+				<string>study</string>
+				<string>lms</string>
+				<string>schedule</string>
+				<string>diploma</string>
+				<string>group</string>
+				<string>headman</string>
+				<string>others</string>
+				<string>dormitory</string>
+				<string>library</string>
+			</array>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Настройка вкладок (Меню)</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Вкладка "Профиль"</string>
+			<key>Key</key>
+			<string>show_tab_profile</string>
+			<key>DefaultValue</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Вкладка "Посещаемость"</string>
+			<key>Key</key>
+			<string>show_tab_attendance</string>
+			<key>DefaultValue</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Вкладка "Рейтинг"</string>
+			<key>Key</key>
+			<string>show_tab_rating</string>
+			<key>DefaultValue</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Бета-функции</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Включить бета-разделы</string>
+			<key>Key</key>
+			<string>enable_beta_sections</string>
+			<key>DefaultValue</key>
+			<false/>
+		</dict>
+	</array>
+</dict>
+</plist>

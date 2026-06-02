@@ -1,0 +1,12 @@
+devices([
+  "iPhone 17"
+])
+
+languages([
+  "ru-RU"
+])
+
+scheme("MyIIS")
+output_directory("./fastlane/screenshots")
+clear_previous_screenshots(true)
+ios_version("26.5")
