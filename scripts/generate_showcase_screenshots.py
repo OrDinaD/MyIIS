@@ -7,8 +7,8 @@ from PIL import Image, ImageDraw, ImageFilter
 
 
 def gradient_background(width: int, height: int) -> Image.Image:
-    start = (9, 14, 30)
-    end = (32, 54, 96)
+    start = (244, 248, 255)
+    end = (213, 229, 255)
     bg = Image.new("RGB", (width, height), start)
     px = bg.load()
     for y in range(height):
@@ -21,44 +21,58 @@ def gradient_background(width: int, height: int) -> Image.Image:
     return bg
 
 
+def rounded_mask(size: tuple[int, int], radius: int) -> Image.Image:
+    mask = Image.new("L", size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, size[0], size[1]), radius=radius, fill=255)
+    return mask
+
+
 def build_framed_image(source: Image.Image) -> Image.Image:
     screen_w, screen_h = source.size
-    device_border_x = 52
-    device_border_top = 122
-    device_border_bottom = 98
+    bezel = max(28, int(screen_w * 0.035))
+    device_radius = max(86, int(screen_w * 0.095))
+    screen_radius = max(54, int(screen_w * 0.055))
 
-    device_w = screen_w + device_border_x * 2
-    device_h = screen_h + device_border_top + device_border_bottom
+    device_w = screen_w + bezel * 2
+    device_h = screen_h + bezel * 2
 
-    canvas_w = device_w + 360
-    canvas_h = device_h + 280
+    canvas_w = device_w + int(screen_w * 0.28)
+    canvas_h = device_h + int(screen_h * 0.12)
 
     canvas = gradient_background(canvas_w, canvas_h).convert("RGBA")
     device_x = (canvas_w - device_w) // 2
     device_y = (canvas_h - device_h) // 2
 
-    shadow = Image.new("RGBA", (device_w + 80, device_h + 80), (0, 0, 0, 0))
+    shadow = Image.new("RGBA", (device_w + 120, device_h + 120), (0, 0, 0, 0))
     shadow_draw = ImageDraw.Draw(shadow)
-    shadow_draw.rounded_rectangle((20, 20, device_w + 60, device_h + 60), radius=130, fill=(0, 0, 0, 220))
-    shadow = shadow.filter(ImageFilter.GaussianBlur(25))
-    canvas.alpha_composite(shadow, (device_x - 40, device_y - 18))
+    shadow_draw.rounded_rectangle((36, 32, device_w + 84, device_h + 86), radius=device_radius, fill=(15, 23, 42, 84))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(34))
+    canvas.alpha_composite(shadow, (device_x - 60, device_y - 34))
 
     device = Image.new("RGBA", (device_w, device_h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(device)
 
-    draw.rounded_rectangle((0, 0, device_w, device_h), radius=120, fill=(18, 19, 23, 255))
-    draw.rounded_rectangle((8, 8, device_w - 8, device_h - 8), radius=112, outline=(95, 99, 112, 180), width=2)
+    draw.rounded_rectangle((0, 0, device_w, device_h), radius=device_radius, fill=(17, 24, 39, 255))
+    draw.rounded_rectangle((5, 5, device_w - 5, device_h - 5), radius=device_radius - 6, outline=(255, 255, 255, 54), width=2)
+    draw.rounded_rectangle((11, 11, device_w - 11, device_h - 11), radius=device_radius - 14, outline=(0, 0, 0, 140), width=2)
 
-    screen_mask = Image.new("L", (screen_w, screen_h), 0)
-    ImageDraw.Draw(screen_mask).rounded_rectangle((0, 0, screen_w, screen_h), radius=68, fill=255)
+    side_button_color = (51, 65, 85, 255)
+    draw.rounded_rectangle((-7, int(device_h * 0.21), 5, int(device_h * 0.31)), radius=6, fill=side_button_color)
+    draw.rounded_rectangle((-7, int(device_h * 0.36), 5, int(device_h * 0.49)), radius=6, fill=side_button_color)
+    draw.rounded_rectangle((device_w - 5, int(device_h * 0.30), device_w + 7, int(device_h * 0.44)), radius=6, fill=side_button_color)
 
-    device.paste(source.convert("RGBA"), (device_border_x, device_border_top), mask=screen_mask)
+    screen = source.convert("RGBA")
+    device.paste(screen, (bezel, bezel), mask=rounded_mask((screen_w, screen_h), screen_radius))
 
-    island_w = max(300, int(screen_w * 0.28))
-    island_h = 54
+    island_w = max(260, int(screen_w * 0.30))
+    island_h = max(42, int(screen_h * 0.020))
     island_x = (device_w - island_w) // 2
-    island_y = device_border_top + 14
-    draw.rounded_rectangle((island_x, island_y, island_x + island_w, island_y + island_h), radius=27, fill=(7, 7, 10, 255))
+    island_y = bezel + max(18, int(screen_h * 0.014))
+    draw.rounded_rectangle(
+        (island_x, island_y, island_x + island_w, island_y + island_h),
+        radius=island_h // 2,
+        fill=(6, 8, 14, 255),
+    )
 
     canvas.alpha_composite(device, (device_x, device_y))
     return canvas.convert("RGB")
@@ -73,7 +87,7 @@ def collect_inputs(raw_dir: Path) -> list[Path]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Generate framed showcase screenshots.")
-    parser.add_argument("--raw-dir", default="fastlane/screenshots/en-US")
+    parser.add_argument("--raw-dir", default="fastlane/screenshots/ru-RU")
     parser.add_argument("--out-dir", default="public/showcase")
     args = parser.parse_args()
 
