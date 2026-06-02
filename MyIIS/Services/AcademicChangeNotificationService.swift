@@ -2,6 +2,9 @@ import BackgroundTasks
 import Foundation
 import UIKit
 import UserNotifications
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
 
 final class AcademicChangeNotificationService: NSObject {
     static let shared = AcademicChangeNotificationService()
@@ -95,6 +98,7 @@ final class AcademicChangeNotificationService: NSObject {
             let newSnapshot = AcademicChangeSnapshot(markbook: markbook, ratingLessons: lessons)
             let oldSnapshot = loadSnapshot()
             saveSnapshot(newSnapshot)
+            updateWidgetSnapshot(with: newSnapshot)
             userDefaults.set(Date(), forKey: Self.lastCheckDefaultsKey)
 
             guard deliverNotifications, let oldSnapshot else {
@@ -195,6 +199,15 @@ final class AcademicChangeNotificationService: NSObject {
     private func notificationTitle(for changes: [AcademicChangeItem]) -> String {
         let hasMarkbook = changes.contains { $0.source == .markbook }
         let hasRating = changes.contains { $0.source == .rating }
+        let hasOmissions = changes.contains { $0.source == .omission }
+
+        if hasOmissions && !hasMarkbook && !hasRating {
+            return "Новые пропуски"
+        }
+
+        if hasOmissions {
+            return "Учебные данные обновлены"
+        }
 
         switch (hasMarkbook, hasRating) {
         case (true, true):
@@ -233,6 +246,26 @@ final class AcademicChangeNotificationService: NSObject {
         }
     }
 
+    private func updateWidgetSnapshot(with snapshot: AcademicChangeSnapshot) {
+        let totalHours = snapshot.omissionItems.reduce(0) { $0 + $1.hours }
+        let previousHours = MyIISDataStore.loadData()?.unexcusedAbsences
+
+        MyIISDataStore.update(unexcusedAbsences: totalHours)
+        AttendanceWidgetDataStore.save(
+            AttendanceWidgetSnapshot(
+                monthTitle: "семестр",
+                unexcusedHours: totalHours,
+                updatedAt: Date()
+            )
+        )
+
+#if canImport(WidgetKit)
+        if previousHours != totalHours {
+            WidgetCenter.shared.reloadTimelines(ofKind: AttendanceWidgetConstants.kind)
+        }
+#endif
+    }
+
     private func setEnabled(_ enabled: Bool) {
         userDefaults.set(enabled, forKey: Self.enabledDefaultsKey)
     }
@@ -263,19 +296,57 @@ extension AcademicChangeNotificationService: UNUserNotificationCenterDelegate {
 private struct AcademicChangeSnapshot: Codable, Equatable {
     let markbookItems: [AcademicChangeItem]
     let ratingItems: [AcademicChangeItem]
+    let omissionItems: [AcademicOmissionItem]
     let capturedAt: Date
+
+    private enum CodingKeys: String, CodingKey {
+        case markbookItems
+        case ratingItems
+        case omissionItems
+        case capturedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.markbookItems = try container.decode([AcademicChangeItem].self, forKey: .markbookItems)
+        self.ratingItems = try container.decode([AcademicChangeItem].self, forKey: .ratingItems)
+        self.omissionItems = try container.decodeIfPresent([AcademicOmissionItem].self, forKey: .omissionItems) ?? []
+        self.capturedAt = try container.decode(Date.self, forKey: .capturedAt)
+    }
 
     init(markbook: MarkbookResponse, ratingLessons: [PortalGradeBookLesson]) {
         self.markbookItems = Self.makeMarkbookItems(from: markbook)
         self.ratingItems = Self.makeRatingItems(from: ratingLessons)
+        self.omissionItems = Self.makeOmissionItems(from: ratingLessons)
         self.capturedAt = Date()
     }
 
     func changes(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
         let oldKeys = Set((oldSnapshot.markbookItems + oldSnapshot.ratingItems).map(\.signature))
-        return (markbookItems + ratingItems)
+        let gradeChanges = (markbookItems + ratingItems)
             .filter { !oldKeys.contains($0.signature) }
+
+        return (gradeChanges + omissionChanges(since: oldSnapshot))
             .sorted(by: AcademicChangeItem.defaultSort)
+    }
+
+    private func omissionChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
+        let oldItemsBySubject = Dictionary(uniqueKeysWithValues: oldSnapshot.omissionItems.map { ($0.subject, $0) })
+
+        return omissionItems.compactMap { item in
+            let oldHours = oldItemsBySubject[item.subject]?.hours ?? 0
+            let delta = item.hours - oldHours
+            guard delta > 0 else { return nil }
+
+            return AcademicChangeItem(
+                signature: "omission|\(item.subject)|\(item.hours)",
+                source: .omission,
+                subject: item.subject,
+                value: "+\(delta) ч",
+                date: nil,
+                context: "Неуважительные пропуски"
+            )
+        }
     }
 
     private static func makeMarkbookItems(from markbook: MarkbookResponse) -> [AcademicChangeItem] {
@@ -323,6 +394,25 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
             }
         }
     }
+
+    private static func makeOmissionItems(from lessons: [PortalGradeBookLesson]) -> [AcademicOmissionItem] {
+        let lessonsBySubject = Dictionary(grouping: lessons) { $0.lessonNameAbbrev }
+
+        return lessonsBySubject.compactMap { subject, subjectLessons in
+            let hours = subjectLessons
+                .filter { !$0.isRespectfulOmission }
+                .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
+
+            guard hours > 0 else { return nil }
+            return AcademicOmissionItem(subject: subject, hours: hours)
+        }
+        .sorted { $0.subject.localizedCaseInsensitiveCompare($1.subject) == .orderedAscending }
+    }
+}
+
+private struct AcademicOmissionItem: Codable, Hashable {
+    let subject: String
+    let hours: Int
 }
 
 private struct AcademicChangeItem: Codable, Hashable {
@@ -333,7 +423,7 @@ private struct AcademicChangeItem: Codable, Hashable {
     let date: String?
     let context: String
 
-    static func defaultSort(lhs: AcademicChangeItem, rhs: AcademicChangeItem) -> Bool {
+    nonisolated static func defaultSort(lhs: AcademicChangeItem, rhs: AcademicChangeItem) -> Bool {
         let lhsDate = lhs.date ?? ""
         let rhsDate = rhs.date ?? ""
         if lhsDate != rhsDate {
@@ -347,4 +437,5 @@ private struct AcademicChangeItem: Codable, Hashable {
 private enum AcademicChangeSource: String, Codable {
     case markbook
     case rating
+    case omission
 }
