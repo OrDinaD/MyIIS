@@ -177,6 +177,10 @@
 "gradebook_share_generated" = "Сформовано";
 "gradebook_share_render_failed" = "Не вдалося підготувати зображення заліковки.";
 "gradebook_share_no_data" = "Немає даних вибраного семестру для експорту.";
+"gradebook_share_preview_title" = "Перегляд";
+"gradebook_share_save" = "Зберегти";
+"gradebook_share_saved" = "Зображення збережено у Фото.";
+"gradebook_share_photo_add_usage" = "Потрібно зберегти зображення заліковки у Фото.";
 
 "dormitory_title" = "Гуртожиток";
 "dormitory_loading" = "Завантажуємо інформацію про гуртожиток";
@@ -223,6 +227,7 @@
 "error_data_load_failed" = "Не вдалося завантажити дані";
 
 "common_ok" = "Ок";
+"common_close" = "Закрити";
 "common_cancel" = "Скасувати";
 "common_retry" = "Повторити";
 "common_refresh" = "Оновити";

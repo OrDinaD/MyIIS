@@ -3,7 +3,7 @@ import SwiftUI
 struct GradebookView: View {
     @StateObject private var viewModel: GradebookViewModel
     @State private var expandedSubjectId: MarkbookMark.ID?
-    @State private var sharePayload: GradebookSharePayload?
+    @State private var sharePayload: GradebookShareImagePayload?
     @State private var shareErrorMessage: String?
     @State private var isPreparingShareImage = false
 
@@ -59,7 +59,7 @@ struct GradebookView: View {
         }
         .hiddenNavigationBarBackground()
         .sheet(item: $sharePayload) { payload in
-            ShareSheet(activityItems: [payload.url])
+            GradebookSharePreviewView(payload: payload)
         }
         .alert(NSLocalizedString("common_error", comment: ""), isPresented: shareErrorBinding) {
             Button(NSLocalizedString("common_ok", comment: "")) {
@@ -100,8 +100,7 @@ struct GradebookView: View {
         defer { isPreparingShareImage = false }
 
         do {
-            let url = try GradebookShareImageExporter.renderPNG(snapshot: snapshot)
-            sharePayload = GradebookSharePayload(url: url)
+            sharePayload = try GradebookShareImageExporter.renderPNG(snapshot: snapshot)
         } catch {
             shareErrorMessage = error.localizedDescription
         }
@@ -200,25 +199,9 @@ struct GradebookView: View {
                         expandedSubjectId = (expandedSubjectId == mark.id) ? nil : mark.id
                     }
                 }
-
-                footerNotes
             }
         }
     }
-
-    private var footerNotes: some View {
-        Group {
-            Text(NSLocalizedString("gradebook_retakes_note", comment: ""))
-            Text(NSLocalizedString("gradebook_average_4years_note", comment: ""))
-        }
-        .font(.caption)
-        .foregroundStyle(.secondary)
-    }
-}
-
-private struct GradebookSharePayload: Identifiable {
-    let id = UUID()
-    let url: URL
 }
 
 private extension String {

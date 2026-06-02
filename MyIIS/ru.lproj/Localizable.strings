@@ -182,6 +182,10 @@
 "gradebook_share_generated" = "Сформировано";
 "gradebook_share_render_failed" = "Не удалось подготовить изображение зачётки.";
 "gradebook_share_no_data" = "Нет данных выбранного семестра для экспорта.";
+"gradebook_share_preview_title" = "Предпросмотр";
+"gradebook_share_save" = "Сохранить";
+"gradebook_share_saved" = "Изображение сохранено в Фото.";
+"gradebook_share_photo_add_usage" = "Нужно сохранить изображение зачётки в Фото.";
 
 "dormitory_title" = "Общежитие";
 "dormitory_loading" = "Загружаем информацию об общежитии";
@@ -228,6 +232,7 @@
 "error_data_load_failed" = "Не удалось загрузить данные";
 
 "common_ok" = "Ок";
+"common_close" = "Закрыть";
 "common_cancel" = "Отмена";
 "common_retry" = "Повторить";
 "common_refresh" = "Обновить";

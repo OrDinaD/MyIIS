@@ -708,6 +708,7 @@
 				);
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Нам нужен доступ к камере для обновления вашего фото профиля.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Нужно сохранить изображение зачётки в Фото.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Нам нужен доступ к галерее для выбора вашего фото профиля.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -753,6 +754,7 @@
 				);
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Нам нужен доступ к камере для обновления вашего фото профиля.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Нужно сохранить изображение зачётки в Фото.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Нам нужен доступ к галерее для выбора вашего фото профиля.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

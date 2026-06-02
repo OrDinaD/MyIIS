@@ -24,9 +24,15 @@ struct GradebookShareSubject: Identifiable {
     let retakesText: String
 }
 
+struct GradebookShareImagePayload: Identifiable {
+    let id = UUID()
+    let url: URL
+    let image: UIImage
+}
+
 @MainActor
 enum GradebookShareImageExporter {
-    static func renderPNG(snapshot: GradebookShareSnapshot) throws -> URL {
+    static func renderPNG(snapshot: GradebookShareSnapshot) throws -> GradebookShareImagePayload {
         let imageView = GradebookShareImageView(snapshot: snapshot)
             .frame(width: GradebookShareImageView.canvasWidth)
             .fixedSize(horizontal: false, vertical: true)
@@ -43,7 +49,7 @@ enum GradebookShareImageExporter {
         let fileName = "myiis-gradebook-semester-\(snapshot.semesterKey.sanitizedForFileName).png"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         try data.write(to: url, options: .atomic)
-        return url
+        return GradebookShareImagePayload(url: url, image: image)
     }
 }
 
@@ -76,50 +82,42 @@ struct GradebookShareImageView: View {
         }
         .padding(48)
         .frame(width: Self.canvasWidth, alignment: .topLeading)
-        .background(background)
-    }
-
-    private var background: some View {
-        ZStack {
-            Color(red: 0.96, green: 0.975, blue: 0.965)
-            LinearGradient(
-                colors: [
-                    Color(red: 0.87, green: 0.95, blue: 0.93).opacity(0.75),
-                    Color(red: 1.0, green: 0.96, blue: 0.84).opacity(0.55),
-                    Color(red: 0.94, green: 0.95, blue: 1.0).opacity(0.6)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        }
+        .background(Color.white)
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("MyIIS")
-                        .font(.system(size: 30, weight: .bold, design: .rounded))
-                        .foregroundStyle(.secondary)
-                    Text(NSLocalizedString("gradebook_share_title", comment: ""))
-                        .font(.system(size: 74, weight: .heavy, design: .rounded))
-                        .foregroundStyle(Color(red: 0.08, green: 0.11, blue: 0.13))
-                    Text(snapshot.semesterTitle)
-                        .font(.system(size: 36, weight: .semibold, design: .rounded))
-                        .foregroundStyle(Color(red: 0.18, green: 0.25, blue: 0.26))
-                }
-                Spacer()
-                VStack(alignment: .trailing, spacing: 10) {
-                    Text(NSLocalizedString("gradebook_share_number", comment: ""))
-                        .font(.system(size: 22, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                    Text(snapshot.number)
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .monospacedDigit()
-                        .foregroundStyle(Color(red: 0.08, green: 0.11, blue: 0.13))
-                }
-                .padding(.top, 8)
+        HStack(alignment: .top, spacing: 26) {
+            Image("GradebookShareAppIcon")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 118, height: 118)
+                .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+                .shadow(color: .black.opacity(0.20), radius: 18, x: 0, y: 10)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("MyIIS")
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundStyle(.secondary)
+                Text(NSLocalizedString("gradebook_share_title", comment: ""))
+                    .font(.system(size: 74, weight: .heavy, design: .rounded))
+                    .foregroundStyle(Color(red: 0.08, green: 0.11, blue: 0.13))
+                Text(snapshot.semesterTitle)
+                    .font(.system(size: 36, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color(red: 0.18, green: 0.25, blue: 0.26))
             }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 10) {
+                Text(NSLocalizedString("gradebook_share_number", comment: ""))
+                    .font(.system(size: 22, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+                Text(snapshot.number)
+                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(Color(red: 0.08, green: 0.11, blue: 0.13))
+            }
+            .padding(.top, 8)
         }
     }
 
@@ -155,7 +153,7 @@ struct GradebookShareImageView: View {
     }
 
     private var footer: some View {
-        HStack {
+        HStack(spacing: 6) {
             Text(NSLocalizedString("gradebook_share_generated", comment: ""))
                 .font(.system(size: 20, weight: .medium, design: .rounded))
                 .foregroundStyle(.secondary)
@@ -163,9 +161,6 @@ struct GradebookShareImageView: View {
                 .font(.system(size: 20, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color(red: 0.18, green: 0.25, blue: 0.26))
             Spacer()
-            Text("myiis.app")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-                .foregroundStyle(.secondary)
         }
         .padding(.top, 2)
     }
@@ -200,10 +195,10 @@ private struct GradebookShareSummaryCard: View {
         }
         .padding(22)
         .frame(maxWidth: .infinity, minHeight: 112, alignment: .leading)
-        .background(.white.opacity(0.84), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(.white.opacity(0.7), lineWidth: 1)
+                .stroke(Color(uiColor: .separator).opacity(0.22), lineWidth: 1)
         }
     }
 }
@@ -233,7 +228,7 @@ private struct GradebookShareSubjectRow: View {
             GradebookShareMetric(title: NSLocalizedString("gradebook_share_retakes", comment: ""), value: subject.retakesText)
         }
         .padding(22)
-        .background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(alignment: .leading) {
             Rectangle()
                 .fill(Color(red: 0.0, green: 0.46, blue: 0.40))

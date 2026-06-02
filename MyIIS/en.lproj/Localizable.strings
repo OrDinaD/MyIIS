@@ -182,6 +182,10 @@
 "gradebook_share_generated" = "Generated";
 "gradebook_share_render_failed" = "Could not prepare the gradebook image.";
 "gradebook_share_no_data" = "No data for the selected semester to export.";
+"gradebook_share_preview_title" = "Preview";
+"gradebook_share_save" = "Save";
+"gradebook_share_saved" = "Image saved to Photos.";
+"gradebook_share_photo_add_usage" = "Save the gradebook image to Photos.";
 
 "dormitory_title" = "Dormitory";
 "dormitory_loading" = "Loading dormitory information";
@@ -228,6 +232,7 @@
 "error_data_load_failed" = "Failed to load data";
 
 "common_ok" = "OK";
+"common_close" = "Close";
 "common_cancel" = "Cancel";
 "common_retry" = "Retry";
 "common_refresh" = "Refresh";
