@@ -168,6 +168,20 @@
 "gradebook_average_4years" = "4-year Avg.";
 "gradebook_retakes_note" = "* Retakes: value and probability from commonRetakes API";
 "gradebook_average_4years_note" = "* 4-year Avg: commonMark field from markbook API";
+"gradebook_share" = "Share";
+"gradebook_share_title" = "Gradebook";
+"gradebook_share_semester_format" = "Semester %@";
+"gradebook_share_number" = "Gradebook number";
+"gradebook_share_semester_average" = "Semester GPA";
+"gradebook_share_overall_average" = "Overall GPA";
+"gradebook_share_subjects" = "Subjects";
+"gradebook_share_control" = "Control";
+"gradebook_share_grade" = "Grade";
+"gradebook_share_average" = "Average";
+"gradebook_share_retakes" = "Retakes";
+"gradebook_share_generated" = "Generated";
+"gradebook_share_render_failed" = "Could not prepare the gradebook image.";
+"gradebook_share_no_data" = "No data for the selected semester to export.";
 
 "dormitory_title" = "Dormitory";
 "dormitory_loading" = "Loading dormitory information";

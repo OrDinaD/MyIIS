@@ -168,6 +168,20 @@
 "gradebook_average_4years" = "Ср. балл за 4 года";
 "gradebook_retakes_note" = "* Пересдачи: значение и вероятность из commonRetakes API";
 "gradebook_average_4years_note" = "* Ср. балл за 4 года: поле commonMark из API markbook";
+"gradebook_share" = "Поделиться";
+"gradebook_share_title" = "Зачётка";
+"gradebook_share_semester_format" = "%@ семестр";
+"gradebook_share_number" = "Номер зачётки";
+"gradebook_share_semester_average" = "Средний за семестр";
+"gradebook_share_overall_average" = "Общий средний";
+"gradebook_share_subjects" = "Дисциплины";
+"gradebook_share_control" = "Контроль";
+"gradebook_share_grade" = "Отметка";
+"gradebook_share_average" = "Средний";
+"gradebook_share_retakes" = "Пересдачи";
+"gradebook_share_generated" = "Сформировано";
+"gradebook_share_render_failed" = "Не удалось подготовить изображение зачётки.";
+"gradebook_share_no_data" = "Нет данных выбранного семестра для экспорта.";
 
 "dormitory_title" = "Общежитие";
 "dormitory_loading" = "Загружаем информацию об общежитии";

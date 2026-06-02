@@ -163,6 +163,20 @@
 "gradebook_average_4years" = "Сяр. бал за 4 гады";
 "gradebook_retakes_note" = "* Пераздачы: значэнне і імавернасць з commonRetakes API";
 "gradebook_average_4years_note" = "* Сяр. бал за 4 гады: поле commonMark з API markbook";
+"gradebook_share" = "Падзяліцца";
+"gradebook_share_title" = "Залікоўка";
+"gradebook_share_semester_format" = "%@ семестр";
+"gradebook_share_number" = "Нумар залікоўкі";
+"gradebook_share_semester_average" = "Сярэдні за семестр";
+"gradebook_share_overall_average" = "Агульны сярэдні";
+"gradebook_share_subjects" = "Дысцыпліны";
+"gradebook_share_control" = "Кантроль";
+"gradebook_share_grade" = "Адзнака";
+"gradebook_share_average" = "Сярэдні";
+"gradebook_share_retakes" = "Пераздачы";
+"gradebook_share_generated" = "Сфарміравана";
+"gradebook_share_render_failed" = "Не ўдалося падрыхтаваць выяву залікоўкі.";
+"gradebook_share_no_data" = "Няма даных выбранага семестра для экспарту.";
 
 "dormitory_title" = "Гуртовня";
 "dormitory_loading" = "Загружаем інфармацыю аб гуртаўні";

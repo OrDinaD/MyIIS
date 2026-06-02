@@ -163,6 +163,20 @@
 "gradebook_average_4years" = "Сер. бал за 4 роки";
 "gradebook_retakes_note" = "* Перездачі: значення та ймовірність з commonRetakes API";
 "gradebook_average_4years_note" = "* Сер. бал за 4 роки: поле commonMark з API markbook";
+"gradebook_share" = "Поділитися";
+"gradebook_share_title" = "Заліковка";
+"gradebook_share_semester_format" = "%@ семестр";
+"gradebook_share_number" = "Номер заліковки";
+"gradebook_share_semester_average" = "Середній за семестр";
+"gradebook_share_overall_average" = "Загальний середній";
+"gradebook_share_subjects" = "Дисципліни";
+"gradebook_share_control" = "Контроль";
+"gradebook_share_grade" = "Оцінка";
+"gradebook_share_average" = "Середній";
+"gradebook_share_retakes" = "Перездачі";
+"gradebook_share_generated" = "Сформовано";
+"gradebook_share_render_failed" = "Не вдалося підготувати зображення заліковки.";
+"gradebook_share_no_data" = "Немає даних вибраного семестру для експорту.";
 
 "dormitory_title" = "Гуртожиток";
 "dormitory_loading" = "Завантажуємо інформацію про гуртожиток";

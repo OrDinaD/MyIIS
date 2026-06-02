@@ -3,6 +3,9 @@ import SwiftUI
 struct GradebookView: View {
     @StateObject private var viewModel: GradebookViewModel
     @State private var expandedSubjectId: MarkbookMark.ID?
+    @State private var sharePayload: GradebookSharePayload?
+    @State private var shareErrorMessage: String?
+    @State private var isPreparingShareImage = false
 
     @MainActor
     init() {
@@ -40,7 +43,31 @@ struct GradebookView: View {
         .listStyle(.insetGrouped)
         .navigationTitle(NSLocalizedString("gradebook_title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: prepareShareImage) {
+                    if isPreparingShareImage {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Label(NSLocalizedString("gradebook_share", comment: ""), systemImage: "square.and.arrow.up")
+                    }
+                }
+                .disabled(viewModel.marksForSelectedSemester.isEmpty || isPreparingShareImage)
+                .accessibilityLabel(NSLocalizedString("gradebook_share", comment: ""))
+            }
+        }
         .hiddenNavigationBarBackground()
+        .sheet(item: $sharePayload) { payload in
+            ShareSheet(activityItems: [payload.url])
+        }
+        .alert(NSLocalizedString("common_error", comment: ""), isPresented: shareErrorBinding) {
+            Button(NSLocalizedString("common_ok", comment: "")) {
+                shareErrorMessage = nil
+            }
+        } message: {
+            Text(shareErrorMessage ?? "")
+        }
         .task {
             await viewModel.load()
         }
@@ -50,6 +77,64 @@ struct GradebookView: View {
         .onChange(of: viewModel.selectedSemesterKey) { _, _ in
             expandedSubjectId = nil
         }
+    }
+
+    private var shareErrorBinding: Binding<Bool> {
+        Binding(
+            get: { shareErrorMessage != nil },
+            set: { isPresented in
+                if !isPresented {
+                    shareErrorMessage = nil
+                }
+            }
+        )
+    }
+
+    private func prepareShareImage() {
+        guard let snapshot = makeShareSnapshot() else {
+            shareErrorMessage = NSLocalizedString("gradebook_share_no_data", comment: "")
+            return
+        }
+
+        isPreparingShareImage = true
+        defer { isPreparingShareImage = false }
+
+        do {
+            let url = try GradebookShareImageExporter.renderPNG(snapshot: snapshot)
+            sharePayload = GradebookSharePayload(url: url)
+        } catch {
+            shareErrorMessage = error.localizedDescription
+        }
+    }
+
+    private func makeShareSnapshot() -> GradebookShareSnapshot? {
+        guard let selectedSemesterKey = viewModel.selectedSemesterKey,
+              !viewModel.marksForSelectedSemester.isEmpty
+        else {
+            return nil
+        }
+
+        return GradebookShareSnapshot(
+            number: viewModel.numberText,
+            semesterKey: selectedSemesterKey,
+            semesterAverageText: viewModel.semesterAverageText,
+            overallAverageText: viewModel.overallAverageText,
+            generatedAt: Date(),
+            subjects: viewModel.marksForSelectedSemester.map(makeShareSubject)
+        )
+    }
+
+    private func makeShareSubject(from mark: MarkbookMark) -> GradebookShareSubject {
+        let averageText = mark.averageForLastFourYearsText ?? "—"
+        return GradebookShareSubject(
+            id: mark.id,
+            abbreviation: mark.subject.nonEmptyOrDash,
+            fullName: mark.fullSubject.nonEmptyOrDash,
+            controlForm: mark.formOfControl.nonEmptyOrDash,
+            grade: mark.displayGrade.nonEmptyOrDash,
+            averageText: averageText,
+            retakesText: mark.displayRetakes.nonEmptyOrDash
+        )
     }
 
     private var headerSection: some View {
@@ -128,6 +213,18 @@ struct GradebookView: View {
         }
         .font(.caption)
         .foregroundStyle(.secondary)
+    }
+}
+
+private struct GradebookSharePayload: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+private extension String {
+    var nonEmptyOrDash: String {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "—" : trimmed
     }
 }
 
@@ -235,8 +332,15 @@ extension GradebookViewModel {
             ])
         ])
         viewModel.semesterKeys = ["3"]
+        viewModel.selectedSemesterKey = "3"
         viewModel.currentCourse = 3
         return viewModel
+    }
+}
+
+#Preview {
+    NavigationStack {
+        GradebookView(viewModel: .previewVM)
     }
 }
 #endif
