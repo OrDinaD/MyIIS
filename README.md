@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="MyIIS/Assets.xcassets/AppIcon.appiconset/Icon-iOS-Default-1024x1024@1x.png" width="112" alt="MyIIS app icon">
+  <img src="Default-iOS-Default-1024x1024@1x.png" width="112" alt="MyIIS app icon">
 </p>
 
 # MyIIS
@@ -54,15 +54,19 @@ MyIIS - iOS-приложение для студентов БГУИР. Оно с
 
 ## Стек
 
-| Платформа | Архитектура | Интеграции | Проверки |
-| --- | --- | --- | --- |
-| Swift 6, SwiftUI, iOS 26 | MVVM, Swift Concurrency | URLSession, WidgetKit, App Intents | XCTest, XCUITest, fastlane |
-
-## Требования
-
-- Xcode 26 или новее.
-- iOS 26 SDK.
-- Доступ к аккаунту IIS БГУИР для ручной проверки интеграций.
+<div align="center">
+  <img alt="Swift" src="https://img.shields.io/badge/Swift-6-F05138?style=for-the-badge&logo=swift&logoColor=white">
+  <img alt="SwiftUI" src="https://img.shields.io/badge/SwiftUI-111827?style=for-the-badge&logo=apple&logoColor=white">
+  <img alt="MVVM" src="https://img.shields.io/badge/MVVM-0F172A?style=for-the-badge">
+  <img alt="Concurrency" src="https://img.shields.io/badge/Swift_Concurrency-2563EB?style=for-the-badge&logo=swift&logoColor=white">
+  <img alt="URLSession" src="https://img.shields.io/badge/URLSession-0EA5E9?style=for-the-badge">
+  <br>
+  <img alt="WidgetKit" src="https://img.shields.io/badge/WidgetKit-1D4ED8?style=for-the-badge&logo=apple&logoColor=white">
+  <img alt="App Intents" src="https://img.shields.io/badge/App_Intents-334155?style=for-the-badge">
+  <img alt="XCTest" src="https://img.shields.io/badge/XCTest-10B981?style=for-the-badge">
+  <img alt="fastlane" src="https://img.shields.io/badge/fastlane-8B5CF6?style=for-the-badge&logo=fastlane&logoColor=white">
+  <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub_Actions-111827?style=for-the-badge&logo=githubactions&logoColor=white">
+</div>
 
 ## Структура проекта
 
