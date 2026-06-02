@@ -119,6 +119,11 @@
 "about_section_version" = "Version";
 "about_section_links" = "Links";
 "about_section_documents" = "Documents";
+"about_section_notifications" = "Notifications";
+"about_academic_notifications_title" = "New grades";
+"about_academic_notifications_subtitle" = "Check the gradebook and rating when the app opens and sometimes in the background.";
+"about_academic_notifications_denied_title" = "Notifications are off";
+"about_academic_notifications_denied_message" = "Allow notifications for IIS in iOS Settings to receive messages about new grades.";
 "about_github" = "GitHub";
 "about_telegram" = "Telegram";
 "about_privacy_policy" = "Privacy Policy";

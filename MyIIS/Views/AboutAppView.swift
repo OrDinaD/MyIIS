@@ -8,12 +8,15 @@ struct AboutAppView: View {
     @Environment(\.openURL) private var openURL
     @State private var selectedIcon = AppIconManager.currentIcon
     @State private var iconAlert: IconAlert?
+    @State private var isUpdatingAcademicNotifications = false
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
+    @AppStorage(AcademicChangeNotificationService.enabledDefaultsKey) private var academicChangeNotificationsEnabled = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 versionSection
+                academicNotificationsSection
                 linksSection
                 documentsSection
                 if AppIconManager.supportsAlternateIcons && enableBetaSections {
@@ -46,6 +49,41 @@ struct AboutAppView: View {
                 .padding(.vertical, 18)
                 .background(cardShape.fill(cardBackgroundColor))
                 .overlay(cardShape.stroke(cardBorderColor, lineWidth: 1))
+        }
+    }
+
+    private var academicNotificationsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("about_section_notifications", comment: ""))
+
+            cardContainer {
+                HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "bell.badge.fill")
+                        .font(.title3)
+                        .foregroundStyle(.blue)
+                        .frame(width: 28)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(NSLocalizedString("about_academic_notifications_title", comment: ""))
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+
+                        Text(NSLocalizedString("about_academic_notifications_subtitle", comment: ""))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if isUpdatingAcademicNotifications {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Toggle("", isOn: academicNotificationsBinding)
+                            .labelsHidden()
+                    }
+                }
+                .padding(.vertical, 12)
+            }
         }
     }
 
@@ -116,6 +154,15 @@ struct AboutAppView: View {
 
     private var iconColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 92), spacing: 12)]
+    }
+
+    private var academicNotificationsBinding: Binding<Bool> {
+        Binding(
+            get: { academicChangeNotificationsEnabled },
+            set: { newValue in
+                Task { await setAcademicNotificationsEnabled(newValue) }
+            }
+        )
     }
 
     private var divider: some View {
@@ -196,6 +243,27 @@ struct AboutAppView: View {
         }
         .buttonStyle(.plain)
         .disabled(option == selectedIcon)
+    }
+
+    private func setAcademicNotificationsEnabled(_ enabled: Bool) async {
+        guard enabled != academicChangeNotificationsEnabled else { return }
+        isUpdatingAcademicNotifications = true
+        defer { isUpdatingAcademicNotifications = false }
+
+        if enabled {
+            let didEnable = await AcademicChangeNotificationService.shared.enableFromUserAction()
+            academicChangeNotificationsEnabled = didEnable
+
+            if !didEnable {
+                iconAlert = IconAlert(
+                    title: NSLocalizedString("about_academic_notifications_denied_title", comment: ""),
+                    message: NSLocalizedString("about_academic_notifications_denied_message", comment: "")
+                )
+            }
+        } else {
+            AcademicChangeNotificationService.shared.disableFromUserAction()
+            academicChangeNotificationsEnabled = false
+        }
     }
 
     private func applyIcon(_ option: AppIconOption) async {

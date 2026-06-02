@@ -119,6 +119,11 @@
 "about_section_version" = "Версия";
 "about_section_links" = "Ссылки";
 "about_section_documents" = "Документы";
+"about_section_notifications" = "Уведомления";
+"about_academic_notifications_title" = "Новые отметки";
+"about_academic_notifications_subtitle" = "Проверять зачётку и рейтинг при запуске приложения и иногда в фоне.";
+"about_academic_notifications_denied_title" = "Уведомления выключены";
+"about_academic_notifications_denied_message" = "Разрешите уведомления для ИИС в настройках iOS, чтобы получать сообщения о новых отметках.";
 "about_github" = "GitHub";
 "about_telegram" = "Telegram";
 "about_privacy_policy" = "Политика конфиденциальности";
