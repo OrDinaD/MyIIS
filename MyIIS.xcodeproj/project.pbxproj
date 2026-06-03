@@ -16,6 +16,8 @@
 		F51DCE352FB0E1D900EA90E3 /* KSIS.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */; };
 		F51DCE362FB0E1D900EA90E3 /* Default.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE302FB0E1D900EA90E3 /* Default.icon */; };
 		F55B9F662FB7432C00779F6C /* MyIIS/Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = F55B9F652FB7432C00779F6C /* MyIIS/Settings.bundle */; };
+		F58E2F0D2FD00E66002BCF03 /* Messages.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F58E2F0C2FD00E66002BCF03 /* Messages.framework */; };
+		F58E2F192FD00E68002BCF03 /* MyIISMessages.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F5A5EE102F1C801900D2B7A1 /* MyIISWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -26,6 +28,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = F51DCBA72FB09EC400EA90E3;
 			remoteInfo = MyIISIntents;
+		};
+		F58E2F172FD00E68002BCF03 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F58E2F092FD00E66002BCF03;
+			remoteInfo = MyIISMessages;
 		};
 		F59436E42E9CF9DD00A3E835 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -68,6 +77,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				F58E2F192FD00E68002BCF03 /* MyIISMessages.appex in Embed Foundation Extensions */,
 				F5A5EE102F1C801900D2B7A1 /* MyIISWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -85,6 +95,8 @@
 		F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = KSIS.icon; sourceTree = "<group>"; };
 		F51DCE302FB0E1D900EA90E3 /* Default.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Default.icon; sourceTree = "<group>"; };
 		F55B9F652FB7432C00779F6C /* MyIIS/Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = MyIIS/Settings.bundle; sourceTree = "<group>"; };
+		F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F58E2F0C2FD00E66002BCF03 /* Messages.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Messages.framework; path = System/Library/Frameworks/Messages.framework; sourceTree = SDKROOT; };
 		F59436CF2E9CF9DA00A3E835 /* MyIIS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyIIS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,6 +111,13 @@
 			);
 			target = F51DCBA72FB09EC400EA90E3 /* MyIISIntents */;
 		};
+		F58E2F1C2FD00E68002BCF03 /* Exceptions for "MyIISMessages" folder in "MyIISMessages" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F58E2F092FD00E66002BCF03 /* MyIISMessages */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -108,6 +127,14 @@
 				F51DCBB22FB09EC400EA90E3 /* Exceptions for "MyIISIntents" folder in "MyIISIntents" target */,
 			);
 			path = MyIISIntents;
+			sourceTree = "<group>";
+		};
+		F58E2F0E2FD00E66002BCF03 /* MyIISMessages */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F58E2F1C2FD00E68002BCF03 /* Exceptions for "MyIISMessages" folder in "MyIISMessages" target */,
+			);
+			path = MyIISMessages;
 			sourceTree = "<group>";
 		};
 		F59436D12E9CF9DA00A3E835 /* MyIIS */ = {
@@ -142,6 +169,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F58E2F072FD00E66002BCF03 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F58E2F0D2FD00E66002BCF03 /* Messages.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -189,6 +224,14 @@
 			path = logos;
 			sourceTree = "<group>";
 		};
+		F58E2F0B2FD00E66002BCF03 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F58E2F0C2FD00E66002BCF03 /* Messages.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		F59436C62E9CF9DA00A3E835 = {
 			isa = PBXGroup;
 			children = (
@@ -199,6 +242,8 @@
 				F51DCBA92FB09EC400EA90E3 /* MyIISIntents */,
 				F5B1AA102FC70D9D00A56D01 /* MyIISTests */,
 				F5EE36312FB1ED94004B7BD8 /* MyIISUITests */,
+				F58E2F0E2FD00E66002BCF03 /* MyIISMessages */,
+				F58E2F0B2FD00E66002BCF03 /* Frameworks */,
 				F59436D02E9CF9DA00A3E835 /* Products */,
 				F51DCE2A2FB0D4BB00EA90E3 /* logos */,
 				F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */,
@@ -213,6 +258,7 @@
 				F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */,
 				F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */,
 				F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */,
+				F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -243,6 +289,28 @@
 			productReference = F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */;
 			productType = "com.apple.product-type.extensionkit-extension";
 		};
+		F58E2F092FD00E66002BCF03 /* MyIISMessages */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F58E2F1D2FD00E68002BCF03 /* Build configuration list for PBXNativeTarget "MyIISMessages" */;
+			buildPhases = (
+				F58E2F062FD00E66002BCF03 /* Sources */,
+				F58E2F072FD00E66002BCF03 /* Frameworks */,
+				F58E2F082FD00E66002BCF03 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F58E2F0E2FD00E66002BCF03 /* MyIISMessages */,
+			);
+			name = MyIISMessages;
+			packageProductDependencies = (
+			);
+			productName = MyIISMessages;
+			productReference = F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */;
+			productType = "com.apple.product-type.app-extension.messages";
+		};
 		F59436CE2E9CF9DA00A3E835 /* MyIIS */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F59436DA2E9CF9DD00A3E835 /* Build configuration list for PBXNativeTarget "MyIIS" */;
@@ -258,6 +326,7 @@
 			dependencies = (
 				F5A5EE122F1C801900D2B7A1 /* PBXTargetDependency */,
 				F51DCBB02FB09EC400EA90E3 /* PBXTargetDependency */,
+				F58E2F182FD00E68002BCF03 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				F59436D12E9CF9DA00A3E835 /* MyIIS */,
@@ -346,11 +415,19 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2640;
+				LastSwiftUpdateCheck = 2650;
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					F51DCBA72FB09EC400EA90E3 = {
 						CreatedOnToolsVersion = 26.4.1;
+					};
+					F58E2F092FD00E66002BCF03 = {
+						CreatedOnToolsVersion = 26.5;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 					F59436CE2E9CF9DA00A3E835 = {
 						CreatedOnToolsVersion = 26.0.1;
@@ -391,12 +468,20 @@
 				F5A5EE032F1C7E2A00D2B7A1 /* MyIISWidgetExtension */,
 				F51DCBA72FB09EC400EA90E3 /* MyIISIntents */,
 				F5EE362F2FB1ED94004B7BD8 /* MyIISUITests */,
+				F58E2F092FD00E66002BCF03 /* MyIISMessages */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F51DCBA62FB09EC400EA90E3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F58E2F082FD00E66002BCF03 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -449,6 +534,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F58E2F062FD00E66002BCF03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F59436CB2E9CF9DA00A3E835 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -484,6 +576,11 @@
 			isa = PBXTargetDependency;
 			target = F51DCBA72FB09EC400EA90E3 /* MyIISIntents */;
 			targetProxy = F51DCBAF2FB09EC400EA90E3 /* PBXContainerItemProxy */;
+		};
+		F58E2F182FD00E68002BCF03 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F58E2F092FD00E66002BCF03 /* MyIISMessages */;
+			targetProxy = F58E2F172FD00E68002BCF03 /* PBXContainerItemProxy */;
 		};
 		F59436E52E9CF9DD00A3E835 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -552,6 +649,68 @@
 				);
 				MARKETING_VERSION = 0.6.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISIntents;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F58E2F1A2FD00E68002BCF03 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
+				CODE_SIGN_ENTITLEMENTS = MyIISMessages/MyIISMessages.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MyIISMessages/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MyIISMessages;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISMessages;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F58E2F1B2FD00E68002BCF03 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
+				CODE_SIGN_ENTITLEMENTS = MyIISMessages/MyIISMessages.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = MyIISMessages/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = MyIISMessages;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.5;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISMessages;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -701,20 +860,16 @@
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "com.OrDinaD.MyIIS.academic-refresh";
 				INFOPLIST_KEY_CFBundleDisplayName = "ИИС";
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleURLName = \"by.bsuir.MyIIS\";\n    CFBundleURLSchemes =     (\n        myiis\n    );\n}";
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = (
-					"com.OrDinaD.MyIIS.academic-refresh",
-				);
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Нам нужен доступ к камере для обновления вашего фото профиля.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Нужно сохранить изображение зачётки в Фото.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Нам нужен доступ к галерее для выбора вашего фото профиля.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = (
-					fetch,
-				);
+				INFOPLIST_KEY_UIBackgroundModes = fetch;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -747,20 +902,16 @@
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "com.OrDinaD.MyIIS.academic-refresh";
 				INFOPLIST_KEY_CFBundleDisplayName = "ИИС";
 				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleURLName = \"by.bsuir.MyIIS\";\n    CFBundleURLSchemes =     (\n        myiis\n    );\n}";
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = (
-					"com.OrDinaD.MyIIS.academic-refresh",
-				);
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Нам нужен доступ к камере для обновления вашего фото профиля.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Нужно сохранить изображение зачётки в Фото.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Нам нужен доступ к галерее для выбора вашего фото профиля.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = (
-					fetch,
-				);
+				INFOPLIST_KEY_UIBackgroundModes = fetch;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -932,6 +1083,15 @@
 			buildConfigurations = (
 				F51DCBB42FB09EC400EA90E3 /* Debug */,
 				F51DCBB52FB09EC400EA90E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F58E2F1D2FD00E68002BCF03 /* Build configuration list for PBXNativeTarget "MyIISMessages" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F58E2F1A2FD00E68002BCF03 /* Debug */,
+				F58E2F1B2FD00E68002BCF03 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

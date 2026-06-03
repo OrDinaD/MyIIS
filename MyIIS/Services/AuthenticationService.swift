@@ -219,6 +219,7 @@ class AuthenticationService: ObservableObject {
         }
 
         AttendanceWidgetDataStore.clear()
+        MyIISDataStore.clear()
         logService.log("User logged out.")
     }
 }

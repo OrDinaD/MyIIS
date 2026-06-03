@@ -99,6 +99,7 @@ final class GradebookViewModel: ObservableObject {
         self.markbook = markbook
         self.currentCourse = personalProfile.course
         MyIISDataStore.update(averageScore: markbook.averageMark)
+        saveGradebookMessageSnapshot(markbook: markbook)
 
         semesterKeys = sortSemesterKeys(markbook.markPages.keys)
         selectedSemesterKey = latestSemesterKey(from: semesterKeys)
@@ -109,6 +110,7 @@ final class GradebookViewModel: ObservableObject {
         self.currentCourse = currentCourse
         self.lastUpdateTime = updatedAt
         MyIISDataStore.update(averageScore: markbook.averageMark)
+        saveGradebookMessageSnapshot(markbook: markbook)
 
         semesterKeys = sortSemesterKeys(markbook.markPages.keys)
         selectedSemesterKey = latestSemesterKey(from: semesterKeys)
@@ -122,6 +124,43 @@ final class GradebookViewModel: ObservableObject {
 
     private func latestSemesterKey(from keys: [String]) -> String? {
         keys.last
+    }
+
+    private func saveGradebookMessageSnapshot(markbook: MarkbookResponse) {
+        let semesters = sortSemesterKeys(markbook.markPages.keys).compactMap { key -> MyIISGradebookMessageSnapshot.Semester? in
+            guard let semester = markbook.markPages[key] else { return nil }
+            return MyIISGradebookMessageSnapshot.Semester(
+                id: key,
+                averageText: formattedAverage(semester.averageMark),
+                subjects: semester.marks.map(makeMessageSnapshotSubject)
+            )
+        }
+
+        let snapshot = MyIISGradebookMessageSnapshot(
+            number: markbook.number.nonEmptyOrDash,
+            overallAverageText: formattedAverage(markbook.averageMark),
+            updatedAt: Date(),
+            semesters: semesters
+        )
+        MyIISDataStore.saveGradebookMessageSnapshot(snapshot)
+    }
+
+    private func makeMessageSnapshotSubject(from mark: MarkbookMark) -> MyIISGradebookMessageSnapshot.Subject {
+        MyIISGradebookMessageSnapshot.Subject(
+            id: mark.id,
+            abbreviation: mark.subject.nonEmptyOrDash,
+            fullName: mark.fullSubject.nonEmptyOrDash,
+            controlForm: mark.formOfControl.nonEmptyOrDash,
+            grade: mark.displayGrade.nonEmptyOrDash,
+            averageText: mark.averageForLastFourYearsText ?? "—",
+            retakesText: mark.displayRetakes.nonEmptyOrDash,
+            dateText: mark.date.nonEmptyOrDash,
+            teacherText: mark.teacher.nonEmptyOrDash
+        )
+    }
+
+    private func formattedAverage(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(2)))
     }
 
     private func saveCache(markbook: MarkbookResponse, currentCourse: Int?, updatedAt: Date) {
@@ -138,6 +177,22 @@ final class GradebookViewModel: ObservableObject {
         }
 
         applyCached(markbook: snapshot.markbook, currentCourse: snapshot.currentCourse, updatedAt: snapshot.updatedAt)
+    }
+}
+
+private extension Optional where Wrapped == String {
+    var nonEmptyOrDash: String {
+        guard let value = self?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return "—"
+        }
+        return value
+    }
+}
+
+private extension String {
+    var nonEmptyOrDash: String {
+        let value = trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? "—" : value
     }
 }
 

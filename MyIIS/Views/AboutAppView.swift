@@ -32,7 +32,8 @@ struct AboutAppView: View {
                 .ignoresSafeArea()
         )
         .navigationTitle(NSLocalizedString("about_title", comment: ""))
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.large)
+        .hiddenNavigationBarBackground()
         .alert(item: $iconAlert) { alert in
             Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("Ок")))
         }

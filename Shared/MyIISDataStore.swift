@@ -11,17 +11,50 @@ struct MyIISSharedData: Codable, Sendable {
     var updatedAt: Date
 }
 
+struct MyIISGradebookMessageSnapshot: Codable, Equatable, Sendable {
+    let number: String
+    let overallAverageText: String
+    let updatedAt: Date
+    let semesters: [Semester]
+
+    var latestSemester: Semester? {
+        semesters.last
+    }
+
+    struct Semester: Codable, Equatable, Identifiable, Sendable {
+        let id: String
+        let averageText: String
+        let subjects: [Subject]
+
+        var title: String {
+            "Семестр \(id)"
+        }
+    }
+
+    struct Subject: Codable, Equatable, Identifiable, Sendable {
+        let id: String
+        let abbreviation: String
+        let fullName: String
+        let controlForm: String
+        let grade: String
+        let averageText: String
+        let retakesText: String
+        let dateText: String
+        let teacherText: String
+    }
+}
+
 enum MyIISDataStore {
     private enum Key {
         static let sharedData = "myiis_shared_data"
+        static let gradebookMessageSnapshot = "myiis_gradebook_message_snapshot_v1"
     }
 
     private static var defaults: UserDefaults? {
-        let identifier = "group.com.OrDinaD.MyIIS"
-        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier) != nil else {
+        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier) != nil else {
             return nil
         }
-        return UserDefaults(suiteName: identifier)
+        return UserDefaults(suiteName: AppGroup.identifier)
     }
 
     static func update(
@@ -51,7 +84,24 @@ enum MyIISDataStore {
         return try? JSONDecoder().decode(MyIISSharedData.self, from: data)
     }
 
+    static func saveGradebookMessageSnapshot(_ snapshot: MyIISGradebookMessageSnapshot) {
+        guard let defaults else { return }
+        guard let encoded = try? JSONEncoder().encode(snapshot) else { return }
+        _ = UserDefaultsPayloadStore.save(encoded, forKey: Key.gradebookMessageSnapshot, in: defaults)
+    }
+
+    static func loadGradebookMessageSnapshot() -> MyIISGradebookMessageSnapshot? {
+        guard let defaults,
+              let data = UserDefaultsPayloadStore.load(forKey: Key.gradebookMessageSnapshot, from: defaults)
+        else {
+            return nil
+        }
+        return try? JSONDecoder().decode(MyIISGradebookMessageSnapshot.self, from: data)
+    }
+
     static func clear() {
-        defaults?.removeObject(forKey: Key.sharedData)
+        guard let defaults else { return }
+        defaults.removeObject(forKey: Key.sharedData)
+        defaults.removeObject(forKey: Key.gradebookMessageSnapshot)
     }
 }
