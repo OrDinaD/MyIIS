@@ -1,8 +1,9 @@
+import QuickLook
 import SwiftUI
 
 struct DormitoryView: View {
     @StateObject private var viewModel: DormitoryViewModel
-    @State private var previewFile: DormitoryPreviewFile?
+    @State private var previewURL: URL?
     @State private var editorContext: DormitoryApplicationEditorContext?
 
     @MainActor
@@ -26,11 +27,7 @@ struct DormitoryView: View {
         .refreshable {
             await viewModel.reload()
         }
-        .sheet(item: $previewFile) { file in
-            DormitoryFilePreviewSheet(file: file)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-        }
+        .quickLookPreview($previewURL)
         .sheet(item: $editorContext) { context in
             DormitoryApplicationEditorSheet(
                 context: context,
@@ -106,19 +103,13 @@ struct DormitoryView: View {
 
     private func openDocument(for application: DormitoryQueueApplication) async {
         if let fileURL = await viewModel.downloadDocument(for: application) {
-            previewFile = DormitoryPreviewFile(
-                url: fileURL,
-                title: application.docReference ?? "Вложение №\(application.number)"
-            )
+            previewURL = fileURL
         }
     }
 
     private func downloadApplicationForm(for application: DormitoryQueueApplication) async {
         if let fileURL = await viewModel.downloadApplicationForm(for: application) {
-            previewFile = DormitoryPreviewFile(
-                url: fileURL,
-                title: "Заявление №\(application.number)"
-            )
+            previewURL = fileURL
         }
     }
 }
@@ -211,7 +202,7 @@ private struct ApplicationsSection: View {
 
 private struct DormitoryAnnouncementCard: View {
     let announcement: DormitoryAnnouncement
-    @State private var isExpanded = true
+    @State private var isExpanded = false
 
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {

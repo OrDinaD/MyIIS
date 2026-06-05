@@ -93,6 +93,7 @@
 		F51DCE2E2FB0E1D900EA90E3 /* bright.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = bright.icon; sourceTree = "<group>"; };
 		F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = KSIS.icon; sourceTree = "<group>"; };
 		F51DCE302FB0E1D900EA90E3 /* Default.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Default.icon; sourceTree = "<group>"; };
+		F56FE4ED2FD2DD45004E8300 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F58E2F0C2FD00E66002BCF03 /* Messages.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Messages.framework; path = System/Library/Frameworks/Messages.framework; sourceTree = SDKROOT; };
 		F59436CF2E9CF9DA00A3E835 /* MyIIS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyIIS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -244,6 +245,7 @@
 				F59436D02E9CF9DA00A3E835 /* Products */,
 				F51DCE2A2FB0D4BB00EA90E3 /* logos */,
 				F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */,
+				F56FE4ED2FD2DD45004E8300 /* Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
@@ -855,20 +857,8 @@
 				CURRENT_PROJECT_VERSION = 52;
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "com.OrDinaD.MyIIS.academic-refresh";
-				INFOPLIST_KEY_CFBundleDisplayName = "ИИС";
-				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleURLName = \"by.bsuir.MyIIS\";\n    CFBundleURLSchemes =     (\n        myiis\n    );\n}";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Нам нужен доступ к камере для обновления вашего фото профиля.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Нужно сохранить изображение зачётки в Фото.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Нам нужен доступ к галерее для выбора вашего фото профиля.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = fetch;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -897,20 +887,8 @@
 				CURRENT_PROJECT_VERSION = 52;
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_BGTaskSchedulerPermittedIdentifiers = "com.OrDinaD.MyIIS.academic-refresh";
-				INFOPLIST_KEY_CFBundleDisplayName = "ИИС";
-				INFOPLIST_KEY_CFBundleURLTypes = "{\n    CFBundleURLName = \"by.bsuir.MyIIS\";\n    CFBundleURLSchemes =     (\n        myiis\n    );\n}";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Нам нужен доступ к камере для обновления вашего фото профиля.";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Нужно сохранить изображение зачётки в Фото.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Нам нужен доступ к галерее для выбора вашего фото профиля.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UIBackgroundModes = fetch;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
