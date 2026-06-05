@@ -1,12 +1,10 @@
-import QuickLook
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct DormitoryView: View {
     @StateObject private var viewModel: DormitoryViewModel
     @State private var previewFileURL: URL?
-    @State private var isLoadingDocument = false
-    @State private var documentErrorMessage: String?
-    private let documentService = DormitoryService()
+    @State private var editorContext: DormitoryApplicationEditorContext?
 
     @MainActor
     init(viewModel: DormitoryViewModel? = nil) {
@@ -37,13 +35,38 @@ struct DormitoryView: View {
                 QuickLookPreview(url: fileURL)
             }
         }
-        .alert(NSLocalizedString("dormitory_doc_unavailable", comment: ""), isPresented: Binding(
-            get: { documentErrorMessage != nil },
-            set: { if !$0 { documentErrorMessage = nil } }
+        .sheet(item: $editorContext) { context in
+            DormitoryApplicationEditorSheet(
+                context: context,
+                isSubmitting: viewModel.isSubmittingApplication,
+                onCancel: { editorContext = nil },
+                onCreate: { documentURL in
+                    Task {
+                        if await viewModel.createApplication(documentURL: documentURL) {
+                            editorContext = nil
+                        }
+                    }
+                },
+                onUpdate: { application, action in
+                    Task {
+                        if await viewModel.updateApplication(application, documentAction: action) {
+                            editorContext = nil
+                        }
+                    }
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .alert(NSLocalizedString("common_error", comment: ""), isPresented: Binding(
+            get: { viewModel.actionErrorMessage != nil },
+            set: { if !$0 { viewModel.actionErrorMessage = nil } }
         )) {
-            Button(NSLocalizedString("common_ok", comment: ""), role: .cancel) { documentErrorMessage = nil }
+            Button(NSLocalizedString("common_ok", comment: ""), role: .cancel) {
+                viewModel.actionErrorMessage = nil
+            }
         } message: {
-            Text(documentErrorMessage ?? "")
+            Text(viewModel.actionErrorMessage ?? "")
         }
     }
 
@@ -65,12 +88,22 @@ struct DormitoryView: View {
             }
 
             ApplicationsSection(
+                announcement: viewModel.announcement,
                 applications: viewModel.applications,
-                isLoadingDocument: isLoadingDocument,
+                canCreateApplication: viewModel.canCreateApplication,
+                isSubmittingApplication: viewModel.isSubmittingApplication,
+                isDownloadingFile: viewModel.isDownloadingFile,
+                onCreateApplication: {
+                    editorContext = .create
+                },
                 onOpenDocument: { application in
-                    Task {
-                        await openDocument(for: application)
-                    }
+                    Task { await openDocument(for: application) }
+                },
+                onEditApplication: { application in
+                    editorContext = .edit(application)
+                },
+                onDownloadApplicationForm: { application in
+                    Task { await downloadApplicationForm(for: application) }
                 }
             )
             PrivilegesSection(records: viewModel.privilegeRecords)
@@ -78,35 +111,85 @@ struct DormitoryView: View {
     }
 
     private func openDocument(for application: DormitoryQueueApplication) async {
-        if isLoadingDocument { return }
-        isLoadingDocument = true
-        defer { isLoadingDocument = false }
-
-        do {
-            let fileURL = try await documentService.downloadDocument(
-                forRequestID: application.id,
-                suggestedFileName: application.docReference
-            )
+        if let fileURL = await viewModel.downloadDocument(for: application) {
             previewFileURL = fileURL
-        } catch {
-            if let localized = error as? LocalizedError, let message = localized.errorDescription {
-                documentErrorMessage = message
-            } else {
-                documentErrorMessage = error.localizedDescription
-            }
+        }
+    }
+
+    private func downloadApplicationForm(for application: DormitoryQueueApplication) async {
+        if let fileURL = await viewModel.downloadApplicationForm(for: application) {
+            previewFileURL = fileURL
+        }
+    }
+}
+
+enum DormitoryApplicationEditorContext: Identifiable {
+    case create
+    case edit(DormitoryQueueApplication)
+
+    var id: String {
+        switch self {
+        case .create:
+            return "create"
+        case .edit(let application):
+            return "edit-\(application.id)"
+        }
+    }
+
+    var application: DormitoryQueueApplication? {
+        if case .edit(let application) = self { return application }
+        return nil
+    }
+
+    var title: String {
+        switch self {
+        case .create:
+            return "Оформление заявки на общежитие"
+        case .edit:
+            return "Редактирование заявки на общежитие"
+        }
+    }
+
+    var submitTitle: String {
+        switch self {
+        case .create:
+            return "Отправить заявку"
+        case .edit:
+            return "Сохранить изменения"
         }
     }
 }
 
 private struct ApplicationsSection: View {
+    let announcement: DormitoryAnnouncement?
     let applications: [DormitoryQueueApplication]
-    let isLoadingDocument: Bool
+    let canCreateApplication: Bool
+    let isSubmittingApplication: Bool
+    let isDownloadingFile: Bool
+    let onCreateApplication: () -> Void
     let onOpenDocument: (DormitoryQueueApplication) -> Void
+    let onEditApplication: (DormitoryQueueApplication) -> Void
+    let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(NSLocalizedString("dormitory_section_applications", comment: ""))
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            if let announcement {
+                DormitoryAnnouncementCard(announcement: announcement)
+            }
+
+            DormitorySectionHeader(
+                title: NSLocalizedString("dormitory_section_applications", comment: ""),
+                systemImage: "building.2"
+            )
+
+            Button(action: onCreateApplication) {
+                Label("Подать заявку", systemImage: "doc.badge.plus")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(!canCreateApplication || isSubmittingApplication)
+            .accessibilityHint(canCreateApplication ? "Открывает форму подачи заявки" : "Подача заявки сейчас недоступна")
 
             if applications.isEmpty {
                 EmptyStateCard(text: NSLocalizedString("dormitory_no_applications", comment: ""))
@@ -114,8 +197,10 @@ private struct ApplicationsSection: View {
                 ForEach(applications) { application in
                     ApplicationCard(
                         application: application,
-                        isLoadingDocument: isLoadingDocument,
-                        onOpenDocument: { onOpenDocument(application) }
+                        isDownloadingFile: isDownloadingFile,
+                        onOpenDocument: { onOpenDocument(application) },
+                        onEditApplication: { onEditApplication(application) },
+                        onDownloadApplicationForm: { onDownloadApplicationForm(application) }
                     )
                 }
             }
@@ -124,13 +209,87 @@ private struct ApplicationsSection: View {
     }
 }
 
-private struct ApplicationCard: View {
-    let application: DormitoryQueueApplication
-    let isLoadingDocument: Bool
-    let onOpenDocument: () -> Void
+private struct DormitoryAnnouncementCard: View {
+    let announcement: DormitoryAnnouncement
+    @State private var isExpanded = true
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(announcement.leadingMessage)
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(announcement.requiredDocumentsIntro)
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(announcement.requiredDocuments) { document in
+                        BulletRow(document: document)
+                    }
+                }
+            }
+            .padding(.top, 10)
+        } label: {
+            Label(announcement.title, systemImage: "megaphone.fill")
+                .font(.headline)
+                .foregroundStyle(.primary)
+        }
+        .tint(.blue)
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(red: 1.0, green: 0.90, blue: 0.90))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.blue.opacity(0.35), lineWidth: 1)
+        )
+        .accessibilityAction(named: isExpanded ? "Свернуть" : "Развернуть") {
+            withAnimation(.snappy) {
+                isExpanded.toggle()
+            }
+        }
+    }
+}
+
+private struct BulletRow: View {
+    let document: DormitoryAnnouncementDocument
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "circle.fill")
+                .font(.system(size: 5, weight: .bold))
+                .foregroundStyle(.primary)
+            Text(documentText)
+                .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var documentText: AttributedString {
+        var title = AttributedString(document.title)
+        title.font = .subheadline.bold()
+
+        guard let details = document.details else { return title }
+
+        var result = title
+        result.append(AttributedString(" (\(details))"))
+        return result
+    }
+}
+
+private struct ApplicationCard: View {
+    let application: DormitoryQueueApplication
+    let isDownloadingFile: Bool
+    let onOpenDocument: () -> Void
+    let onEditApplication: () -> Void
+    let onDownloadApplicationForm: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(String(format: NSLocalizedString("dormitory_application_number", comment: ""), application.number))
@@ -144,7 +303,7 @@ private struct ApplicationCard: View {
 
                 Spacer(minLength: 8)
 
-                StatusTag(status: application.status)
+                DormitoryStatusTag(status: application.status)
             }
 
             Divider()
@@ -162,7 +321,7 @@ private struct ApplicationCard: View {
 
                 GridRow {
                     LabelCaption(title: NSLocalizedString("dormitory_label_room", comment: ""))
-                    ValueCaption(value: application.roomInfo ?? "—")
+                    ValueCaption(value: application.roomInfo ?? "-")
                 }
 
                 if let queueNumber = application.numberInQueue {
@@ -182,92 +341,109 @@ private struct ApplicationCard: View {
                 if application.hasDocument {
                     GridRow {
                         LabelCaption(title: NSLocalizedString("dormitory_label_document", comment: ""))
-                        DocumentValueButton(
-                            title: application.docReference ?? NSLocalizedString("dormitory_open_attachment", comment: ""),
-                            isLoading: isLoadingDocument,
-                            onOpen: onOpenDocument
-                        )
+                        ValueCaption(value: application.docReference ?? NSLocalizedString("dormitory_open_attachment", comment: ""))
                     }
                 }
             }
+
+            ApplicationActions(
+                application: application,
+                isDownloadingFile: isDownloadingFile,
+                onOpenDocument: onOpenDocument,
+                onEditApplication: onEditApplication,
+                onDownloadApplicationForm: onDownloadApplicationForm
+            )
         }
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
+        .accessibilityElement(children: .contain)
+        .accessibilityActions {
+            if application.hasDocument {
+                Button("Скачать прикреплённый файл", action: onOpenDocument)
+            }
+            if application.canEdit {
+                Button("Редактировать заявку", action: onEditApplication)
+            }
+            if application.canDownloadApplicationForm {
+                Button("Скачать заявление", action: onDownloadApplicationForm)
+            }
+        }
     }
 
     private func formattedDate(_ date: Date?) -> String {
-        guard let date else { return "—" }
+        guard let date else { return "-" }
         return dormitoryDateFormatter.string(from: date)
     }
 }
 
-private struct DocumentValueButton: View {
-    let title: String
-    let isLoading: Bool
-    let onOpen: () -> Void
+private struct ApplicationActions: View {
+    let application: DormitoryQueueApplication
+    let isDownloadingFile: Bool
+    let onOpenDocument: () -> Void
+    let onEditApplication: () -> Void
+    let onDownloadApplicationForm: () -> Void
 
     var body: some View {
-        Button(action: onOpen) {
-            HStack(spacing: 6) {
-                Text(title)
+        let hasActions = application.hasDocument || application.canEdit || application.canDownloadApplicationForm
+        if hasActions {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Действия")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.blue)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Image(systemName: "arrow.up.right.square")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.blue)
-                if isLoading {
-                    ProgressView()
-                        .controlSize(.mini)
+                    .foregroundStyle(.secondary)
+
+                HStack(spacing: 10) {
+                    if application.hasDocument {
+                        ApplicationActionButton(
+                            title: "Скачать прикреплённый файл",
+                            systemImage: "paperclip",
+                            isDisabled: isDownloadingFile,
+                            action: onOpenDocument
+                        )
+                    }
+
+                    if application.canEdit {
+                        ApplicationActionButton(
+                            title: "Редактировать заявку",
+                            systemImage: "square.and.pencil",
+                            isDisabled: false,
+                            action: onEditApplication
+                        )
+                    }
+
+                    if application.canDownloadApplicationForm {
+                        ApplicationActionButton(
+                            title: "Скачать заявление",
+                            systemImage: "arrow.down.doc",
+                            isDisabled: isDownloadingFile,
+                            action: onDownloadApplicationForm
+                        )
+                    }
+
+                    Spacer(minLength: 0)
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .buttonStyle(.plain)
-        .contextMenu {
-            Button(action: onOpen) {
-                Label(NSLocalizedString("dormitory_open_document", comment: ""), systemImage: "doc.text.viewfinder")
             }
         }
     }
 }
 
-private struct QuickLookPreview: UIViewControllerRepresentable {
-    let url: URL
+private struct ApplicationActionButton: View {
+    let title: String
+    let systemImage: String
+    let isDisabled: Bool
+    let action: () -> Void
 
-    func makeUIViewController(context: Context) -> QLPreviewController {
-        let controller = QLPreviewController()
-        controller.dataSource = context.coordinator
-        return controller
-    }
-
-    func updateUIViewController(_ uiViewController: QLPreviewController, context: Context) {
-        context.coordinator.url = url
-        uiViewController.reloadData()
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(url: url)
-    }
-
-    final class Coordinator: NSObject, QLPreviewControllerDataSource {
-        var url: URL
-
-        init(url: URL) {
-            self.url = url
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.body.weight(.semibold))
+                .frame(width: 42, height: 36)
         }
-
-        func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
-            1
-        }
-
-        func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
-            url as NSURL
-        }
+        .buttonStyle(.bordered)
+        .disabled(isDisabled)
+        .accessibilityLabel(title)
     }
 }
 
@@ -276,8 +452,10 @@ private struct PrivilegesSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(NSLocalizedString("dormitory_section_privileges", comment: ""))
-                .font(.headline)
+            DormitorySectionHeader(
+                title: NSLocalizedString("dormitory_section_privileges", comment: ""),
+                systemImage: "star.circle"
+            )
 
             if records.isEmpty {
                 EmptyStateCard(text: NSLocalizedString("dormitory_no_privileges", comment: ""))
@@ -305,6 +483,17 @@ private struct PrivilegesSection: View {
     }
 }
 
+private struct DormitorySectionHeader: View {
+    let title: String
+    let systemImage: String
+
+    var body: some View {
+        Label(title, systemImage: systemImage)
+            .font(.headline)
+            .foregroundStyle(.primary)
+    }
+}
+
 private struct LabelCaption: View {
     let title: String
 
@@ -324,37 +513,6 @@ private struct ValueCaption: View {
             .font(.caption.weight(.semibold))
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct StatusTag: View {
-    let status: String
-
-    private var tint: Color {
-        let normalized = status.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-        if normalized.contains("засел") {
-            return .green
-        }
-
-        if normalized.contains("высел") {
-            return .orange
-        }
-
-        if normalized.contains("отказ") {
-            return .red
-        }
-
-        return .blue
-    }
-
-    var body: some View {
-        Text(status)
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(tint)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(tint.opacity(0.14), in: Capsule())
     }
 }
 
@@ -410,7 +568,7 @@ private let dormitoryDateFormatter: DateFormatter = {
 #if DEBUG
 extension DormitoryViewModel {
     static var previewVM: DormitoryViewModel {
-        DormitoryViewModel()
+        DormitoryViewModel.preview
     }
 }
 #endif

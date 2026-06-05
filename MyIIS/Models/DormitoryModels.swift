@@ -13,6 +13,10 @@ struct DormitoryQueueApplication: Decodable, Identifiable, Equatable {
     let rejectionReason: String?
     let roomInfo: String?
 
+    private let acceptedDateSource: String?
+    private let applicationDateSource: String?
+    private let settledDateSource: String?
+
     init(
         id: Int,
         acceptedDate: Date?,
@@ -24,7 +28,10 @@ struct DormitoryQueueApplication: Decodable, Identifiable, Equatable {
         docReference: String?,
         docContent: String?,
         rejectionReason: String?,
-        roomInfo: String?
+        roomInfo: String?,
+        acceptedDateSource: String? = nil,
+        applicationDateSource: String? = nil,
+        settledDateSource: String? = nil
     ) {
         self.id = id
         self.acceptedDate = acceptedDate
@@ -37,6 +44,9 @@ struct DormitoryQueueApplication: Decodable, Identifiable, Equatable {
         self.docContent = docContent
         self.rejectionReason = rejectionReason
         self.roomInfo = roomInfo
+        self.acceptedDateSource = acceptedDateSource
+        self.applicationDateSource = applicationDateSource
+        self.settledDateSource = settledDateSource
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -65,18 +75,56 @@ struct DormitoryQueueApplication: Decodable, Identifiable, Equatable {
         rejectionReason = try container.decodeIfPresent(String.self, forKey: .rejectionReason)
         roomInfo = try container.decodeIfPresent(String.self, forKey: .roomInfo)
 
-        let acceptedDateRaw = try container.decodeIfPresent(String.self, forKey: .acceptedDate)
-        let applicationDateRaw = try container.decodeIfPresent(String.self, forKey: .applicationDate)
-        let settledDateRaw = try container.decodeIfPresent(String.self, forKey: .settledDate)
+        acceptedDateSource = try container.decodeIfPresent(String.self, forKey: .acceptedDate)
+        applicationDateSource = try container.decodeIfPresent(String.self, forKey: .applicationDate)
+        settledDateSource = try container.decodeIfPresent(String.self, forKey: .settledDate)
 
-        acceptedDate = DormitoryDateParser.parse(acceptedDateRaw)
-        applicationDate = DormitoryDateParser.parse(applicationDateRaw)
-        settledDate = DormitoryDateParser.parse(settledDateRaw)
+        acceptedDate = DormitoryDateParser.parse(acceptedDateSource)
+        applicationDate = DormitoryDateParser.parse(applicationDateSource)
+        settledDate = DormitoryDateParser.parse(settledDateSource)
     }
 
     var hasDocument: Bool {
         !(docReference?.isEmpty ?? true) || !(docContent?.isEmpty ?? true)
     }
+
+    var canEdit: Bool {
+        status == DormitoryApplicationStatus.waiting.rawValue
+    }
+
+    var canDownloadApplicationForm: Bool {
+        status == DormitoryApplicationStatus.waiting.rawValue || status == DormitoryApplicationStatus.documentsAccepted.rawValue
+    }
+
+    func updatePayload(docContent: String?) -> DormitoryQueueApplicationUpdatePayload {
+        DormitoryQueueApplicationUpdatePayload(
+            id: id,
+            acceptedDate: acceptedDateSource ?? DormitoryDateParser.apiString(from: acceptedDate),
+            applicationDate: applicationDateSource ?? DormitoryDateParser.apiString(from: applicationDate),
+            settledDate: settledDateSource ?? DormitoryDateParser.apiString(from: settledDate),
+            status: status,
+            number: number,
+            numberInQueue: numberInQueue,
+            docReference: docReference,
+            docContent: docContent,
+            rejectionReason: rejectionReason,
+            roomInfo: roomInfo
+        )
+    }
+}
+
+struct DormitoryQueueApplicationUpdatePayload: Encodable {
+    let id: Int
+    let acceptedDate: String?
+    let applicationDate: String?
+    let settledDate: String?
+    let status: String
+    let number: Int
+    let numberInQueue: Int?
+    let docReference: String?
+    let docContent: String?
+    let rejectionReason: String?
+    let roomInfo: String?
 }
 
 struct DormitoryPrivilegeRecord: Decodable, Identifiable, Equatable {
@@ -86,8 +134,82 @@ struct DormitoryPrivilegeRecord: Decodable, Identifiable, Equatable {
     let dormitoryPrivilegeCategoryName: String
 }
 
-private enum DormitoryDateParser {
-    private static let withMilliseconds: DateFormatter = {
+enum DormitoryApplicationStatus: String {
+    case waiting = "Ожидание"
+    case documentsAccepted = "Документы приняты"
+    case readyToSettle = "К заселению"
+    case settled = "Заселён"
+    case rejected = "Отклонена"
+    case evicted = "Выселен"
+}
+
+enum DormitoryDocumentUpdateAction: Equatable {
+    case unchanged
+    case remove
+    case replace(URL)
+}
+
+struct DormitoryAnnouncement: Equatable {
+    let title: String
+    let leadingMessage: String
+    let requiredDocumentsIntro: String
+    let requiredDocuments: [DormitoryAnnouncementDocument]
+
+    static func current(on date: Date = .now, calendar: Calendar = .current) -> DormitoryAnnouncement? {
+        guard isSiteAnnouncementWindowActive(on: date, calendar: calendar) else { return nil }
+        return DormitoryAnnouncement(
+            title: "Объявление о приёме документов для общежития",
+            leadingMessage: "С 1 июня по 30 июня осуществляется приём документов для постановки на учёт нуждающихся в предоставлении места в общежитии.",
+            requiredDocumentsIntro: "Для постановки на учёт необходимо предоставить заместителям деканов по ИВР своих факультетов следующие документы:",
+            requiredDocuments: [
+                DormitoryAnnouncementDocument(
+                    title: "Заявление установленного образца",
+                    details: "форма есть в личном кабинете студента на iis.bsuir.by."
+                ),
+                DormitoryAnnouncementDocument(
+                    title: "Справку о занимаемом в данном населенном пункте жилом помещении, месте жительства и составе семьи",
+                    details: "по форме Приложения 2 к постановлению Министерства ЖКХ РБ от 21.12.2005 №58; выдаётся по месту регистрации на всех членов семьи."
+                ),
+                DormitoryAnnouncementDocument(
+                    title: "Копии удостоверений, свидетельств, иных документов",
+                    details: "дипломы, грамоты, благодарности, подтверждающие право на льготы, установленные законодательством."
+                ),
+                DormitoryAnnouncementDocument(
+                    title: "Оригиналы ходатайств от кафедр, УИВР, спортклуба, профкома, БРСМ и др.",
+                    details: nil
+                )
+            ]
+        )
+    }
+
+    private static func isSiteAnnouncementWindowActive(on date: Date, calendar: Calendar) -> Bool {
+        let year = calendar.component(.year, from: date)
+        guard
+            let start = calendar.date(from: DateComponents(year: year, month: 5, day: 15)),
+            let end = calendar.date(from: DateComponents(year: year, month: 7, day: 10)),
+            let currentDay = calendar.date(from: calendar.dateComponents([.year, .month, .day], from: date))
+        else {
+            return false
+        }
+
+        return currentDay >= start && currentDay <= end
+    }
+}
+
+struct DormitoryAnnouncementDocument: Equatable, Identifiable {
+    let id = UUID()
+    let title: String
+    let details: String?
+}
+
+enum DormitoryDateParser {
+    private static let fractionalISO8601: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let apiDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone.current
@@ -105,13 +227,43 @@ private enum DormitoryDateParser {
 
     static func parse(_ raw: String?) -> Date? {
         guard let raw, !raw.isEmpty else { return nil }
-        return withMilliseconds.date(from: raw) ?? withoutMilliseconds.date(from: raw)
+        return fractionalISO8601.date(from: raw)
+            ?? apiDateFormatter.date(from: raw)
+            ?? withoutMilliseconds.date(from: raw)
+            ?? parseVariableFractionalDate(raw)
+    }
+
+    static func apiString(from date: Date?) -> String? {
+        guard let date else { return nil }
+        return apiDateFormatter.string(from: date)
+    }
+
+    private static func parseVariableFractionalDate(_ raw: String) -> Date? {
+        let parts = raw.split(separator: ".", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else { return nil }
+
+        let fraction = String(parts[1].prefix(3)).padding(toLength: 3, withPad: "0", startingAt: 0)
+        return apiDateFormatter.date(from: parts[0] + "." + fraction)
     }
 }
 
 #if DEBUG
 extension DormitoryQueueApplication {
     static let preview: [DormitoryQueueApplication] = [
+        DormitoryQueueApplication(
+            id: 36859,
+            acceptedDate: nil,
+            applicationDate: DormitoryDateParser.parse("2026-06-04T00:27:47.190211"),
+            settledDate: nil,
+            status: "Ожидание",
+            number: 703,
+            numberInQueue: nil,
+            docReference: "36859.jpg",
+            docContent: nil,
+            rejectionReason: nil,
+            roomInfo: nil,
+            applicationDateSource: "2026-06-04T00:27:47.190211"
+        ),
         DormitoryQueueApplication(
             id: 29990,
             acceptedDate: DormitoryDateParser.parse("2025-06-16T18:54:02.892"),
