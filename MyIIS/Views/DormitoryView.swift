@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct DormitoryView: View {
     @StateObject private var viewModel: DormitoryViewModel
@@ -38,13 +37,6 @@ struct DormitoryView: View {
                 onCreate: { documentURL in
                     Task {
                         if await viewModel.createApplication(documentURL: documentURL) {
-                            editorContext = nil
-                        }
-                    }
-                },
-                onUpdate: { application, action in
-                    Task {
-                        if await viewModel.updateApplication(application, documentAction: action) {
                             editorContext = nil
                         }
                     }
@@ -416,7 +408,6 @@ private struct ApplicationActions: View {
                 HStack(spacing: 10) {
                     if application.hasDocument {
                         ApplicationActionButton(
-                            title: "Вложение",
                             accessibilityTitle: "Открыть и сохранить прикреплённый файл",
                             systemImage: "paperclip",
                             isDisabled: isDownloadingFile,
@@ -426,7 +417,6 @@ private struct ApplicationActions: View {
 
                     if application.canEdit {
                         ApplicationActionButton(
-                            title: "Изменить",
                             accessibilityTitle: "Редактировать заявку",
                             systemImage: "square.and.pencil",
                             isDisabled: false,
@@ -436,7 +426,6 @@ private struct ApplicationActions: View {
 
                     if application.canDownloadApplicationForm {
                         ApplicationActionButton(
-                            title: "Заявление",
                             accessibilityTitle: "Открыть и сохранить заявление",
                             systemImage: "arrow.down.doc",
                             isDisabled: isDownloadingFile,
@@ -452,7 +441,6 @@ private struct ApplicationActions: View {
 }
 
 private struct ApplicationActionButton: View {
-    let title: String
     let accessibilityTitle: String
     let systemImage: String
     let isDisabled: Bool
@@ -460,16 +448,25 @@ private struct ApplicationActionButton: View {
 
     var body: some View {
         Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.82)
-                .padding(.horizontal, 10)
-                .frame(height: 36)
+            Image(systemName: systemImage)
+                .font(.body.weight(.semibold))
+                .frame(width: 44, height: 40)
+                .contentShape(.rect)
         }
-        .buttonStyle(.bordered)
+        .dormitoryGlassButtonStyle()
         .disabled(isDisabled)
         .accessibilityLabel(accessibilityTitle)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func dormitoryGlassButtonStyle() -> some View {
+        if #available(iOS 26.0, *) {
+            buttonStyle(.glass)
+        } else {
+            buttonStyle(.bordered)
+        }
     }
 }
 
