@@ -7,6 +7,7 @@ struct DormitoryApplicationEditorSheet: View {
     let onCancel: () -> Void
     let onCreate: (URL?) -> Void
     let onUpdate: (DormitoryQueueApplication, DormitoryDocumentUpdateAction) -> Void
+    let onOpenExistingDocument: (DormitoryQueueApplication) -> Void
 
     @State private var isFileImporterPresented = false
     @State private var selectedFileURL: URL?
@@ -19,36 +20,64 @@ struct DormitoryApplicationEditorSheet: View {
             Form {
                 Section {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Прикрепите документ, подтверждающий льготы")
+                        Label("Документ, подтверждающий льготы", systemImage: "paperclip")
                             .font(.headline)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(.primary)
 
                         Text(supportMessage)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-
-                        if hasExistingDocument {
-                            Button(role: .destructive) {
-                                selectedFileURL = nil
-                                selectedFileName = nil
-                                removesExistingDocument = true
-                            } label: {
-                                Label("Удалить файл", systemImage: "trash")
-                            }
-                        } else {
-                            Button {
-                                isFileImporterPresented = true
-                            } label: {
-                                Label(fileButtonTitle, systemImage: "paperclip")
-                            }
-                        }
                     }
                     .padding(.vertical, 4)
                 }
 
-                Section("Документ") {
-                    Text(documentPreviewTitle)
+                Section("Файл") {
+                    if let application = context.application, hasExistingDocument {
+                        Button {
+                            onOpenExistingDocument(application)
+                        } label: {
+                            Label("Просмотреть текущий файл", systemImage: "doc.text.magnifyingglass")
+                        }
+                    }
+
+                    Button {
+                        isFileImporterPresented = true
+                    } label: {
+                        Label(fileButtonTitle, systemImage: "folder")
+                    }
+
+                    if hasExistingDocument {
+                        Button(role: .destructive) {
+                            selectedFileURL = nil
+                            selectedFileName = nil
+                            removesExistingDocument = true
+                        } label: {
+                            Label("Удалить файл", systemImage: "trash")
+                        }
+                    }
+                }
+
+                Section("Состояние") {
+                    Label(documentPreviewTitle, systemImage: documentPreviewIcon)
                         .foregroundStyle(documentPreviewTint)
+                }
+
+                Section {
+                    Button {
+                        submit()
+                    } label: {
+                        HStack {
+                            Spacer()
+                            if isSubmitting {
+                                ProgressView()
+                            } else {
+                                Text(context.submitTitle)
+                                    .font(.headline)
+                            }
+                            Spacer()
+                        }
+                    }
+                    .disabled(isSubmitDisabled)
                 }
             }
             .navigationTitle(context.title)
@@ -56,18 +85,6 @@ struct DormitoryApplicationEditorSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(NSLocalizedString("common_cancel", comment: ""), action: onCancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        submit()
-                    } label: {
-                        if isSubmitting {
-                            ProgressView()
-                        } else {
-                            Text(context.submitTitle)
-                        }
-                    }
-                    .disabled(isSubmitDisabled)
                 }
             }
             .fileImporter(
@@ -96,8 +113,8 @@ struct DormitoryApplicationEditorSheet: View {
 
     private var supportMessage: String {
         hasExistingDocument
-            ? "Заменить прикреплённый файл можно после нажатия на кнопку удаления."
-            : "Принимаются документы в форматах PDF, JPEG, PNG."
+            ? "Текущий файл можно просмотреть, заменить новым файлом или удалить."
+            : "Можно отправить заявку без файла или прикрепить PDF, JPEG либо PNG."
     }
 
     private var fileButtonTitle: String {
@@ -109,18 +126,25 @@ struct DormitoryApplicationEditorSheet: View {
             return selectedFileName
         }
         if removesExistingDocument {
-            return "Удалить текущий"
+            return "Текущий файл будет удалён"
         }
-        if let docReference = context.application?.docReference, !docReference.isEmpty {
+        if context.application?.docReference?.isEmpty == false {
             return "Без изменений"
         }
-        return "Не прикреплён"
+        return "Файл не выбран"
+    }
+
+    private var documentPreviewIcon: String {
+        if removesExistingDocument { return "trash" }
+        if selectedFileName != nil { return "doc.fill" }
+        if context.application?.docReference?.isEmpty == false { return "checkmark.circle" }
+        return "doc"
     }
 
     private var documentPreviewTint: Color {
         if removesExistingDocument { return .red }
         if selectedFileName != nil { return .primary }
-        if context.application?.docReference != nil { return .blue }
+        if context.application?.docReference != nil { return .secondary }
         return .secondary
     }
 

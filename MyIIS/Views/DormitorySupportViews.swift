@@ -1,6 +1,40 @@
 import QuickLook
 import SwiftUI
 
+struct DormitoryPreviewFile: Identifiable, Equatable {
+    let id = UUID()
+    let url: URL
+    let title: String
+}
+
+struct DormitoryFilePreviewSheet: View {
+    let file: DormitoryPreviewFile
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            QuickLookPreview(url: file.url)
+                .navigationTitle(file.title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(NSLocalizedString("common_close", comment: "")) {
+                            dismiss()
+                        }
+                    }
+                    ToolbarItem(placement: .primaryAction) {
+                        ShareLink(
+                            item: file.url,
+                            preview: SharePreview(file.title)
+                        ) {
+                            Label("Сохранить", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                }
+        }
+    }
+}
+
 struct QuickLookPreview: UIViewControllerRepresentable {
     let url: URL
 

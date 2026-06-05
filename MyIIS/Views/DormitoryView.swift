@@ -3,7 +3,7 @@ import UniformTypeIdentifiers
 
 struct DormitoryView: View {
     @StateObject private var viewModel: DormitoryViewModel
-    @State private var previewFileURL: URL?
+    @State private var previewFile: DormitoryPreviewFile?
     @State private var editorContext: DormitoryApplicationEditorContext?
 
     @MainActor
@@ -27,13 +27,8 @@ struct DormitoryView: View {
         .refreshable {
             await viewModel.reload()
         }
-        .sheet(isPresented: Binding(
-            get: { previewFileURL != nil },
-            set: { if !$0 { previewFileURL = nil } }
-        )) {
-            if let fileURL = previewFileURL {
-                QuickLookPreview(url: fileURL)
-            }
+        .sheet(item: $previewFile) { file in
+            DormitoryFilePreviewSheet(file: file)
         }
         .sheet(item: $editorContext) { context in
             DormitoryApplicationEditorSheet(
@@ -53,9 +48,14 @@ struct DormitoryView: View {
                             editorContext = nil
                         }
                     }
+                },
+                onOpenExistingDocument: { application in
+                    Task {
+                        await openDocument(for: application)
+                    }
                 }
             )
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
         .alert(NSLocalizedString("common_error", comment: ""), isPresented: Binding(
@@ -112,13 +112,19 @@ struct DormitoryView: View {
 
     private func openDocument(for application: DormitoryQueueApplication) async {
         if let fileURL = await viewModel.downloadDocument(for: application) {
-            previewFileURL = fileURL
+            previewFile = DormitoryPreviewFile(
+                url: fileURL,
+                title: application.docReference ?? "Вложение №\(application.number)"
+            )
         }
     }
 
     private func downloadApplicationForm(for application: DormitoryQueueApplication) async {
         if let fileURL = await viewModel.downloadApplicationForm(for: application) {
-            previewFileURL = fileURL
+            previewFile = DormitoryPreviewFile(
+                url: fileURL,
+                title: "Заявление №\(application.number)"
+            )
         }
     }
 }
@@ -217,11 +223,13 @@ private struct DormitoryAnnouncementCard: View {
         DisclosureGroup(isExpanded: $isExpanded) {
             VStack(alignment: .leading, spacing: 12) {
                 Text(announcement.leadingMessage)
-                    .font(.subheadline)
+                    .font(.callout)
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Text(announcement.requiredDocumentsIntro)
-                    .font(.subheadline)
+                    .font(.callout)
+                    .foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -232,20 +240,30 @@ private struct DormitoryAnnouncementCard: View {
             }
             .padding(.top, 10)
         } label: {
-            Label(announcement.title, systemImage: "megaphone.fill")
-                .font(.headline)
-                .foregroundStyle(.primary)
+            HStack(spacing: 10) {
+                Image(systemName: "megaphone.fill")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.orange)
+                Text(announcement.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .tint(.blue)
+        .tint(.secondary)
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(red: 1.0, green: 0.90, blue: 0.90))
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.orange.opacity(0.12))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.blue.opacity(0.35), lineWidth: 1)
+                .stroke(Color.orange.opacity(0.28), lineWidth: 1)
         )
         .accessibilityAction(named: isExpanded ? "Свернуть" : "Развернуть") {
             withAnimation(.snappy) {
@@ -262,16 +280,17 @@ private struct BulletRow: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: "circle.fill")
                 .font(.system(size: 5, weight: .bold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(.secondary)
             Text(documentText)
-                .font(.subheadline)
+                .font(.callout)
+                .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     private var documentText: AttributedString {
         var title = AttributedString(document.title)
-        title.font = .subheadline.bold()
+        title.font = .callout.bold()
 
         guard let details = document.details else { return title }
 
@@ -397,7 +416,8 @@ private struct ApplicationActions: View {
                 HStack(spacing: 10) {
                     if application.hasDocument {
                         ApplicationActionButton(
-                            title: "Скачать прикреплённый файл",
+                            title: "Вложение",
+                            accessibilityTitle: "Открыть и сохранить прикреплённый файл",
                             systemImage: "paperclip",
                             isDisabled: isDownloadingFile,
                             action: onOpenDocument
@@ -406,7 +426,8 @@ private struct ApplicationActions: View {
 
                     if application.canEdit {
                         ApplicationActionButton(
-                            title: "Редактировать заявку",
+                            title: "Изменить",
+                            accessibilityTitle: "Редактировать заявку",
                             systemImage: "square.and.pencil",
                             isDisabled: false,
                             action: onEditApplication
@@ -415,7 +436,8 @@ private struct ApplicationActions: View {
 
                     if application.canDownloadApplicationForm {
                         ApplicationActionButton(
-                            title: "Скачать заявление",
+                            title: "Заявление",
+                            accessibilityTitle: "Открыть и сохранить заявление",
                             systemImage: "arrow.down.doc",
                             isDisabled: isDownloadingFile,
                             action: onDownloadApplicationForm
@@ -431,19 +453,23 @@ private struct ApplicationActions: View {
 
 private struct ApplicationActionButton: View {
     let title: String
+    let accessibilityTitle: String
     let systemImage: String
     let isDisabled: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.body.weight(.semibold))
-                .frame(width: 42, height: 36)
+            Label(title, systemImage: systemImage)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+                .padding(.horizontal, 10)
+                .frame(height: 36)
         }
         .buttonStyle(.bordered)
         .disabled(isDisabled)
-        .accessibilityLabel(title)
+        .accessibilityLabel(accessibilityTitle)
     }
 }
 
