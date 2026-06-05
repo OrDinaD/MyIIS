@@ -15,7 +15,6 @@
 		F51DCE342FB0E1D900EA90E3 /* bright.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2E2FB0E1D900EA90E3 /* bright.icon */; };
 		F51DCE352FB0E1D900EA90E3 /* KSIS.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */; };
 		F51DCE362FB0E1D900EA90E3 /* Default.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE302FB0E1D900EA90E3 /* Default.icon */; };
-		F55B9F662FB7432C00779F6C /* MyIIS/Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = F55B9F652FB7432C00779F6C /* MyIIS/Settings.bundle */; };
 		F58E2F0D2FD00E66002BCF03 /* Messages.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F58E2F0C2FD00E66002BCF03 /* Messages.framework */; };
 		F58E2F192FD00E68002BCF03 /* MyIISMessages.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F5A5EE102F1C801900D2B7A1 /* MyIISWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -94,7 +93,6 @@
 		F51DCE2E2FB0E1D900EA90E3 /* bright.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = bright.icon; sourceTree = "<group>"; };
 		F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = KSIS.icon; sourceTree = "<group>"; };
 		F51DCE302FB0E1D900EA90E3 /* Default.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Default.icon; sourceTree = "<group>"; };
-		F55B9F652FB7432C00779F6C /* MyIIS/Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = MyIIS/Settings.bundle; sourceTree = "<group>"; };
 		F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F58E2F0C2FD00E66002BCF03 /* Messages.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Messages.framework; path = System/Library/Frameworks/Messages.framework; sourceTree = SDKROOT; };
 		F59436CF2E9CF9DA00A3E835 /* MyIIS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyIIS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -235,7 +233,6 @@
 		F59436C62E9CF9DA00A3E835 = {
 			isa = PBXGroup;
 			children = (
-				F55B9F652FB7432C00779F6C /* MyIIS/Settings.bundle */,
 				F59436D12E9CF9DA00A3E835 /* MyIIS */,
 				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
 				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
@@ -416,7 +413,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2650;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					F51DCBA72FB09EC400EA90E3 = {
 						CreatedOnToolsVersion = 26.4.1;
@@ -498,7 +495,6 @@
 				F51DCE342FB0E1D900EA90E3 /* bright.icon in Resources */,
 				F51DCE352FB0E1D900EA90E3 /* KSIS.icon in Resources */,
 				F51DCE362FB0E1D900EA90E3 /* Default.icon in Resources */,
-				F55B9F662FB7432C00779F6C /* MyIIS/Settings.bundle in Resources */,
 				F51DC97C2FB0920300EA90E3 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -666,7 +662,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_ENTITLEMENTS = MyIISMessages/MyIISMessages.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 52;
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MyIISMessages/Info.plist;
@@ -678,7 +674,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.6.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISMessages;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -697,7 +693,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
 				CODE_SIGN_ENTITLEMENTS = MyIISMessages/MyIISMessages.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 52;
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = MyIISMessages/Info.plist;
@@ -709,7 +705,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 0.6.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISMessages;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;

@@ -28,6 +28,8 @@ struct DormitoryView: View {
         }
         .sheet(item: $previewFile) { file in
             DormitoryFilePreviewSheet(file: file)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
         .sheet(item: $editorContext) { context in
             DormitoryApplicationEditorSheet(

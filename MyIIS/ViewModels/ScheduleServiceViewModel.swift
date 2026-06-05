@@ -130,11 +130,11 @@ final class ScheduleServiceViewModel: ObservableObject {
 
     init(
         api: ServiceEndpointsAPI? = nil,
-        authService: AuthenticationService = .shared,
+        authService: AuthenticationService? = nil,
         defaults: UserDefaults = .standard
     ) {
         self.api = api ?? ServiceEndpointsAPI()
-        self.authService = authService
+        self.authService = authService ?? .shared
         self.defaults = defaults
 
         if let modeRaw = defaults.string(forKey: Self.displayModeDefaultsKey),

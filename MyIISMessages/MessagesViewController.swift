@@ -75,9 +75,10 @@ final class MessagesViewController: MSMessagesAppViewController {
         do {
             let imageURL = try MessageShareImageRenderer.renderPNG(for: item, snapshot: snapshot)
             conversation.insertAttachment(imageURL, withAlternateFilename: item.fileName) { [weak self] error in
-                Task { @MainActor in
+                let errorMessage = error?.localizedDescription
+                DispatchQueue.main.async { [weak self, errorMessage] in
                     self?.sendingItemID = nil
-                    self?.sendErrorMessage = error?.localizedDescription
+                    self?.sendErrorMessage = errorMessage
                     self?.updateRootView()
                 }
             }
