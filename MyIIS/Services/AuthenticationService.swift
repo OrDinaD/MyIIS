@@ -99,6 +99,7 @@ class AuthenticationService: ObservableObject {
             }
 
             logService.log("✅ User profile loaded: \(user.fullName)")
+            AcademicChangeNotificationService.shared.checkWhenAppBecomesActive()
 
         } catch let error as APIError {
             self.errorMessage = error.localizedDescription

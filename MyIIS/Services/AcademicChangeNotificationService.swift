@@ -89,17 +89,19 @@ final class AcademicChangeNotificationService: NSObject {
         guard isEnabled else { return false }
 
         do {
-            try await ensureAuthenticatedIfPossible()
+            let personalProfile = try await ensureAuthenticatedIfPossible()
 
             async let markbookResponse = apiService.getMarkbook()
             async let ratingLessonsResponse = apiService.getPortalGradeBookLessons()
             let (markbook, lessons) = try await (markbookResponse, ratingLessonsResponse)
+            let now = Date()
 
             let newSnapshot = AcademicChangeSnapshot(markbook: markbook, ratingLessons: lessons)
             let oldSnapshot = loadSnapshot()
+            GradebookCacheStore.save(markbook: markbook, currentCourse: personalProfile.course, updatedAt: now)
             saveSnapshot(newSnapshot)
             updateWidgetSnapshot(with: newSnapshot)
-            userDefaults.set(Date(), forKey: Self.lastCheckDefaultsKey)
+            userDefaults.set(now, forKey: Self.lastCheckDefaultsKey)
 
             guard deliverNotifications, let oldSnapshot else {
                 return true
@@ -233,16 +235,16 @@ final class AcademicChangeNotificationService: NSObject {
         return lines.joined(separator: "\n")
     }
 
-    private func ensureAuthenticatedIfPossible() async throws {
+    private func ensureAuthenticatedIfPossible() async throws -> PersonalProfile {
         do {
-            _ = try await apiService.getPersonalProfile()
+            return try await apiService.getPersonalProfile()
         } catch APIError.unauthorized {
             guard let credentials = try credentialStore.retrieve() else {
                 throw APIError.unauthorized(message: "Не удалось восстановить сессию")
             }
 
             _ = try await apiService.login(username: credentials.username, password: credentials.password)
-            _ = try await apiService.getPersonalProfile()
+            return try await apiService.getPersonalProfile()
         }
     }
 

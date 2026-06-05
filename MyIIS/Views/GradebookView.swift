@@ -69,7 +69,7 @@ struct GradebookView: View {
             Text(shareErrorMessage ?? "")
         }
         .task {
-            await viewModel.load()
+            await viewModel.loadIfNeeded()
         }
         .refreshable {
             await viewModel.refresh()

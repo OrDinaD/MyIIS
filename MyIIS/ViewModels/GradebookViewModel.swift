@@ -12,16 +12,11 @@ final class GradebookViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var lastUpdateTime: Date?
     @Published var isShowingStaleDataWarning = false
+    @Published var isCheckingForUpdates = false
 
     private let apiService: APIService
-
-    private static let cacheKey = "gradebook_offline_cache_v1"
-
-    private struct GradebookCacheModel: Codable {
-        let markbook: MarkbookResponse
-        let currentCourse: Int?
-        let updatedAt: Date
-    }
+    private var hasLoadedOnce = false
+    private var backgroundRefreshTask: Task<Void, Never>?
 
     init(apiService: APIService? = nil) {
         self.apiService = apiService ?? APIService()
@@ -51,9 +46,49 @@ final class GradebookViewModel: ObservableObject {
         selectedSemester?.marks ?? []
     }
 
+    deinit {
+        backgroundRefreshTask?.cancel()
+    }
+
+    func loadIfNeeded() async {
+        guard !hasLoadedOnce else { return }
+        hasLoadedOnce = true
+
+        if markbook == nil {
+            await load(showLoading: true)
+        } else {
+            refreshInBackground()
+        }
+    }
+
     func load() async {
-        if isLoading { return }
-        isLoading = true
+        await load(showLoading: markbook == nil)
+    }
+
+    func refresh() async {
+        await load(showLoading: true)
+    }
+
+    private func refreshInBackground() {
+        backgroundRefreshTask?.cancel()
+        backgroundRefreshTask = Task { [weak self] in
+            await self?.load(showLoading: false)
+        }
+    }
+
+    private func load(showLoading: Bool) async {
+        if isLoading || isCheckingForUpdates { return }
+
+        if showLoading {
+            isLoading = true
+        } else {
+            isCheckingForUpdates = true
+        }
+        defer {
+            isLoading = false
+            isCheckingForUpdates = false
+        }
+
         errorMessage = nil
         isShowingStaleDataWarning = false
 
@@ -67,27 +102,19 @@ final class GradebookViewModel: ObservableObject {
             lastUpdateTime = now
             saveCache(markbook: markbook, currentCourse: personal.course, updatedAt: now)
         } catch let apiError as APIError {
-            if self.markbook != nil {
-                isShowingStaleDataWarning = true
-                errorMessage = apiError.localizedDescription
-            } else {
-                errorMessage = apiError.localizedDescription
-            }
+            applyErrorMessage(apiError.localizedDescription)
         } catch {
-            let fallbackMessage = error.localizedDescription
-            if self.markbook != nil {
-                isShowingStaleDataWarning = true
-                errorMessage = fallbackMessage
-            } else {
-                errorMessage = fallbackMessage
-            }
+            applyErrorMessage(error.localizedDescription)
         }
-
-        isLoading = false
     }
 
-    func refresh() async {
-        await load()
+    private func applyErrorMessage(_ message: String) {
+        if markbook != nil {
+            isShowingStaleDataWarning = true
+            errorMessage = message
+        } else {
+            errorMessage = message
+        }
     }
 
     func selectSemester(_ key: String) {
@@ -101,8 +128,7 @@ final class GradebookViewModel: ObservableObject {
         MyIISDataStore.update(averageScore: markbook.averageMark)
         saveGradebookMessageSnapshot(markbook: markbook)
 
-        semesterKeys = sortSemesterKeys(markbook.markPages.keys)
-        selectedSemesterKey = latestSemesterKey(from: semesterKeys)
+        updateSemesterSelection(with: markbook)
     }
 
     private func applyCached(markbook: MarkbookResponse, currentCourse: Int?, updatedAt: Date) {
@@ -112,8 +138,18 @@ final class GradebookViewModel: ObservableObject {
         MyIISDataStore.update(averageScore: markbook.averageMark)
         saveGradebookMessageSnapshot(markbook: markbook)
 
+        updateSemesterSelection(with: markbook)
+    }
+
+    private func updateSemesterSelection(with markbook: MarkbookResponse) {
+        let previousSelection = selectedSemesterKey
         semesterKeys = sortSemesterKeys(markbook.markPages.keys)
-        selectedSemesterKey = latestSemesterKey(from: semesterKeys)
+
+        if let previousSelection, semesterKeys.contains(previousSelection) {
+            selectedSemesterKey = previousSelection
+        } else {
+            selectedSemesterKey = latestSemesterKey(from: semesterKeys)
+        }
     }
 
     private func sortSemesterKeys<S: Sequence>(_ keys: S) -> [String] where S.Element == String {
@@ -164,15 +200,11 @@ final class GradebookViewModel: ObservableObject {
     }
 
     private func saveCache(markbook: MarkbookResponse, currentCourse: Int?, updatedAt: Date) {
-        let snapshot = GradebookCacheModel(markbook: markbook, currentCourse: currentCourse, updatedAt: updatedAt)
-        guard let data = try? JSONEncoder().encode(snapshot) else { return }
-        _ = UserDefaultsPayloadStore.save(data, forKey: Self.cacheKey, in: .standard)
+        GradebookCacheStore.save(markbook: markbook, currentCourse: currentCourse, updatedAt: updatedAt)
     }
 
     private func loadCache() {
-        guard let data = UserDefaultsPayloadStore.load(forKey: Self.cacheKey, from: .standard),
-              let snapshot = try? JSONDecoder().decode(GradebookCacheModel.self, from: data)
-        else {
+        guard let snapshot = GradebookCacheStore.load() else {
             return
         }
 
