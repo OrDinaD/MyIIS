@@ -323,6 +323,7 @@ private struct SessionWidgetEventRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, compact ? 8 : 10)
         .padding(.vertical, compact ? 5 : 6)
         .background(Color.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
