@@ -27,23 +27,19 @@ struct ScheduleServiceView: View {
 
                 if viewModel.schedule != nil {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text(viewModel.scheduleHeaderTitle)
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .minimumScaleFactor(0.5)
-                            .lineLimit(2)
-
-                        Text(viewModel.scheduleHeaderSubtitle)
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(3)
-
-                        if viewModel.shouldShowWeekFilter {
-                            Picker("", selection: $viewModel.weekFilter) {
-                                ForEach(viewModel.weekFilters) { filter in
-                                    Text(filter.localizedTitle).tag(filter)
+                        ServiceEndpointSection(
+                            title: viewModel.scheduleHeaderTitle,
+                            subtitle: viewModel.scheduleHeaderSubtitle,
+                            icon: "graduationcap"
+                        ) {
+                            if viewModel.shouldShowWeekFilter {
+                                Picker("", selection: $viewModel.weekFilter) {
+                                    ForEach(viewModel.weekFilters) { filter in
+                                        Text(filter.localizedTitle).tag(filter)
+                                    }
                                 }
+                                .pickerStyle(.segmented)
                             }
-                            .pickerStyle(.segmented)
                         }
 
                         switch viewModel.displayMode {
@@ -141,7 +137,7 @@ struct ScheduleServiceView: View {
         }
         .background(Color(uiColor: .systemGroupedBackground))
         .navigationTitle(NSLocalizedString("services_item_schedule", comment: ""))
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         .hiddenNavigationBarBackground()
         .toolbar {
             if viewModel.schedule != nil {
@@ -206,7 +202,7 @@ struct ScheduleServiceView: View {
             }
         }
         .overlay {
-            if viewModel.isLoading || viewModel.isDownloadingReport {
+            if (viewModel.isLoading && viewModel.schedule == nil) || viewModel.isDownloadingReport {
                 ProgressView(loadingOverlayTitle)
             }
         }

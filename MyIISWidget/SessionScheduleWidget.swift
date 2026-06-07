@@ -98,7 +98,7 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
         let entry = SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetDataStore.loadSnapshot())
-        let nextRefresh = Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date().addingTimeInterval(6 * 60 * 60)
+        let nextRefresh = Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date().addingTimeInterval(2 * 60 * 60)
         completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
     }
 }
@@ -120,9 +120,9 @@ struct SessionScheduleWidgetView: View {
         case .systemSmall:
             return 1
         case .systemMedium:
-            return 2
+            return 3
         default:
-            return 4
+            return 5
         }
     }
 
@@ -294,38 +294,41 @@ private struct SessionWidgetEventRow: View {
 
     var body: some View {
         HStack(spacing: compact ? 6 : 8) {
-            VStack(spacing: 1) {
+            VStack(spacing: 0) {
                 Text(event.startTime)
                 Text(event.endTime)
             }
-            .font(.system(size: compact ? 11 : 12, weight: .medium, design: .monospaced))
+            .font(.system(size: 11, weight: .medium, design: .monospaced))
             .foregroundStyle(.white)
             .lineLimit(1)
-            .frame(width: compact ? 46 : 52)
+            .frame(width: compact ? 42 : 46)
 
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                .fill(accentColor)
-                .frame(width: compact ? 4 : 5)
-
-            VStack(alignment: .leading, spacing: compact ? 1 : 2) {
-                Text(displayTitle)
-                    .font(.system(size: compact ? 13 : 15, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                if let subtitle = event.subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.system(size: compact ? 10 : 12, weight: .regular, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.72))
+            HStack(spacing: compact ? 6 : 8) {
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(accentColor)
+                    .frame(width: compact ? 4 : 5)
+                
+                VStack(alignment: .leading, spacing: compact ? 1 : 2) {
+                    Text(displayTitle)
+                        .font(.system(size: compact ? 13 : 15, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
+                    if let subtitle = event.subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.system(size: compact ? 10 : 12, weight: .regular, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.72))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, compact ? 8 : 10)
-        .padding(.vertical, compact ? 5 : 6)
+        .padding(.vertical, compact ? 4 : 5)
         .background(Color.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
