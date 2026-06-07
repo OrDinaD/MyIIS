@@ -75,7 +75,7 @@ struct ScheduleServiceView: View {
                 if viewModel.schedule != nil {
                     VStack(alignment: .leading, spacing: 14) {
                         Text(viewModel.scheduleHeaderTitle)
-                            .font(.system(size: 44, weight: .bold, design: .rounded))
+                            .font(.system(size: 36, weight: .bold, design: .rounded))
                             .minimumScaleFactor(0.5)
                             .lineLimit(2)
 
@@ -414,21 +414,21 @@ private struct ScheduleLessonCard: View {
 
     private var compactBody: some View {
         HStack(spacing: 10) {
-            timeColumn(font: .system(size: 18, weight: .medium, design: .monospaced))
+            timeColumn(font: .system(size: 16, weight: .medium, design: .monospaced))
                 .frame(width: 66)
 
             accentBar(width: 7)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(compactTitle)
-                    .font(.title3.weight(.bold))
+                    .font(.headline.weight(.bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
 
                 if let compactSubtitle {
                     Text(compactSubtitle)
-                        .font(.body.weight(.regular))
+                        .font(.subheadline.weight(.regular))
                         .foregroundStyle(.white.opacity(0.72))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)

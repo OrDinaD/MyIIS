@@ -149,9 +149,9 @@ struct SessionScheduleWidgetView: View {
                     footer
                 }
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 16)
             .padding(.top, 8)
-            .padding(.bottom, 10)
+            .padding(.bottom, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
     }
@@ -159,19 +159,19 @@ struct SessionScheduleWidgetView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             Text(headerDateText)
-                .font(.system(size: family == .systemLarge ? 20 : 17, weight: .bold, design: .rounded))
+                .font(.system(size: family == .systemLarge ? 16 : 14, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .minimumScaleFactor(0.75)
 
             Spacer(minLength: 8)
 
             Text(entry.groupName)
-                .font(.system(size: family == .systemLarge ? 20 : 17, weight: .semibold, design: .rounded))
+                .font(.system(size: family == .systemLarge ? 16 : 14, weight: .semibold, design: .rounded))
                 .minimumScaleFactor(0.75)
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 14)
-        .frame(height: family == .systemLarge ? 42 : 38)
+        .padding(.horizontal, 16)
+        .frame(height: family == .systemLarge ? 38 : 34)
         .background(headerGradient)
     }
 
@@ -354,6 +354,7 @@ struct SessionScheduleWidget: Widget {
         .configurationDisplayName("Сессия")
         .description("Показывает ближайшие экзамены, консультации и объявления вашей группы.")
         .supportedFamilies([.systemMedium, .systemLarge])
+        .contentMarginsDisabled()
     }
 }
 
