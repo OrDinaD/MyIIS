@@ -114,6 +114,18 @@
 "services_schedule_subgroup_short_number" = "SG %d";
 "services_schedule_my_group" = "My group";
 "services_schedule_now_badge" = "NOW";
+"services_schedule_tomorrow_prefix" = "Tomorrow";
+"services_schedule_exams_short" = "Exams";
+"services_schedule_exams_no_date" = "No date";
+"services_schedule_actions" = "Actions";
+"services_schedule_report_download" = "Download schedule as Excel";
+"services_schedule_report_downloading" = "Downloading Excel…";
+"services_schedule_report_group_missing" = "Could not determine the group for this schedule";
+"services_schedule_google_calendar" = "Import to Google Calendar";
+"services_schedule_exam_reminders" = "Remind before exams";
+"services_schedule_reminders_title" = "Reminders";
+"services_schedule_reminders_enabled" = "Done: scheduled %d reminders";
+"services_schedule_reminders_empty" = "No future exams found for reminders, or notifications are disabled in iOS Settings.";
 
 "about_title" = "About App";
 "about_section_version" = "Version";

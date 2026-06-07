@@ -285,7 +285,18 @@ struct DisciplineSchedule: Decodable, Identifiable, Equatable {
         id = identifierSource.isEmpty ? UUID().uuidString : identifierSource
     }
 
-    var title: String { subjectFullName.flatMap { $0.isEmpty ? nil : $0 } ?? subject }
+    var title: String {
+        if isAnnouncement {
+            return "📣 Объявление"
+        }
+        if let subjectFullName = subjectFullName?.nilIfBlank {
+            return subjectFullName
+        }
+        if let subject = subject.nilIfBlank {
+            return subject
+        }
+        return lessonTypeAbbrev.nilIfBlank ?? "Событие"
+    }
 
     var subtitle: String {
         if let employee = employees.first {

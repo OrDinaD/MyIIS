@@ -6,6 +6,13 @@ import SwiftUI
 @MainActor
 struct ScheduleServiceView: View {
     @StateObject private var viewModel = ScheduleServiceViewModel()
+    @State private var scheduleReportURL: URL?
+
+    private var loadingOverlayTitle: String {
+        viewModel.isDownloadingReport
+            ? NSLocalizedString("services_schedule_report_downloading", comment: "")
+            : NSLocalizedString("common_loading", comment: "")
+    }
 
     var body: some View {
         ScrollView {
@@ -74,6 +81,7 @@ struct ScheduleServiceView: View {
                         Text(viewModel.scheduleHeaderSubtitle)
                             .font(.title3.weight(.semibold))
                             .foregroundStyle(.secondary)
+                            .lineLimit(3)
 
                         if viewModel.shouldShowWeekFilter {
                             Picker("", selection: $viewModel.weekFilter) {
@@ -133,13 +141,13 @@ struct ScheduleServiceView: View {
                                 }
                             }
                         case .exams:
-                            if !viewModel.filteredExams.isEmpty {
+                            ForEach(viewModel.examDays) { day in
                                 VStack(alignment: .leading, spacing: 10) {
-                                    Text(NSLocalizedString("services_schedule_exams", comment: ""))
+                                    Text(viewModel.examDayTitle(for: day))
                                         .font(.title3.weight(.bold))
-                                        .foregroundStyle(.primary)
+                                        .foregroundStyle(Calendar.current.isDateInTomorrow(day.date) ? Color.red : Color.primary)
 
-                                    ForEach(viewModel.filteredExams) { exam in
+                                    ForEach(day.lessons) { exam in
                                         ScheduleLessonCard(
                                             lesson: exam,
                                             isCurrent: false,
@@ -197,6 +205,34 @@ struct ScheduleServiceView: View {
                     }
                 }
 
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button {
+                            Task {
+                                scheduleReportURL = await viewModel.downloadScheduleReport()
+                            }
+                        } label: {
+                            Label(NSLocalizedString("services_schedule_report_download", comment: ""), systemImage: "square.and.arrow.down")
+                        }
+                        .disabled(viewModel.isDownloadingReport)
+
+                        if let googleCalendarURL = viewModel.googleCalendarURL {
+                            Link(destination: googleCalendarURL) {
+                                Label(NSLocalizedString("services_schedule_google_calendar", comment: ""), systemImage: "calendar.badge.plus")
+                            }
+                        }
+
+                        Button {
+                            Task { await viewModel.enableExamRemindersFromUserAction() }
+                        } label: {
+                            Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
+                        }
+                        .disabled(viewModel.filteredExams.isEmpty)
+                    } label: {
+                        Label(NSLocalizedString("services_schedule_actions", comment: ""), systemImage: "ellipsis.circle")
+                    }
+                }
+
                 if viewModel.showsSubgroupPicker {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
@@ -219,12 +255,36 @@ struct ScheduleServiceView: View {
             }
         }
         .overlay {
-            if viewModel.isLoading {
-                ProgressView(NSLocalizedString("common_loading", comment: ""))
+            if viewModel.isLoading || viewModel.isDownloadingReport {
+                ProgressView(loadingOverlayTitle)
             }
         }
         .task { await viewModel.loadInitialDataIfNeeded() }
         .refreshable { await viewModel.refreshData() }
+        .sheet(isPresented: Binding(
+            get: { scheduleReportURL != nil },
+            set: { isPresented in
+                if !isPresented {
+                    scheduleReportURL = nil
+                }
+            }
+        )) {
+            if let scheduleReportURL {
+                ShareSheet(activityItems: [scheduleReportURL])
+            }
+        }
+        .alert(NSLocalizedString("services_schedule_reminders_title", comment: ""), isPresented: Binding(
+            get: { viewModel.noticeMessage != nil },
+            set: { shouldShow in
+                if !shouldShow {
+                    viewModel.noticeMessage = nil
+                }
+            }
+        ), actions: {
+            Button(NSLocalizedString("common_ok", comment: "")) { viewModel.noticeMessage = nil }
+        }, message: {
+            Text(viewModel.noticeMessage ?? "")
+        })
         .alert(NSLocalizedString("common_error", comment: ""), isPresented: Binding(
             get: { viewModel.errorMessage != nil },
             set: { shouldShow in

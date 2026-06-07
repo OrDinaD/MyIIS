@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Combine
 import SwiftUI
 
@@ -79,7 +80,18 @@ struct ScheduleContinuousDay: Identifiable {
     }
 }
 
+struct ExamScheduleDay: Identifiable {
+    let date: Date
+    let weekday: StudyWeekday?
+    let lessons: [DisciplineSchedule]
+
+    var id: String {
+        String(Int(date.timeIntervalSince1970))
+    }
+}
+
 @MainActor
+// swiftlint:disable:next type_body_length
 final class ScheduleServiceViewModel: ObservableObject {
     @Published var mode: ScheduleLookupMode = .group {
         didSet {
@@ -108,7 +120,9 @@ final class ScheduleServiceViewModel: ObservableObject {
         }
     }
     @Published var isLoading = false
+    @Published var isDownloadingReport = false
     @Published var errorMessage: String?
+    @Published var noticeMessage: String?
     @Published private(set) var continuousTimelineDays: [ScheduleContinuousDay] = []
 
     private let api: ServiceEndpointsAPI
@@ -248,20 +262,14 @@ final class ScheduleServiceViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        if let cachedSchedule = api.cachedGroupSchedule(groupNumber: groupNumber) {
+            applyGroupSchedule(cachedSchedule, week: nil, groupNumber: groupNumber)
+        }
+
         do {
             let scheduleResponse = try await api.fetchGroupSchedule(groupNumber: groupNumber)
             let week = try? await api.fetchCurrentWeek()
-            schedule = scheduleResponse
-            currentWeekNumber = resolveCurrentWeekNumber(
-                backendValue: week,
-                termStartDate: scheduleResponse.startDate
-            )
-            applyDefaultWeekFilter()
-            sanitizeSubgroupFilter()
-            rebuildContinuousTimeline(reset: true)
-            setMode(.group, preservingQuery: groupNumber)
-            persistGroupSelection(groupNumber)
-            errorMessage = nil
+            applyGroupSchedule(scheduleResponse, week: week, groupNumber: groupNumber)
         } catch is CancellationError {
             return
         } catch {
@@ -320,6 +328,50 @@ final class ScheduleServiceViewModel: ObservableObject {
         await loadGroup(groupName)
     }
 
+    func downloadScheduleReport() async -> URL? {
+        guard let groupName = schedule?.group?.name.nilIfBlank ?? accountGroupName else {
+            errorMessage = NSLocalizedString("services_schedule_report_group_missing", comment: "")
+            return nil
+        }
+        guard !isDownloadingReport else { return nil }
+
+        isDownloadingReport = true
+        defer { isDownloadingReport = false }
+
+        do {
+            return try await api.downloadGroupScheduleReport(groupNumber: groupName)
+        } catch is CancellationError {
+            return nil
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return nil
+        }
+    }
+
+    func enableExamRemindersFromUserAction() async {
+        guard let groupName = schedule?.group?.name.nilIfBlank ?? accountGroupName else {
+            errorMessage = NSLocalizedString("services_schedule_report_group_missing", comment: "")
+            return
+        }
+        let count = await ExamReminderNotificationService.shared.scheduleFromUserAction(
+            exams: filteredExams,
+            groupName: groupName
+        )
+        if count > 0 {
+            noticeMessage = String(format: NSLocalizedString("services_schedule_reminders_enabled", comment: ""), count)
+        } else {
+            noticeMessage = NSLocalizedString("services_schedule_reminders_empty", comment: "")
+        }
+    }
+
+    var googleCalendarURL: URL? {
+        guard let calendarId = schedule?.group?.calendarId?.nilIfBlank,
+              let encodedCalendarID = calendarId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            return nil
+        }
+        return URL(string: "https://calendar.google.com/calendar/u/0/r?cid=\(encodedCalendarID)")
+    }
+
     private func setMode(_ newMode: ScheduleLookupMode, preservingQuery newQuery: String) {
         shouldResetQueryOnModeChange = false
         mode = newMode
@@ -337,6 +389,22 @@ final class ScheduleServiceViewModel: ObservableObject {
     private func persistTeacherSelection(urlId: String, displayName: String) {
         defaults.set(urlId, forKey: Self.lastTeacherURLIDDefaultsKey)
         defaults.set(displayName, forKey: Self.lastTeacherNameDefaultsKey)
+    }
+
+    private func applyGroupSchedule(_ scheduleResponse: PublicScheduleResponse, week: Int?, groupNumber: String) {
+        schedule = scheduleResponse
+        currentWeekNumber = resolveCurrentWeekNumber(
+            backendValue: week,
+            termStartDate: scheduleResponse.startDate
+        )
+        preferExamDisplayIfNeeded(for: scheduleResponse)
+        applyDefaultWeekFilter()
+        sanitizeSubgroupFilter()
+        rebuildContinuousTimeline(reset: true)
+        setMode(.group, preservingQuery: groupNumber)
+        persistGroupSelection(groupNumber)
+        errorMessage = nil
+        scheduleExamRemindersIfAuthorized()
     }
 
     func loadMoreContinuousDaysIfNeeded(lastVisibleDayID: String) {
@@ -457,7 +525,36 @@ final class ScheduleServiceViewModel: ObservableObject {
         return true
     }
 
+    private func preferExamDisplayIfNeeded(for scheduleResponse: PublicScheduleResponse) {
+        guard scheduleResponse.group != nil, !scheduleResponse.exams.isEmpty else { return }
+        guard let startDate = scheduleResponse.startExamsDate,
+              let endDate = scheduleResponse.endExamsDate else { return }
+
+        let calendar = Calendar.current
+        let now = calendar.startOfDay(for: Date())
+        let startWindow = calendar.date(byAdding: .day, value: -2, to: calendar.startOfDay(for: startDate)) ?? startDate
+        let endWindow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: endDate)) ?? endDate
+        if (startWindow ... endWindow).contains(now) {
+            displayMode = .exams
+        }
+    }
+
+    private func scheduleExamRemindersIfAuthorized() {
+        guard let groupName = schedule?.group?.name.nilIfBlank else { return }
+        let exams = filteredExams
+        Task {
+            await ExamReminderNotificationService.shared.scheduleIfAuthorized(
+                exams: exams,
+                groupName: groupName
+            )
+        }
+    }
+
     private func applyDefaultWeekFilter() {
+        guard displayMode != .exams else {
+            weekFilter = .all
+            return
+        }
         guard let currentWeekNumber, weekFilters.contains(.week(currentWeekNumber)) else {
             weekFilter = .all
             return
@@ -651,6 +748,38 @@ final class ScheduleServiceViewModel: ObservableObject {
         formatter.dateFormat = "d MMMM"
         return formatter
     }()
+
+    private static let examDayDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM yy 'г.'"
+        return formatter
+    }()
+
+    private static let examPeriodFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM yyyy 'г.'"
+        return formatter
+    }()
+
+    private static func examSortingComparator(lhs: DisciplineSchedule, rhs: DisciplineSchedule) -> Bool {
+        let leftDate = calendarDay(for: lhs) ?? Date.distantFuture
+        let rightDate = calendarDay(for: rhs) ?? Date.distantFuture
+        if leftDate != rightDate {
+            return leftDate < rightDate
+        }
+        return DisciplineSchedule.sortingComparator(lhs: lhs, rhs: rhs)
+    }
+
+    private static func calendarDay(for exam: DisciplineSchedule) -> Date? {
+        guard let date = exam.lessonDate ?? exam.startLessonDate else { return nil }
+        return Calendar.current.startOfDay(for: date)
+    }
+
+    private func calendarDay(for exam: DisciplineSchedule) -> Date? {
+        Self.calendarDay(for: exam)
+    }
 }
 
 extension StudyWeekFilter {
@@ -734,11 +863,21 @@ extension ScheduleServiceViewModel {
 
     var filteredExams: [DisciplineSchedule] {
         guard let schedule else { return [] }
-        switch weekFilter {
-        case .all:
-            return schedule.exams.filter(shouldKeepLesson)
-        case .week(let number):
-            return schedule.exams.filter { ($0.weekNumbers.isEmpty || $0.weekNumbers.contains(number)) && shouldKeepLesson($0) }
+        return schedule.exams
+            .filter(shouldKeepLesson)
+            .sorted(by: Self.examSortingComparator)
+    }
+
+    var examDays: [ExamScheduleDay] {
+        let grouped = Dictionary(grouping: filteredExams) { exam in
+            calendarDay(for: exam) ?? Date.distantFuture
+        }
+        return grouped.keys.sorted().map { date in
+            ExamScheduleDay(
+                date: date,
+                weekday: studyWeekday(for: date),
+                lessons: grouped[date, default: []].sorted(by: Self.examSortingComparator)
+            )
         }
     }
 
@@ -774,7 +913,7 @@ extension ScheduleServiceViewModel {
     }
 
     var shouldShowWeekFilter: Bool {
-        displayMode != .continuous && !weekFilters.isEmpty
+        displayMode == .byDay && !weekFilters.isEmpty
     }
 
     var isCurrentModeEmpty: Bool {
@@ -786,6 +925,26 @@ extension ScheduleServiceViewModel {
         case .exams:
             return filteredExams.isEmpty
         }
+    }
+
+    func examDayTitle(for day: ExamScheduleDay) -> String {
+        guard day.date != Date.distantFuture else {
+            return NSLocalizedString("services_schedule_exams_no_date", comment: "")
+        }
+
+        let dateText = Self.examDayDateFormatter.string(from: day.date)
+        let weekdayText = day.weekday?.shortTitle
+        let prefix: String?
+        if Calendar.current.isDateInToday(day.date) {
+            prefix = NSLocalizedString("services_schedule_today_prefix", comment: "")
+        } else if Calendar.current.isDateInTomorrow(day.date) {
+            prefix = NSLocalizedString("services_schedule_tomorrow_prefix", comment: "")
+        } else {
+            prefix = nil
+        }
+
+        let chunks = [prefix, weekdayText, dateText].compactMap { $0?.nilIfBlank }
+        return chunks.joined(separator: ", ")
     }
 
     func dayTitle(for day: StudyDaySchedule) -> String {
@@ -844,16 +1003,24 @@ extension ScheduleServiceViewModel {
     }
 
     var scheduleHeaderTitle: String {
-        if let group = schedule?.group?.name, !group.isEmpty {
-            return "Группа \(group)"
+        if let group = schedule?.group?.name.nilIfBlank {
+            return group
         }
-        if let employee = schedule?.employee?.fullName, !employee.isEmpty {
+        if let employee = schedule?.employee?.fullName.nilIfBlank {
             return employee
         }
         return NSLocalizedString("services_schedule_title", comment: "")
     }
 
     var scheduleHeaderSubtitle: String {
+        if displayMode == .exams {
+            let title = NSLocalizedString("services_schedule_exams_short", comment: "")
+            if let examPeriodText {
+                return "🎓 \(title)\n\(examPeriodText)"
+            }
+            return "🎓 \(title)"
+        }
+
         var chunks: [String] = []
         if let period = periodText {
             chunks.append(period)
@@ -890,6 +1057,14 @@ private extension ScheduleServiceViewModel {
         let rangeEnd = schedule.endDate
         guard let rangeStart, let rangeEnd else { return nil }
         return "\(Self.dateFormatter.string(from: rangeStart)) – \(Self.dateFormatter.string(from: rangeEnd))"
+    }
+
+    var examPeriodText: String? {
+        guard let schedule else { return nil }
+        let rangeStart = schedule.startExamsDate
+        let rangeEnd = schedule.endExamsDate
+        guard let rangeStart, let rangeEnd else { return nil }
+        return "\(Self.examPeriodFormatter.string(from: rangeStart)) – \(Self.examPeriodFormatter.string(from: rangeEnd))"
     }
 }
 

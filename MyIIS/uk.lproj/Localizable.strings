@@ -114,6 +114,18 @@
 "services_schedule_subgroup_short_number" = "ПГ %d";
 "services_schedule_my_group" = "Моя група";
 "services_schedule_now_badge" = "ЗАРАЗ";
+"services_schedule_tomorrow_prefix" = "Завтра";
+"services_schedule_exams_short" = "Іспити";
+"services_schedule_exams_no_date" = "Дата не вказана";
+"services_schedule_actions" = "Дії";
+"services_schedule_report_download" = "Завантажити розклад в Excel";
+"services_schedule_report_downloading" = "Завантажуємо Excel…";
+"services_schedule_report_group_missing" = "Не вдалося визначити групу для розкладу";
+"services_schedule_google_calendar" = "Імпортувати в Google Календар";
+"services_schedule_exam_reminders" = "Нагадати перед іспитами";
+"services_schedule_reminders_title" = "Нагадування";
+"services_schedule_reminders_enabled" = "Готово: заплановано нагадувань — %d";
+"services_schedule_reminders_empty" = "Майбутніх іспитів для нагадувань не знайдено або сповіщення заборонені в налаштуваннях iOS.";
 
 "about_title" = "Про програму";
 "about_section_version" = "Версія";

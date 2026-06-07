@@ -389,6 +389,25 @@ final class ServiceEndpointsAPI {
         }
     }
 
+    func cachedGroupSchedule(groupNumber: String) -> PublicScheduleResponse? {
+        guard let request = try? makeGETRequest(path: "schedule", queryItems: [
+            URLQueryItem(name: "studentGroup", value: groupNumber)
+        ]), let data = cachedData(for: request) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(PublicScheduleResponse.self, from: data)
+    }
+
+    func downloadGroupScheduleReport(groupNumber: String) async throws -> URL {
+        let data = try await fetchData(path: "schedule/report", queryItems: [
+            URLQueryItem(name: "student-group-name", value: groupNumber)
+        ])
+        let fileName = "Расписание \(Self.safeFileName(groupNumber)).xlsx"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        try data.write(to: url, options: [.atomic])
+        return url
+    }
+
     private func decodeBool(path: String) async throws -> Bool {
         let data = try await fetchData(path: path)
         do {
@@ -420,9 +439,8 @@ final class ServiceEndpointsAPI {
     }
 
     private func fetchData(path: String, queryItems: [URLQueryItem]? = nil) async throws -> Data {
-        let endpoint = try endpointURL(path: path, queryItems: queryItems)
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "GET"
+        let request = try makeGETRequest(path: path, queryItems: queryItems)
+        guard let endpoint = request.url else { throw APIError.invalidURL }
 
         let method = request.httpMethod ?? "GET"
         logService.log("Service endpoint request: \(method) \(endpoint.absoluteString)")
@@ -455,6 +473,13 @@ final class ServiceEndpointsAPI {
         }
     }
 
+    private func makeGETRequest(path: String, queryItems: [URLQueryItem]? = nil) throws -> URLRequest {
+        let endpoint = try endpointURL(path: path, queryItems: queryItems)
+        var request = URLRequest(url: endpoint)
+        request.httpMethod = "GET"
+        return request
+    }
+
     private func endpointURL(path: String, queryItems: [URLQueryItem]?) throws -> URL {
         var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
         components?.queryItems = queryItems
@@ -462,6 +487,11 @@ final class ServiceEndpointsAPI {
             throw APIError.invalidURL
         }
         return endpoint
+    }
+
+    private static func safeFileName(_ value: String) -> String {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-_ "))
+        return value.unicodeScalars.map { allowed.contains($0) ? String($0) : "_" }.joined()
     }
 
     private func validatedHTTPResponse(_ response: URLResponse) throws -> HTTPURLResponse {
