@@ -103,5 +103,6 @@ enum MyIISDataStore {
         guard let defaults else { return }
         defaults.removeObject(forKey: Key.sharedData)
         defaults.removeObject(forKey: Key.gradebookMessageSnapshot)
+        SessionScheduleWidgetDataStore.clear()
     }
 }

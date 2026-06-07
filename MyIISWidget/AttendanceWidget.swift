@@ -228,6 +228,7 @@ struct AttendanceWidget: Widget {
 struct AttendanceWidgetBundle: WidgetBundle {
     var body: some Widget {
         AttendanceWidget()
+        SessionScheduleWidget()
     }
 }
 

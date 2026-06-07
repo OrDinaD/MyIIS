@@ -404,6 +404,7 @@ final class ScheduleServiceViewModel: ObservableObject {
         setMode(.group, preservingQuery: groupNumber)
         persistGroupSelection(groupNumber)
         errorMessage = nil
+        updateSessionScheduleWidgetSnapshot(from: scheduleResponse)
         scheduleExamRemindersIfAuthorized()
     }
 
@@ -548,6 +549,51 @@ final class ScheduleServiceViewModel: ObservableObject {
                 groupName: groupName
             )
         }
+    }
+
+    private func updateSessionScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {
+        guard let groupName = scheduleResponse.group?.name.nilIfBlank else { return }
+        if let accountGroupName, accountGroupName != groupName {
+            return
+        }
+
+        let events = scheduleResponse.exams
+            .sorted(by: Self.examSortingComparator)
+            .map(Self.widgetEvent)
+        let snapshot = SessionScheduleWidgetSnapshot(
+            groupName: groupName,
+            startDate: scheduleResponse.startExamsDate,
+            endDate: scheduleResponse.endExamsDate,
+            events: events,
+            updatedAt: Date()
+        )
+        SessionScheduleWidgetDataStore.save(snapshot)
+    }
+
+    private static func widgetEvent(from lesson: DisciplineSchedule) -> SessionScheduleWidgetSnapshot.Event {
+        let title = lesson.title.replacingOccurrences(of: "📣 ", with: "")
+        let subtitle = [lesson.location.nilIfBlank, lesson.note.nilIfBlank]
+            .compactMap { $0 }
+            .joined(separator: ", ")
+            .nilIfBlank
+        return SessionScheduleWidgetSnapshot.Event(
+            id: lesson.id,
+            date: lesson.lessonDate ?? lesson.startLessonDate,
+            startTime: lesson.startLessonTime,
+            endTime: lesson.endLessonTime,
+            title: title,
+            subtitle: subtitle,
+            location: lesson.location.nilIfBlank,
+            kind: widgetEventKind(for: lesson)
+        )
+    }
+
+    private static func widgetEventKind(for lesson: DisciplineSchedule) -> SessionScheduleWidgetEventKind {
+        if lesson.isAnnouncement { return .announcement }
+        let type = lesson.lessonTypeAbbrev.lowercased()
+        if type.contains("экзам") { return .exam }
+        if type.contains("конс") { return .consultation }
+        return .other
     }
 
     private func applyDefaultWeekFilter() {
