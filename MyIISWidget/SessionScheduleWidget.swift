@@ -159,19 +159,19 @@ struct SessionScheduleWidgetView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             Text(headerDateText)
-                .font(.system(size: family == .systemLarge ? 16 : 14, weight: .bold, design: .rounded))
+                .font(.system(size: family == .systemLarge ? 14 : 12, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .minimumScaleFactor(0.75)
 
             Spacer(minLength: 8)
 
             Text(entry.groupName)
-                .font(.system(size: family == .systemLarge ? 16 : 14, weight: .semibold, design: .rounded))
+                .font(.system(size: family == .systemLarge ? 14 : 12, weight: .semibold, design: .rounded))
                 .minimumScaleFactor(0.75)
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 16)
-        .frame(height: family == .systemLarge ? 38 : 34)
+        .frame(height: family == .systemLarge ? 32 : 28)
         .background(headerGradient)
     }
 
@@ -179,7 +179,7 @@ struct SessionScheduleWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             if day.id != groupedVisibleEvents.first?.id {
                 Text(dateText(for: day.date))
-                    .font(.system(size: family == .systemLarge ? 16 : 13, weight: .bold, design: .rounded))
+                    .font(.system(size: family == .systemLarge ? 14 : 12, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .monospacedDigit()
                     .lineLimit(1)
@@ -194,13 +194,13 @@ struct SessionScheduleWidgetView: View {
     private var footer: some View {
         HStack(spacing: 8) {
             Text(dateText(for: hiddenEvents.first?.date))
-                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.55))
             Circle()
                 .fill(.white.opacity(0.55))
-                .frame(width: 9, height: 9)
+                .frame(width: 7, height: 7)
             Text(hiddenSummary)
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
                 .foregroundStyle(.white.opacity(0.6))
                 .lineLimit(1)
         }
@@ -293,29 +293,29 @@ private struct SessionWidgetEventRow: View {
     let compact: Bool
 
     var body: some View {
-        HStack(spacing: compact ? 7 : 10) {
+        HStack(spacing: compact ? 6 : 8) {
             VStack(spacing: 1) {
                 Text(event.startTime)
                 Text(event.endTime)
             }
-            .font(.system(size: compact ? 12 : 14, weight: .medium, design: .monospaced))
+            .font(.system(size: compact ? 11 : 12, weight: .medium, design: .monospaced))
             .foregroundStyle(.white)
             .lineLimit(1)
-            .frame(width: compact ? 50 : 60)
+            .frame(width: compact ? 46 : 52)
 
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
                 .fill(accentColor)
-                .frame(width: compact ? 5 : 8)
+                .frame(width: compact ? 4 : 5)
 
             VStack(alignment: .leading, spacing: compact ? 1 : 2) {
                 Text(displayTitle)
-                    .font(.system(size: compact ? 14 : 17, weight: .bold, design: .rounded))
+                    .font(.system(size: compact ? 13 : 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                 if let subtitle = event.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.system(size: compact ? 11 : 14, weight: .regular, design: .rounded))
+                        .font(.system(size: compact ? 10 : 12, weight: .regular, design: .rounded))
                         .foregroundStyle(.white.opacity(0.72))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
@@ -324,7 +324,7 @@ private struct SessionWidgetEventRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, compact ? 8 : 10)
-        .padding(.vertical, compact ? 7 : 7)
+        .padding(.vertical, compact ? 5 : 6)
         .background(Color.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 

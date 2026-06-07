@@ -1,5 +1,6 @@
 import Combine
 import SwiftUI
+import QuickLook
 
 // MARK: - Schedule
 
@@ -15,61 +16,13 @@ struct ScheduleServiceView: View {
             : NSLocalizedString("common_loading", comment: "")
     }
 
+    @State private var isSearchSheetPresented = false
+
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                ServiceEndpointSection(
-                    title: NSLocalizedString("services_schedule_title", comment: ""),
-                    subtitle: NSLocalizedString("services_schedule_subtitle", comment: ""),
-                    icon: "calendar"
-                ) {
-                    VStack(spacing: 12) {
-                        Picker("", selection: $viewModel.mode) {
-                            Text(NSLocalizedString("services_schedule_mode_group", comment: "")).tag(ScheduleLookupMode.group)
-                            Text(NSLocalizedString("services_schedule_mode_teacher", comment: "")).tag(ScheduleLookupMode.teacher)
-                        }
-                        .pickerStyle(.segmented)
-
-                        TextField(viewModel.searchPlaceholder, text: $viewModel.query)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                            .padding(10)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(uiColor: .tertiarySystemGroupedBackground))
-                            )
-                            .onSubmit {
-                                Task { await viewModel.loadByQuery() }
-                            }
-
-                        Button {
-                            Task { await viewModel.loadByQuery() }
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "arrow.down.circle.fill")
-                                Text(NSLocalizedString("services_schedule_load_button", comment: ""))
-                            }
-                            .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-
-                        if viewModel.mode == .group {
-                            ScheduleSuggestionsView(
-                                groups: viewModel.filteredGroups,
-                                accountGroupName: viewModel.accountGroupName,
-                                onSelect: { group in
-                                    Task { await viewModel.loadGroup(group.name) }
-                                }
-                            )
-                        } else {
-                            ScheduleTeacherSuggestionsView(
-                                employees: viewModel.filteredEmployees,
-                                onSelect: { employee in
-                                    Task { await viewModel.loadEmployee(employee) }
-                                }
-                            )
-                        }
-                    }
+                if viewModel.schedule == nil {
+                    searchBlock
                 }
 
                 if viewModel.schedule != nil {
@@ -193,6 +146,14 @@ struct ScheduleServiceView: View {
         .toolbar {
             if viewModel.schedule != nil {
                 ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        isSearchSheetPresented = true
+                    } label: {
+                        Label("Поиск расписания", systemImage: "magnifyingglass")
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Picker(
                             NSLocalizedString("services_schedule_display_mode", comment: ""),
@@ -202,16 +163,20 @@ struct ScheduleServiceView: View {
                                 Label(mode.localizedTitle, systemImage: mode.icon).tag(mode)
                             }
                         }
-                    } label: {
-                        Label(
-                            viewModel.displayMode.localizedTitle,
-                            systemImage: viewModel.displayMode.icon
-                        )
-                    }
-                }
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
+                        if viewModel.showsSubgroupPicker {
+                            Divider()
+                            Picker(
+                                NSLocalizedString("services_schedule_subgroup_filter", comment: ""),
+                                selection: $viewModel.subgroupFilter
+                            ) {
+                                ForEach(viewModel.subgroupFilters) { filter in
+                                    Text(filter.localizedTitle).tag(filter)
+                                }
+                            }
+                        }
+
+                        Divider()
                         Button {
                             Task {
                                 scheduleReportURL = await viewModel.downloadScheduleReport()
@@ -233,28 +198,9 @@ struct ScheduleServiceView: View {
                             Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
                         }
                         .disabled(viewModel.filteredExams.isEmpty)
+
                     } label: {
                         Label(NSLocalizedString("services_schedule_actions", comment: ""), systemImage: "ellipsis.circle")
-                    }
-                }
-
-                if viewModel.showsSubgroupPicker {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Menu {
-                            Picker(
-                                NSLocalizedString("services_schedule_subgroup_filter", comment: ""),
-                                selection: $viewModel.subgroupFilter
-                            ) {
-                                ForEach(viewModel.subgroupFilters) { filter in
-                                    Text(filter.localizedTitle).tag(filter)
-                                }
-                            }
-                        } label: {
-                            Label(
-                                viewModel.subgroupFilter.localizedCompactTitle,
-                                systemImage: "person.2"
-                            )
-                        }
                     }
                 }
             }
@@ -266,18 +212,7 @@ struct ScheduleServiceView: View {
         }
         .task { await viewModel.loadInitialDataIfNeeded() }
         .refreshable { await viewModel.refreshData() }
-        .sheet(isPresented: Binding(
-            get: { scheduleReportURL != nil },
-            set: { isPresented in
-                if !isPresented {
-                    scheduleReportURL = nil
-                }
-            }
-        )) {
-            if let scheduleReportURL {
-                ShareSheet(activityItems: [scheduleReportURL])
-            }
-        }
+        .quickLookPreview($scheduleReportURL)
         .sheet(item: $selectedExamLesson) { lesson in
             ScheduleLessonDetailSheet(
                 lesson: lesson,
@@ -313,6 +248,84 @@ struct ScheduleServiceView: View {
         }, message: {
             Text(viewModel.errorMessage ?? "")
         })
+        .sheet(isPresented: $isSearchSheetPresented) {
+            NavigationStack {
+                ScrollView {
+                    searchBlock
+                        .padding()
+                }
+                .background(Color(uiColor: .systemGroupedBackground))
+                .navigationTitle("Поиск расписания")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(NSLocalizedString("common_close", comment: "")) {
+                            isSearchSheetPresented = false
+                        }
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+            .onChange(of: viewModel.schedule?.group?.name ?? viewModel.schedule?.employee?.fullName) { _ in
+                isSearchSheetPresented = false
+            }
+        }
+    }
+
+    private var searchBlock: some View {
+        ServiceEndpointSection(
+            title: NSLocalizedString("services_schedule_title", comment: ""),
+            subtitle: NSLocalizedString("services_schedule_subtitle", comment: ""),
+            icon: "calendar"
+        ) {
+            VStack(spacing: 12) {
+                Picker("", selection: $viewModel.mode) {
+                    Text(NSLocalizedString("services_schedule_mode_group", comment: "")).tag(ScheduleLookupMode.group)
+                    Text(NSLocalizedString("services_schedule_mode_teacher", comment: "")).tag(ScheduleLookupMode.teacher)
+                }
+                .pickerStyle(.segmented)
+
+                TextField(viewModel.searchPlaceholder, text: $viewModel.query)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color(uiColor: .tertiarySystemGroupedBackground))
+                    )
+                    .onSubmit {
+                        Task { await viewModel.loadByQuery() }
+                    }
+
+                Button {
+                    Task { await viewModel.loadByQuery() }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.down.circle.fill")
+                        Text(NSLocalizedString("services_schedule_load_button", comment: ""))
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+
+                if viewModel.mode == .group {
+                    ScheduleSuggestionsView(
+                        groups: viewModel.filteredGroups,
+                        accountGroupName: viewModel.accountGroupName,
+                        onSelect: { group in
+                            Task { await viewModel.loadGroup(group.name) }
+                        }
+                    )
+                } else {
+                    ScheduleTeacherSuggestionsView(
+                        employees: viewModel.filteredEmployees,
+                        onSelect: { employee in
+                            Task { await viewModel.loadEmployee(employee) }
+                        }
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -398,12 +411,6 @@ private struct ScheduleLessonCard: View {
                     teacherAvatarButton(size: 46)
                 }
             }
-
-            if let progress {
-                ProgressView(value: min(max(progress, 0), 1))
-                    .progressViewStyle(.linear)
-                    .tint(accentColor)
-            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -457,9 +464,16 @@ private struct ScheduleLessonCard: View {
     }
 
     private func accentBar(width: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 4, style: .continuous)
-            .fill(accentColor)
-            .frame(width: width)
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                if let progress {
+                    Color.clear.frame(height: proxy.size.height * min(max(progress, 0), 1))
+                }
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(accentColor)
+            }
+        }
+        .frame(width: width)
     }
 
     private var currentBadge: some View {
@@ -503,10 +517,7 @@ private struct ScheduleLessonCard: View {
 
     @ViewBuilder
     private func cardBorder(cornerRadius: CGFloat) -> some View {
-        if lesson.isAnnouncement || lesson.isSplit {
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .strokeBorder(.white.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [8, 6]))
-        } else if isCurrent {
+        if isCurrent {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .strokeBorder(accentColor.opacity(0.7), lineWidth: 1.5)
         }

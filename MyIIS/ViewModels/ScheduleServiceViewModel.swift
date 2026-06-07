@@ -412,7 +412,9 @@ final class ScheduleServiceViewModel: ObservableObject {
         guard mode == .group || mode == .teacher else { return }
         guard displayMode == .continuous else { return }
         guard continuousTimelineDays.last?.id == lastVisibleDayID else { return }
-        appendContinuousChunkIfNeeded()
+        Task { @MainActor in
+            appendContinuousChunkIfNeeded()
+        }
     }
 
     private func rebuildContinuousTimeline(reset: Bool) {

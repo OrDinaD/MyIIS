@@ -205,14 +205,65 @@ struct TeacherAvatarView: View {
 
 private struct TeacherPhotoPreview: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
     let teacher: DisciplineEmployee?
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
 
-            TeacherAvatarView(teacher: teacher, size: 260)
+            if let link = teacher?.photoLink, let url = URL(string: link) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFit()
+                } placeholder: {
+                    ProgressView().tint(.white)
+                }
+                .scaleEffect(scale)
+                .offset(offset)
+                .gesture(
+                    MagnificationGesture()
+                        .onChanged { value in
+                            let delta = value / lastScale
+                            lastScale = value
+                            scale = min(max(scale * delta, 1), 4)
+                        }
+                        .onEnded { _ in
+                            lastScale = 1.0
+                            if scale <= 1.0 {
+                                withAnimation {
+                                    scale = 1.0
+                                    offset = .zero
+                                }
+                            }
+                        }
+                        .simultaneously(with: DragGesture()
+                            .onChanged { value in
+                                if scale > 1.0 {
+                                    offset = CGSize(
+                                        width: lastOffset.width + value.translation.width,
+                                        height: lastOffset.height + value.translation.height
+                                    )
+                                }
+                            }
+                            .onEnded { _ in
+                                lastOffset = offset
+                                if scale <= 1.0 {
+                                    lastOffset = .zero
+                                }
+                            }
+                        )
+                )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipped()
+            } else {
+                Image(systemName: "person.fill")
+                    .font(.system(size: 160))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
 
             Button {
                 dismiss()
