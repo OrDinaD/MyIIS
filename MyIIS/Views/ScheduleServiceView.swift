@@ -7,6 +7,7 @@ import SwiftUI
 struct ScheduleServiceView: View {
     @StateObject private var viewModel = ScheduleServiceViewModel()
     @State private var scheduleReportURL: URL?
+    @State private var selectedExamLesson: DisciplineSchedule?
 
     private var loadingOverlayTitle: String {
         viewModel.isDownloadingReport
@@ -152,11 +153,15 @@ struct ScheduleServiceView: View {
                                             lesson: exam,
                                             isCurrent: false,
                                             progress: nil,
+                                            presentation: .sessionCompact,
                                             onTeacherTap: { teacher in
                                                 Task { await viewModel.openTeacherSchedule(teacher) }
                                             },
                                             onGroupTap: { groupName in
                                                 Task { await viewModel.openGroupSchedule(groupName) }
+                                            },
+                                            onDetailsTap: {
+                                                selectedExamLesson = exam
                                             }
                                         )
                                     }
@@ -273,6 +278,17 @@ struct ScheduleServiceView: View {
                 ShareSheet(activityItems: [scheduleReportURL])
             }
         }
+        .sheet(item: $selectedExamLesson) { lesson in
+            ScheduleLessonDetailSheet(
+                lesson: lesson,
+                onTeacherScheduleTap: { teacher in
+                    selectedExamLesson = nil
+                    Task { await viewModel.openTeacherSchedule(teacher) }
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
         .alert(NSLocalizedString("services_schedule_reminders_title", comment: ""), isPresented: Binding(
             get: { viewModel.noticeMessage != nil },
             set: { shouldShow in
@@ -300,30 +316,36 @@ struct ScheduleServiceView: View {
     }
 }
 
+private enum ScheduleLessonCardPresentation {
+    case regular
+    case sessionCompact
+}
+
 private struct ScheduleLessonCard: View {
     let lesson: DisciplineSchedule
     let isCurrent: Bool
     let progress: Double?
+    var presentation: ScheduleLessonCardPresentation = .regular
     let onTeacherTap: (DisciplineEmployee) -> Void
     let onGroupTap: (String) -> Void
+    var onDetailsTap: (() -> Void)?
 
     var body: some View {
+        if presentation == .sessionCompact {
+            compactBody
+        } else {
+            regularBody
+        }
+    }
+
+    private var regularBody: some View {
         VStack(spacing: 10) {
             HStack(spacing: 12) {
-                VStack(spacing: 4) {
-                    Text(lesson.startLessonTime)
-                        .font(.system(.body, design: .monospaced).weight(.semibold))
-                        .foregroundStyle(.white)
-                    Text(lesson.endLessonTime)
-                        .font(.system(.body, design: .monospaced).weight(.regular))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
-                .frame(width: 66)
+                timeColumn(font: .system(.body, design: .monospaced))
+                    .frame(width: 66)
 
                 HStack(spacing: 12) {
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(accentColor)
-                        .frame(width: 6)
+                    accentBar(width: 6)
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 8) {
@@ -332,12 +354,7 @@ private struct ScheduleLessonCard: View {
                                 .foregroundStyle(.white)
                                 .lineLimit(2)
                             if isCurrent {
-                                Text(NSLocalizedString("services_schedule_now_badge", comment: ""))
-                                    .font(.caption2.weight(.bold))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(accentColor.opacity(0.3), in: Capsule())
-                                    .foregroundStyle(.white)
+                                currentBadge
                             }
                         }
 
@@ -378,8 +395,7 @@ private struct ScheduleLessonCard: View {
                     }
 
                     Spacer(minLength: 6)
-
-                    teacherAvatar
+                    teacherAvatarButton(size: 46)
                 }
             }
 
@@ -393,18 +409,79 @@ private struct ScheduleLessonCard: View {
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(cardBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay {
-            if lesson.isAnnouncement || lesson.isSplit {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(.white.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [8, 6]))
-            } else if isCurrent {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .strokeBorder(accentColor.opacity(0.7), lineWidth: 1.5)
+        .overlay { cardBorder(cornerRadius: 16) }
+    }
+
+    private var compactBody: some View {
+        HStack(spacing: 10) {
+            timeColumn(font: .system(size: 18, weight: .medium, design: .monospaced))
+                .frame(width: 66)
+
+            accentBar(width: 7)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(compactTitle)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                if let compactSubtitle {
+                    Text(compactSubtitle)
+                        .font(.body.weight(.regular))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            teacherAvatarButton(size: 44)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay { cardBorder(cornerRadius: 14) }
+    }
+
+    private func timeColumn(font: Font) -> some View {
+        VStack(spacing: 3) {
+            Text(lesson.startLessonTime)
+                .font(font.weight(.semibold))
+                .foregroundStyle(.white)
+            Text(lesson.endLessonTime)
+                .font(font.weight(.regular))
+                .foregroundStyle(.white.opacity(0.85))
         }
     }
 
-    private var teacherAvatar: some View {
+    private func accentBar(width: CGFloat) -> some View {
+        RoundedRectangle(cornerRadius: 4, style: .continuous)
+            .fill(accentColor)
+            .frame(width: width)
+    }
+
+    private var currentBadge: some View {
+        Text(NSLocalizedString("services_schedule_now_badge", comment: ""))
+            .font(.caption2.weight(.bold))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(accentColor.opacity(0.3), in: Capsule())
+            .foregroundStyle(.white)
+    }
+
+    private func teacherAvatarButton(size: CGFloat) -> some View {
+        Button {
+            onDetailsTap?()
+        } label: {
+            teacherAvatar(size: size)
+        }
+        .buttonStyle(.plain)
+        .disabled(onDetailsTap == nil)
+    }
+
+    private func teacherAvatar(size: CGFloat) -> some View {
         Group {
             if let link = lesson.employees.first?.photoLink, let url = URL(string: link) {
                 AsyncImage(url: url) { image in
@@ -420,8 +497,19 @@ private struct ScheduleLessonCard: View {
                 }
             }
         }
-        .frame(width: 46, height: 46)
+        .frame(width: size, height: size)
         .clipShape(Circle())
+    }
+
+    @ViewBuilder
+    private func cardBorder(cornerRadius: CGFloat) -> some View {
+        if lesson.isAnnouncement || lesson.isSplit {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .strokeBorder(.white.opacity(0.28), style: StrokeStyle(lineWidth: 1, dash: [8, 6]))
+        } else if isCurrent {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .strokeBorder(accentColor.opacity(0.7), lineWidth: 1.5)
+        }
     }
 
     private var cardBackground: LinearGradient {
@@ -432,13 +520,28 @@ private struct ScheduleLessonCard: View {
         )
     }
 
+    private var compactTitle: String {
+        if lesson.isAnnouncement { return "📣 Объявление" }
+        return lesson.subject.nilIfBlank ?? lesson.lessonTypeAbbrev.nilIfBlank ?? lesson.title
+    }
+
+    private var compactSubtitle: String? {
+        if lesson.isAnnouncement {
+            return [lesson.location.nilIfBlank, lesson.note.nilIfBlank]
+                .compactMap { $0 }
+                .joined(separator: ", ")
+                .nilIfBlank
+        }
+        return lesson.location.nilIfBlank
+    }
+
     private var accentColor: Color {
         let type = lesson.lessonTypeAbbrev.lowercased()
         if type.contains("экзам") {
             return .red
         }
         if type.contains("конс") {
-            return .yellow
+            return .purple
         }
         if type.contains("лр") {
             return .green
@@ -456,83 +559,5 @@ private struct ScheduleLessonCard: View {
         lesson.studentGroups
             .compactMap(\.name)
             .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
-    }
-}
-
-private struct ScheduleSuggestionsView: View {
-    let groups: [StudyGroup]
-    let accountGroupName: String?
-    let onSelect: (StudyGroup) -> Void
-
-    var body: some View {
-        if groups.isEmpty {
-            ServiceEmptyState(text: NSLocalizedString("services_schedule_groups_empty", comment: ""))
-        } else {
-            VStack(spacing: 8) {
-                ForEach(groups.prefix(12), id: \.name) { group in
-                    Button {
-                        onSelect(group)
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: group.name == accountGroupName ? "person.crop.circle.badge.checkmark" : "person.3.fill")
-                                .foregroundStyle(group.name == accountGroupName ? .green : .blue)
-                            VStack(alignment: .leading, spacing: 2) {
-                                HStack(spacing: 6) {
-                                    Text(group.name)
-                                        .font(.subheadline.weight(.semibold))
-                                        .foregroundStyle(.primary)
-
-                                    if group.name == accountGroupName {
-                                        Text(NSLocalizedString("services_schedule_my_group", comment: ""))
-                                            .font(.caption2.weight(.semibold))
-                                            .foregroundStyle(.green)
-                                    }
-                                }
-                                if let speciality = group.specialityName, !speciality.isEmpty {
-                                    Text(speciality)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer(minLength: 8)
-                        }
-                        .padding(10)
-                        .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
-    }
-}
-
-private struct ScheduleTeacherSuggestionsView: View {
-    let employees: [ScheduleEmployeeDirectoryEntry]
-    let onSelect: (ScheduleEmployeeDirectoryEntry) -> Void
-
-    var body: some View {
-        if employees.isEmpty {
-            ServiceEmptyState(text: NSLocalizedString("services_schedule_employees_empty", comment: ""))
-        } else {
-            VStack(spacing: 8) {
-                ForEach(employees.prefix(8)) { employee in
-                    Button {
-                        onSelect(employee)
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "person.fill")
-                                .foregroundStyle(.blue)
-                            Text(employee.displayName)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(10)
-                        .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-        }
     }
 }

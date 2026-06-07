@@ -571,7 +571,9 @@ final class ScheduleServiceViewModel: ObservableObject {
     }
 
     private static func widgetEvent(from lesson: DisciplineSchedule) -> SessionScheduleWidgetSnapshot.Event {
-        let title = lesson.title.replacingOccurrences(of: "📣 ", with: "")
+        let title = lesson.isAnnouncement
+            ? lesson.title.replacingOccurrences(of: "📣 ", with: "")
+            : (lesson.subject.nilIfBlank ?? lesson.title)
         let subtitle = [lesson.location.nilIfBlank, lesson.note.nilIfBlank]
             .compactMap { $0 }
             .joined(separator: ", ")

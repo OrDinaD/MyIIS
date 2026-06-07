@@ -159,23 +159,19 @@ struct SessionScheduleWidgetView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             Text(headerDateText)
-                .font(.system(size: family == .systemLarge ? 21 : 18, weight: .bold, design: .rounded))
+                .font(.system(size: family == .systemLarge ? 20 : 17, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .minimumScaleFactor(0.75)
 
-            Spacer(minLength: 6)
+            Spacer(minLength: 8)
 
-            Image(systemName: "graduationcap.fill")
-                .font(.system(size: family == .systemLarge ? 18 : 14, weight: .semibold))
             Text(entry.groupName)
-                .font(.system(size: family == .systemLarge ? 21 : 17, weight: .semibold, design: .rounded))
+                .font(.system(size: family == .systemLarge ? 20 : 17, weight: .semibold, design: .rounded))
                 .minimumScaleFactor(0.75)
-            Image(systemName: "person.fill")
-                .font(.system(size: family == .systemLarge ? 16 : 13, weight: .semibold))
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 14)
-        .frame(height: family == .systemLarge ? 46 : 42)
+        .frame(height: family == .systemLarge ? 42 : 38)
         .background(headerGradient)
     }
 
@@ -183,7 +179,7 @@ struct SessionScheduleWidgetView: View {
         VStack(alignment: .leading, spacing: 6) {
             if day.id != groupedVisibleEvents.first?.id {
                 Text(dateText(for: day.date))
-                    .font(.system(size: family == .systemLarge ? 18 : 13, weight: .bold, design: .rounded))
+                    .font(.system(size: family == .systemLarge ? 16 : 13, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .monospacedDigit()
                     .lineLimit(1)
@@ -302,7 +298,7 @@ private struct SessionWidgetEventRow: View {
                 Text(event.startTime)
                 Text(event.endTime)
             }
-            .font(.system(size: compact ? 13 : 15, weight: .medium, design: .monospaced))
+            .font(.system(size: compact ? 12 : 14, weight: .medium, design: .monospaced))
             .foregroundStyle(.white)
             .lineLimit(1)
             .frame(width: compact ? 50 : 60)
@@ -313,13 +309,13 @@ private struct SessionWidgetEventRow: View {
 
             VStack(alignment: .leading, spacing: compact ? 1 : 2) {
                 Text(displayTitle)
-                    .font(.system(size: compact ? 15 : 18, weight: .bold, design: .rounded))
+                    .font(.system(size: compact ? 14 : 17, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                 if let subtitle = event.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.system(size: compact ? 12 : 15, weight: .regular, design: .rounded))
+                        .font(.system(size: compact ? 11 : 14, weight: .regular, design: .rounded))
                         .foregroundStyle(.white.opacity(0.72))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
