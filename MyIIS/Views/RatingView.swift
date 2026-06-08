@@ -218,58 +218,46 @@ struct RatingView: View {
 
     @ViewBuilder
     private func disciplineAttemptsContent(for discipline: GradebookDiscipline) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if let omissions = discipline.lessonOmissions, !omissions.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(NSLocalizedString("rating_unexcused_missed_title", value: "ПРОПУСКИ (НЕУВАЖ.)", comment: ""))
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 8) {
+            let hasOmissions = discipline.lessonOmissions?.isEmpty == false
+            let hasAttempts = !discipline.sortedAttempts.isEmpty
 
+            if !hasOmissions && !hasAttempts {
+                Text("—")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                if let omissions = discipline.lessonOmissions {
                     ForEach(omissions) { omission in
                         HStack(alignment: .center, spacing: 8) {
                             Text(attemptTypeTitle(omission.type))
                                 .font(.subheadline.weight(.medium))
+                            Text("\(omission.hours) ч")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.orange)
                             Spacer()
                             Text(formattedAttemptDate(omission.date))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .monospacedDigit()
-                            Text("\(omission.hours) ч")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.orange)
                         }
                     }
                 }
-            }
 
-            if !discipline.sortedAttempts.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(NSLocalizedString("rating_grades_title", value: "ОЦЕНКИ", comment: ""))
-                        .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
-
-                    let grouped = Dictionary(grouping: discipline.sortedAttempts) { $0.type }
-                    let sortedTypes = grouped.keys.sorted()
-
-                    ForEach(sortedTypes, id: \.self) { type in
-                        if let attempts = grouped[type] {
-                            HStack(alignment: .top, spacing: 8) {
-                                Text(attemptTypeTitle(type))
-                                    .font(.subheadline.weight(.medium))
-                                Spacer()
-                                Text(attempts.map { $0.grade.displayValue }.joined(separator: ", "))
-                                    .font(.subheadline.weight(.semibold))
-                                    .monospacedDigit()
-                            }
-                        }
+                ForEach(discipline.sortedAttempts) { attempt in
+                    HStack(alignment: .center, spacing: 8) {
+                        Text(attemptTypeTitle(attempt.type))
+                            .font(.subheadline.weight(.medium))
+                        Text(attempt.grade.displayValue)
+                            .font(.subheadline.weight(.semibold))
+                            .monospacedDigit()
+                        Spacer()
+                        Text(formattedAttemptDate(attempt.date))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
                     }
                 }
-            }
-
-            if discipline.sortedAttempts.isEmpty && (discipline.lessonOmissions ?? []).isEmpty {
-                Text(NSLocalizedString("rating_no_data", value: "Нет данных", comment: ""))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
         }
         .padding(.top, 6)
