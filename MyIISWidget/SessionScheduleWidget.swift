@@ -122,7 +122,7 @@ struct SessionScheduleWidgetView: View {
         case .systemMedium:
             return 3
         default:
-            return 5
+            return 4
         }
     }
 
@@ -150,64 +150,59 @@ struct SessionScheduleWidgetView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 16)
+            .padding(.top, 7)
+            .padding(.bottom, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    private var header: some View {
-        HStack(alignment: .center, spacing: 8) {
-            Text(headerDateText)
-                .font(headerDateFont)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-
-            Spacer(minLength: 8)
-
-            HStack(spacing: 6) {
-                Text(entry.groupName)
-
-                Image(systemName: "person.2.fill")
-                    .font(.system(size: family == .systemLarge ? 17 : 14,
-                                  weight: .semibold))
-
-                Text("2")
-            }
-            .font(headerGroupFont)
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, family == .systemLarge ? 22 : 16)
-        .frame(maxWidth: .infinity)
-        .frame(height: headerHeight, alignment: .center)
-        .background(headerGradient)
-    }
-
     private var headerHeight: CGFloat {
-        switch family {
-        case .systemLarge:
-            return 54
-        case .systemMedium:
-            return 44
-        default:
-            return 44
-        }
+        family == .systemLarge ? 44 : 38
     }
 
     private var headerDateFont: Font {
-        .system(size: family == .systemLarge ? 22 : 18,
+        .system(size: family == .systemLarge ? 21 : 17,
                 weight: .bold,
                 design: .rounded)
     }
 
     private var headerGroupFont: Font {
-        .system(size: family == .systemLarge ? 20 : 17,
+        .system(size: family == .systemLarge ? 19 : 16,
                 weight: .semibold,
                 design: .rounded)
+    }
+
+    private var header: some View {
+        ZStack {
+            headerGradient
+
+            HStack(spacing: 8) {
+                Text(headerDateText)
+                    .font(headerDateFont)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+
+                Spacer(minLength: 8)
+
+                HStack(spacing: 5) {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: family == .systemLarge ? 17 : 14,
+                                      weight: .semibold))
+
+                    Text("2")
+                }
+                .font(headerGroupFont)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, family == .systemLarge ? 18 : 14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: headerHeight)
     }
 
     private func daySection(_ day: SessionWidgetDay) -> some View {
@@ -363,7 +358,7 @@ private struct SessionWidgetEventRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, compact ? 8 : 10)
-        .padding(.vertical, compact ? 4 : 5)
+        .padding(.vertical, compact ? 4 : 4)
         .background(Color.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 
