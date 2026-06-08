@@ -14,15 +14,13 @@
 
 MyIIS - iOS-приложение для студентов БГУИР. Оно собирает личный кабинет, учебные данные, сервисы университета и СЭО в одном SwiftUI-интерфейсе без необходимости переключаться между разными веб-страницами.
 
-## Скриншоты
+## Инфографика
 
-| Вход | Профиль | Сервисы |
-| --- | --- | --- |
-| ![Экран входа](public/showcase/01_loginscreen.png) | ![Профиль студента](public/showcase/02_profilescreen.png) | ![Студенческие сервисы](public/showcase/05_servicesscreen.png) |
-
-| Посещаемость | Рейтинг | Зачетка |
-| --- | --- | --- |
-| ![Посещаемость](public/showcase/03_attendancescreen.png) | ![Рейтинг](public/showcase/04_ratingscreen.png) | ![Электронная зачетка](public/showcase/06_gradebookscreen.png) |
+<p align="center">
+  <img src="public/showcase/1.jpg" width="32%" alt="Инфографика 1">
+  <img src="public/showcase/2.jpg" width="32%" alt="Инфографика 2">
+  <img src="public/showcase/3.jpg" width="32%" alt="Инфографика 3">
+</p>
 
 ## Возможности
 
