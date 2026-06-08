@@ -190,7 +190,10 @@ struct RatingView: View {
 
     @ViewBuilder
     private func disciplineRatingRow(discipline: GradebookDiscipline) -> some View {
-        if discipline.sortedAttempts.isEmpty {
+        let hasAttempts = !discipline.sortedAttempts.isEmpty
+        let hasOmissions = !(discipline.lessonOmissions ?? []).isEmpty
+
+        if !hasAttempts && !hasOmissions {
             disciplineLabelContent(for: discipline)
                 .padding(.vertical, 8)
         } else {
@@ -418,7 +421,11 @@ private struct RatingDisciplineDetailsView: View {
                 } else {
                     ForEach(checkpoints) { checkpoint in
                         HStack {
-                            Text("КТ \(checkpoint.number)")
+                            if let title = checkpoint.title, !title.isEmpty {
+                                Text(title)
+                            } else {
+                                Text("КТ \(checkpoint.number)")
+                            }
                             Spacer()
                             Text("\(checkpoint.averageGrade.map { $0.formatted(.number.precision(.fractionLength(2))) } ?? "—")")
                                 .foregroundStyle(.secondary)

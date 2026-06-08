@@ -342,30 +342,41 @@ extension RatingViewModel {
             .filter { !$0.isRespectfulOmission }
             .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
 
-        let checkpointGroups = Dictionary(grouping: lessons.compactMap { lesson -> (Int, PortalGradeBookLesson)? in
-            guard let checkpointNumber = Self.checkpointNumber(from: lesson.controlPoint) else {
+        let checkpointGroups = Dictionary(grouping: lessons.compactMap { lesson -> (String, PortalGradeBookLesson)? in
+            let controlPoint = lesson.controlPoint.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !controlPoint.isEmpty else {
                 return nil
             }
-            return (checkpointNumber, lesson)
+            return (controlPoint, lesson)
         }) { $0.0 }
 
-        let checkpoints: [RatingCheckpoint] = checkpointGroups
-            .keys
-            .sorted()
-            .map { number in
-                let scopedLessons = (checkpointGroups[number] ?? []).map { $0.1 }
-                let marks = scopedLessons.flatMap { $0.marks }.map(Double.init)
-                let average = Self.average(marks)
-                let missed = scopedLessons
-                    .filter { !$0.isRespectfulOmission }
-                    .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy"
+        let sortedKeys = checkpointGroups.keys.sorted { key1, key2 in
+            let dates1 = checkpointGroups[key1]!.compactMap { formatter.date(from: $0.1.dateString) }
+            let dates2 = checkpointGroups[key2]!.compactMap { formatter.date(from: $0.1.dateString) }
+            let min1 = dates1.min() ?? Date.distantFuture
+            let min2 = dates2.min() ?? Date.distantFuture
+            return min1 < min2
+        }
 
-                return RatingCheckpoint(
-                    number: number,
-                    averageGrade: average,
-                    missedHours: missed
-                )
-            }
+        let checkpoints: [RatingCheckpoint] = sortedKeys.enumerated().map { index, key in
+            let scopedLessons = (checkpointGroups[key] ?? []).map { $0.1 }
+            let marks = scopedLessons.flatMap { $0.marks }.map(Double.init)
+            let average = Self.average(marks)
+            let missed = scopedLessons
+                .filter { !$0.isRespectfulOmission }
+                .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
+
+            let number = Self.checkpointNumber(from: key) ?? (index + 1)
+
+            return RatingCheckpoint(
+                number: number,
+                title: key,
+                averageGrade: average,
+                missedHours: missed
+            )
+        }
 
         let resolvedId = normalizeRecordBookNumber(targetRecordBookNumber)
         let recordBookNumber = resolvedId.isEmpty ? "portal-grade-book" : resolvedId

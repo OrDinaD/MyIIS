@@ -19,8 +19,13 @@ extension RatingView {
             } else {
                 ForEach(viewModel.userCheckpoints) { checkpoint in
                     HStack {
-                        Text(String(format: NSLocalizedString("rating_checkpoint_format", comment: ""), Int64(checkpoint.number)))
-                            .fontWeight(.medium)
+                        if let title = checkpoint.title, !title.isEmpty {
+                            Text(title)
+                                .fontWeight(.medium)
+                        } else {
+                            Text(String(format: NSLocalizedString("rating_checkpoint_format", comment: ""), Int64(checkpoint.number)))
+                                .fontWeight(.medium)
+                        }
                         Spacer()
                         Text(formattedGrade(checkpoint.averageGrade))
                             .foregroundStyle(gradeTint(checkpoint.averageGrade))

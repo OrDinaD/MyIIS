@@ -262,7 +262,7 @@ struct ScheduleServiceView: View {
                 }
             }
             .presentationDetents([.medium, .large])
-            .onChange(of: viewModel.schedule?.group?.name ?? viewModel.schedule?.employee?.fullName) { _ in
+            .onChange(of: viewModel.schedule?.group?.name ?? viewModel.schedule?.employee?.fullName) {
                 isSearchSheetPresented = false
             }
         }

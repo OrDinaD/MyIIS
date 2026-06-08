@@ -57,6 +57,7 @@ struct StudentRating: Identifiable, Decodable, Equatable {
 
 struct RatingCheckpoint: Identifiable, Decodable, Equatable {
     let number: Int
+    let title: String?
     let averageGrade: Double?
     let missedHours: Int?
 
@@ -64,6 +65,7 @@ struct RatingCheckpoint: Identifiable, Decodable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case number
+        case title
         case checkpointNumber
         case pointNumber
         case averageGrade
@@ -72,8 +74,9 @@ struct RatingCheckpoint: Identifiable, Decodable, Equatable {
         case missedLessons
     }
 
-    init(number: Int, averageGrade: Double?, missedHours: Int?) {
+    init(number: Int, title: String? = nil, averageGrade: Double?, missedHours: Int?) {
         self.number = number
+        self.title = title
         self.averageGrade = averageGrade
         self.missedHours = missedHours
     }
@@ -82,6 +85,7 @@ struct RatingCheckpoint: Identifiable, Decodable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
         self.number = container.decodeInt(forKeys: [.number, .checkpointNumber, .pointNumber]) ?? 0
+        self.title = try? container.decodeIfPresent(String.self, forKey: .title)
         self.averageGrade = container.decodeDouble(forKeys: [.averageGrade, .averageMark])
         self.missedHours = container.decodeInt(forKeys: [.missedHours, .missedLessons])
     }
@@ -199,19 +203,19 @@ private extension KeyedDecodingContainer {
 extension StudentRating {
     static let previewData: [StudentRating] = {
         let checkpoints1 = [
-            RatingCheckpoint(number: 1, averageGrade: 8.4, missedHours: 2),
-            RatingCheckpoint(number: 2, averageGrade: 9.1, missedHours: 0),
-            RatingCheckpoint(number: 3, averageGrade: 8.8, missedHours: 1)
+            RatingCheckpoint(number: 1, title: nil, averageGrade: 8.4, missedHours: 2),
+            RatingCheckpoint(number: 2, title: nil, averageGrade: 9.1, missedHours: 0),
+            RatingCheckpoint(number: 3, title: nil, averageGrade: 8.8, missedHours: 1)
         ]
         let checkpoints2 = [
-            RatingCheckpoint(number: 1, averageGrade: 7.9, missedHours: 4),
-            RatingCheckpoint(number: 2, averageGrade: 8.2, missedHours: 1),
-            RatingCheckpoint(number: 3, averageGrade: 8.0, missedHours: 3)
+            RatingCheckpoint(number: 1, title: nil, averageGrade: 7.9, missedHours: 4),
+            RatingCheckpoint(number: 2, title: nil, averageGrade: 8.2, missedHours: 1),
+            RatingCheckpoint(number: 3, title: nil, averageGrade: 8.0, missedHours: 3)
         ]
         let checkpoints3 = [
-            RatingCheckpoint(number: 1, averageGrade: 9.3, missedHours: 0),
-            RatingCheckpoint(number: 2, averageGrade: 9.0, missedHours: 0),
-            RatingCheckpoint(number: 3, averageGrade: 9.2, missedHours: 0)
+            RatingCheckpoint(number: 1, title: nil, averageGrade: 9.3, missedHours: 0),
+            RatingCheckpoint(number: 2, title: nil, averageGrade: 9.0, missedHours: 0),
+            RatingCheckpoint(number: 3, title: nil, averageGrade: 9.2, missedHours: 0)
         ]
 
         return [
