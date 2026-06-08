@@ -160,20 +160,54 @@ struct SessionScheduleWidgetView: View {
     private var header: some View {
         HStack(alignment: .center, spacing: 8) {
             Text(headerDateText)
-                .font(.system(size: family == .systemLarge ? 14 : 12, weight: .bold, design: .rounded))
+                .font(headerDateFont)
                 .monospacedDigit()
+                .lineLimit(1)
                 .minimumScaleFactor(0.75)
 
             Spacer(minLength: 8)
 
-            Text(entry.groupName)
-                .font(.system(size: family == .systemLarge ? 14 : 12, weight: .semibold, design: .rounded))
-                .minimumScaleFactor(0.75)
+            HStack(spacing: 6) {
+                Text(entry.groupName)
+
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: family == .systemLarge ? 17 : 14,
+                                  weight: .semibold))
+
+                Text("2")
+            }
+            .font(headerGroupFont)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
         }
         .foregroundStyle(.white)
-        .padding(.horizontal, 16)
-        .frame(height: family == .systemLarge ? 32 : 28)
+        .padding(.horizontal, family == .systemLarge ? 22 : 16)
+        .frame(maxWidth: .infinity)
+        .frame(height: headerHeight, alignment: .center)
         .background(headerGradient)
+    }
+
+    private var headerHeight: CGFloat {
+        switch family {
+        case .systemLarge:
+            return 54
+        case .systemMedium:
+            return 44
+        default:
+            return 44
+        }
+    }
+
+    private var headerDateFont: Font {
+        .system(size: family == .systemLarge ? 22 : 18,
+                weight: .bold,
+                design: .rounded)
+    }
+
+    private var headerGroupFont: Font {
+        .system(size: family == .systemLarge ? 20 : 17,
+                weight: .semibold,
+                design: .rounded)
     }
 
     private func daySection(_ day: SessionWidgetDay) -> some View {
