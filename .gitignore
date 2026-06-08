@@ -128,3 +128,6 @@ Tests/Videos/
 
 # Local editor metadata
 .vscode/
+
+# Agent coding files
+agents.md

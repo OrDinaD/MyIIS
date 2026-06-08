@@ -154,6 +154,7 @@ struct SessionScheduleWidgetView: View {
             .padding(.bottom, 16)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     private var header: some View {
@@ -307,7 +308,7 @@ private struct SessionWidgetEventRow: View {
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .fill(accentColor)
                     .frame(width: compact ? 4 : 5)
-                
+
                 VStack(alignment: .leading, spacing: compact ? 1 : 2) {
                     Text(displayTitle)
                         .font(.system(size: compact ? 13 : 15, weight: .bold, design: .rounded))
