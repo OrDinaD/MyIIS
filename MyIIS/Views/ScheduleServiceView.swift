@@ -1,6 +1,6 @@
 import Combine
-import SwiftUI
 import QuickLook
+import SwiftUI
 
 // MARK: - Schedule
 

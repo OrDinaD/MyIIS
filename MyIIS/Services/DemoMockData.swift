@@ -179,7 +179,8 @@ struct DemoMockData {
                         hours: 108,
                         attempts: [
                             GradeAttempt(attempt: 1, type: "COURSEWORK", grade: .numeric(10), date: "2025-05-10", status: .passed)
-                        ]
+                        ],
+                        lessonOmissions: nil
                     ),
                     GradebookDiscipline(
                         code: "IOSDEV",
@@ -189,7 +190,8 @@ struct DemoMockData {
                         hours: 120,
                         attempts: [
                             GradeAttempt(attempt: 1, type: "EXAM", grade: .numeric(10), date: "2025-06-20", status: .passed)
-                        ]
+                        ],
+                        lessonOmissions: nil
                     ),
                     GradebookDiscipline(
                         code: "NET301",
@@ -199,7 +201,8 @@ struct DemoMockData {
                         hours: 144,
                         attempts: [
                             GradeAttempt(attempt: 1, type: "EXAM", grade: .numeric(9), date: "2025-06-25", status: .passed)
-                        ]
+                        ],
+                        lessonOmissions: nil
                     )
                 ]
             ),
@@ -216,7 +219,8 @@ struct DemoMockData {
                         hours: 144,
                         attempts: [
                             GradeAttempt(attempt: 1, type: "EXAM", grade: .numeric(9), date: "2024-01-15", status: .passed)
-                        ]
+                        ],
+                        lessonOmissions: nil
                     ),
                     GradebookDiscipline(
                         code: "HIST202",
@@ -226,7 +230,8 @@ struct DemoMockData {
                         hours: 72,
                         attempts: [
                             GradeAttempt(attempt: 1, type: "CREDIT", grade: .textual("зачёт"), date: "2024-01-10", status: .passed)
-                        ]
+                        ],
+                        lessonOmissions: nil
                     )
                 ]
             )

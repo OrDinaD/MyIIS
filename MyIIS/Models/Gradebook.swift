@@ -95,6 +95,7 @@ struct GradebookDiscipline: Codable, Identifiable, Equatable, Hashable {
     let teacher: String?
     let hours: Int?
     let attempts: [GradeAttempt]
+    let lessonOmissions: [GradeOmission]?
 
     var id: String {
         code
@@ -138,6 +139,18 @@ struct GradebookDiscipline: Codable, Identifiable, Equatable, Hashable {
         }
 
         return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+    }
+}
+
+// MARK: - Grade Omission
+
+struct GradeOmission: Codable, Identifiable, Equatable, Hashable {
+    let date: String
+    let type: String
+    let hours: Int
+
+    var id: String {
+        date + type + String(hours)
     }
 }
 
@@ -300,7 +313,8 @@ extension Gradebook {
                                 date: "2025-05-10",
                                 status: .passed
                             )
-                        ]
+                        ],
+                        lessonOmissions: nil
                     ),
                     GradebookDiscipline(
                         code: "MATH301",
@@ -316,7 +330,8 @@ extension Gradebook {
                                 date: "2025-06-25",
                                 status: .passed
                             )
-                        ]
+                        ],
+                        lessonOmissions: nil
                     )
                 ]
             ),
@@ -346,7 +361,8 @@ extension Gradebook {
                                 date: "2024-02-02",
                                 status: .passed
                             )
-                        ]
+                        ],
+                        lessonOmissions: nil
                     ),
                     GradebookDiscipline(
                         code: "HIST202",
@@ -362,7 +378,8 @@ extension Gradebook {
                                 date: "2024-01-10",
                                 status: .passed
                             )
-                        ]
+                        ],
+                        lessonOmissions: nil
                     )
                 ]
             )

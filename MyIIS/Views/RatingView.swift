@@ -218,71 +218,88 @@ struct RatingView: View {
 
     @ViewBuilder
     private func disciplineAttemptsContent(for discipline: GradebookDiscipline) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if discipline.sortedAttempts.isEmpty {
-                Text(NSLocalizedString("rating_no_grades", comment: ""))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(Array(discipline.sortedAttempts.enumerated()), id: \.offset) { _, attempt in
-                    HStack(alignment: .center, spacing: 8) {
-                        Text(attempt.grade.displayValue)
-                            .font(.subheadline.weight(.semibold))
-                            .monospacedDigit()
-                        Text(attemptTypeTitle(attempt.type))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text(formattedAttemptDate(attempt.date))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
+        VStack(alignment: .leading, spacing: 12) {
+            if let omissions = discipline.lessonOmissions, !omissions.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(NSLocalizedString("rating_unexcused_missed_title", value: "ПРОПУСКИ (НЕУВАЖ.)", comment: ""))
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+
+                    ForEach(omissions) { omission in
+                        HStack(alignment: .center, spacing: 8) {
+                            Text(attemptTypeTitle(omission.type))
+                                .font(.subheadline.weight(.medium))
+                            Spacer()
+                            Text(formattedAttemptDate(omission.date))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                            Text("\(omission.hours) ч")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.orange)
+                        }
                     }
                 }
             }
+
+            if !discipline.sortedAttempts.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(NSLocalizedString("rating_grades_title", value: "ОЦЕНКИ", comment: ""))
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+
+                    let grouped = Dictionary(grouping: discipline.sortedAttempts) { $0.type }
+                    let sortedTypes = grouped.keys.sorted()
+
+                    ForEach(sortedTypes, id: \.self) { type in
+                        if let attempts = grouped[type] {
+                            HStack(alignment: .top, spacing: 8) {
+                                Text(attemptTypeTitle(type))
+                                    .font(.subheadline.weight(.medium))
+                                Spacer()
+                                Text(attempts.map { $0.grade.displayValue }.joined(separator: ", "))
+                                    .font(.subheadline.weight(.semibold))
+                                    .monospacedDigit()
+                            }
+                        }
+                    }
+                }
+            }
+
+            if discipline.sortedAttempts.isEmpty && (discipline.lessonOmissions ?? []).isEmpty {
+                Text(NSLocalizedString("rating_no_data", value: "Нет данных", comment: ""))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.top, 6)
+        .padding(.bottom, 4)
     }
 
     @ViewBuilder
     private func disciplineLabelContent(for discipline: GradebookDiscipline) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(discipline.name)
-                    .font(.body.weight(.semibold))
-                    .lineLimit(2)
+            Text(discipline.name)
+                .font(.body.weight(.semibold))
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text(discipline.controlForm)
-                    .font(.footnote)
+            if let average = discipline.averageGradeValue {
+                Text(formattedGrade(average))
+                    .font(.system(.title3, design: .rounded).weight(.semibold))
+                    .foregroundStyle(gradeTint(average))
+                    .monospacedDigit()
+                    .frame(minWidth: 64, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
+                    .padding(.trailing, 4)
+            } else {
+                Text("—")
+                    .font(.system(.title3, design: .rounded).weight(.semibold))
                     .foregroundStyle(.secondary)
-
-                if let omissionHours = viewModel.subjectOmissions[discipline.name], omissionHours > 0 {
-                    Text(String(format: NSLocalizedString("rating_unexcused_missed", comment: ""), Int64(omissionHours)))
-                        .font(.footnote)
-                        .foregroundStyle(.orange)
-                }
-
-                if !discipline.sortedAttempts.isEmpty {
-                    Text(
-                        String(
-                            format: NSLocalizedString("rating_grades_format", comment: ""),
-                            discipline.sortedAttempts.map { $0.grade.displayValue }.joined(separator: ", ")
-                        )
-                    )
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                }
+                    .frame(minWidth: 64, alignment: .trailing)
+                    .multilineTextAlignment(.trailing)
+                    .padding(.trailing, 4)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text(formattedGrade(discipline.averageGradeValue))
-                .font(.system(.title3, design: .rounded).weight(.semibold))
-                .foregroundStyle(gradeTint(discipline.averageGradeValue))
-                .monospacedDigit()
-                .frame(minWidth: 64, alignment: .trailing)
-                .multilineTextAlignment(.trailing)
-                .padding(.trailing, 4)
         }
     }
 

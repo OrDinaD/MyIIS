@@ -286,6 +286,7 @@ extension RatingViewModel {
 
             var attempts: [GradeAttempt] = []
             var attemptNumber = 1
+            var lessonOmissions: [GradeOmission] = []
 
             for lesson in sortedLessons {
                 for mark in lesson.marks {
@@ -300,11 +301,19 @@ extension RatingViewModel {
                     )
                     attemptNumber += 1
                 }
+
+                if !lesson.isRespectfulOmission && lesson.gradeBookOmissions > 0 {
+                    lessonOmissions.append(
+                        GradeOmission(
+                            date: lesson.dateString,
+                            type: lesson.lessonTypeAbbrev,
+                            hours: lesson.gradeBookOmissions
+                        )
+                    )
+                }
             }
 
-            let omissionHours = sortedLessons
-                .filter { !$0.isRespectfulOmission }
-                .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
+            let omissionHours = lessonOmissions.reduce(0) { $0 + $1.hours }
             omissions[subject] = omissionHours
 
             mappedDisciplines.append(
@@ -314,7 +323,8 @@ extension RatingViewModel {
                     controlForm: lessonTypes.isEmpty ? "Занятия" : lessonTypes.joined(separator: " · "),
                     teacher: nil,
                     hours: omissionHours,
-                    attempts: attempts
+                    attempts: attempts,
+                    lessonOmissions: lessonOmissions.isEmpty ? nil : lessonOmissions
                 )
             )
         }
