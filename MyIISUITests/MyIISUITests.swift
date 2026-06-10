@@ -114,7 +114,7 @@ final class MyIISUITests: XCTestCase {
 
     @MainActor
     private func dismissKeyboardIfNeeded(app: XCUIApplication) {
-        guard !app.keyboards.isEmpty else { return }
+        guard app.keyboards.count > 0 else { return }
 
         if app.toolbars.buttons["Done"].exists {
             app.toolbars.buttons["Done"].tap()
@@ -134,7 +134,7 @@ final class MyIISUITests: XCTestCase {
         sleep(2)
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let alerts = springboard.alerts
-        guard !alerts.isEmpty else { return }
+        guard alerts.count > 0 else { return }
 
         let alert = alerts.firstMatch
         let notNowRu = alert.buttons["Не сейчас"]

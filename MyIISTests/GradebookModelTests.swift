@@ -19,7 +19,8 @@ final class GradebookModelTests: XCTestCase {
                         attempts: [
                             GradeAttempt(attempt: 1, type: "EXAM", grade: .numeric(6), date: nil, status: .passed),
                             GradeAttempt(attempt: 2, type: "EXAM", grade: .numeric(8), date: nil, status: .passed)
-                        ]
+                        ],
+                        lessonOmissions: nil
                     ),
                     GradebookDiscipline(
                         code: "CS",
@@ -29,7 +30,8 @@ final class GradebookModelTests: XCTestCase {
                         hours: nil,
                         attempts: [
                             GradeAttempt(attempt: 1, type: "EXAM", grade: .textual("9,5"), date: nil, status: .passed)
-                        ]
+                        ],
+                        lessonOmissions: nil
                     )
                 ]
             )
@@ -46,10 +48,10 @@ final class GradebookModelTests: XCTestCase {
             disciplines: [
                 GradebookDiscipline(code: "B", name: "B", controlForm: "Exam", teacher: nil, hours: nil, attempts: [
                     GradeAttempt(attempt: 1, type: "EXAM", grade: .numeric(8), date: nil, status: .passed)
-                ]),
+                ], lessonOmissions: nil),
                 GradebookDiscipline(code: "A", name: "A", controlForm: "Exam", teacher: nil, hours: nil, attempts: [
                     GradeAttempt(attempt: 1, type: "EXAM", grade: .numeric(10), date: nil, status: .passed)
-                ])
+                ], lessonOmissions: nil)
             ]
         )
 
@@ -60,14 +62,14 @@ final class GradebookModelTests: XCTestCase {
             disciplines: [
                 GradebookDiscipline(code: "Z", name: "Z", controlForm: "Exam", teacher: nil, hours: nil, attempts: [
                     GradeAttempt(attempt: 1, type: "EXAM", grade: .numeric(7), date: nil, status: .passed)
-                ])
+                ], lessonOmissions: nil)
             ]
         )
 
         let normalized = Gradebook(semesters: [semester1, semester2]).normalized()
 
-        XCTAssertEqual(normalized.semesters.map(\.number), [2, 1])
-        XCTAssertEqual(normalized.semesters[1].disciplines.map(\.code), ["A", "B"])
+        XCTAssertEqual(normalized.semesters.map(\GradebookSemester.number), [2, 1])
+        XCTAssertEqual(normalized.semesters[1].disciplines.map(\GradebookDiscipline.code), ["A", "B"])
     }
 
     func testBestAttemptPrefersHigherGradeThenLaterAttempt() {
@@ -81,7 +83,8 @@ final class GradebookModelTests: XCTestCase {
                 GradeAttempt(attempt: 1, type: "EXAM", grade: .numeric(9), date: nil, status: .passed),
                 GradeAttempt(attempt: 2, type: "EXAM", grade: .numeric(9), date: nil, status: .passed),
                 GradeAttempt(attempt: 3, type: "EXAM", grade: .numeric(8), date: nil, status: .passed)
-            ]
+            ],
+            lessonOmissions: nil
         )
 
         XCTAssertEqual(discipline.bestAttempt?.attempt, 2)

@@ -78,3 +78,42 @@ enum SessionScheduleWidgetDataStore {
 #endif
     }
 }
+
+extension SessionScheduleWidgetSnapshot.Event {
+    func interval(calendar: Calendar = .current) -> DateInterval? {
+        guard let date else { return nil }
+
+        func makeDate(from time: String) -> Date? {
+            let parts = time.split(separator: ":").compactMap { Int($0) }
+            guard parts.count == 2 else { return nil }
+
+            var components = calendar.dateComponents([.year, .month, .day], from: date)
+            components.hour = parts[0]
+            components.minute = parts[1]
+            return calendar.date(from: components)
+        }
+
+        guard let start = makeDate(from: startTime),
+              let end = makeDate(from: endTime),
+              end > start else {
+            return nil
+        }
+
+        return DateInterval(start: start, end: end)
+    }
+
+    func progress(at now: Date, calendar: Calendar = .current) -> CGFloat? {
+        guard let interval = interval(calendar: calendar) else { return nil }
+
+        if now < interval.start { return 0 }
+        if now >= interval.end { return 1 }
+
+        let value = now.timeIntervalSince(interval.start) / interval.duration
+        return CGFloat(min(max(value, 0), 1))
+    }
+
+    func isActive(at now: Date, calendar: Calendar = .current) -> Bool {
+        guard let interval = interval(calendar: calendar) else { return false }
+        return interval.contains(now)
+    }
+}

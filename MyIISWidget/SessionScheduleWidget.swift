@@ -97,9 +97,53 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
-        let entry = SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetDataStore.loadSnapshot())
-        let nextRefresh = Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date().addingTimeInterval(2 * 60 * 60)
-        completion(Timeline(entries: [entry], policy: .after(nextRefresh)))
+        let snapshot = SessionScheduleWidgetDataStore.loadSnapshot()
+        let now = Date()
+
+        let dates = makeTimelineDates(snapshot: snapshot, from: now)
+        let entries = dates.map {
+            SessionScheduleWidgetEntry(date: $0, snapshot: snapshot)
+        }
+
+        let nextRefresh = Calendar.current.date(byAdding: .hour, value: 2, to: now)
+            ?? now.addingTimeInterval(2 * 60 * 60)
+
+        completion(Timeline(entries: entries, policy: .after(nextRefresh)))
+    }
+
+    private func makeTimelineDates(
+        snapshot: SessionScheduleWidgetSnapshot?,
+        from now: Date,
+        calendar: Calendar = .current
+    ) -> [Date] {
+        guard let snapshot else { return [now] }
+
+        var dates: Set<Date> = [now]
+
+        for event in snapshot.events {
+            guard let interval = event.interval(calendar: calendar) else { continue }
+
+            if interval.end >= now {
+                dates.insert(interval.start)
+                dates.insert(interval.end)
+
+                var cursor = max(interval.start, now)
+                while cursor < interval.end {
+                    if let next = calendar.date(byAdding: .minute, value: 15, to: cursor) {
+                        dates.insert(next)
+                        cursor = next
+                    } else {
+                        break
+                    }
+                }
+            }
+        }
+
+        return dates
+            .filter { $0 >= now }
+            .sorted()
+            .prefix(24)
+            .map { $0 }
     }
 }
 
@@ -153,7 +197,7 @@ struct SessionScheduleWidgetView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 7)
+            .padding(.top, 8)
             .padding(.bottom, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
@@ -161,46 +205,47 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var headerHeight: CGFloat {
-        family == .systemLarge ? 44 : 38
+        family == .systemLarge ? 46 : 44
     }
 
     private var headerDateFont: Font {
-        .system(size: family == .systemLarge ? 21 : 17,
+        .system(size: family == .systemLarge ? 21 : 20,
                 weight: .bold,
                 design: .rounded)
     }
 
     private var headerGroupFont: Font {
-        .system(size: family == .systemLarge ? 19 : 16,
+        .system(size: family == .systemLarge ? 20 : 19,
                 weight: .semibold,
                 design: .rounded)
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Text(headerDateText)
-                .font(headerDateFont)
-                .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+        ZStack {
+            headerGradient
 
-            Spacer(minLength: 8)
+            HStack(spacing: 8) {
+                Text(headerDateText)
+                    .font(headerDateFont)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
 
-            HStack(spacing: 5) {
-                Image(systemName: "person.2.fill")
-                    .font(.system(size: family == .systemLarge ? 17 : 14,
-                                  weight: .semibold))
+                Spacer(minLength: 8)
 
                 Text(entry.groupName)
+                    .font(headerGroupFont)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
             }
-            .font(headerGroupFont)
-            .lineLimit(1)
-            .minimumScaleFactor(0.75)
+            .foregroundStyle(.white)
+            .padding(.horizontal, family == .systemLarge ? 18 : 16)
+            .padding(.top, 3)
+            .padding(.bottom, 1)
         }
-        .foregroundStyle(.white)
-        .padding(.horizontal, family == .systemLarge ? 18 : 14)
         .frame(height: headerHeight)
-        .background(headerGradient)
+        .clipped()
     }
 
     private func daySection(_ day: SessionWidgetDay) -> some View {
@@ -214,7 +259,7 @@ struct SessionScheduleWidgetView: View {
             }
 
             ForEach(day.events) { event in
-                SessionWidgetEventRow(event: event, compact: family != .systemLarge)
+                SessionWidgetEventRow(event: event, compact: family != .systemLarge, now: entry.date)
             }
         }
     }
@@ -319,45 +364,65 @@ private struct SessionWidgetDay: Identifiable {
 private struct SessionWidgetEventRow: View {
     let event: SessionScheduleWidgetSnapshot.Event
     let compact: Bool
+    let now: Date
 
     var body: some View {
-        HStack(spacing: compact ? 6 : 8) {
+        HStack(spacing: compact ? 7 : 8) {
             VStack(spacing: 0) {
                 Text(event.startTime)
                 Text(event.endTime)
             }
-            .font(.system(size: 11, weight: .medium, design: .monospaced))
+            .font(.system(size: compact ? 12 : 13,
+                          weight: .medium,
+                          design: .monospaced))
             .foregroundStyle(.white)
             .lineLimit(1)
-            .frame(width: compact ? 42 : 46)
+            .frame(width: compact ? 46 : 50)
 
-            HStack(spacing: compact ? 6 : 8) {
+            progressStrip
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(displayTitle)
+                    .font(.system(size: compact ? 16 : 17,
+                                  weight: .bold,
+                                  design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                if let subtitle = event.subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(.system(size: compact ? 13 : 14,
+                                      weight: .regular,
+                                      design: .rounded))
+                        .foregroundStyle(.white.opacity(0.72))
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, compact ? 10 : 12)
+        .frame(height: compact ? 58 : 64)
+        .background(
+            Color.white.opacity(0.075),
+            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+        )
+    }
+
+    private var progressStrip: some View {
+        GeometryReader { proxy in
+            let progress = event.isActive(at: now) ? (event.progress(at: now) ?? 0) : 1
+
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(accentColor.opacity(event.isActive(at: now) ? 0.28 : 1.0))
+
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .fill(accentColor)
-                    .frame(width: compact ? 4 : 5)
-
-                VStack(alignment: .leading, spacing: compact ? 1 : 2) {
-                    Text(displayTitle)
-                        .font(.system(size: compact ? 13 : 15, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                    if let subtitle = event.subtitle, !subtitle.isEmpty {
-                        Text(subtitle)
-                            .font(.system(size: compact ? 10 : 12, weight: .regular, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.72))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: proxy.size.height * progress)
             }
-            .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, compact ? 8 : 10)
-        .padding(.vertical, compact ? 4 : 4)
-        .background(Color.white.opacity(0.075), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .frame(width: compact ? 4 : 5, height: compact ? 44 : 50)
     }
 
     private var displayTitle: String {

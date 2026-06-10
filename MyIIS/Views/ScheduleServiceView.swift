@@ -21,7 +21,7 @@ struct ScheduleServiceView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                if viewModel.schedule == nil {
+                if viewModel.schedule == nil, !viewModel.isLoading {
                     searchBlock
                 }
 
