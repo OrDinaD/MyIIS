@@ -120,7 +120,7 @@ struct SessionScheduleWidgetView: View {
         case .systemSmall:
             return 1
         case .systemMedium:
-            return 3
+            return 2
         default:
             return 4
         }
@@ -145,8 +145,11 @@ struct SessionScheduleWidgetView: View {
                 ForEach(groupedVisibleEvents) { day in
                     daySection(day)
                 }
-                if !hiddenEvents.isEmpty, family == .systemLarge {
+                if !hiddenEvents.isEmpty, family != .systemSmall {
+                    Spacer(minLength: 0)
                     footer
+                } else {
+                    Spacer(minLength: 0)
                 }
             }
             .padding(.horizontal, 16)
@@ -174,35 +177,30 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var header: some View {
-        ZStack {
-            headerGradient
-
-            HStack(spacing: 8) {
-                Text(headerDateText)
-                    .font(headerDateFont)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-
-                Spacer(minLength: 8)
-
-                HStack(spacing: 5) {
-                    Image(systemName: "person.fill")
-                        .font(.system(size: family == .systemLarge ? 17 : 14,
-                                      weight: .semibold))
-
-                    Text("2")
-                }
-                .font(headerGroupFont)
+        HStack(spacing: 8) {
+            Text(headerDateText)
+                .font(headerDateFont)
+                .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
+
+            Spacer(minLength: 8)
+
+            HStack(spacing: 5) {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: family == .systemLarge ? 17 : 14,
+                                  weight: .semibold))
+
+                Text(entry.groupName)
             }
-            .foregroundStyle(.white)
-            .padding(.horizontal, family == .systemLarge ? 18 : 14)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .font(headerGroupFont)
+            .lineLimit(1)
+            .minimumScaleFactor(0.75)
         }
-        .frame(maxWidth: .infinity)
+        .foregroundStyle(.white)
+        .padding(.horizontal, family == .systemLarge ? 18 : 14)
         .frame(height: headerHeight)
+        .background(headerGradient)
     }
 
     private func daySection(_ day: SessionWidgetDay) -> some View {
