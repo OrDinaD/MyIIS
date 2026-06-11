@@ -182,7 +182,7 @@ final class GradebookViewModel: ObservableObject {
         }
     }
 
-    private func sortSemesterKeys<S: Sequence>(_ keys: S) -> [String] where S.Element == String {
+    func sortSemesterKeys<S: Sequence>(_ keys: S) -> [String] where S.Element == String {
         keys.sorted { lhs, rhs in
             (Int(lhs) ?? Int.min) < (Int(rhs) ?? Int.min)
         }

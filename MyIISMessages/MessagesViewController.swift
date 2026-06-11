@@ -160,7 +160,7 @@ private struct MessagesRootView: View {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 17, weight: .semibold))
                     .frame(width: 42, height: 42)
-                    .glassEffect(.regular, in: Circle())
+                    .background(.regularMaterial, in: Circle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Обновить данные")
@@ -180,7 +180,7 @@ private struct MessagesRootView: View {
                 ),
                 in: RoundedRectangle(cornerRadius: 16, style: .continuous)
             )
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     @ViewBuilder
@@ -194,7 +194,7 @@ private struct MessagesRootView: View {
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
-                        .glassEffect(.regular, in: Capsule())
+                        .background(.regularMaterial, in: Capsule())
                 }
                 .buttonStyle(.plain)
             }
@@ -251,7 +251,7 @@ private struct MessagesRootView: View {
             }
         }
         .padding(14)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private func shareTile(_ item: MessageShareItem, style: ShareTileStyle) -> some View {
@@ -263,7 +263,7 @@ private struct MessagesRootView: View {
                     .font(.system(size: style.iconSize, weight: .bold))
                     .foregroundStyle(item.accent)
                     .frame(width: style.iconFrame, height: style.iconFrame)
-                    .glassEffect(.regular, in: RoundedRectangle(cornerRadius: style.iconCornerRadius, style: .continuous))
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: style.iconCornerRadius, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
@@ -277,7 +277,7 @@ private struct MessagesRootView: View {
                             .foregroundStyle(item.accent)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .glassEffect(.regular, in: Capsule())
+                            .background(.regularMaterial, in: Capsule())
                     }
 
                     Text(item.subtitle)
@@ -300,7 +300,7 @@ private struct MessagesRootView: View {
             }
             .padding(style.padding)
             .frame(maxWidth: .infinity, minHeight: style.minHeight, alignment: .leading)
-            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: style.cornerRadius, style: .continuous))
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: style.cornerRadius, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(sendingItemID != nil)
@@ -321,7 +321,7 @@ private struct MessagesRootView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     private func inlineError(_ message: String) -> some View {
@@ -335,7 +335,7 @@ private struct MessagesRootView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private func footer(_ date: Date) -> some View {

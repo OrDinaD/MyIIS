@@ -7,9 +7,13 @@ class APIService {
     static var isDemoMode = false
 
     let baseURL = URLFactory.require("https://iis.bsuir.by/api/v1")
-    private let session = URLSession.shared
+    private let session: URLSession
     private let logService = LogService.shared
     private let userDefaults = UserDefaults.standard
+
+    init(session: URLSession = .shared) {
+        self.session = session
+    }
 
     private static let responseCachePrefix = "APIService.responseCache."
 
@@ -323,7 +327,7 @@ class APIService {
         return Task.isCancelled
     }
 
-    private func handleStatusCode(_ statusCode: Int, data: Data) throws {
+    func handleStatusCode(_ statusCode: Int, data: Data) throws {
         guard !(200...299).contains(statusCode) else { return }
 
         let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
@@ -396,7 +400,7 @@ class APIService {
 }
 
 extension APIService {
-    private static func filenameFromContentDisposition(_ contentDisposition: String) -> String? {
+    static func filenameFromContentDisposition(_ contentDisposition: String) -> String? {
         let lowercased = contentDisposition.lowercased()
         guard let range = lowercased.range(of: "filename*=") else { return nil }
         let raw = contentDisposition[range.upperBound...]

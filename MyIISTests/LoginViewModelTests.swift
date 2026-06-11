@@ -7,17 +7,17 @@ final class LoginViewModelTests: XCTestCase {
     var viewModel: LoginViewModel!
     var authService: AuthenticationService!
     
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         // Initialize with default or mocked dependencies
         authService = AuthenticationService(allowSessionRestore: false)
         viewModel = LoginViewModel(authService: authService)
     }
     
-    override func tearDown() {
+    override func tearDown() async throws {
         viewModel = nil
         authService = nil
-        super.tearDown()
+        try await super.tearDown()
     }
     
     func testClearForm() {

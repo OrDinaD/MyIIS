@@ -7,16 +7,16 @@ final class ProfileViewModelTests: XCTestCase {
     var viewModel: ProfileViewModel!
     var authService: AuthenticationService!
     
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         authService = AuthenticationService(allowSessionRestore: false)
         viewModel = ProfileViewModel(authService: authService)
     }
     
-    override func tearDown() {
+    override func tearDown() async throws {
         viewModel = nil
         authService = nil
-        super.tearDown()
+        try await super.tearDown()
     }
     
     func testUser_ReturnsCurrentUserFromAuthService() {

@@ -263,7 +263,7 @@ class AttendanceViewModel: ObservableObject {
         )
     }
 
-    private static func latestCount(in counts: [MonthlyOmissionCount]) -> MonthlyOmissionCount? {
+    static func latestCount(in counts: [MonthlyOmissionCount]) -> MonthlyOmissionCount? {
         let resolved = resolvedCountsWithDates(counts, referenceDate: Date())
 
         if let latest = resolved.max(by: { $0.date < $1.date })?.item {
@@ -274,7 +274,7 @@ class AttendanceViewModel: ObservableObject {
         return counts.last
     }
 
-    private static func resolvedCountsWithDates(
+    static func resolvedCountsWithDates(
         _ counts: [MonthlyOmissionCount],
         referenceDate: Date
     ) -> [(date: Date, item: MonthlyOmissionCount)] {
@@ -301,7 +301,7 @@ class AttendanceViewModel: ObservableObject {
         }
     }
 
-    private static func inferredYear(forMonth month: Int, referenceDate: Date) -> Int {
+    static func inferredYear(forMonth month: Int, referenceDate: Date) -> Int {
         let reference = MonthParser.calendar.dateComponents([.year, .month], from: referenceDate)
         let referenceYear = reference.year ?? MonthParser.calendar.component(.year, from: referenceDate)
         let referenceMonth = reference.month ?? MonthParser.calendar.component(.month, from: referenceDate)
@@ -313,7 +313,7 @@ class AttendanceViewModel: ObservableObject {
 
 // MARK: - Month Parser
 
-private enum MonthParser {
+enum MonthParser {
     static let locale = Locale(identifier: "ru_RU")
     static var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
