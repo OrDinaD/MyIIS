@@ -149,6 +149,7 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
 
 struct SessionScheduleWidgetView: View {
     @Environment(\.widgetFamily) private var family
+    @Environment(\.widgetContentMargins) private var widgetContentMargins
     let entry: SessionScheduleWidgetEntry
 
     private var visibleEvents: [SessionScheduleWidgetSnapshot.Event] {
@@ -185,37 +186,60 @@ struct SessionScheduleWidgetView: View {
     private var content: some View {
         VStack(spacing: 0) {
             header
-            VStack(alignment: .leading, spacing: family == .systemLarge ? 7 : 6) {
+                .layoutPriority(10)
+
+            VStack(alignment: .leading, spacing: sectionSpacing) {
                 ForEach(groupedVisibleEvents) { day in
                     daySection(day)
                 }
-                if !hiddenEvents.isEmpty, family != .systemSmall {
+
+                if showsFooter {
                     Spacer(minLength: 0)
                     footer
                 } else {
                     Spacer(minLength: 0)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 8)
-            .padding(.bottom, 10)
+            .padding(.horizontal, contentHorizontalPadding)
+            .padding(.top, contentTopPadding)
+            .padding(.bottom, contentBottomPadding)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
+    private var showsFooter: Bool {
+        !hiddenEvents.isEmpty && family == .systemLarge
+    }
+
+    private var sectionSpacing: CGFloat {
+        family == .systemLarge ? 7 : 4
+    }
+
+    private var contentHorizontalPadding: CGFloat {
+        min(max(widgetContentMargins.leading, 14), family == .systemLarge ? 20 : 16)
+    }
+
+    private var contentTopPadding: CGFloat {
+        family == .systemLarge ? 8 : 5
+    }
+
+    private var contentBottomPadding: CGFloat {
+        family == .systemLarge ? 10 : 6
+    }
+
     private var headerHeight: CGFloat {
-        family == .systemLarge ? 46 : 44
+        family == .systemLarge ? 44 : 40
     }
 
     private var headerDateFont: Font {
-        .system(size: family == .systemLarge ? 21 : 20,
+        .system(size: family == .systemLarge ? 21 : 19,
                 weight: .bold,
                 design: .rounded)
     }
 
     private var headerGroupFont: Font {
-        .system(size: family == .systemLarge ? 20 : 19,
+        .system(size: family == .systemLarge ? 20 : 18,
                 weight: .semibold,
                 design: .rounded)
     }
@@ -241,18 +265,17 @@ struct SessionScheduleWidgetView: View {
             }
             .foregroundStyle(.white)
             .padding(.horizontal, family == .systemLarge ? 18 : 16)
-            .padding(.top, 3)
-            .padding(.bottom, 1)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }
         .frame(height: headerHeight)
         .clipped()
     }
 
     private func daySection(_ day: SessionWidgetDay) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: family == .systemLarge ? 6 : 4) {
             if day.id != groupedVisibleEvents.first?.id {
                 Text(dateText(for: day.date))
-                    .font(.system(size: family == .systemLarge ? 14 : 12, weight: .bold, design: .rounded))
+                    .font(.system(size: family == .systemLarge ? 15 : 13, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .monospacedDigit()
                     .lineLimit(1)
@@ -367,46 +390,44 @@ private struct SessionWidgetEventRow: View {
     let now: Date
 
     var body: some View {
-        HStack(spacing: compact ? 7 : 8) {
+        HStack(spacing: compact ? 9 : 11) {
             VStack(spacing: 0) {
                 Text(event.startTime)
                 Text(event.endTime)
             }
-            .font(.system(size: compact ? 12 : 13,
+            .font(.system(size: compact ? 15 : 16,
                           weight: .medium,
                           design: .monospaced))
             .foregroundStyle(.white)
             .lineLimit(1)
-            .frame(width: compact ? 46 : 50)
+            .minimumScaleFactor(0.82)
+            .frame(width: compact ? 58 : 62)
 
             progressStrip
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 0) {
                 Text(displayTitle)
-                    .font(.system(size: compact ? 16 : 17,
+                    .font(.system(size: compact ? 18 : 20,
                                   weight: .bold,
                                   design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
+                    .minimumScaleFactor(0.82)
 
                 if let subtitle = event.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.system(size: compact ? 13 : 14,
+                        .font(.system(size: compact ? 14 : 16,
                                       weight: .regular,
                                       design: .rounded))
                         .foregroundStyle(.white.opacity(0.72))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.82)
                 }
             }
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, compact ? 10 : 12)
-        .frame(height: compact ? 58 : 64)
-        .background(
-            Color.white.opacity(0.075),
-            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
-        )
+        .frame(height: compact ? 44 : 52)
     }
 
     private var progressStrip: some View {
@@ -422,7 +443,7 @@ private struct SessionWidgetEventRow: View {
                     .frame(height: proxy.size.height * progress)
             }
         }
-        .frame(width: compact ? 4 : 5, height: compact ? 44 : 50)
+        .frame(width: compact ? 5 : 6, height: compact ? 38 : 46)
     }
 
     private var displayTitle: String {
@@ -452,10 +473,17 @@ struct SessionScheduleWidget: Widget {
         .description("Показывает ближайшие экзамены, консультации и объявления вашей группы.")
         .supportedFamilies([.systemMedium, .systemLarge])
         .contentMarginsDisabled()
+        .containerBackgroundRemovable(false)
     }
 }
 
-#Preview(as: .systemLarge) {
+#Preview("Сессия Medium", as: .systemMedium) {
+    SessionScheduleWidget()
+} timeline: {
+    SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
+}
+
+#Preview("Сессия Large", as: .systemLarge) {
     SessionScheduleWidget()
 } timeline: {
     SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
