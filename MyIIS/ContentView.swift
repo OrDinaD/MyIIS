@@ -22,13 +22,12 @@ struct ContentView: View {
                 LoginView()
             }
         }
-        .blur(radius: showSplash ? 20 : 0)
-        .scaleEffect(showSplash ? 1.05 : 1.0)
+        .redacted(reason: showSplash ? .placeholder : [])
         .allowsHitTesting(!showSplash)
         .onAppear {
-            // Эффект молниеносного запуска: экран размыт и немного увеличен, затем фокусируется
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                withAnimation(.spring(response: 0.55, dampingFraction: 0.8)) {
+            // Скелетон (полосочки вместо текста) для эффекта мгновенной загрузки
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.easeOut(duration: 0.4)) {
                     showSplash = false
                 }
             }
