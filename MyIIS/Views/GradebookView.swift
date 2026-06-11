@@ -171,6 +171,15 @@ struct GradebookView: View {
             } else {
                 semesterPicker
                 LabeledContent(NSLocalizedString("gradebook_semester_average", comment: ""), value: viewModel.semesterAverageText)
+                if let yearlyAverage = viewModel.yearlyAverage {
+                    LabeledContent {
+                        Text(viewModel.yearlyAverageText)
+                            .foregroundStyle(yearlyAverage > 8.75 ? .green : .yellow)
+                            .fontWeight(.medium)
+                    } label: {
+                        Text("Средний балл за год")
+                    }
+                }
             }
         }
     }
@@ -196,7 +205,9 @@ struct GradebookView: View {
             } else {
                 ForEach(viewModel.marksForSelectedSemester) { mark in
                     MarkRow(mark: mark, isExpanded: expandedSubjectId == mark.id, isCurrentSemester: isCurrentSemesterSelected) {
-                        expandedSubjectId = (expandedSubjectId == mark.id) ? nil : mark.id
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            expandedSubjectId = (expandedSubjectId == mark.id) ? nil : mark.id
+                        }
                     }
                 }
             }
@@ -225,11 +236,9 @@ private struct MarkRow: View {
                         Text(mark.subject)
                             .font(.body.weight(.semibold))
                             .lineLimit(2)
-                        if mark.hasExpandedFullName {
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .buttonStyle(.plain)
@@ -241,14 +250,16 @@ private struct MarkRow: View {
                     .frame(width: 90, alignment: .trailing)
             }
 
-            if isExpanded, mark.hasExpandedFullName {
-                Text(mark.fullSubject)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, -2)
-            }
+            if isExpanded {
+                if mark.hasExpandedFullName {
+                    Text(mark.fullSubject)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .padding(.top, -2)
+                }
 
-            markGrid
+                markGrid
+            }
         }
         .padding(.vertical, 6)
     }

@@ -42,6 +42,36 @@ final class GradebookViewModel: ObservableObject {
         return value.formatted(.number.precision(.fractionLength(2)))
     }
 
+    var yearlyAverage: Double? {
+        guard let selectedSemKey = selectedSemesterKey, let selectedSem = Int(selectedSemKey) else { return nil }
+
+        let isOdd = selectedSem % 2 != 0
+        let pairSem = isOdd ? selectedSem + 1 : selectedSem - 1
+
+        let semKeysToAverage = [String(selectedSem), String(pairSem)]
+        var totalNumericMarks = 0.0
+        var numericMarksCount = 0
+
+        for key in semKeysToAverage {
+            if let sem = markbook?.markPages[key] {
+                for mark in sem.marks {
+                    if let numericValue = Double(mark.mark) {
+                        totalNumericMarks += numericValue
+                        numericMarksCount += 1
+                    }
+                }
+            }
+        }
+
+        guard numericMarksCount > 0 else { return nil }
+        return totalNumericMarks / Double(numericMarksCount)
+    }
+
+    var yearlyAverageText: String {
+        guard let value = yearlyAverage else { return "—" }
+        return value.formatted(.number.precision(.fractionLength(2)))
+    }
+
     var marksForSelectedSemester: [MarkbookMark] {
         selectedSemester?.marks ?? []
     }
