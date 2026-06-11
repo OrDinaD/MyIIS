@@ -21,9 +21,9 @@ enum SectionAppEnum: String, AppEnum {
     case library
     case schedule
 
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Раздел MyIIS"
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Раздел MyIIS"
 
-    static var caseDisplayRepresentations: [SectionAppEnum: DisplayRepresentation] = [
+    static let caseDisplayRepresentations: [SectionAppEnum: DisplayRepresentation] = [
         .profile: "Профиль",
         .attendance: "Пропуски",
         .rating: "Рейтинг",
@@ -59,8 +59,8 @@ enum SectionAppEnum: String, AppEnum {
 // MARK: - Intents
 
 struct OpenMyIISSectionIntent: AppIntent {
-    static var title: LocalizedStringResource = "Открыть раздел в MyIIS"
-    static var openAppWhenRun: Bool = true
+    static let title: LocalizedStringResource = "Открыть раздел в MyIIS"
+    static let openAppWhenRun = true
 
     @Parameter(title: "Раздел")
     var section: SectionAppEnum
@@ -74,7 +74,7 @@ struct OpenMyIISSectionIntent: AppIntent {
 }
 
 struct ShowAverageScoreIntent: AppIntent {
-    static var title: LocalizedStringResource = "Показать средний балл"
+    static let title: LocalizedStringResource = "Показать средний балл"
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
@@ -95,7 +95,7 @@ struct ShowAverageScoreIntent: AppIntent {
 }
 
 struct ShowAbsencesIntent: AppIntent {
-    static var title: LocalizedStringResource = "Показать пропуски"
+    static let title: LocalizedStringResource = "Показать пропуски"
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
@@ -114,7 +114,7 @@ struct ShowAbsencesIntent: AppIntent {
 }
 
 struct ShowGroupIntent: AppIntent {
-    static var title: LocalizedStringResource = "Показать мою группу"
+    static let title: LocalizedStringResource = "Показать мою группу"
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {

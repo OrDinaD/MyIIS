@@ -12,12 +12,12 @@ extension Color {
 
     /// Адаптивный цвет для верхнего блика на glass компонентах
     /// Light: белый с opacity, Dark: светло-серый с меньшей opacity
-    static var glassHighlight: Color {
+    nonisolated static var glassHighlight: Color {
         Color(uiColor: .systemBackground).opacity(0.6)
     }
 
     /// Адаптивный цвет для среднего слоя glass эффекта
-    static var glassMid: Color {
+    nonisolated static var glassMid: Color {
         Color(uiColor: .systemBackground).opacity(0.3)
     }
 
@@ -27,7 +27,7 @@ extension Color {
     }
 
     /// Адаптивный легкий блик для overlay
-    static var glassOverlay: Color {
+    nonisolated static var glassOverlay: Color {
         Color(uiColor: .systemBackground).opacity(0.15)
     }
 
@@ -84,7 +84,7 @@ extension Color {
     }
 
     /// Адаптивный градиент для иконок
-    static func iconGradient(baseColor: Color) -> [Color] {
+    nonisolated static func iconGradient(baseColor: Color) -> [Color] {
         [
             baseColor,
             baseColor.opacity(0.7)

@@ -331,7 +331,7 @@ private struct ServicesPlaceholderView: View {
         ContentUnavailableView(
             NSLocalizedString("tab_services", comment: ""),
             systemImage: "rectangle.split.2x1",
-            description: Text("Выберите сервис в списке слева")
+            description: Text(NSLocalizedString("services_placeholder_description", comment: ""))
         )
     }
 }

@@ -268,124 +268,91 @@ extension RatingViewModel {
 
     private func applyPortalGradeBookLessons(_ lessons: [PortalGradeBookLesson]) {
         let grouped = Dictionary(grouping: lessons) { $0.lessonNameAbbrev }
-
-        var mappedDisciplines: [GradebookDiscipline] = []
         var omissions: [String: Int] = [:]
 
-        for (subject, subjectLessons) in grouped {
-            let lessonTypes = Set(subjectLessons.map(\.lessonTypeAbbrev))
-                .filter { !$0.isEmpty }
-                .sorted()
-
-            let sortedLessons = subjectLessons.sorted {
-                if $0.controlPoint != $1.controlPoint {
-                    return $0.controlPoint < $1.controlPoint
-                }
-                return $0.dateString < $1.dateString
-            }
-
-            var attempts: [GradeAttempt] = []
-            var attemptNumber = 1
-            var lessonOmissions: [GradeOmission] = []
-
-            for lesson in sortedLessons {
-                for mark in lesson.marks {
-                    attempts.append(
-                        GradeAttempt(
-                            attempt: attemptNumber,
-                            type: lesson.lessonTypeAbbrev,
-                            grade: .numeric(Double(mark)),
-                            date: lesson.dateString,
-                            status: .passed
-                        )
-                    )
-                    attemptNumber += 1
-                }
-
-                if !lesson.isRespectfulOmission && lesson.gradeBookOmissions > 0 {
-                    lessonOmissions.append(
-                        GradeOmission(
-                            date: lesson.dateString,
-                            type: lesson.lessonTypeAbbrev,
-                            hours: lesson.gradeBookOmissions
-                        )
-                    )
-                }
-            }
-
-            let omissionHours = lessonOmissions.reduce(0) { $0 + $1.hours }
-            omissions[subject] = omissionHours
-
-            mappedDisciplines.append(
-                GradebookDiscipline(
-                    code: "gradebook_\(subject)",
-                    name: subject,
-                    controlForm: lessonTypes.isEmpty ? "Занятия" : lessonTypes.joined(separator: " · "),
-                    teacher: nil,
-                    hours: omissionHours,
-                    attempts: attempts,
-                    lessonOmissions: lessonOmissions.isEmpty ? nil : lessonOmissions
-                )
-            )
+        disciplines = grouped.map { subject, subjectLessons in
+            let mapped = makeDiscipline(for: subject, lessons: subjectLessons)
+            omissions[subject] = mapped.omissionHours
+            return mapped.discipline
         }
+        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
-        disciplines = mappedDisciplines.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
         subjectOmissions = omissions
         isUsingScheduleFallback = false
     }
 
-    private func buildPersonalRating(from lessons: [PortalGradeBookLesson], targetRecordBookNumber: String?) {
-        let numericMarks = lessons.flatMap { $0.marks }.map(Double.init)
-        let totalMissedHours = lessons
-            .filter { !$0.isRespectfulOmission }
-            .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
+    private func makeDiscipline(
+        for subject: String,
+        lessons: [PortalGradeBookLesson]
+    ) -> (discipline: GradebookDiscipline, omissionHours: Int) {
+        let lessonTypes = Set(lessons.map(\.lessonTypeAbbrev))
+            .filter { !$0.isEmpty }
+            .sorted()
+        let payload = makeGradebookPayload(from: lessons)
+        let omissionHours = payload.omissions.reduce(0) { $0 + $1.hours }
 
-        let checkpointGroups = Dictionary(grouping: lessons.compactMap { lesson -> (String, PortalGradeBookLesson)? in
-            let controlPoint = lesson.controlPoint.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !controlPoint.isEmpty else {
-                return nil
-            }
-            return (controlPoint, lesson)
-        }) { $0.0 }
+        return (
+            GradebookDiscipline(
+                code: "gradebook_\(subject)",
+                name: subject,
+                controlForm: lessonTypes.isEmpty ? "Занятия" : lessonTypes.joined(separator: " · "),
+                teacher: nil,
+                hours: omissionHours,
+                attempts: payload.attempts,
+                lessonOmissions: payload.omissions.isEmpty ? nil : payload.omissions
+            ),
+            omissionHours
+        )
+    }
 
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd.MM.yyyy"
-        let sortedKeys = checkpointGroups.keys.sorted { key1, key2 in
-            let dates1 = checkpointGroups[key1]!.compactMap { formatter.date(from: $0.1.dateString) }
-            let dates2 = checkpointGroups[key2]!.compactMap { formatter.date(from: $0.1.dateString) }
-            let min1 = dates1.min() ?? Date.distantFuture
-            let min2 = dates2.min() ?? Date.distantFuture
-            return min1 < min2
+    private func makeGradebookPayload(
+        from lessons: [PortalGradeBookLesson]
+    ) -> (attempts: [GradeAttempt], omissions: [GradeOmission]) {
+        var attempts: [GradeAttempt] = []
+        var omissions: [GradeOmission] = []
+
+        for lesson in lessons.sorted(by: Self.portalLessonSort) {
+            appendMarks(from: lesson, to: &attempts)
+            appendOmission(from: lesson, to: &omissions)
         }
 
-        let checkpoints: [RatingCheckpoint] = sortedKeys.enumerated().map { index, key in
-            let scopedLessons = (checkpointGroups[key] ?? []).map { $0.1 }
-            let marks = scopedLessons.flatMap { $0.marks }.map(Double.init)
-            let average = Self.average(marks)
-            let missed = scopedLessons
-                .filter { !$0.isRespectfulOmission }
-                .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
+        return (attempts, omissions)
+    }
 
-            let number = Self.checkpointNumber(from: key) ?? (index + 1)
-
-            return RatingCheckpoint(
-                number: number,
-                title: key,
-                averageGrade: average,
-                missedHours: missed
+    private func appendMarks(from lesson: PortalGradeBookLesson, to attempts: inout [GradeAttempt]) {
+        for mark in lesson.marks {
+            attempts.append(
+                GradeAttempt(
+                    attempt: attempts.count + 1,
+                    type: lesson.lessonTypeAbbrev,
+                    grade: .numeric(Double(mark)),
+                    date: lesson.dateString,
+                    status: .passed
+                )
             )
         }
+    }
 
+    private func appendOmission(from lesson: PortalGradeBookLesson, to omissions: inout [GradeOmission]) {
+        guard !lesson.isRespectfulOmission, lesson.gradeBookOmissions > 0 else { return }
+        omissions.append(
+            GradeOmission(
+                date: lesson.dateString,
+                type: lesson.lessonTypeAbbrev,
+                hours: lesson.gradeBookOmissions
+            )
+        )
+    }
+
+    private func buildPersonalRating(from lessons: [PortalGradeBookLesson], targetRecordBookNumber: String?) {
+        let checkpoints = makePortalCheckpoints(from: lessons)
         let resolvedId = normalizeRecordBookNumber(targetRecordBookNumber)
         let recordBookNumber = resolvedId.isEmpty ? "portal-grade-book" : resolvedId
-
         let personalRating = StudentRating(
             recordBookNumber: recordBookNumber,
             studentName: nil,
-            averageGrade: Self.average(numericMarks),
-            missedHours: totalMissedHours,
+            averageGrade: Self.average(lessons.flatMap { $0.marks }.map(Double.init)),
+            missedHours: Self.unexcusedOmissionHours(in: lessons),
             averageShift: nil,
             checkpoints: checkpoints
         )
@@ -396,6 +363,50 @@ extension RatingViewModel {
         summary = RatingSummary(students: students)
         gradebookAverage = personalRating.averageGrade
         resolvedRecordBookNumber = personalRating.recordBookNumber
+    }
+
+    private func makePortalCheckpoints(from lessons: [PortalGradeBookLesson]) -> [RatingCheckpoint] {
+        let groups = Dictionary(grouping: lessons.compactMap(Self.portalCheckpointPair)) { $0.0 }
+        return sortedCheckpointKeys(in: groups).enumerated().map { index, key in
+            let scopedLessons = groups[key]?.map { $0.1 } ?? []
+            return RatingCheckpoint(
+                number: Self.checkpointNumber(from: key) ?? (index + 1),
+                title: key,
+                averageGrade: Self.average(scopedLessons.flatMap { $0.marks }.map(Double.init)),
+                missedHours: Self.unexcusedOmissionHours(in: scopedLessons)
+            )
+        }
+    }
+
+    private func sortedCheckpointKeys(
+        in groups: [String: [(String, PortalGradeBookLesson)]]
+    ) -> [String] {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy"
+        return groups.keys.sorted { lhs, rhs in
+            let lhsDate = groups[lhs]?.compactMap { formatter.date(from: $0.1.dateString) }.min()
+            let rhsDate = groups[rhs]?.compactMap { formatter.date(from: $0.1.dateString) }.min()
+            return (lhsDate ?? .distantFuture) < (rhsDate ?? .distantFuture)
+        }
+    }
+
+    private static func portalLessonSort(_ lhs: PortalGradeBookLesson, _ rhs: PortalGradeBookLesson) -> Bool {
+        if lhs.controlPoint != rhs.controlPoint {
+            return lhs.controlPoint < rhs.controlPoint
+        }
+        return lhs.dateString < rhs.dateString
+    }
+
+    private static func portalCheckpointPair(_ lesson: PortalGradeBookLesson) -> (String, PortalGradeBookLesson)? {
+        let controlPoint = lesson.controlPoint.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !controlPoint.isEmpty else { return nil }
+        return (controlPoint, lesson)
+    }
+
+    private static func unexcusedOmissionHours(in lessons: [PortalGradeBookLesson]) -> Int {
+        lessons
+            .filter { !$0.isRespectfulOmission }
+            .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
     }
 
     private func normalizeRecordBookNumber(_ value: String?) -> String {

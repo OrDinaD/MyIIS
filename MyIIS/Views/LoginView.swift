@@ -81,6 +81,7 @@ struct LoginView: View {
                     .padding(.horizontal, 18)
                     .padding(.vertical, 16)
                     .background(nativeFieldBackground(cornerRadius: 14))
+                    .accessibilityLabel(NSLocalizedString("login_username_label", comment: ""))
                     .accessibilityIdentifier("usernameField")
             }
 
@@ -96,6 +97,7 @@ struct LoginView: View {
                     .padding(.horizontal, 18)
                     .padding(.vertical, 16)
                     .background(nativeFieldBackground(cornerRadius: 14))
+                    .accessibilityLabel(NSLocalizedString("login_password_label", comment: ""))
                     .accessibilityIdentifier("passwordField")
             }
 
@@ -139,6 +141,7 @@ struct LoginView: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .disabled(viewModel.isLoading)
+            .accessibilityLabel(NSLocalizedString("login_button", comment: ""))
             .accessibilityIdentifier("loginButton")
         }
         .padding(24)
@@ -154,7 +157,7 @@ struct LoginView: View {
     }
 
     private var disclaimer: some View {
-        Text("Неофициальный клиент личного кабинета студента БГУиР")
+        Text(NSLocalizedString("login_disclaimer", comment: ""))
             .font(.footnote)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)

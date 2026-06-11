@@ -143,11 +143,8 @@ final class DormitoryViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            async let fetchedApplications = dormitoryService.fetchApplications()
-            async let fetchedPrivileges = dormitoryService.fetchPrivilegeRecords()
-
-            let applications = try await fetchedApplications
-            let privilegeRecords = try await fetchedPrivileges
+            let applications = try await dormitoryService.fetchApplications()
+            let privilegeRecords = try await dormitoryService.fetchPrivilegeRecords()
 
             self.applications = sorted(applications)
             self.privilegeRecords = privilegeRecords.sorted {

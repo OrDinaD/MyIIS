@@ -314,3 +314,9 @@
 "services_activities_not_member" = "You are not a member of the organization";
 "common_loading" = "Loading...";
 "services_item_lms" = "E-Learning (LMS)";
+"login_disclaimer" = "Unofficial client for the BSUIR student account";
+"about_academic_notifications_hint" = "Turns local notifications for academic data changes on or off.";
+"about_section_app_icon" = "App Icon";
+"about_app_icon_error_message" = "Could not change the app icon.";
+"about_app_icon_accessibility_hint" = "Changes the app icon to the selected option.";
+"services_placeholder_description" = "Select a service in the list on the left";

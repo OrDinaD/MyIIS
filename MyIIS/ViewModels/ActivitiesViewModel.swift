@@ -99,12 +99,8 @@ final class ActivitiesViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            async let categoriesTask = service.fetchCategories()
-            async let activitiesTask = service.fetchActivities()
-
-            let (loadedCategories, loadedActivities) = try await (categoriesTask, activitiesTask)
-            categories = loadedCategories
-            activities = loadedActivities
+            categories = try await service.fetchCategories()
+            activities = try await service.fetchActivities()
             lastUpdated = dateProvider()
             hasLoaded = true
         } catch {

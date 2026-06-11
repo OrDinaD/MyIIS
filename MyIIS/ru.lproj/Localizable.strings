@@ -314,3 +314,9 @@
 "services_activities_not_member" = "Вы не состоите в организации";
 "common_loading" = "Загрузка...";
 "services_item_lms" = "СЭО (LMS)";
+"login_disclaimer" = "Неофициальный клиент личного кабинета студента БГУиР";
+"about_academic_notifications_hint" = "Включает или выключает локальные уведомления об изменениях в учебных данных.";
+"about_section_app_icon" = "Иконка приложения";
+"about_app_icon_error_message" = "Не удалось изменить иконку приложения.";
+"about_app_icon_accessibility_hint" = "Меняет иконку приложения на выбранный вариант.";
+"services_placeholder_description" = "Выберите сервис в списке слева";

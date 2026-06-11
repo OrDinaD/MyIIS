@@ -35,7 +35,11 @@ struct AboutAppView: View {
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
         .alert(item: $iconAlert) { alert in
-            Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text("Ок")))
+            Alert(
+                title: Text(alert.title),
+                message: Text(alert.message),
+                dismissButton: .default(Text(NSLocalizedString("common_ok", comment: "")))
+            )
         }
     }
 
@@ -79,8 +83,12 @@ struct AboutAppView: View {
                         ProgressView()
                             .controlSize(.small)
                     } else {
-                        Toggle("", isOn: academicNotificationsBinding)
-                            .labelsHidden()
+                        Toggle(
+                            NSLocalizedString("about_academic_notifications_title", comment: ""),
+                            isOn: academicNotificationsBinding
+                        )
+                        .labelsHidden()
+                        .accessibilityHint(NSLocalizedString("about_academic_notifications_hint", comment: ""))
                     }
                 }
                 .padding(.vertical, 12)
@@ -143,7 +151,7 @@ struct AboutAppView: View {
 
     private var appIconSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            sectionTitle("Иконка приложения")
+            sectionTitle(NSLocalizedString("about_section_app_icon", comment: ""))
 
             LazyVGrid(columns: iconColumns, spacing: 12) {
                 ForEach(AppIconOption.allCases) { option in
@@ -244,6 +252,8 @@ struct AboutAppView: View {
         }
         .buttonStyle(.plain)
         .disabled(option == selectedIcon)
+        .accessibilityLabel(option.displayName)
+        .accessibilityHint(NSLocalizedString("about_app_icon_accessibility_hint", comment: ""))
     }
 
     private func setAcademicNotificationsEnabled(_ enabled: Bool) async {
@@ -274,7 +284,10 @@ struct AboutAppView: View {
             try await AppIconManager.setIcon(option)
             selectedIcon = option
         } catch {
-            iconAlert = IconAlert(title: "Ошибка", message: "Не удалось изменить иконку приложения.")
+            iconAlert = IconAlert(
+                title: NSLocalizedString("common_error", comment: ""),
+                message: NSLocalizedString("about_app_icon_error_message", comment: "")
+            )
         }
     }
 

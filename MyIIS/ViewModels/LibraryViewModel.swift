@@ -87,14 +87,9 @@ final class LibraryViewModel: ObservableObject {
         errorMessage = nil
 
         do {
-            async let catalogTask = service.fetchCatalog(searchQuery: nil)
-            async let activeTask = service.fetchActiveLoans()
-            async let historyTask = service.fetchBorrowHistory()
-
-            let (catalog, active, history) = try await (catalogTask, activeTask, historyTask)
-
-            self.catalogItems = catalog
-            self.activeLoans = active
+            self.catalogItems = try await service.fetchCatalog(searchQuery: nil)
+            self.activeLoans = try await service.fetchActiveLoans()
+            let history = try await service.fetchBorrowHistory()
             self.archiveLoans = history.filter { !$0.isActive }
             hasLoadedOnce = true
         } catch let apiError as APIError {
