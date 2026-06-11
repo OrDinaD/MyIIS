@@ -11,6 +11,12 @@ struct ProfileView: View {
     @State private var showRatingInfo = false
     @State private var showingSettings = false
 
+    // Для полноэкранной аватарки
+    @State private var showFullScreenAvatar = false
+    @State private var currentZoom: CGFloat = 1.0
+    @State private var currentOffset: CGSize = .zero
+    @Namespace private var avatarNamespace
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -25,12 +31,21 @@ struct ProfileView: View {
                                     image
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)
+                                        .matchedGeometryEffect(id: "avatar", in: avatarNamespace, isSource: !showFullScreenAvatar)
                                         .frame(width: 132, height: 132)
                                         .clipShape(Circle())
                                         .overlay {
                                             Circle()
                                                 .stroke(Color.accentColor.opacity(0.35), lineWidth: 2)
                                         }
+                                        .contentShape(Circle())
+                                        .onLongPressGesture(minimumDuration: 0.3) {
+                                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                                showFullScreenAvatar = true
+                                            }
+                                        }
+                                        .opacity(showFullScreenAvatar ? 0 : 1)
                                 } placeholder: {
                                     Circle()
                                         .fill(Color.accentColor.opacity(0.12))
@@ -257,6 +272,65 @@ struct ProfileView: View {
                             .font(.headline)
                             .foregroundStyle(.secondary)
                     }
+                }
+                
+                // MARK: - Full Screen Avatar Overlay
+                if showFullScreenAvatar, let user = viewModel.user {
+                    Color.black.ignoresSafeArea()
+                        .opacity(showFullScreenAvatar ? (1.0 - Double(abs(currentOffset.height) / 500)) : 0)
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                currentZoom = 1.0
+                                currentOffset = .zero
+                                showFullScreenAvatar = false
+                            }
+                        }
+                    
+                    AsyncImage(url: user.photoURL) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .matchedGeometryEffect(id: "avatar", in: avatarNamespace, isSource: showFullScreenAvatar)
+                            .scaleEffect(currentZoom)
+                            .offset(currentOffset)
+                            .gesture(
+                                MagnificationGesture()
+                                    .onChanged { value in
+                                        currentZoom = max(1.0, value)
+                                    }
+                                    .onEnded { _ in
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            currentZoom = 1.0
+                                        }
+                                    }
+                            )
+                            .simultaneousGesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        if currentZoom == 1.0 {
+                                            currentOffset = value.translation
+                                        }
+                                    }
+                                    .onEnded { value in
+                                        if currentZoom == 1.0 {
+                                            if abs(value.translation.height) > 100 {
+                                                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                                                    showFullScreenAvatar = false
+                                                    currentOffset = .zero
+                                                }
+                                            } else {
+                                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                                    currentOffset = .zero
+                                                }
+                                            }
+                                        }
+                                    }
+                            )
+                    } placeholder: {
+                        Color.clear
+                    }
+                    .ignoresSafeArea()
+                    .zIndex(100)
                 }
             }
             .withBirthdayBalloons(user: viewModel.user)

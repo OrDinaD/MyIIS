@@ -41,7 +41,7 @@ class AuthenticationService: ObservableObject {
             try? self.credentialStore.clear()
             self.clearCachedUser()
             UserDefaults.standard.set(true, forKey: "hasSeenLaunchReveal") // Пропускаем анимацию в UI тестах
-        } else if let cachedUserData = UserDefaults.standard.data(forKey: Self.cachedUserDefaultsKey),
+        } else if let cachedUserData = UserDefaultsPayloadStore.load(forKey: Self.cachedUserDefaultsKey, from: UserDefaults.standard),
            let cachedUser = try? JSONDecoder().decode(User.self, from: cachedUserData) {
             self.currentUser = cachedUser
             self.logService.log("🔐 Restored cached user profile for \(cachedUser.fullName)")
@@ -148,7 +148,7 @@ class AuthenticationService: ObservableObject {
             return
         }
 
-        UserDefaults.standard.set(encoded, forKey: Self.cachedUserDefaultsKey)
+        UserDefaultsPayloadStore.save(encoded, forKey: Self.cachedUserDefaultsKey, in: UserDefaults.standard)
     }
 
     private func clearCachedUser() {
