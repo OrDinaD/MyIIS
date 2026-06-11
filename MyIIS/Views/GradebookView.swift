@@ -231,17 +231,15 @@ private struct MarkRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
-                Button(action: onToggle) {
-                    HStack(spacing: 6) {
-                        Text(mark.subject)
-                            .font(.body.weight(.semibold))
-                            .lineLimit(2)
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                HStack(spacing: 6) {
+                    Text(mark.subject)
+                        .font(.body.weight(.semibold))
+                        .lineLimit(2)
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
                 }
-                .buttonStyle(.plain)
 
                 Spacer(minLength: 8)
                 Text(mark.displayGrade)
@@ -251,17 +249,23 @@ private struct MarkRow: View {
             }
 
             if isExpanded {
-                if mark.hasExpandedFullName {
-                    Text(mark.fullSubject)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.top, -2)
-                }
+                VStack(alignment: .leading, spacing: 8) {
+                    if mark.hasExpandedFullName {
+                        Text(mark.fullSubject)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, -2)
+                    }
 
-                markGrid
+                    markGrid
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(.vertical, 6)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onToggle)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
     }
 
     private var markGrid: some View {
