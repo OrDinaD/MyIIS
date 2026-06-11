@@ -40,6 +40,23 @@ extension View {
 
 // MARK: - 3D Balloons Overlay
 
+struct TransparentSceneView: UIViewRepresentable {
+    let scene: SCNScene
+
+    func makeUIView(context: Context) -> SCNView {
+        let view = SCNView()
+        view.scene = scene
+        view.backgroundColor = .clear
+        view.autoenablesDefaultLighting = true
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: SCNView, context: Context) {
+        uiView.scene = scene
+    }
+}
+
 struct BalloonsOverlayView: View {
     @Binding var isPresented: Bool
     @State private var scene = SCNScene()
@@ -47,13 +64,9 @@ struct BalloonsOverlayView: View {
     var body: some View {
         ZStack {
             if isPresented {
-                SceneView(
-                    scene: scene,
-                    options: [.autoenablesDefaultLighting]
-                )
-                .background(Color.clear)
-                .ignoresSafeArea()
-                .transition(.opacity)
+                TransparentSceneView(scene: scene)
+                    .ignoresSafeArea()
+                    .transition(.opacity)
             }
         }
         .allowsHitTesting(false)
