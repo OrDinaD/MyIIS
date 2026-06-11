@@ -259,6 +259,7 @@ struct ProfileView: View {
                     }
                 }
             }
+            .withBirthdayBalloons(user: viewModel.user)
             .navigationTitle(NSLocalizedString("tab_profile", comment: ""))
             .navigationBarTitleDisplayMode(.large)
             .hiddenNavigationBarBackground()
