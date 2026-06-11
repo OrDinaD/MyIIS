@@ -1,14 +1,17 @@
-name: Build and Upload to App Store Connect
+name: TestFlight
 
 on:
+  push:
+    branches:
+      - release
   workflow_dispatch:
     inputs:
       release_version:
-        description: "Optional MARKETING_VERSION override (e.g. 1.2.3)"
+        description: "Optional MARKETING_VERSION override, for example 0.6.8"
         required: false
         type: string
       upload_to_testflight:
-        description: "Upload exported IPA to App Store Connect"
+        description: "Upload to App Store Connect when credentials are available"
         required: true
         default: true
         type: boolean
@@ -16,124 +19,176 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: testflight-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT_PATH: MyIIS.xcodeproj
+  SCHEME: MyIIS
+  CONFIGURATION: Release
+  TEAM_ID: Y85TSUMM4F
+  BUNDLE_ID: com.OrDinaD.MyIIS
+  XCODE_PATH: /Applications/Xcode_26.5.app
+  TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=26.5
+  APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+  APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+  APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+
 jobs:
-  appstore-release:
-    runs-on: macos-latest
-    env:
-      APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-      APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
-      APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+  testflight:
+    name: Build, test, archive, upload
+    runs-on: macos-26
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
-
-      - name: Validate required secrets
+      - name: Select Xcode 26.5
         shell: bash
         run: |
-          test -n "$APPSTORE_API_KEY_ID"
-          test -n "$APPSTORE_API_ISSUER_ID"
-          test -n "$APPSTORE_API_PRIVATE_KEY"
+          set -euo pipefail
+          sudo xcode-select -s "$XCODE_PATH"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -E 'iphoneos26\.5|iphonesimulator26\.5'
+
+      - name: Resolve build metadata
+        id: metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BUILD_NUMBER="$(date -u +%Y%m%d%H%M)"
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" MyIIS/Info.plist >/dev/null 2>&1 || true
+          echo "Using CI build number: $BUILD_NUMBER"
+
+      - name: Apply CI version overrides
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BUILD_NUMBER="${{ steps.metadata.outputs.build_number }}"
+          sed -i '' -E "s/CURRENT_PROJECT_VERSION = [0-9A-Za-z.]+;/CURRENT_PROJECT_VERSION = ${BUILD_NUMBER};/g" "$PROJECT_PATH/project.pbxproj"
+
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.release_version }}" ]]; then
+            VERSION="${{ inputs.release_version }}"
+            sed -i '' -E "s/MARKETING_VERSION = [0-9A-Za-z.-]+;/MARKETING_VERSION = ${VERSION};/g" "$PROJECT_PATH/project.pbxproj"
+          fi
+
+          xcodebuild -showBuildSettings \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -configuration "$CONFIGURATION" \
+            -destination 'generic/platform=iOS' |
+            grep -E 'MARKETING_VERSION|CURRENT_PROJECT_VERSION|PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM'
+
+      - name: Detect App Store Connect credentials
+        id: asc
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -n "$APPSTORE_API_KEY_ID" && -n "$APPSTORE_API_ISSUER_ID" && -n "$APPSTORE_API_PRIVATE_KEY" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "App Store Connect credentials are configured."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::App Store Connect secrets are missing. This run will build and test only."
+          fi
+
+      - name: Build
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild build \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination "$TEST_DESTINATION"
+
+      - name: Test
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -destination "$TEST_DESTINATION"
 
       - name: Prepare App Store Connect API key
         id: asc_key
+        if: ${{ steps.asc.outputs.available == 'true' && (github.event_name == 'push' || inputs.upload_to_testflight) }}
         shell: bash
         run: |
-          KEY_DIR="$HOME/.appstoreconnect/private_keys"
-          KEY_PATH="$KEY_DIR/AuthKey_${APPSTORE_API_KEY_ID}.p8"
+          set -euo pipefail
 
+          KEY_DIR="$RUNNER_TEMP/appstoreconnect/private_keys"
+          KEY_PATH="$KEY_DIR/AuthKey_${APPSTORE_API_KEY_ID}.p8"
           mkdir -p "$KEY_DIR"
-          printf '%s\n' "$APPSTORE_API_PRIVATE_KEY" > "$KEY_PATH"
+
+          printf '%s' "$APPSTORE_API_PRIVATE_KEY" | sed $'s/\\\\n/\\\n/g' > "$KEY_PATH"
           chmod 600 "$KEY_PATH"
 
           echo "key_path=$KEY_PATH" >> "$GITHUB_OUTPUT"
 
-      - name: Optionally override MARKETING_VERSION for this run
-        if: ${{ inputs.release_version != '' }}
+      - name: Archive signed app
+        if: ${{ steps.asc_key.outputs.key_path != '' }}
         shell: bash
         run: |
-          VERSION="${{ inputs.release_version }}"
-          sed -i '' "s/MARKETING_VERSION = .*;/MARKETING_VERSION = $VERSION;/g" MyIIS.xcodeproj/project.pbxproj
-
-      - name: Archive signed app for App Store
-        shell: bash
-        run: |
+          set -euo pipefail
           mkdir -p build
+
           xcodebuild clean archive \
-            -project MyIIS.xcodeproj \
-            -scheme MyIIS \
-            -configuration Release \
-            -archivePath build/MyIIS.xcarchive \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -configuration "$CONFIGURATION" \
             -destination 'generic/platform=iOS' \
+            -archivePath build/MyIIS.xcarchive \
             -allowProvisioningUpdates \
             -authenticationKeyPath "${{ steps.asc_key.outputs.key_path }}" \
             -authenticationKeyID "$APPSTORE_API_KEY_ID" \
             -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID"
 
-      - name: Create ExportOptions for App Store
+      - name: Create TestFlight export options
+        if: ${{ steps.asc_key.outputs.key_path != '' }}
         shell: bash
         run: |
-          cat > build/ExportOptions-AppStore.plist <<'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>method</key>
-            <string>app-store</string>
-            <key>signingStyle</key>
-            <string>automatic</string>
-            <key>teamID</key>
-            <string>Y85TSUMM4F</string>
-            <key>stripSwiftSymbols</key>
-            <true/>
-            <key>uploadSymbols</key>
-            <true/>
-            <key>manageAppVersionAndBuildNumber</key>
-            <false/>
-          </dict>
-          </plist>
-          PLIST
+          set -euo pipefail
+          mkdir -p build
 
-      - name: Export App Store IPA
+          plutil -create xml1 build/ExportOptions-TestFlight.plist
+          plutil -insert method -string app-store-connect build/ExportOptions-TestFlight.plist
+          plutil -insert destination -string upload build/ExportOptions-TestFlight.plist
+          plutil -insert signingStyle -string automatic build/ExportOptions-TestFlight.plist
+          plutil -insert teamID -string "$TEAM_ID" build/ExportOptions-TestFlight.plist
+          plutil -insert distributionBundleIdentifier -string "$BUNDLE_ID" build/ExportOptions-TestFlight.plist
+          plutil -insert manageAppVersionAndBuildNumber -bool false build/ExportOptions-TestFlight.plist
+          plutil -insert stripSwiftSymbols -bool true build/ExportOptions-TestFlight.plist
+          plutil -insert uploadSymbols -bool true build/ExportOptions-TestFlight.plist
+
+      - name: Upload to TestFlight
+        if: ${{ steps.asc_key.outputs.key_path != '' }}
         shell: bash
         run: |
+          set -euo pipefail
+
           xcodebuild -exportArchive \
             -archivePath build/MyIIS.xcarchive \
-            -exportPath build/export \
-            -exportOptionsPlist build/ExportOptions-AppStore.plist \
+            -exportOptionsPlist build/ExportOptions-TestFlight.plist \
+            -exportPath build/TestFlightUpload \
             -allowProvisioningUpdates \
             -authenticationKeyPath "${{ steps.asc_key.outputs.key_path }}" \
             -authenticationKeyID "$APPSTORE_API_KEY_ID" \
             -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID"
 
-          ls -la build/export
-
-      - name: Upload IPA to App Store Connect (TestFlight processing)
-        if: ${{ inputs.upload_to_testflight }}
-        shell: bash
-        run: |
-          IPA_PATH=$(find build/export -maxdepth 1 -name '*.ipa' -print -quit)
-          if [ -z "$IPA_PATH" ]; then
-            echo "No IPA found in build/export"
-            exit 1
-          fi
-
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$IPA_PATH" \
-            --apiKey "$APPSTORE_API_KEY_ID" \
-            --apiIssuer "$APPSTORE_API_ISSUER_ID"
-
-      - name: Upload release artifacts
+      - name: Upload archive logs
+        if: ${{ always() && steps.asc_key.outputs.key_path != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: appstore-export
+          name: testflight-build-artifacts
           path: |
-            build/MyIIS.xcarchive
-            build/export
-            build/ExportOptions-AppStore.plist
+            build/ExportOptions-TestFlight.plist
+            build/*.xcarchive
+          if-no-files-found: ignore
