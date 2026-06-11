@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SceneKit
 
 // MARK: - Shake Gesture Support
 
@@ -37,74 +38,121 @@ extension View {
     }
 }
 
-// MARK: - Balloons Overlay
-
-struct Balloon: Identifiable {
-    let id = UUID()
-    var xOffset: CGFloat
-    let color: Color
-    let scale: CGFloat
-    let delay: Double
-    let rotation: Double
-    let zRotation: Double
-}
+// MARK: - 3D Balloons Overlay
 
 struct BalloonsOverlayView: View {
     @Binding var isPresented: Bool
-    @State private var balloons: [Balloon] = []
-    @State private var isAnimating = false
+    @State private var scene = SCNScene()
 
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
-                if isPresented {
-                    ForEach(balloons) { balloon in
-                        Image(systemName: "balloon.2.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 80 * balloon.scale, height: 100 * balloon.scale)
-                            .foregroundStyle(balloon.color.gradient)
-                            .shadow(color: balloon.color.opacity(0.5), radius: 12, x: 0, y: 10)
-                            .rotation3DEffect(.degrees(balloon.rotation), axis: (x: 0, y: 1, z: 0))
-                            .rotationEffect(.degrees(balloon.zRotation))
-                            .offset(x: balloon.xOffset, y: isAnimating ? -geometry.size.height - 200 : geometry.size.height + 200)
-                            .animation(.timingCurve(0.2, 0.8, 0.2, 1, duration: 4.5).delay(balloon.delay), value: isAnimating)
-                    }
-                }
-            }
-            .onChange(of: isPresented) { _, newValue in
-                if newValue {
-                    setupBalloons(width: geometry.size.width)
-                    isAnimating = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        isAnimating = true
-                    }
-                    
-                    // Hide after animation finishes
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
-                        isPresented = false
-                        isAnimating = false
-                    }
-                } else {
-                    isAnimating = false
-                }
+        ZStack {
+            if isPresented {
+                SceneView(
+                    scene: scene,
+                    options: [.autoenablesDefaultLighting]
+                )
+                .background(Color.clear)
+                .ignoresSafeArea()
+                .transition(.opacity)
             }
         }
         .allowsHitTesting(false)
+        .onChange(of: isPresented) { _, newValue in
+            if newValue {
+                setupScene()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+                    isPresented = false
+                }
+            }
+        }
     }
 
-    private func setupBalloons(width: CGFloat) {
-        let colors: [Color] = [.red, .blue, .green, .orange, .purple, .pink, .yellow, .cyan]
-        balloons = (0..<20).map { _ in
-            Balloon(
-                xOffset: CGFloat.random(in: -width/2...width/2),
-                color: colors.randomElement() ?? .blue,
-                scale: CGFloat.random(in: 0.6...1.5),
-                delay: Double.random(in: 0...2.0),
-                rotation: Double.random(in: -40...40),
-                zRotation: Double.random(in: -20...20)
+    private func setupScene() {
+        scene = SCNScene()
+        scene.background.contents = UIColor.clear
+
+        let cameraNode = SCNNode()
+        cameraNode.camera = SCNCamera()
+        cameraNode.position = SCNVector3(x: 0, y: 0, z: 12)
+        scene.rootNode.addChildNode(cameraNode)
+
+        // Add soft lighting for reflections
+        let lightNode = SCNNode()
+        lightNode.light = SCNLight()
+        lightNode.light?.type = .omni
+        lightNode.light?.intensity = 1500
+        lightNode.position = SCNVector3(x: 0, y: 10, z: 10)
+        scene.rootNode.addChildNode(lightNode)
+
+        let ambientLightNode = SCNNode()
+        ambientLightNode.light = SCNLight()
+        ambientLightNode.light?.type = .ambient
+        ambientLightNode.light?.color = UIColor(white: 0.4, alpha: 1.0)
+        scene.rootNode.addChildNode(ambientLightNode)
+
+        let colors: [UIColor] = [.systemRed, .systemBlue, .systemGreen, .systemOrange, .systemPurple, .systemPink, .systemYellow, .systemTeal]
+
+        for _ in 0..<30 {
+            let balloon = createBalloonNode(color: colors.randomElement() ?? .systemBlue)
+            
+            let startX = Float.random(in: -7...7)
+            let startY = Float.random(in: -15 ... -10)
+            let startZ = Float.random(in: -5...2)
+            balloon.position = SCNVector3(startX, startY, startZ)
+            
+            balloon.eulerAngles = SCNVector3(
+                Float.random(in: -0.2...0.2),
+                Float.random(in: -0.5...0.5),
+                Float.random(in: -0.2...0.2)
             )
+            
+            scene.rootNode.addChildNode(balloon)
+            
+            let endY = CGFloat.random(in: 15...25)
+            let duration = TimeInterval.random(in: 3.5...5.5)
+            let delay = TimeInterval.random(in: 0...1.5)
+            
+            let moveUp = SCNAction.moveBy(x: CGFloat.random(in: -2...2), y: endY - CGFloat(startY), z: CGFloat.random(in: -1...1), duration: duration)
+            moveUp.timingMode = .easeInEaseOut
+            
+            // Sway effect via custom action
+            let sway = SCNAction.customAction(duration: duration) { node, elapsedTime in
+                node.position.x += Float(sin(elapsedTime * 3)) * 0.02
+            }
+            
+            let group = SCNAction.group([moveUp, sway])
+            let sequence = SCNAction.sequence([SCNAction.wait(duration: delay), group, SCNAction.removeFromParentNode()])
+            balloon.runAction(sequence)
         }
+    }
+
+    private func createBalloonNode(color: UIColor) -> SCNNode {
+        let node = SCNNode()
+        
+        let sphere = SCNSphere(radius: 1.0)
+        let material = SCNMaterial()
+        material.diffuse.contents = color
+        material.lightingModel = .physicallyBased
+        material.roughness.contents = 0.2
+        material.metalness.contents = 0.1
+        material.clearCoat.contents = 1.0
+        material.clearCoatRoughness.contents = 0.1
+        sphere.materials = [material]
+        
+        let bodyNode = SCNNode(geometry: sphere)
+        bodyNode.scale = SCNVector3(1, 1.25, 1)
+        node.addChildNode(bodyNode)
+        
+        let cone = SCNCone(topRadius: 0.05, bottomRadius: 0.15, height: 0.25)
+        cone.materials = [material]
+        let knotNode = SCNNode(geometry: cone)
+        knotNode.position = SCNVector3(0, -1.3, 0)
+        node.addChildNode(knotNode)
+        
+        let randomScale = Float.random(in: 0.6...1.2)
+        node.scale = SCNVector3(randomScale, randomScale, randomScale)
+        
+        return node
     }
 }
 
