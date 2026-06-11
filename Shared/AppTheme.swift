@@ -4,6 +4,7 @@
 //
 import SwiftUI
 
+@MainActor
 enum AppTheme {
     static func configureAppearances() {
 #if os(iOS)
