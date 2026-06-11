@@ -93,6 +93,7 @@ private struct ApplicationsSection: View {
 
 private struct ApplicationRow: View {
     let application: OmissionApplication
+    @State private var isAppeared = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -118,6 +119,16 @@ private struct ApplicationRow: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .opacity(isAppeared ? 1 : 0.01)
+        .offset(x: isAppeared ? 0 : -20)
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
+                isAppeared = true
+            }
+        }
+        .onDisappear {
+            isAppeared = false
+        }
     }
 }
 
@@ -169,6 +180,7 @@ private struct MonthlyBarRow: View {
     let month: String
     let value: Int
     let maxValue: Int
+    @State private var isShowing = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -183,7 +195,8 @@ private struct MonthlyBarRow: View {
                         .fill(Color(uiColor: .tertiarySystemFill))
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(Color.accentColor)
-                        .frame(width: max(8, width))
+                        .frame(width: isShowing ? max(8, width) : 0)
+                        .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2), value: isShowing)
                 }
             }
             .frame(height: 12)
@@ -192,6 +205,12 @@ private struct MonthlyBarRow: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .frame(width: 44, alignment: .trailing)
+        }
+        .onAppear {
+            isShowing = true
+        }
+        .onDisappear {
+            isShowing = false
         }
     }
 }
@@ -251,6 +270,7 @@ private struct CertificatesSection: View {
 
 private struct CertificateRow: View {
     let certificate: OmissionCertificate
+    @State private var isAppeared = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -269,6 +289,16 @@ private struct CertificateRow: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .opacity(isAppeared ? 1 : 0.01)
+        .offset(x: isAppeared ? 0 : -20)
+        .onAppear {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
+                isAppeared = true
+            }
+        }
+        .onDisappear {
+            isAppeared = false
+        }
     }
 }
 
@@ -292,6 +322,8 @@ private struct AttendanceCard<Content: View>: View {
     let subtitle: String
     let icon: String
     @ViewBuilder let content: Content
+
+    @State private var isAppeared = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -322,6 +354,17 @@ private struct AttendanceCard<Content: View>: View {
                 .fill(Color(uiColor: .systemBackground))
                 .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
         )
+        .opacity(isAppeared ? 1 : 0.01)
+        .offset(y: isAppeared ? 0 : 20)
+        .scaleEffect(isAppeared ? 1 : 0.98)
+        .onAppear {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+                isAppeared = true
+            }
+        }
+        .onDisappear {
+            isAppeared = false
+        }
     }
 }
 
