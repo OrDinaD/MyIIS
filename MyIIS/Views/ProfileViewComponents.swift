@@ -77,7 +77,9 @@ struct QuickActionButton: View {
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button {
+            action()
+        } label: {
             VStack(spacing: 8) {
                 Image(systemName: icon)
                     .font(.system(size: 28, weight: .medium))
