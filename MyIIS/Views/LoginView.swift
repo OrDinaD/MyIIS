@@ -5,6 +5,7 @@
 import SwiftUI
 
 struct LoginView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = LoginViewModel()
     @FocusState private var focusedField: Field?
 
@@ -18,7 +19,8 @@ struct LoginView: View {
             backgroundView
             mainContent
         }
-        .animation(.easeInOut, value: viewModel.errorMessage)
+        .reduceMotionSensitive()
+        .animation(reduceMotion ? nil : .easeInOut, value: viewModel.errorMessage)
     }
 
     private var backgroundView: some View {

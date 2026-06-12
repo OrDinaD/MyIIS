@@ -140,6 +140,8 @@ struct BalloonsOverlayView: View {
 // MARK: - Birthday Modifier
 
 struct BirthdayBalloonsModifier: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let user: User?
     @State private var showBalloons = false
     @State private var hasShownForBirthday = false
@@ -158,6 +160,7 @@ struct BirthdayBalloonsModifier: ViewModifier {
     }
 
     private func checkBirthdayAndTrigger() {
+        guard !reduceMotion else { return }
         if !hasShownForBirthday, let user = user, isBirthday(user.birthDay) {
             triggerBalloons()
             hasShownForBirthday = true

@@ -2,6 +2,7 @@ import SwiftUI
 
 @MainActor
 struct StudyView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var viewModel: StudyViewModel
     @State private var isShowingMarkSheetOrder = false
     @State private var isShowingCertificateOrder = false
@@ -112,13 +113,19 @@ struct StudyView: View {
                 }
             }
 
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+            LazyVGrid(columns: metricColumns, spacing: 10) {
                 MetricTile(title: "Справки", value: "\(viewModel.dashboard.certificates.count)", tint: .green)
                 MetricTile(title: "В обработке", value: "\(viewModel.processingCertificatesCount + viewModel.processingMarkSheetsCount)", tint: .orange)
             }
         }
         .padding(20)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+    }
+
+    private var metricColumns: [GridItem] {
+        dynamicTypeSize.isAccessibilitySize
+            ? [GridItem(.flexible())]
+            : [GridItem(.flexible()), GridItem(.flexible())]
     }
 
     private var markSheetsCard: some View {
@@ -192,6 +199,8 @@ struct StudyView: View {
 }
 
 private struct StudySectionCard<Content: View>: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let title: String
     let subtitle: String
     let icon: String
@@ -202,27 +211,18 @@ private struct StudySectionCard<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: icon)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(tint)
-                    .frame(width: 40, height: 40)
-                    .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.headline)
-                    Text(subtitle)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 8)
-
-                if let buttonTitle, let action {
-                    Button(buttonTitle, action: action)
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(alignment: .leading, spacing: 12) {
+                        headerTitle
+                        actionButton
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 12) {
+                        headerTitle
+                        Spacer(minLength: 8)
+                        actionButton
+                    }
                 }
             }
 
@@ -230,6 +230,35 @@ private struct StudySectionCard<Content: View>: View {
         }
         .padding(18)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+    }
+
+    private var headerTitle: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.headline.weight(.semibold))
+                .foregroundStyle(tint)
+                .frame(width: 40, height: 40)
+                .background(tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                Text(subtitle)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var actionButton: some View {
+        if let buttonTitle, let action {
+            Button(buttonTitle, action: action)
+                .buttonStyle(.borderedProminent)
+                .controlSize(dynamicTypeSize.isAccessibilitySize ? .regular : .small)
+        }
     }
 }
 
@@ -260,6 +289,7 @@ private struct MarkSheetRequestRow: View {
         HStack(alignment: .top, spacing: 12) {
             StatusDot(color: request.isProcessing ? .orange : .green)
                 .padding(.top, 5)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 5) {
                 Text(request.title)
@@ -299,6 +329,7 @@ private struct CertificateRequestRow: View {
         HStack(alignment: .top, spacing: 12) {
             StatusDot(color: statusColor)
                 .padding(.top, 5)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 8) {
@@ -354,6 +385,7 @@ private struct LMSApplicationRow: View {
     var body: some View {
         HStack(spacing: 12) {
             StatusDot(color: .indigo)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(application.title)
                     .font(.subheadline.weight(.semibold))

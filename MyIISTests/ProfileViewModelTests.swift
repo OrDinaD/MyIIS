@@ -10,6 +10,7 @@ final class ProfileViewModelTests: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
         authService = AuthenticationService(allowSessionRestore: false)
+        authService.currentUser = nil
         viewModel = ProfileViewModel(authService: authService)
     }
     

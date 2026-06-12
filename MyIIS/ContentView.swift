@@ -10,6 +10,7 @@ import SwiftUI
 struct ContentView: View {
     /// Получаем доступ к сервису аутентификации из окружения
     @EnvironmentObject var authService: AuthenticationService
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var router = AppRouter.shared
     @State private var showSplash = true
 
@@ -24,10 +25,11 @@ struct ContentView: View {
         }
         .redacted(reason: showSplash ? .placeholder : [])
         .allowsHitTesting(!showSplash)
+        .reduceMotionSensitive()
         .onAppear {
             // Скелетон (полосочки вместо текста) для эффекта мгновенной загрузки
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation(.easeOut(duration: 0.4)) {
+                AccessibilitySupport.update(reduceMotion: reduceMotion, animation: .easeOut(duration: 0.4)) {
                     showSplash = false
                 }
             }

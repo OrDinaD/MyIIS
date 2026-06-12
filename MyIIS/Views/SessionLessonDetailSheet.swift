@@ -204,6 +204,7 @@ struct TeacherAvatarView: View {
 }
 
 private struct TeacherPhotoPreview: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
@@ -233,7 +234,7 @@ private struct TeacherPhotoPreview: View {
                         .onEnded { _ in
                             lastScale = 1.0
                             if scale <= 1.0 {
-                                withAnimation {
+                                AccessibilitySupport.update(reduceMotion: reduceMotion) {
                                     scale = 1.0
                                     offset = .zero
                                 }
@@ -258,6 +259,16 @@ private struct TeacherPhotoPreview: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipped()
+                .accessibilityLabel("Изображение")
+                .accessibilityValue("Масштаб \(Int(scale * 100)) процентов")
+                .accessibilityAction(named: "Сбросить масштаб") {
+                    AccessibilitySupport.update(reduceMotion: reduceMotion) {
+                        scale = 1.0
+                        lastScale = 1.0
+                        offset = .zero
+                        lastOffset = .zero
+                    }
+                }
             } else {
                 Image(systemName: "person.fill")
                     .font(.system(size: 160))
@@ -275,6 +286,7 @@ private struct TeacherPhotoPreview: View {
                     .background(Color.white.opacity(0.18), in: Circle())
             }
             .padding(24)
+            .accessibilityLabel("Закрыть")
         }
     }
 }

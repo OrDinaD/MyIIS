@@ -29,6 +29,7 @@ struct AccountSettingsView: View {
     @State private var showingPhotosPicker = false
     @State private var tempImage: UIImage?
     @State private var desktopSelection: AccountSettingsTab?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private var canUseCameraSource: Bool {
@@ -58,7 +59,8 @@ struct AccountSettingsView: View {
         .navigationTitle(NSLocalizedString("settings_title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
-        .animation(.easeInOut(duration: 0.2), value: viewModel.selectedTab)
+        .reduceMotionSensitive()
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.selectedTab)
         .alert(item: $viewModel.alert) { alert in
             Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text(NSLocalizedString("common_ok", comment: ""))))
         }
@@ -412,7 +414,8 @@ private extension AccountSettingsView {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(item.isSatisfied ? Color.green.opacity(0.12) : Color.clear)
         }
-        .animation(.easeInOut(duration: 0.2), value: item.isSatisfied)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: item.isSatisfied)
+        .accessibilityTextPair(label: item.title, value: item.isSatisfied ? "Выполнено" : "Не выполнено")
     }
 
     func contactSection(config: ContactSectionConfig) -> some View {

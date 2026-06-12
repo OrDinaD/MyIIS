@@ -201,6 +201,8 @@ private struct ApplicationsSection: View {
 }
 
 private struct DormitoryAnnouncementCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let announcement: DormitoryAnnouncement
     @State private var isExpanded = false
 
@@ -251,7 +253,7 @@ private struct DormitoryAnnouncementCard: View {
                 .stroke(Color.orange.opacity(0.28), lineWidth: 1)
         )
         .accessibilityAction(named: isExpanded ? "Свернуть" : "Развернуть") {
-            withAnimation(.snappy) {
+            AccessibilitySupport.update(reduceMotion: reduceMotion, animation: .snappy) {
                 isExpanded.toggle()
             }
         }

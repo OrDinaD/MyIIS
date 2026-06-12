@@ -27,6 +27,7 @@ struct LiquidBackground: View {
             .allowsHitTesting(false)
         }
         .zIndex(0)
+        .accessibilityHidden(true)
     }
 }
 
@@ -71,6 +72,8 @@ struct GlassCapsuleStyle: ButtonStyle {
 }
 
 struct QuickActionButton: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let icon: String
     let label: String
     let color: Color
@@ -90,7 +93,7 @@ struct QuickActionButton: View {
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 90)
+            .frame(minHeight: dynamicTypeSize.isAccessibilitySize ? 112 : 90)
             .background {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(.ultraThinMaterial)
@@ -106,6 +109,9 @@ struct QuickActionButton: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -151,19 +157,41 @@ struct GlassCard<Content: View>: View {
 }
 
 struct InfoRow: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let label: String
     let value: String
 
     var body: some View {
-        HStack {
-            Text(label)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-            Spacer()
-            Text(value)
-                .font(.body)
-                .fontWeight(.medium)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 4) {
+                    labelText
+                    valueText
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    labelText
+                    Spacer(minLength: 12)
+                    valueText
+                        .multilineTextAlignment(.trailing)
+                }
+            }
         }
+        .accessibilityTextPair(label: label, value: value)
+    }
+
+    private var labelText: some View {
+        Text(label)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+    }
+
+    private var valueText: some View {
+        Text(value)
+            .font(.body)
+            .fontWeight(.medium)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -172,16 +200,23 @@ struct SettingRow: View {
     let label: String
     let isEnabled: Bool
 
+    private var stateText: String {
+        isEnabled ? "Включено" : "Выключено"
+    }
+
     var body: some View {
         HStack {
             Image(systemName: icon)
                 .foregroundStyle(isEnabled ? Color.accentColor : Color.secondary)
+                .accessibilityHidden(true)
             Text(label)
                 .font(.body)
             Spacer()
-            Image(systemName: isEnabled ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .foregroundStyle(isEnabled ? Color.statusSuccess : Color.statusError.opacity(0.6))
+            Label(stateText, systemImage: isEnabled ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .labelStyle(.iconOnly)
+                .foregroundStyle(isEnabled ? Color.statusSuccess : Color.statusError.opacity(0.8))
         }
+        .accessibilityTextPair(label: label, value: stateText)
     }
 }
 

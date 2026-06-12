@@ -92,6 +92,8 @@ private struct ApplicationsSection: View {
 }
 
 private struct ApplicationRow: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let application: OmissionApplication
     @State private var isAppeared = false
 
@@ -119,10 +121,14 @@ private struct ApplicationRow: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .opacity(isAppeared ? 1 : 0.01)
-        .offset(x: isAppeared ? 0 : -20)
+        .opacity(isAppeared ? 1 : (reduceMotion ? 1 : 0.01))
+        .offset(x: isAppeared || reduceMotion ? 0 : -20)
+        .accessibilityElement(children: .combine)
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
+            AccessibilitySupport.update(
+                reduceMotion: reduceMotion,
+                animation: .spring(response: 0.5, dampingFraction: 0.8).delay(0.1)
+            ) {
                 isAppeared = true
             }
         }
@@ -177,41 +183,72 @@ private struct MonthlySummarySection: View {
 }
 
 private struct MonthlyBarRow: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let month: String
     let value: Int
     let maxValue: Int
     @State private var isShowing = false
 
     var body: some View {
-        HStack(spacing: 10) {
-            Text(month)
-                .font(.footnote.weight(.medium))
-                .frame(width: 80, alignment: .leading)
-
-            GeometryReader { proxy in
-                let width = proxy.size.width * CGFloat(value) / CGFloat(maxValue)
-                ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color(uiColor: .tertiarySystemFill))
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.accentColor)
-                        .frame(width: isShowing ? max(8, width) : 0)
-                        .animation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2), value: isShowing)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 8) {
+                    rowHeader
+                    bar
+                }
+            } else {
+                HStack(spacing: 10) {
+                    Text(month)
+                        .font(.footnote.weight(.medium))
+                        .frame(width: 80, alignment: .leading)
+                    bar
+                    valueText
+                        .frame(width: 44, alignment: .trailing)
                 }
             }
-            .frame(height: 12)
-
-            Text("\(value) \(NSLocalizedString("attendance_hours_unit", comment: ""))")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .frame(width: 44, alignment: .trailing)
         }
+        .accessibilityTextPair(
+            label: month,
+            value: "\(value) \(NSLocalizedString("attendance_hours_unit", comment: ""))"
+        )
         .onAppear {
             isShowing = true
         }
         .onDisappear {
             isShowing = false
         }
+    }
+
+    private var rowHeader: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(month)
+                .font(.footnote.weight(.medium))
+            Spacer()
+            valueText
+        }
+    }
+
+    private var valueText: some View {
+        Text("\(value) \(NSLocalizedString("attendance_hours_unit", comment: ""))")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+    }
+
+    private var bar: some View {
+        GeometryReader { proxy in
+            let width = proxy.size.width * CGFloat(value) / CGFloat(maxValue)
+            ZStack(alignment: .leading) {
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color(uiColor: .tertiarySystemFill))
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(Color.accentColor)
+                    .frame(width: isShowing || reduceMotion ? max(8, width) : 0)
+                    .animation(reduceMotion ? nil : .spring(response: 0.8, dampingFraction: 0.7).delay(0.2), value: isShowing)
+            }
+        }
+        .frame(height: 12)
     }
 }
 
@@ -269,6 +306,8 @@ private struct CertificatesSection: View {
 }
 
 private struct CertificateRow: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let certificate: OmissionCertificate
     @State private var isAppeared = false
 
@@ -289,10 +328,14 @@ private struct CertificateRow: View {
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .opacity(isAppeared ? 1 : 0.01)
-        .offset(x: isAppeared ? 0 : -20)
+        .opacity(isAppeared ? 1 : (reduceMotion ? 1 : 0.01))
+        .offset(x: isAppeared || reduceMotion ? 0 : -20)
+        .accessibilityElement(children: .combine)
         .onAppear {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8).delay(0.1)) {
+            AccessibilitySupport.update(
+                reduceMotion: reduceMotion,
+                animation: .spring(response: 0.5, dampingFraction: 0.8).delay(0.1)
+            ) {
                 isAppeared = true
             }
         }
@@ -313,11 +356,15 @@ private struct LabeledValue: View {
                 .foregroundStyle(.secondary)
             Text(value)
                 .font(.subheadline)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .accessibilityTextPair(label: title, value: value)
     }
 }
 
 private struct AttendanceCard<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     let title: String
     let subtitle: String
     let icon: String
@@ -333,6 +380,7 @@ private struct AttendanceCard<Content: View>: View {
                     .foregroundStyle(.blue)
                     .frame(width: 34, height: 34)
                     .background(Color.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
@@ -354,11 +402,14 @@ private struct AttendanceCard<Content: View>: View {
                 .fill(Color(uiColor: .systemBackground))
                 .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
         )
-        .opacity(isAppeared ? 1 : 0.01)
-        .offset(y: isAppeared ? 0 : 20)
-        .scaleEffect(isAppeared ? 1 : 0.98)
+        .opacity(isAppeared ? 1 : (reduceMotion ? 1 : 0.01))
+        .offset(y: isAppeared || reduceMotion ? 0 : 20)
+        .scaleEffect(isAppeared || reduceMotion ? 1 : 0.98)
         .onAppear {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.75)) {
+            AccessibilitySupport.update(
+                reduceMotion: reduceMotion,
+                animation: .spring(response: 0.6, dampingFraction: 0.75)
+            ) {
                 isAppeared = true
             }
         }
@@ -385,12 +436,14 @@ private struct StatusBadge: View {
     var body: some View {
         let style = StatusStyle(status: status)
 
-        return Text(style.displayText)
+        return Label(style.displayText, systemImage: style.tone.iconName)
+            .labelStyle(.titleAndIcon)
             .font(.caption.weight(.semibold))
             .padding(.vertical, 4)
             .padding(.horizontal, 10)
             .background(style.background, in: Capsule(style: .continuous))
             .foregroundStyle(style.foreground)
+            .accessibilityLabel(style.displayText)
     }
 }
 
@@ -398,6 +451,7 @@ private struct StatusStyle {
     let background: Color
     let foreground: Color
     let displayText: String
+    let tone: AccessibilityStatusTone
 
     init(status: String) {
         let normalized = status.lowercased()
@@ -406,12 +460,15 @@ private struct StatusStyle {
         case _ where normalized.contains("одобр") || normalized.contains("approved"):
             background = Color.green.opacity(0.16)
             foreground = .green
+            tone = .success
         case _ where normalized.contains("отклон") || normalized.contains("reject"):
             background = Color.red.opacity(0.16)
             foreground = .red
+            tone = .error
         default:
             background = Color.orange.opacity(0.16)
             foreground = .orange
+            tone = .warning
         }
 
         displayText = status

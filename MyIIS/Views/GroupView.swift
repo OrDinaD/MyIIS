@@ -123,6 +123,14 @@ struct GroupView: View {
                         .onTapGesture {
                             openPhone(phone)
                         }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel("Телефон куратора")
+                        .accessibilityValue(phone)
+                        .accessibilityHint("Открывает номер в Телефоне")
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityAction {
+                            openPhone(phone)
+                        }
                 }
 
                 if let email = optionalText(curator.email) {
@@ -238,6 +246,7 @@ struct GroupView: View {
             Image(systemName: icon)
                 .font(.footnote)
                 .foregroundStyle(.blue)
+                .accessibilityHidden(true)
             Text(text)
                 .font(.subheadline)
                 .foregroundStyle(.primary)

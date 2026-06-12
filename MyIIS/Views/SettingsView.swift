@@ -6,6 +6,7 @@ import SwiftUI
 
 @MainActor
 struct SettingsView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel: SettingsViewModel
 
     init(viewModel: SettingsViewModel) {
@@ -82,8 +83,9 @@ struct SettingsView: View {
                     .shadow(color: .black.opacity(0.1), radius: 16)
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: viewModel.hasPendingChanges)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.isSaving)
+        .reduceMotionSensitive()
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.hasPendingChanges)
+        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.isSaving)
     }
 
     private var header: some View {
@@ -92,6 +94,7 @@ struct SettingsView: View {
                 .font(.system(size: 64, weight: .medium))
                 .foregroundStyle(.linearGradient(colors: [.purple.opacity(0.8), .blue.opacity(0.8)], startPoint: .top, endPoint: .bottom))
                 .shadow(color: .purple.opacity(0.2), radius: 12, y: 10)
+                .accessibilityHidden(true)
 
             Text("Управляйте своим профилем")
                 .font(.title3)
@@ -112,6 +115,7 @@ struct SettingsView: View {
             Image(systemName: section.systemIcon)
                 .font(.callout)
                 .foregroundStyle(.purple)
+                .accessibilityHidden(true)
             Text(section.title)
                 .font(.headline)
         }

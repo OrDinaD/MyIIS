@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RatingView: View {
     @EnvironmentObject private var authService: AuthenticationService
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject var viewModel: RatingViewModel
     @State private var expandedDisciplineIDs: Set<String> = []
 
@@ -81,23 +82,36 @@ struct RatingView: View {
                 }
             }
 
-            HStack(spacing: 10) {
-                RatingHeaderMetric(
-                    title: NSLocalizedString("rating_average_grade", comment: ""),
-                    value: formattedGrade(viewModel.gradebookAverage ?? viewModel.students.first?.averageGrade),
-                    systemImage: "chart.line.uptrend.xyaxis",
-                    tint: gradeTint(viewModel.gradebookAverage ?? viewModel.students.first?.averageGrade)
-                )
-                RatingHeaderMetric(
-                    title: NSLocalizedString("rating_missed_hours", comment: ""),
-                    value: formattedMissed(viewModel.students.first?.missedHours),
-                    systemImage: "clock.badge.exclamationmark",
-                    tint: .orange
-                )
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    VStack(spacing: 10) {
+                        ratingHeaderMetrics
+                    }
+                } else {
+                    HStack(spacing: 10) {
+                        ratingHeaderMetrics
+                    }
+                }
             }
         }
         .padding(16)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    @ViewBuilder
+    private var ratingHeaderMetrics: some View {
+        RatingHeaderMetric(
+            title: NSLocalizedString("rating_average_grade", comment: ""),
+            value: formattedGrade(viewModel.gradebookAverage ?? viewModel.students.first?.averageGrade),
+            systemImage: "chart.line.uptrend.xyaxis",
+            tint: gradeTint(viewModel.gradebookAverage ?? viewModel.students.first?.averageGrade)
+        )
+        RatingHeaderMetric(
+            title: NSLocalizedString("rating_missed_hours", comment: ""),
+            value: formattedMissed(viewModel.students.first?.missedHours),
+            systemImage: "clock.badge.exclamationmark",
+            tint: .orange
+        )
     }
 
     @ViewBuilder
@@ -307,6 +321,7 @@ private struct RatingHeaderMetric: View {
             Image(systemName: systemImage)
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(tint)
+                .accessibilityHidden(true)
 
             Text(value)
                 .font(.system(.title3, design: .rounded).weight(.bold))
@@ -325,6 +340,7 @@ private struct RatingHeaderMetric: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(tint.opacity(0.22), lineWidth: 1)
         }
+        .accessibilityTextPair(label: title, value: value)
     }
 }
 

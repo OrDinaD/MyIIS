@@ -91,6 +91,12 @@ final class HeadmanViewModel: ObservableObject {
         isGroupHead
     }
 
+    #if DEBUG
+    static func resetCachedSnapshotForTesting() {
+        cachedSnapshot = nil
+    }
+    #endif
+
     var selectedWeekStartDate: Date {
         Self.weekStart(for: selectedWeekAnchorDate)
     }

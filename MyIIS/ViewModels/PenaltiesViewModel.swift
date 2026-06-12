@@ -1,6 +1,5 @@
 import Combine
 import Foundation
-import SwiftUI
 
 @MainActor
 final class PenaltiesViewModel: ObservableObject {
@@ -40,9 +39,7 @@ final class PenaltiesViewModel: ObservableObject {
     }
 
     func selectType(_ type: PenaltyType?) {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            selectedType = type
-        }
+        selectedType = type
     }
 
     private func load(force: Bool) async {

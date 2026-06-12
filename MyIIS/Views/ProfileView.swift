@@ -5,6 +5,8 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showContacts = false
     @State private var showLogoutConfirmation = false
@@ -45,6 +47,7 @@ private extension ProfileView {
             }
         }
         .withBirthdayBalloons(user: viewModel.user)
+        .reduceMotionSensitive()
         .navigationTitle(NSLocalizedString("tab_profile", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .toolbar(showFullScreenAvatar ? .hidden : .visible, for: .navigationBar)
@@ -96,6 +99,7 @@ private extension ProfileView {
                 Image(systemName: "gearshape.fill")
                     .foregroundStyle(.primary)
             }
+            .accessibilityLabel(NSLocalizedString("settings_title", comment: ""))
         }
     }
 
@@ -182,7 +186,7 @@ private extension ProfileView {
                 y: isPressingAvatar ? 12 : 6
             )
             .scaleEffect(isPressingAvatar ? 0.94 : 1.0)
-            .rotationEffect(.degrees(isPressingAvatar ? -3 : 0))
+            .rotationEffect(.degrees(isPressingAvatar && !reduceMotion ? -3 : 0))
             .contentShape(Circle())
             .onLongPressGesture(
                 minimumDuration: 0.28,
@@ -192,6 +196,13 @@ private extension ProfileView {
             )
             .opacity(showFullScreenAvatar ? 0.001 : 1)
             .allowsHitTesting(!showFullScreenAvatar)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Фото профиля")
+            .accessibilityHint("Открывает фото на весь экран")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction(named: "Открыть фото") {
+                presentFullScreenAvatar()
+            }
     }
 
     var avatarStroke: some View {
@@ -200,7 +211,10 @@ private extension ProfileView {
     }
 
     func avatarPressing(_ isPressing: Bool) {
-        withAnimation(.spring(response: 0.24, dampingFraction: 0.6)) {
+        AccessibilitySupport.update(
+            reduceMotion: reduceMotion,
+            animation: .spring(response: 0.24, dampingFraction: 0.6)
+        ) {
             isPressingAvatar = isPressing
         }
     }
@@ -217,6 +231,14 @@ private extension ProfileView {
         }
         .contentShape(Rectangle())
         .onLongPressGesture(minimumDuration: 0.35) {
+            showRatingInfo = true
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Рейтинг")
+        .accessibilityValue("\(user.rating) из 5")
+        .accessibilityHint("Показывает описание рейтинга")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction {
             showRatingInfo = true
         }
         .alert(
@@ -294,7 +316,10 @@ private extension ProfileView {
                 )
                 Spacer()
                 Button(contactsToggleTitle) {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    AccessibilitySupport.update(
+                        reduceMotion: reduceMotion,
+                        animation: .spring(response: 0.3, dampingFraction: 0.8)
+                    ) {
                         showContacts.toggle()
                     }
                 }
@@ -388,7 +413,7 @@ private extension ProfileView {
                     NSLocalizedString("profile_logout_confirm", comment: ""),
                     role: .destructive
                 ) {
-                    withAnimation {
+                    AccessibilitySupport.update(reduceMotion: reduceMotion) {
                         viewModel.logout()
                     }
                 }
@@ -436,6 +461,11 @@ private extension ProfileView {
             }
         }
         .ignoresSafeArea()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Фото профиля на весь экран")
+        .accessibilityAction(named: "Закрыть") {
+            dismissFullScreenAvatar()
+        }
     }
 
     func fullScreenAvatarContent<Content: View>(
@@ -474,7 +504,10 @@ private extension ProfileView {
             }
             .onEnded { _ in
                 let clampedZoom = min(max(currentZoom, 1.0), maximumAvatarZoom)
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                AccessibilitySupport.update(
+                    reduceMotion: reduceMotion,
+                    animation: .spring(response: 0.32, dampingFraction: 0.82)
+                ) {
                     currentZoom = clampedZoom
                     steadyZoom = clampedZoom
                     if clampedZoom <= 1.02 {
@@ -512,7 +545,10 @@ private extension ProfileView {
             .onEnded { value in
                 if currentZoom > 1.02 {
                     let clampedOffset = clampedOffset(for: currentOffset, zoom: currentZoom)
-                    withAnimation(.spring(response: 0.28, dampingFraction: 0.84)) {
+                    AccessibilitySupport.update(
+                        reduceMotion: reduceMotion,
+                        animation: .spring(response: 0.28, dampingFraction: 0.84)
+                    ) {
                         currentOffset = clampedOffset
                         steadyOffset = clampedOffset
                     }
@@ -526,7 +562,10 @@ private extension ProfileView {
                 if projectedDismissHeight > avatarDismissThreshold {
                     dismissFullScreenAvatar(initialVelocity: value.velocity.height)
                 } else {
-                    withAnimation(.spring(response: 0.34, dampingFraction: 0.82)) {
+                    AccessibilitySupport.update(
+                        reduceMotion: reduceMotion,
+                        animation: .spring(response: 0.34, dampingFraction: 0.82)
+                    ) {
                         currentOffset = .zero
                         steadyOffset = .zero
                     }
@@ -549,7 +588,10 @@ private extension ProfileView {
     func presentFullScreenAvatar() {
         UIImpactFeedbackGenerator(style: .rigid).impactOccurred(intensity: 0.95)
         resetAvatarInteractionState()
-        withAnimation(.spring(response: 0.52, dampingFraction: 0.82, blendDuration: 0.16)) {
+        AccessibilitySupport.update(
+            reduceMotion: reduceMotion,
+            animation: .spring(response: 0.52, dampingFraction: 0.82, blendDuration: 0.16)
+        ) {
             isPressingAvatar = false
             showFullScreenAvatar = true
         }
@@ -557,8 +599,9 @@ private extension ProfileView {
 
     func dismissFullScreenAvatar(initialVelocity: CGFloat = 0) {
         let normalizedVelocity = min(max(abs(initialVelocity) / 1800, 0), 1)
-        withAnimation(
-            .spring(
+        AccessibilitySupport.update(
+            reduceMotion: reduceMotion,
+            animation: .spring(
                 response: 0.46,
                 dampingFraction: 0.78 - (normalizedVelocity * 0.12),
                 blendDuration: 0.14

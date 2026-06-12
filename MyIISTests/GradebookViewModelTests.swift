@@ -8,7 +8,8 @@ final class GradebookViewModelTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        UserDefaults.standard.removeObject(forKey: "gradebook_offline_cache_v1")
+        APIService.isDemoMode = false
+        clearGradebookCaches()
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [MockURLProtocol.self]
         let session = URLSession(configuration: configuration)
@@ -18,7 +19,17 @@ final class GradebookViewModelTests: XCTestCase {
     override func tearDown() async throws {
         MockURLProtocol.requestHandler = nil
         viewModel = nil
+        APIService.isDemoMode = false
+        clearGradebookCaches()
         try await super.tearDown()
+    }
+
+    private func clearGradebookCaches() {
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "gradebook_offline_cache_v1")
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("APIService.responseCache.") {
+            defaults.removeObject(forKey: key)
+        }
     }
 
     // MARK: - Equivalence Partitioning & Boundary Value Analysis for yearlyAverage
@@ -327,6 +338,8 @@ final class GradebookViewModelTests: XCTestCase {
         }
         await viewModel.load()
         XCTAssertNotNil(viewModel.markbook)
+        viewModel.lastUpdateTime = Date().addingTimeInterval(-6 * 60)
+        clearGradebookCaches()
 
         // 2. Refresh fails
         MockURLProtocol.requestHandler = { request in

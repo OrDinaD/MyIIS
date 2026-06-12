@@ -11,12 +11,12 @@ final class HeadmanViewModelTests: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
 
-        let defaults = UserDefaults.standard
-        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("APIService.responseCache.") {
-            defaults.removeObject(forKey: key)
-        }
+        APIService.isDemoMode = false
+        HeadmanViewModel.resetCachedSnapshotForTesting()
+        clearResponseCache()
 
         authService = AuthenticationService(allowSessionRestore: false)
+        authService.currentUser = nil
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [MockURLProtocol.self]
         config.urlCache = nil
@@ -32,7 +32,17 @@ final class HeadmanViewModelTests: XCTestCase {
         MockURLProtocol.mockResponse = nil
         MockURLProtocol.mockError = nil
         MockURLProtocol.requestHandler = nil
+        APIService.isDemoMode = false
+        HeadmanViewModel.resetCachedSnapshotForTesting()
+        clearResponseCache()
         try await super.tearDown()
+    }
+
+    private func clearResponseCache() {
+        let defaults = UserDefaults.standard
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("APIService.responseCache.") {
+            defaults.removeObject(forKey: key)
+        }
     }
 
     // MARK: - Initial State

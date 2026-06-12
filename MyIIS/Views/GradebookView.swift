@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct GradebookView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel: GradebookViewModel
     @State private var expandedSubjectId: MarkbookMark.ID?
     @State private var sharePayload: GradebookShareImagePayload?
@@ -205,7 +206,10 @@ struct GradebookView: View {
             } else {
                 ForEach(viewModel.marksForSelectedSemester) { mark in
                     MarkRow(mark: mark, isExpanded: expandedSubjectId == mark.id, isCurrentSemester: isCurrentSemesterSelected) {
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        AccessibilitySupport.update(
+                            reduceMotion: reduceMotion,
+                            animation: .spring(response: 0.3, dampingFraction: 0.7)
+                        ) {
                             expandedSubjectId = (expandedSubjectId == mark.id) ? nil : mark.id
                         }
                     }
@@ -223,6 +227,9 @@ private extension String {
 }
 
 private struct MarkRow: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     let mark: MarkbookMark
     let isExpanded: Bool
     let isCurrentSemester: Bool
@@ -230,22 +237,18 @@ private struct MarkRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top, spacing: 8) {
-                HStack(spacing: 6) {
-                    Text(mark.subject)
-                        .font(.body.weight(.semibold))
-                        .lineLimit(2)
-                    Image(systemName: "chevron.down")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) {
+                    subjectTitle
+                    gradeText
                 }
-
-                Spacer(minLength: 8)
-                Text(mark.displayGrade)
-                    .font(.headline)
-                    .monospacedDigit()
-                    .frame(width: 90, alignment: .trailing)
+            } else {
+                HStack(alignment: .top, spacing: 8) {
+                    subjectTitle
+                    Spacer(minLength: 8)
+                    gradeText
+                        .frame(width: 90, alignment: .trailing)
+                }
             }
 
             if isExpanded {
@@ -265,7 +268,35 @@ private struct MarkRow: View {
         .padding(.vertical, 6)
         .contentShape(Rectangle())
         .onTapGesture(perform: onToggle)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
+        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(mark.subject)
+        .accessibilityValue("Оценка \(mark.displayGrade)")
+        .accessibilityHint(isExpanded ? "Скрывает подробности" : "Показывает подробности")
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: isExpanded ? "Скрыть подробности" : "Показать подробности") {
+            onToggle()
+        }
+    }
+
+    private var subjectTitle: some View {
+        HStack(spacing: 6) {
+            Text(mark.subject)
+                .font(.body.weight(.semibold))
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                .fixedSize(horizontal: false, vertical: true)
+            Image(systemName: "chevron.down")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .rotationEffect(.degrees(isExpanded && !reduceMotion ? 180 : 0))
+                .accessibilityHidden(true)
+        }
+    }
+
+    private var gradeText: some View {
+        Text(mark.displayGrade)
+            .font(.headline)
+            .monospacedDigit()
     }
 
     private var markGrid: some View {

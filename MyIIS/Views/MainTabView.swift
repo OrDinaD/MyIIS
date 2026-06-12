@@ -17,6 +17,7 @@ struct MainTabView: View {
             .toolbarBackground(.regularMaterial, for: .tabBar)
             .toolbarBackground(.visible, for: .tabBar)
             .appBackground()
+            .reduceMotionSensitive()
     }
 
     @ViewBuilder
