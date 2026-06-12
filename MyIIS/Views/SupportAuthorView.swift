@@ -7,6 +7,7 @@ import SwiftUI
 
 struct SupportAuthorView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var productState: SupportAuthorProductState = .loading
 
     var body: some View {
         ScrollView {
@@ -28,6 +29,9 @@ struct SupportAuthorView: View {
                     dismiss()
                 }
             }
+        }
+        .task {
+            await loadProducts()
         }
     }
 
@@ -61,25 +65,48 @@ struct SupportAuthorView: View {
                 .foregroundStyle(.secondary)
                 .padding(.leading, 4)
 
-            if #available(iOS 17.0, *) {
+            switch productState {
+            case .loading:
+                loadingProductsView
+            case .available:
                 StoreView(ids: SupportAuthorProduct.allProductIDs)
                     .productViewStyle(.regular)
                     .padding(.vertical, 6)
                     .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
                     .overlay(cardShape.stroke(Color.white.opacity(0.08), lineWidth: 1))
-            } else {
-                unavailablePurchasesView
+            case .unavailable:
+                pendingProductsView
             }
         }
     }
 
-    private var unavailablePurchasesView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label(NSLocalizedString("support_author_unavailable_title", comment: ""), systemImage: "creditcard.trianglebadge.exclamationmark")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(.primary)
+    private var loadingProductsView: some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .controlSize(.regular)
 
-            Text(NSLocalizedString("support_author_unavailable_message", comment: ""))
+            Text(NSLocalizedString("support_author_loading_message", comment: ""))
+                .font(.body)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
+        .overlay(cardShape.stroke(Color.white.opacity(0.08), lineWidth: 1))
+    }
+
+    private var pendingProductsView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label {
+                Text(NSLocalizedString("support_author_pending_title", comment: ""))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+            } icon: {
+                Image(systemName: "cup.and.saucer.fill")
+                    .foregroundStyle(.pink)
+            }
+
+            Text(NSLocalizedString("support_author_pending_message", comment: ""))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -103,9 +130,26 @@ struct SupportAuthorView: View {
         .padding(.horizontal, 4)
     }
 
+    private func loadProducts() async {
+        productState = .loading
+
+        do {
+            let products = try await Product.products(for: SupportAuthorProduct.allProductIDs)
+            productState = products.isEmpty ? .unavailable : .available
+        } catch {
+            productState = .unavailable
+        }
+    }
+
     private var cardShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: 24, style: .continuous)
     }
+}
+
+private enum SupportAuthorProductState {
+    case loading
+    case available
+    case unavailable
 }
 
 private enum SupportAuthorProduct: String, CaseIterable {

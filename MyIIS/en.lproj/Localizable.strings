@@ -151,6 +151,9 @@
 "support_author_headline" = "Thanks for using MyIIS";
 "support_author_message" = "If the app helped you, you can support development with any convenient purchase from the list. The simplest option is coffee.";
 "support_author_products_title" = "Choose an amount";
+"support_author_loading_message" = "Checking available support options…";
+"support_author_pending_title" = "Support options are coming soon";
+"support_author_pending_message" = "Donations are unavailable until the In-App Purchases are configured in App Store Connect. Nothing is broken — this section is waiting for release products.";
 "support_author_unavailable_title" = "Purchases unavailable";
 "support_author_unavailable_message" = "This section will work after In-App Purchases are configured in App Store Connect.";
 "support_author_footer" = "Purchases are processed by the App Store. This is voluntary support and does not unlock paid features.";

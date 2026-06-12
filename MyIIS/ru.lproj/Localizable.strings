@@ -151,6 +151,9 @@
 "support_author_headline" = "Спасибо, что пользуетесь MyIIS";
 "support_author_message" = "Если приложение выручило, можно поддержать разработку любой удобной покупкой из списка. Самый простой вариант — на кофе.";
 "support_author_products_title" = "Выберите сумму";
+"support_author_loading_message" = "Проверяем доступные варианты поддержки…";
+"support_author_pending_title" = "Скоро здесь появятся варианты поддержки";
+"support_author_pending_message" = "Пока покупки не настроены в App Store Connect, донат недоступен. Ничего не сломалось — просто этот раздел ждёт релизных продуктов.";
 "support_author_unavailable_title" = "Покупки недоступны";
 "support_author_unavailable_message" = "Раздел заработает после настройки In-App Purchases в App Store Connect.";
 "support_author_footer" = "Покупки проходят через App Store. Это добровольная поддержка и не открывает платные функции.";
