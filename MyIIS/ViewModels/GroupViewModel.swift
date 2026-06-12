@@ -14,6 +14,12 @@ final class GroupViewModel: ObservableObject {
     private let apiService: APIService
     private let authService: AuthenticationService
     private var hasLoadedOnce = false
+    private static var cachedSnapshot: Snapshot?
+
+    private struct Snapshot {
+        let groupInfo: UserGroupInfoResponse
+        let lastUpdateTime: Date?
+    }
 
     init(
         apiService: APIService,
@@ -21,6 +27,11 @@ final class GroupViewModel: ObservableObject {
     ) {
         self.apiService = apiService
         self.authService = authService
+        if let cachedSnapshot = Self.cachedSnapshot {
+            groupInfo = cachedSnapshot.groupInfo
+            lastUpdateTime = cachedSnapshot.lastUpdateTime
+            hasLoadedOnce = true
+        }
     }
 
     convenience init() {
@@ -87,6 +98,7 @@ final class GroupViewModel: ObservableObject {
             groupInfo = response
             hasLoadedOnce = true
             lastUpdateTime = Date()
+            Self.cachedSnapshot = Snapshot(groupInfo: response, lastUpdateTime: lastUpdateTime)
         } catch {
             let resolved = resolveErrorMessage(error)
             if hasLoadedOnce {

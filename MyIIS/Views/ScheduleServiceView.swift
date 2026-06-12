@@ -494,7 +494,7 @@ private struct ScheduleLessonCard: View {
     private func teacherAvatar(size: CGFloat) -> some View {
         Group {
             if let link = lesson.employees.first?.photoLink, let url = URL(string: link) {
-                AsyncImage(url: url) { image in
+                CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
                     Circle().fill(.white.opacity(0.18))

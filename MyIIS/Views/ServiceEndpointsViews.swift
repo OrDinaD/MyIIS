@@ -329,7 +329,9 @@ private final class AnnouncementsServiceViewModel: ObservableObject {
     private static let cacheKey = "AnnouncementsServiceViewModel.snapshot"
 
     init() {
-        _ = restoreSnapshot(markStale: false, message: nil)
+        if restoreSnapshot(markStale: false, message: nil) {
+            hasLoadedOnce = !items.isEmpty
+        }
     }
 
     func loadIfNeeded() async {

@@ -17,6 +17,7 @@ final class GradebookViewModel: ObservableObject {
     private let apiService: APIService
     private var hasLoadedOnce = false
     private var backgroundRefreshTask: Task<Void, Never>?
+    private let staleWarningInterval: TimeInterval = 5 * 60
 
     init(apiService: APIService? = nil) {
         self.apiService = apiService ?? APIService()
@@ -140,11 +141,21 @@ final class GradebookViewModel: ObservableObject {
 
     private func applyErrorMessage(_ message: String) {
         if markbook != nil {
-            isShowingStaleDataWarning = true
-            errorMessage = message
+            if shouldShowStaleWarning {
+                isShowingStaleDataWarning = true
+                errorMessage = message
+            } else {
+                isShowingStaleDataWarning = false
+                errorMessage = nil
+            }
         } else {
             errorMessage = message
         }
+    }
+
+    private var shouldShowStaleWarning: Bool {
+        guard let lastUpdateTime else { return true }
+        return Date().timeIntervalSince(lastUpdateTime) > staleWarningInterval
     }
 
     func selectSemester(_ key: String) {

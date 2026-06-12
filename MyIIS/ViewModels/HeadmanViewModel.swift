@@ -50,15 +50,33 @@ final class HeadmanViewModel: ObservableObject {
 
     private let apiService: APIService
     private let authService: AuthenticationService
+    private static var cachedSnapshot: Snapshot?
+
+    private struct Snapshot {
+        let hasAccess: Bool
+        let isGroupHead: Bool
+        let currentStudentId: Int?
+        let students: [HeadmanStudent]
+        let responsibleStudentIDs: Set<Int>
+        let lessonsByDate: [HeadmanLesson]
+        let subjectOptions: [HeadmanSubjectOption]
+        let selectedSubjectID: Int?
+        let selectedSubgroup: Int
+        let summaryStudents: [HeadmanSummaryStudent]
+        let weeklyStudents: [HeadmanWeeklyStudentSummary]
+        let lastUpdateTime: Date?
+    }
 
     init() {
         self.apiService = APIService()
         self.authService = .shared
+        applyCachedSnapshotIfAvailable()
     }
 
     init(apiService: APIService, authService: AuthenticationService) {
         self.apiService = apiService
         self.authService = authService
+        applyCachedSnapshotIfAvailable()
     }
 
     var selectedSubject: HeadmanSubjectOption? {
@@ -118,6 +136,7 @@ final class HeadmanViewModel: ObservableObject {
                 await loadWeeklySummary()
             }
             lastUpdateTime = Date()
+            saveSnapshot()
         } catch let apiError as APIError {
             handleLoadInitialError(apiError.localizedDescription)
         } catch {
@@ -139,6 +158,7 @@ final class HeadmanViewModel: ObservableObject {
 
         do {
             lessonsByDate = try await apiService.getHeadmanLessonsByDate(selectedDate)
+            saveSnapshot()
         } catch let apiError as APIError {
             errorMessage = apiError.localizedDescription
         } catch {
@@ -169,6 +189,7 @@ final class HeadmanViewModel: ObservableObject {
                 subjectId: selectedSubjectID,
                 subgroup: selectedSubgroup
             )
+            saveSnapshot()
         } catch let apiError as APIError {
             errorMessage = apiError.localizedDescription
         } catch {
@@ -200,6 +221,7 @@ final class HeadmanViewModel: ObservableObject {
             }
 
             weeklyStudents = Self.buildWeeklySummary(students: students, lessons: collectedLessons)
+            saveSnapshot()
         } catch let apiError as APIError {
             errorMessage = apiError.localizedDescription
         } catch {
@@ -297,6 +319,39 @@ private extension HeadmanViewModel {
             return updated
         }
         hasAccess = groupHead || currentStudentId.map { responsibleStudentIDs.contains($0) } == true
+    }
+
+    func applyCachedSnapshotIfAvailable() {
+        guard let snapshot = Self.cachedSnapshot else { return }
+        hasAccess = snapshot.hasAccess
+        isGroupHead = snapshot.isGroupHead
+        currentStudentId = snapshot.currentStudentId
+        students = snapshot.students
+        responsibleStudentIDs = snapshot.responsibleStudentIDs
+        lessonsByDate = snapshot.lessonsByDate
+        subjectOptions = snapshot.subjectOptions
+        selectedSubjectID = snapshot.selectedSubjectID
+        selectedSubgroup = snapshot.selectedSubgroup
+        summaryStudents = snapshot.summaryStudents
+        weeklyStudents = snapshot.weeklyStudents
+        lastUpdateTime = snapshot.lastUpdateTime
+    }
+
+    func saveSnapshot() {
+        Self.cachedSnapshot = Snapshot(
+            hasAccess: hasAccess,
+            isGroupHead: isGroupHead,
+            currentStudentId: currentStudentId,
+            students: students,
+            responsibleStudentIDs: responsibleStudentIDs,
+            lessonsByDate: lessonsByDate,
+            subjectOptions: subjectOptions,
+            selectedSubjectID: selectedSubjectID,
+            selectedSubgroup: selectedSubgroup,
+            summaryStudents: summaryStudents,
+            weeklyStudents: weeklyStudents,
+            lastUpdateTime: lastUpdateTime
+        )
     }
 
     func handleLoadInitialError(_ message: String) {

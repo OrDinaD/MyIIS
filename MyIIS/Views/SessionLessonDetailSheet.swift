@@ -184,7 +184,7 @@ struct TeacherAvatarView: View {
     var body: some View {
         Group {
             if let link = teacher?.photoLink, let url = URL(string: link) {
-                AsyncImage(url: url) { image in
+                CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
                     Circle().fill(Color(uiColor: .tertiarySystemFill))
@@ -216,7 +216,7 @@ private struct TeacherPhotoPreview: View {
             Color.black.ignoresSafeArea()
 
             if let link = teacher?.photoLink, let url = URL(string: link) {
-                AsyncImage(url: url) { image in
+                CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFit()
                 } placeholder: {
                     ProgressView().tint(.white)

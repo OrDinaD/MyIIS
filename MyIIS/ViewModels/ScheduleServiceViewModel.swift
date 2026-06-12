@@ -141,6 +141,18 @@ final class ScheduleServiceViewModel: ObservableObject {
     private static let lastTeacherURLIDDefaultsKey = "services.schedule.lastTeacherURLID"
     private static let lastTeacherNameDefaultsKey = "services.schedule.lastTeacherName"
     private static let continuousChunkSizeDays = 28
+    private static var cachedSnapshot: Snapshot?
+
+    private struct Snapshot {
+        let mode: ScheduleLookupMode
+        let query: String
+        let schedule: PublicScheduleResponse
+        let currentWeekNumber: Int?
+        let weekFilter: StudyWeekFilter
+        let displayMode: ScheduleDisplayMode
+        let subgroupFilter: ScheduleSubgroupFilter
+        let continuousTimelineDays: [ScheduleContinuousDay]
+    }
 
     init(
         api: ServiceEndpointsAPI? = nil,
@@ -170,6 +182,37 @@ final class ScheduleServiceViewModel: ObservableObject {
         } else if mode == .teacher, let lastTeacherName = defaults.string(forKey: Self.lastTeacherNameDefaultsKey) {
             query = lastTeacherName
         }
+
+        applyCachedSnapshotIfAvailable()
+    }
+
+    private func applyCachedSnapshotIfAvailable() {
+        guard let snapshot = Self.cachedSnapshot else { return }
+        shouldResetQueryOnModeChange = false
+        mode = snapshot.mode
+        shouldResetQueryOnModeChange = true
+        query = snapshot.query
+        schedule = snapshot.schedule
+        currentWeekNumber = snapshot.currentWeekNumber
+        weekFilter = snapshot.weekFilter
+        displayMode = snapshot.displayMode
+        subgroupFilter = snapshot.subgroupFilter
+        continuousTimelineDays = snapshot.continuousTimelineDays
+        hasLoadedInitialData = true
+    }
+
+    private func saveSnapshot() {
+        guard let schedule else { return }
+        Self.cachedSnapshot = Snapshot(
+            mode: mode,
+            query: query,
+            schedule: schedule,
+            currentWeekNumber: currentWeekNumber,
+            weekFilter: weekFilter,
+            displayMode: displayMode,
+            subgroupFilter: subgroupFilter,
+            continuousTimelineDays: continuousTimelineDays
+        )
     }
 
     func loadInitialDataIfNeeded() async {
@@ -259,12 +302,13 @@ final class ScheduleServiceViewModel: ObservableObject {
 
     func loadGroup(_ groupNumber: String) async {
         if isLoading { return }
-        isLoading = true
-        defer { isLoading = false }
 
         if let cachedSchedule = api.cachedGroupSchedule(groupNumber: groupNumber) {
             applyGroupSchedule(cachedSchedule, week: nil, groupNumber: groupNumber)
         }
+
+        isLoading = schedule == nil
+        defer { isLoading = false }
 
         do {
             let scheduleResponse = try await api.fetchGroupSchedule(groupNumber: groupNumber)
@@ -299,6 +343,7 @@ final class ScheduleServiceViewModel: ObservableObject {
             rebuildContinuousTimeline(reset: true)
             setMode(.teacher, preservingQuery: employee.displayName)
             persistTeacherSelection(urlId: urlId, displayName: employee.displayName)
+            saveSnapshot()
             errorMessage = nil
         } catch is CancellationError {
             return
@@ -403,6 +448,7 @@ final class ScheduleServiceViewModel: ObservableObject {
         rebuildContinuousTimeline(reset: true)
         setMode(.group, preservingQuery: groupNumber)
         persistGroupSelection(groupNumber)
+        saveSnapshot()
         errorMessage = nil
         updateSessionScheduleWidgetSnapshot(from: scheduleResponse)
         scheduleExamRemindersIfAuthorized()

@@ -14,6 +14,12 @@ final class DormitoryViewModel: ObservableObject {
 
     private let dormitoryService: DormitoryServicing
     private var hasLoadedOnce: Bool
+    private static var cachedSnapshot: Snapshot?
+
+    private struct Snapshot {
+        let applications: [DormitoryQueueApplication]
+        let privilegeRecords: [DormitoryPrivilegeRecord]
+    }
 
     init(
         dormitoryService: DormitoryServicing? = nil,
@@ -22,15 +28,26 @@ final class DormitoryViewModel: ObservableObject {
         announcementDate: Date = .now
     ) {
         self.dormitoryService = dormitoryService ?? DormitoryService()
-        self.applications = initialApplications
-        self.privilegeRecords = initialPrivilegeRecords
+        let resolvedApplications: [DormitoryQueueApplication]
+        let resolvedPrivilegeRecords: [DormitoryPrivilegeRecord]
+        if initialApplications.isEmpty,
+           initialPrivilegeRecords.isEmpty,
+           let cachedSnapshot = Self.cachedSnapshot {
+            resolvedApplications = cachedSnapshot.applications
+            resolvedPrivilegeRecords = cachedSnapshot.privilegeRecords
+        } else {
+            resolvedApplications = initialApplications
+            resolvedPrivilegeRecords = initialPrivilegeRecords
+        }
+        self.applications = resolvedApplications
+        self.privilegeRecords = resolvedPrivilegeRecords
         self.announcement = DormitoryAnnouncement.current(on: announcementDate)
         self.isLoading = false
         self.isSubmittingApplication = false
         self.isDownloadingFile = false
         self.errorMessage = nil
         self.actionErrorMessage = nil
-        self.hasLoadedOnce = !initialApplications.isEmpty || !initialPrivilegeRecords.isEmpty
+        self.hasLoadedOnce = !resolvedApplications.isEmpty || !resolvedPrivilegeRecords.isEmpty
     }
 
     var canCreateApplication: Bool {
@@ -153,6 +170,10 @@ final class DormitoryViewModel: ObservableObject {
             }
 
             hasLoadedOnce = true
+            Self.cachedSnapshot = Snapshot(
+                applications: self.applications,
+                privilegeRecords: self.privilegeRecords
+            )
         } catch {
             if let error = error as? LocalizedError, let message = error.errorDescription {
                 errorMessage = message
@@ -172,6 +193,10 @@ final class DormitoryViewModel: ObservableObject {
             updated.append(application)
         }
         applications = sorted(updated)
+        Self.cachedSnapshot = Snapshot(
+            applications: applications,
+            privilegeRecords: privilegeRecords
+        )
     }
 
     private func sorted(_ applications: [DormitoryQueueApplication]) -> [DormitoryQueueApplication] {

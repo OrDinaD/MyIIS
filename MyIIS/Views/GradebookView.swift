@@ -153,7 +153,7 @@ struct GradebookView: View {
                         .font(.footnote)
                 }
 
-                if let error = viewModel.errorMessage {
+                if let error = viewModel.errorMessage, viewModel.markbook == nil {
                     Text(error)
                         .font(.footnote)
                         .foregroundStyle(.red)

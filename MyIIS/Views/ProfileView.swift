@@ -140,7 +140,7 @@ private extension ProfileView {
 
     @ViewBuilder
     func avatarThumbnail(for user: User) -> some View {
-        AsyncImage(url: user.photoURL) { image in
+        CachedAsyncImage(url: user.photoURL) { image in
             interactiveAvatarThumbnail {
                 image
                     .resizable()
@@ -411,37 +411,53 @@ private extension ProfileView {
                     dismissFullScreenAvatar()
                 }
 
-            AsyncImage(url: user.photoURL) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .matchedGeometryEffect(
-                        id: "avatar",
-                        in: avatarNamespace,
-                        properties: .frame,
-                        anchor: .center,
-                        isSource: showFullScreenAvatar
-                    )
-                    .clipShape(
-                        RoundedRectangle(
-                            cornerRadius: fullScreenCornerRadius,
-                            style: .continuous
-                        )
-                    )
-                    .shadow(color: .black.opacity(0.28), radius: 24, y: 14)
-                    .scaleEffect(currentZoom)
-                    .offset(currentOffset)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 40)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    .gesture(fullScreenMagnificationGesture)
-                    .simultaneousGesture(fullScreenDragGesture)
+            CachedAsyncImage(url: user.photoURL) { image in
+                fullScreenAvatarContent {
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                }
             } placeholder: {
-                Color.clear
+                fullScreenAvatarContent {
+                    Circle()
+                        .fill(Color.accentColor.opacity(0.2))
+                        .overlay {
+                            Text(user.initials)
+                                .font(.system(size: 72, weight: .semibold))
+                                .foregroundStyle(Color.accentColor)
+                        }
+                }
             }
         }
         .ignoresSafeArea()
+    }
+
+    func fullScreenAvatarContent<Content: View>(
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .matchedGeometryEffect(
+                id: "avatar",
+                in: avatarNamespace,
+                properties: .frame,
+                anchor: .center,
+                isSource: showFullScreenAvatar
+            )
+            .clipShape(
+                RoundedRectangle(
+                    cornerRadius: fullScreenCornerRadius,
+                    style: .continuous
+                )
+            )
+            .shadow(color: .black.opacity(0.28), radius: 24, y: 14)
+            .scaleEffect(currentZoom)
+            .offset(currentOffset)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 40)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(fullScreenMagnificationGesture)
+            .simultaneousGesture(fullScreenDragGesture)
     }
 
     var fullScreenMagnificationGesture: some Gesture {

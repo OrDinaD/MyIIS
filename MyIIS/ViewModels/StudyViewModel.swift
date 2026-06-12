@@ -15,10 +15,23 @@ final class StudyViewModel: ObservableObject {
     @Published var isShowingStaleDataWarning = false
 
     private let service: StudyServiceProtocol
+    private static var cachedSnapshot: Snapshot?
+
+    private struct Snapshot {
+        let dashboard: StudyDashboard
+        let lastUpdateTime: Date?
+    }
 
     init(service: StudyServiceProtocol? = nil, initialDashboard: StudyDashboard? = nil) {
         self.service = service ?? StudyService()
-        self.dashboard = initialDashboard ?? .empty
+        if let initialDashboard {
+            self.dashboard = initialDashboard
+        } else if let cachedSnapshot = Self.cachedSnapshot {
+            self.dashboard = cachedSnapshot.dashboard
+            self.lastUpdateTime = cachedSnapshot.lastUpdateTime
+        } else {
+            self.dashboard = .empty
+        }
     }
 
     var hasLoadedContent: Bool {
@@ -51,6 +64,7 @@ final class StudyViewModel: ObservableObject {
         do {
             dashboard = try await service.fetchDashboard()
             lastUpdateTime = Date()
+            Self.cachedSnapshot = Snapshot(dashboard: dashboard, lastUpdateTime: lastUpdateTime)
         } catch let apiError as APIError {
             if hasLoadedContent {
                 isShowingStaleDataWarning = true

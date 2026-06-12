@@ -39,7 +39,9 @@ final class DiplomaApplicationViewModel: ObservableObject {
     init(service: DiplomaApplicationServicing? = nil, userDefaults: UserDefaults = .standard) {
         self.service = service ?? DiplomaApplicationService()
         self.userDefaults = userDefaults
-        _ = applyCachedSnapshotIfAvailable(markStale: false, message: nil)
+        if applyCachedSnapshotIfAvailable(markStale: false, message: nil) {
+            hasLoadedOnce = hasContent
+        }
     }
 
     var screenTitle: String {
