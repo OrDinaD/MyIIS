@@ -122,6 +122,8 @@ Tests/Videos/
 /Har/
 /Hars/
 /HARS/
+*.log
+coverage.txt
 *.xcresult
 *.resultbundle
 
