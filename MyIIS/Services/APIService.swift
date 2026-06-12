@@ -5,6 +5,8 @@ import Foundation
 class APIService {
 
     static var isDemoMode = false
+    static let demoUsername = "demo"
+    static let demoPassword = "demo"
 
     let baseURL = URLFactory.require("https://iis.bsuir.by/api/v1")
     private let session: URLSession
@@ -34,16 +36,15 @@ class APIService {
     /// - Parameters:
     ///   - username: Логин пользователя
     ///   - password: Пароль пользователя
-        /// - Returns: LoginResponse с данными пользователя
+    /// - Returns: LoginResponse с данными пользователя
     func login(username: String, password: String) async throws -> LoginResponse {
-        if username == "demo" && password == "demo" {
+        if username == Self.demoUsername && password == Self.demoPassword {
             APIService.isDemoMode = true
             return DemoMockData.loginResponse
         }
         APIService.isDemoMode = false
 
-            // Правильный путь: /auth/login
-            let endpoint = baseURL.appendingPathComponent("auth").appendingPathComponent("login")
+        let endpoint = baseURL.appendingPathComponent("auth").appendingPathComponent("login")
         let loginRequest = LoginRequest(username: username, password: password)
 
         var request = URLRequest(url: endpoint)

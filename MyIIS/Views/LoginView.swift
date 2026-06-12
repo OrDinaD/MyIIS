@@ -6,6 +6,12 @@ import SwiftUI
 
 struct LoginView: View {
     @StateObject private var viewModel = LoginViewModel()
+    @FocusState private var focusedField: Field?
+
+    private enum Field {
+        case username
+        case password
+    }
 
     var body: some View {
         ZStack {
@@ -77,7 +83,11 @@ struct LoginView: View {
                     .autocorrectionDisabled(true)
                     .keyboardType(.default)
                     .textContentType(.username)
+                    .focused($focusedField, equals: .username)
                     .submitLabel(.next)
+                    .onSubmit {
+                        focusedField = .password
+                    }
                     .padding(.horizontal, 18)
                     .padding(.vertical, 16)
                     .background(nativeFieldBackground(cornerRadius: 14))
@@ -93,7 +103,13 @@ struct LoginView: View {
                 SecureField(NSLocalizedString("login_password_placeholder", comment: ""), text: $viewModel.password)
                     .textFieldStyle(.plain)
                     .textContentType(.password)
+                    .focused($focusedField, equals: .password)
                     .submitLabel(.go)
+                    .onSubmit {
+                        Task {
+                            await viewModel.login()
+                        }
+                    }
                     .padding(.horizontal, 18)
                     .padding(.vertical, 16)
                     .background(nativeFieldBackground(cornerRadius: 14))
@@ -122,6 +138,22 @@ struct LoginView: View {
                 .transition(.scale.combined(with: .opacity))
             }
 
+            actionButtons
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                        .stroke(Color(uiColor: .separator).opacity(0.2), lineWidth: 1)
+                }
+                .shadow(color: Color.black.opacity(0.12), radius: 16, y: 8)
+        )
+    }
+
+    private var actionButtons: some View {
+        VStack(spacing: 12) {
             Button {
                 Task {
                     await viewModel.login()
@@ -136,24 +168,34 @@ struct LoginView: View {
                             .fontWeight(.semibold)
                     }
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .disabled(viewModel.isLoading)
             .accessibilityLabel(NSLocalizedString("login_button", comment: ""))
             .accessibilityIdentifier("loginButton")
-        }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color(uiColor: .separator).opacity(0.2), lineWidth: 1)
+
+            Button {
+                Task {
+                    await viewModel.loginDemo()
                 }
-                .shadow(color: Color.black.opacity(0.12), radius: 16, y: 8)
-        )
+            } label: {
+                Label(
+                    NSLocalizedString("login_demo_button", comment: ""),
+                    systemImage: "person.crop.circle.badge.checkmark"
+                )
+                .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .tint(.accentColor)
+            .disabled(viewModel.isLoading)
+            .accessibilityLabel(NSLocalizedString("login_demo_button", comment: ""))
+            .accessibilityHint(NSLocalizedString("login_demo_hint", comment: ""))
+            .accessibilityIdentifier("demoModeButton")
+        }
     }
 
     private var disclaimer: some View {

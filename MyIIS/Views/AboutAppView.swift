@@ -8,6 +8,7 @@ struct AboutAppView: View {
     @Environment(\.openURL) private var openURL
     @State private var selectedIcon = AppIconManager.currentIcon
     @State private var iconAlert: IconAlert?
+    @State private var isSupportSheetPresented = false
     @State private var isUpdatingAcademicNotifications = false
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @AppStorage(AcademicChangeNotificationService.enabledDefaultsKey) private var academicChangeNotificationsEnabled = false
@@ -17,6 +18,7 @@ struct AboutAppView: View {
             VStack(alignment: .leading, spacing: 26) {
                 versionSection
                 academicNotificationsSection
+                supportSection
                 linksSection
                 documentsSection
                 if AppIconManager.supportsAlternateIcons && enableBetaSections {
@@ -34,6 +36,11 @@ struct AboutAppView: View {
         .navigationTitle(NSLocalizedString("about_title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
+        .sheet(isPresented: $isSupportSheetPresented) {
+            NavigationStack {
+                SupportAuthorView()
+            }
+        }
         .alert(item: $iconAlert) { alert in
             Alert(
                 title: Text(alert.title),
@@ -92,6 +99,15 @@ struct AboutAppView: View {
                     }
                 }
                 .padding(.vertical, 12)
+            }
+        }
+    }
+
+    private var supportSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("about_section_support", comment: ""))
+            AboutSupportCard {
+                isSupportSheetPresented = true
             }
         }
     }
@@ -303,6 +319,48 @@ struct AboutAppView: View {
 
     private var cardBorderColor: Color {
         Color.white.opacity(0.08)
+    }
+
+    private var cardShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 24, style: .continuous)
+    }
+}
+
+private struct AboutSupportCard: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: "heart.fill")
+                    .font(.title3)
+                    .foregroundStyle(.pink)
+                    .frame(width: 28)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(NSLocalizedString("about_support_title", comment: ""))
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+
+                    Text(NSLocalizedString("about_support_subtitle", comment: ""))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 20)
+            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
+        .overlay(cardShape.stroke(Color.white.opacity(0.08), lineWidth: 1))
+        .accessibilityHint(NSLocalizedString("about_support_accessibility_hint", comment: ""))
     }
 
     private var cardShape: RoundedRectangle {

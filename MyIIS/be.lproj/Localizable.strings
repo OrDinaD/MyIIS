@@ -6,6 +6,8 @@
 "login_username_placeholder" = "Увядзіце логін";
 "login_password_placeholder" = "Увядзіце пароль";
 "login_button" = "Увайсці";
+"login_demo_button" = "Дэма-рэжым";
+"login_demo_hint" = "Увайсці з дэма-данымі для праверкі праграмы.";
 
 "tab_profile" = "Профіль";
 "tab_attendance" = "Пропускі";
@@ -130,12 +132,23 @@
 "about_title" = "Пра праграму";
 "about_section_version" = "Версія";
 "about_section_links" = "Спасылкі";
+"about_section_support" = "Падтрымка";
 "about_section_documents" = "Дакументы";
 "about_github" = "GitHub";
 "about_telegram" = "Telegram";
 "about_privacy_policy" = "Палітыка канфідэнцыяльнасці";
 "about_terms" = "Правілы выкарыстання";
 "about_contact_me" = "Па любых багах, праблемах і прапановах можна пісаць мне ў Telegram: @lokhotonkot";
+"about_support_title" = "Сказаць дзякуй аўтару";
+"about_support_subtitle" = "Можна закінуць на каву праз App Store.";
+"about_support_accessibility_hint" = "Адкрывае варыянты добраахвотнай падтрымкі аўтара.";
+"support_author_title" = "Сказаць дзякуй";
+"support_author_headline" = "Дзякуй, што карыстаецеся MyIIS";
+"support_author_message" = "Калі праграма дапамагла, можна падтрымаць распрацоўку любой зручнай пакупкай са спіса. Самы просты варыянт — на каву.";
+"support_author_products_title" = "Выберыце суму";
+"support_author_unavailable_title" = "Пакупкі недаступныя";
+"support_author_unavailable_message" = "Раздзел запрацуе пасля наладжвання In-App Purchases у App Store Connect.";
+"support_author_footer" = "Пакупкі праходзяць праз App Store. Гэта добраахвотная падтрымка і яна не адкрывае платныя функцыі.";
 
 "attendance_title" = "Пропускі";
 "attendance_section_applications" = "Заявы па ВРВІ";

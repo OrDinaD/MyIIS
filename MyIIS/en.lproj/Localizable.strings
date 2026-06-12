@@ -6,6 +6,8 @@
 "login_username_placeholder" = "Enter username";
 "login_password_placeholder" = "Enter password";
 "login_button" = "Login";
+"login_demo_button" = "Demo mode";
+"login_demo_hint" = "Sign in with demo credentials for app review.";
 
 "tab_profile" = "Profile";
 "tab_attendance" = "Attendance";
@@ -130,6 +132,7 @@
 "about_title" = "About App";
 "about_section_version" = "Version";
 "about_section_links" = "Links";
+"about_section_support" = "Support";
 "about_section_documents" = "Documents";
 "about_section_notifications" = "Notifications";
 "about_academic_notifications_title" = "New grades";
@@ -141,6 +144,16 @@
 "about_privacy_policy" = "Privacy Policy";
 "about_terms" = "Terms and Conditions";
 "about_contact_me" = "For any bugs, problems, or suggestions, you can write to me on Telegram: @lokhotonkot";
+"about_support_title" = "Say thanks to the author";
+"about_support_subtitle" = "You can buy me a coffee through the App Store.";
+"about_support_accessibility_hint" = "Opens voluntary support options for the author.";
+"support_author_title" = "Say thanks";
+"support_author_headline" = "Thanks for using MyIIS";
+"support_author_message" = "If the app helped you, you can support development with any convenient purchase from the list. The simplest option is coffee.";
+"support_author_products_title" = "Choose an amount";
+"support_author_unavailable_title" = "Purchases unavailable";
+"support_author_unavailable_message" = "This section will work after In-App Purchases are configured in App Store Connect.";
+"support_author_footer" = "Purchases are processed by the App Store. This is voluntary support and does not unlock paid features.";
 
 "attendance_title" = "Attendance";
 "attendance_section_applications" = "ARVI Applications";

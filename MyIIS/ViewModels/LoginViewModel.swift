@@ -32,6 +32,12 @@ class LoginViewModel: ObservableObject {
         await authService.login(username: username, password: password)
     }
 
+    func loginDemo() async {
+        username = APIService.demoUsername
+        password = APIService.demoPassword
+        await authService.login(username: username, password: password)
+    }
+
     func clearForm() {
         username = ""
         password = ""
