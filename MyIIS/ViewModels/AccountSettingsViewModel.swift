@@ -15,6 +15,26 @@ final class AccountSettingsViewModel: ObservableObject {
         let message: String
     }
 
+    private struct Snapshot {
+        let lastPasswordChangeDate: String
+        let passwordAttemptsLeft: Int
+        let passwordBanExpiredTime: String?
+        let contacts: [ContactDTO]
+        let phoneValue: String
+        let phoneConfirmed: Bool
+        let emailValue: String
+        let emailConfirmed: Bool
+        let mobileAttempts: Int
+        let emailAttempts: Int
+        let contactBanExpiredTime: String?
+        let canEditContacts: Bool
+        let photoImage: UIImage?
+        let photoURL: URL?
+        let showPhoto: Bool
+    }
+
+    private static var cachedSnapshot: Snapshot?
+
     @Published var selectedTab: AccountSettingsTab = .password
     @Published var isLoading = false
     @Published var alert: AlertMessage?
@@ -64,10 +84,26 @@ final class AccountSettingsViewModel: ObservableObject {
     ) {
         self.service = service ?? AccountSettingsService()
         self.authService = authService ?? .shared
-        self.photoURL = self.authService.currentUser?.photoURL
+
+        if let snapshot = Self.cachedSnapshot {
+            applySnapshot(snapshot)
+        } else {
+            self.photoURL = self.authService.currentUser?.photoURL
+        }
+    }
+
+    var hasVisibleSettingsContent: Bool {
+        Self.cachedSnapshot != nil
+            || photoImage != nil
+            || photoURL != nil
+            || !contacts.isEmpty
+            || lastPasswordChangeDate != "—"
     }
 
     func load() async {
+        guard !isLoading else { return }
+
+        let shouldShowLoadError = !hasVisibleSettingsContent
         isLoading = true
         defer { isLoading = false }
 
@@ -92,8 +128,11 @@ final class AccountSettingsViewModel: ObservableObject {
             }
 
             showPhoto = try await showPhotoValue
+            saveSnapshot()
         } catch {
-            showError("Ошибка загрузки", error.localizedDescription)
+            if shouldShowLoadError {
+                showError("Ошибка загрузки", error.localizedDescription)
+            }
         }
     }
 
@@ -126,6 +165,7 @@ final class AccountSettingsViewModel: ObservableObject {
             passwordBanExpiredTime = attempts.passwordBanExpiredTime
 
             lastPasswordChangeDate = formatDate(try await service.fetchLastPasswordChange())
+            saveSnapshot()
             alert = AlertMessage(title: "Готово", message: "Пароль успешно изменен.")
         } catch {
             if let attempts = try? await service.fetchPasswordAttempts() {
@@ -188,6 +228,7 @@ final class AccountSettingsViewModel: ObservableObject {
             try await service.confirmContact(contactId: contactId, code: confirmationCode)
             let contactsData = try await service.fetchContacts()
             applyContacts(contactsData)
+            saveSnapshot()
             isConfirmSheetPresented = false
             pendingConfirmationContactId = nil
             alert = AlertMessage(title: "Готово", message: "Контакт успешно подтвержден.")
@@ -233,6 +274,7 @@ final class AccountSettingsViewModel: ObservableObject {
             } else {
                 photoImage = image
             }
+            saveSnapshot()
             alert = AlertMessage(title: "Готово", message: "Фото успешно обновлено.")
         } catch {
             showError("Ошибка обновления фото", error.localizedDescription)
@@ -247,9 +289,48 @@ final class AccountSettingsViewModel: ObservableObject {
 
         do {
             showPhoto = try await service.changeShowPhoto(!showPhoto)
+            saveSnapshot()
         } catch {
             showError("Ошибка", error.localizedDescription)
         }
+    }
+
+    private func applySnapshot(_ snapshot: Snapshot) {
+        lastPasswordChangeDate = snapshot.lastPasswordChangeDate
+        passwordAttemptsLeft = snapshot.passwordAttemptsLeft
+        passwordBanExpiredTime = snapshot.passwordBanExpiredTime
+        contacts = snapshot.contacts
+        phoneValue = snapshot.phoneValue
+        phoneConfirmed = snapshot.phoneConfirmed
+        emailValue = snapshot.emailValue
+        emailConfirmed = snapshot.emailConfirmed
+        mobileAttempts = snapshot.mobileAttempts
+        emailAttempts = snapshot.emailAttempts
+        contactBanExpiredTime = snapshot.contactBanExpiredTime
+        canEditContacts = snapshot.canEditContacts
+        photoImage = snapshot.photoImage
+        photoURL = snapshot.photoURL ?? authService.currentUser?.photoURL
+        showPhoto = snapshot.showPhoto
+    }
+
+    private func saveSnapshot() {
+        Self.cachedSnapshot = Snapshot(
+            lastPasswordChangeDate: lastPasswordChangeDate,
+            passwordAttemptsLeft: passwordAttemptsLeft,
+            passwordBanExpiredTime: passwordBanExpiredTime,
+            contacts: contacts,
+            phoneValue: phoneValue,
+            phoneConfirmed: phoneConfirmed,
+            emailValue: emailValue,
+            emailConfirmed: emailConfirmed,
+            mobileAttempts: mobileAttempts,
+            emailAttempts: emailAttempts,
+            contactBanExpiredTime: contactBanExpiredTime,
+            canEditContacts: canEditContacts,
+            photoImage: photoImage,
+            photoURL: photoURL,
+            showPhoto: showPhoto
+        )
     }
 
 }

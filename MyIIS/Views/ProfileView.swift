@@ -160,6 +160,11 @@ private extension ProfileView {
                             .font(.system(size: 44, weight: .semibold))
                             .foregroundStyle(Color.accentColor)
                     }
+                    .matchedGeometryEffect(
+                        id: "avatar",
+                        in: avatarNamespace,
+                        isSource: !showFullScreenAvatar
+                    )
             }
         }
     }
@@ -185,7 +190,8 @@ private extension ProfileView {
                 pressing: avatarPressing,
                 perform: presentFullScreenAvatar
             )
-            .opacity(showFullScreenAvatar ? 0 : 1)
+            .opacity(showFullScreenAvatar ? 0.001 : 1)
+            .allowsHitTesting(!showFullScreenAvatar)
     }
 
     var avatarStroke: some View {

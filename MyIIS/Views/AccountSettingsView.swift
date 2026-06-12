@@ -59,11 +59,6 @@ struct AccountSettingsView: View {
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
         .animation(.easeInOut(duration: 0.2), value: viewModel.selectedTab)
-        .overlay {
-            if viewModel.isLoading {
-                ProgressView()
-            }
-        }
         .alert(item: $viewModel.alert) { alert in
             Alert(title: Text(alert.title), message: Text(alert.message), dismissButton: .default(Text(NSLocalizedString("common_ok", comment: ""))))
         }
@@ -247,10 +242,14 @@ struct AccountSettingsView: View {
                                 .resizable()
                                 .scaledToFill()
                         } else if let url = viewModel.photoURL {
-                            AsyncImage(url: url) { image in
+                            CachedAsyncImage(url: url) { image in
                                 image.resizable().scaledToFill()
                             } placeholder: {
-                                ProgressView()
+                                Image(systemName: "person.crop.circle.fill")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .padding(24)
+                                    .foregroundStyle(.secondary)
                             }
                         } else {
                             Image(systemName: "person.crop.circle.fill")
