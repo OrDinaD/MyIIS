@@ -43,7 +43,16 @@ enum SessionScheduleWidgetDateFormatting {
         formatter.locale = Locale(identifier: "ru_RU")
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.dateFormat = "dd.MM.yyyy"
-        return formatter.string(from: date)
+
+        return "\(formatter.string(from: date))(\(weekdayShortText(from: date)))"
+    }
+
+    private nonisolated static func weekdayShortText(from date: Date) -> String {
+        let weekdays = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+        let calendar = Calendar(identifier: .gregorian)
+        let index = calendar.component(.weekday, from: date) - 1
+        guard weekdays.indices.contains(index) else { return "" }
+        return weekdays[index]
     }
 }
 

@@ -167,7 +167,7 @@ struct SessionScheduleWidgetView: View {
         case .systemMedium:
             return 2
         default:
-            return 3
+            return 4
         }
     }
 
@@ -214,7 +214,7 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var sectionSpacing: CGFloat {
-        family == .systemLarge ? 5 : 4
+        family == .systemLarge ? 3 : 4
     }
 
     private var contentHorizontalPadding: CGFloat {
@@ -234,13 +234,13 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var headerDateFont: Font {
-        .system(size: family == .systemLarge ? 18 : 17,
+        .system(size: family == .systemLarge ? 16 : 15,
                 weight: .bold,
                 design: .rounded)
     }
 
     private var headerGroupFont: Font {
-        .system(size: family == .systemLarge ? 18 : 17,
+        .system(size: family == .systemLarge ? 17 : 16,
                 weight: .semibold,
                 design: .rounded)
     }
@@ -278,7 +278,7 @@ struct SessionScheduleWidgetView: View {
         VStack(alignment: .leading, spacing: 4) {
             if day.id != groupedVisibleEvents.first?.id {
                 Text(dateText(for: day.date))
-                    .font(.system(size: family == .systemLarge ? 14 : 13, weight: .bold, design: .rounded))
+                    .font(.system(size: family == .systemLarge ? 13 : 12, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .monospacedDigit()
                     .lineLimit(1)
@@ -295,7 +295,7 @@ struct SessionScheduleWidgetView: View {
     private var footer: some View {
         HStack(spacing: 7) {
             Text(dateText(for: hiddenEvents.first?.date))
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
                 .foregroundStyle(.white.opacity(0.55))
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
@@ -303,7 +303,7 @@ struct SessionScheduleWidgetView: View {
                 .fill(.white.opacity(0.55))
                 .frame(width: 6, height: 6)
             Text(hiddenSummary)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(.white.opacity(0.6))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -362,8 +362,8 @@ struct SessionScheduleWidgetView: View {
     private var headerGradient: LinearGradient {
         LinearGradient(
             colors: [
-                Color(red: 0.90, green: 0.10, blue: 0.98),
-                Color(red: 0.76, green: 0.22, blue: 0.98)
+                Color(red: 0.02, green: 0.62, blue: 0.70),
+                Color(red: 0.08, green: 0.36, blue: 0.88)
             ],
             startPoint: .leading,
             endPoint: .trailing
@@ -391,45 +391,45 @@ private struct SessionWidgetEventRow: View {
     let now: Date
 
     var body: some View {
-        HStack(spacing: compact ? 9 : 10) {
+        HStack(spacing: compact ? 8 : 9) {
             VStack(spacing: 0) {
                 Text(event.startTime)
                 Text(event.endTime)
             }
-            .font(.system(size: 15,
+            .font(.system(size: compact ? 15 : 14,
                           weight: .medium,
                           design: .monospaced))
             .foregroundStyle(.white)
             .lineLimit(1)
-            .minimumScaleFactor(0.78)
-            .frame(width: 58)
+            .minimumScaleFactor(0.76)
+            .frame(width: compact ? 58 : 54)
 
             progressStrip
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(displayTitle)
-                    .font(.system(size: 18,
+                    .font(.system(size: compact ? 18 : 17,
                                   weight: .bold,
                                   design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.74)
+                    .minimumScaleFactor(0.62)
                     .allowsTightening(true)
 
                 if let subtitle = event.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(.system(size: compact ? 14 : 15,
+                        .font(.system(size: 14,
                                       weight: .regular,
                                       design: .rounded))
                         .foregroundStyle(.white.opacity(0.72))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.74)
+                        .minimumScaleFactor(0.68)
                         .allowsTightening(true)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(height: compact ? 44 : 46)
+        .frame(height: compact ? 44 : 42)
     }
 
     private var progressStrip: some View {
@@ -445,7 +445,7 @@ private struct SessionWidgetEventRow: View {
                     .frame(height: proxy.size.height * progress)
             }
         }
-        .frame(width: compact ? 5 : 6, height: compact ? 38 : 40)
+        .frame(width: compact ? 5 : 6, height: compact ? 38 : 36)
     }
 
     private var displayTitle: String {
@@ -455,13 +455,13 @@ private struct SessionWidgetEventRow: View {
     private var accentColor: Color {
         switch event.kind {
         case .announcement:
-            return Color.white.opacity(0.55)
+            return Color(red: 0.96, green: 0.78, blue: 0.27)
         case .exam:
-            return Color(red: 1.0, green: 0.20, blue: 0.24)
+            return Color(red: 1.0, green: 0.40, blue: 0.24)
         case .consultation:
-            return Color(red: 0.85, green: 0.12, blue: 0.95)
+            return Color(red: 0.12, green: 0.78, blue: 0.70)
         case .other:
-            return .blue
+            return Color(red: 0.27, green: 0.54, blue: 0.96)
         }
     }
 }
@@ -496,10 +496,10 @@ private extension View {
     func applySessionWidgetBackground() -> some View {
         if #available(iOSApplicationExtension 17.0, *) {
             containerBackground(for: .widget) {
-                Color(red: 0.08, green: 0.08, blue: 0.09)
+                Color(red: 0.04, green: 0.08, blue: 0.10)
             }
         } else {
-            background(Color(red: 0.08, green: 0.08, blue: 0.09))
+            background(Color(red: 0.04, green: 0.08, blue: 0.10))
         }
     }
 }
