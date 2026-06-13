@@ -20,13 +20,13 @@ struct ScheduleServiceView: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 14) {
+            LazyVStack(spacing: 14) {
                 if viewModel.schedule == nil, !viewModel.isLoading {
                     searchBlock
                 }
 
                 if viewModel.schedule != nil {
-                    VStack(alignment: .leading, spacing: 14) {
+                    LazyVStack(alignment: .leading, spacing: 14) {
                         ServiceEndpointSection(
                             title: viewModel.scheduleHeaderTitle,
                             subtitle: viewModel.scheduleHeaderSubtitle,

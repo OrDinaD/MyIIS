@@ -141,6 +141,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     private static let lastTeacherURLIDDefaultsKey = "services.schedule.lastTeacherURLID"
     private static let lastTeacherNameDefaultsKey = "services.schedule.lastTeacherName"
     private static let continuousChunkSizeDays = 28
+    private static let continuousFallbackHorizonDays = 120
     private static var cachedSnapshot: Snapshot?
 
     private struct Snapshot {
@@ -490,6 +491,7 @@ final class ScheduleServiceViewModel: ObservableObject {
         let calendar = Calendar.current
         let now = Date()
         let startBound = schedule.startDate.map { calendar.startOfDay(for: $0) }
+        let endBound = continuousEndBound(for: schedule, calendar: calendar, now: now)
         let initialStart = calendar.date(byAdding: .day, value: -2, to: now) ?? now
         var cursor = continuousCursorDate ?? calendar.startOfDay(for: initialStart)
 
@@ -500,7 +502,7 @@ final class ScheduleServiceViewModel: ObservableObject {
         var generated: [ScheduleContinuousDay] = []
         var processedDays = 0
 
-        while processedDays < Self.continuousChunkSizeDays {
+        while processedDays < Self.continuousChunkSizeDays, cursor <= endBound {
             guard let weekday = studyWeekday(for: cursor),
                   let weekNumber = universityWeekNumber(on: cursor) else {
                 processedDays += 1
@@ -525,9 +527,26 @@ final class ScheduleServiceViewModel: ObservableObject {
         }
 
         continuousCursorDate = cursor
+        if cursor > endBound {
+            isContinuousEndReached = true
+        }
         if !generated.isEmpty {
             continuousTimelineDays.append(contentsOf: generated)
         }
+    }
+
+    private func continuousEndBound(
+        for schedule: PublicScheduleResponse,
+        calendar: Calendar,
+        now: Date
+    ) -> Date {
+        let fallback = calendar.date(
+            byAdding: .day,
+            value: Self.continuousFallbackHorizonDays,
+            to: calendar.startOfDay(for: now)
+        ) ?? now
+        guard let endDate = schedule.endDate else { return fallback }
+        return max(calendar.startOfDay(for: endDate), fallback)
     }
 
     private func lessonsForContinuousDay(weekday: StudyWeekday, weekNumber: Int, date: Date) -> [DisciplineSchedule] {
@@ -541,37 +560,13 @@ final class ScheduleServiceViewModel: ObservableObject {
             .filter(shouldKeepLesson)
             .filter { $0.weekNumbers.isEmpty || $0.weekNumbers.contains(weekNumber) }
 
-        let dated = weekScoped.filter { isLessonScheduledOnDate($0, date: date) }
+        let dated = weekScoped.filter { $0.isScheduled(on: date) }
         if !dated.isEmpty {
             return dated
         }
 
         // If API date ranges are stale or missing, keep a rolling weekly ribbon.
         return weekScoped
-    }
-
-    private func isLessonScheduledOnDate(_ lesson: DisciplineSchedule, date: Date, calendar: Calendar = .current) -> Bool {
-        let day = calendar.startOfDay(for: date)
-
-        if let explicitDate = lesson.lessonDate {
-            return calendar.isDate(explicitDate, inSameDayAs: day)
-        }
-
-        if let start = lesson.startLessonDate, let end = lesson.endLessonDate {
-            let startDay = calendar.startOfDay(for: start)
-            let endDay = calendar.startOfDay(for: end)
-            return (startDay ... endDay).contains(day)
-        }
-
-        if let start = lesson.startLessonDate {
-            return day >= calendar.startOfDay(for: start)
-        }
-
-        if let end = lesson.endLessonDate {
-            return day <= calendar.startOfDay(for: end)
-        }
-
-        return true
     }
 
     private func preferExamDisplayIfNeeded(for scheduleResponse: PublicScheduleResponse) {

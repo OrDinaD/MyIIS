@@ -227,4 +227,34 @@ final class APIDecodingBehaviorTests: XCTestCase {
         XCTAssertEqual(alwaysWeek.weekNumbers, [1, 2, 3, 4])
         XCTAssertEqual(singleWeek.weekNumbers, [2])
     }
+
+    func testDisciplineScheduleHandlesReversedDateRange() {
+        let calendar = Calendar(identifier: .gregorian)
+        let start = calendar.date(from: DateComponents(year: 2026, month: 6, day: 20))!
+        let middle = calendar.date(from: DateComponents(year: 2026, month: 6, day: 18))!
+        let end = calendar.date(from: DateComponents(year: 2026, month: 6, day: 16))!
+        let outside = calendar.date(from: DateComponents(year: 2026, month: 6, day: 21))!
+        let lesson = DisciplineSchedule(
+            id: "reversed-range",
+            auditories: [],
+            endLessonTime: "10:35",
+            lessonTypeAbbrev: "ЛК",
+            note: nil,
+            subgroup: 0,
+            startLessonTime: "09:00",
+            studentGroups: [],
+            subject: "АЛГ",
+            subjectFullName: nil,
+            weekNumbers: [1],
+            employees: [],
+            lessonDate: nil,
+            startLessonDate: start,
+            endLessonDate: end,
+            isAnnouncement: false,
+            isSplit: false
+        )
+
+        XCTAssertTrue(lesson.isScheduled(on: middle, calendar: calendar))
+        XCTAssertFalse(lesson.isScheduled(on: outside, calendar: calendar))
+    }
 }

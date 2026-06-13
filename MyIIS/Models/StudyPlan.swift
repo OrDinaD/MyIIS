@@ -314,6 +314,32 @@ struct DisciplineSchedule: Decodable, Identifiable, Equatable {
         auditories.joined(separator: ", ")
     }
 
+    nonisolated func isScheduled(on date: Date, calendar: Calendar = .current) -> Bool {
+        let day = calendar.startOfDay(for: date)
+
+        if let lessonDate {
+            return calendar.isDate(lessonDate, inSameDayAs: day)
+        }
+
+        if let startLessonDate, let endLessonDate {
+            let startDay = calendar.startOfDay(for: startLessonDate)
+            let endDay = calendar.startOfDay(for: endLessonDate)
+            let lowerBound = min(startDay, endDay)
+            let upperBound = max(startDay, endDay)
+            return lowerBound <= day && day <= upperBound
+        }
+
+        if let startLessonDate {
+            return day >= calendar.startOfDay(for: startLessonDate)
+        }
+
+        if let endLessonDate {
+            return day <= calendar.startOfDay(for: endLessonDate)
+        }
+
+        return true
+    }
+
     nonisolated static func sortingComparator(lhs: DisciplineSchedule, rhs: DisciplineSchedule) -> Bool {
         if lhs.startLessonTime == rhs.startLessonTime {
             return lhs.endLessonTime < rhs.endLessonTime
