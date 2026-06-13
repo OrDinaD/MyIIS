@@ -8,6 +8,12 @@ final class SessionScheduleWidgetTests: XCTestCase {
         return cal
     }()
 
+    func testNumericDateFormatUsesRussianDayMonthYearOrder() {
+        let date = calendar.date(from: DateComponents(year: 2026, month: 6, day: 16))!
+
+        XCTAssertEqual(SessionScheduleWidgetDateFormatting.numericDateText(from: date), "16.06.2026")
+    }
+
     func testEventInterval() {
         let date = calendar.date(from: DateComponents(year: 2026, month: 6, day: 10))!
         let event = SessionScheduleWidgetSnapshot.Event(

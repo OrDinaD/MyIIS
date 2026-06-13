@@ -37,6 +37,16 @@ enum SessionScheduleWidgetConstants {
     static let kind = "com.OrDinaD.MyIIS.sessionSchedule"
 }
 
+enum SessionScheduleWidgetDateFormatting {
+    nonisolated static func numericDateText(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.dateFormat = "dd.MM.yyyy"
+        return formatter.string(from: date)
+    }
+}
+
 enum SessionScheduleWidgetDataStore {
     private enum Key {
         static let snapshot = "session_schedule_widget_snapshot_v1"
