@@ -273,6 +273,7 @@ private struct MarkRow: View {
         .accessibilityLabel(mark.subject)
         .accessibilityValue("Оценка \(mark.displayGrade)")
         .accessibilityHint(isExpanded ? "Скрывает подробности" : "Показывает подробности")
+        .accessibilityIdentifier("gradebookMark_\(mark.subject)")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction(named: isExpanded ? "Скрыть подробности" : "Показать подробности") {
             onToggle()

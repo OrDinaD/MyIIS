@@ -22,6 +22,7 @@ extension APIService {
 
     /// Заявки на пропуски по ОРВИ (ОРН)
     func getOmissionApplications() async throws -> [OmissionApplication] {
+        if APIService.isDemoMode { return DemoMockData.omissionApplications }
         let endpoint = baseURL.appendingPathComponent("omissions-by-student-application")
         let request = URLRequest(url: endpoint)
         logRequestDetails(request)
@@ -30,6 +31,7 @@ extension APIService {
 
     /// Количество пропусков студента по месяцам семестра
     func getMonthlyOmissionCounts() async throws -> [MonthlyOmissionCount] {
+        if APIService.isDemoMode { return DemoMockData.monthlyOmissionCounts }
         let endpoint = baseURL.appendingPathComponent("omission-count-by-student-for-semester")
         let request = URLRequest(url: endpoint)
         logRequestDetails(request)
@@ -38,6 +40,7 @@ extension APIService {
 
     /// Информация о справках и пропусках по уважительной причине
     func getOmissionsByStudent() async throws -> OmissionsByStudentResponse {
+        if APIService.isDemoMode { return DemoMockData.omissionsByStudent }
         let endpoint = baseURL.appendingPathComponent("omissions-by-student")
         let request = URLRequest(url: endpoint)
         logRequestDetails(request)

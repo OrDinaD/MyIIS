@@ -20,6 +20,9 @@ final class StudyService: StudyServiceProtocol {
     }
 
     func fetchDashboard() async throws -> StudyDashboard {
+        #if DEBUG
+        if APIService.isDemoMode { return .preview }
+        #endif
         async let markSheetsResult: SectionLoadResult<[MarkSheetRequest]> = loadSection(path: "mark-sheet", fallback: [])
         async let markSheetTypesResult: SectionLoadResult<[MarkSheetType]> = loadSection(path: "mark-sheet/types", fallback: [])
         async let markSheetSubjectsResult: SectionLoadResult<[MarkSheetSubject]> = loadSection(path: "mark-sheet/subjects", fallback: [])

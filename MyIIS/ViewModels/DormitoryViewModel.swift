@@ -27,7 +27,11 @@ final class DormitoryViewModel: ObservableObject {
         initialPrivilegeRecords: [DormitoryPrivilegeRecord] = [],
         announcementDate: Date = .now
     ) {
+        #if DEBUG
+        self.dormitoryService = dormitoryService ?? (APIService.isDemoMode ? DormitoryPreviewService() : DormitoryService())
+        #else
         self.dormitoryService = dormitoryService ?? DormitoryService()
+        #endif
         let resolvedApplications: [DormitoryQueueApplication]
         let resolvedPrivilegeRecords: [DormitoryPrivilegeRecord]
         if initialApplications.isEmpty,

@@ -114,17 +114,20 @@ struct OthersTabView: View {
                         serviceRow(for: .gradebook)
                     }
                     .accessibilityLabel(NSLocalizedString("services_item_markbook", comment: ""))
+                    .accessibilityIdentifier("serviceLink_gradebook")
 
                     NavigationLink(value: AppSection.study) {
                         serviceRow(for: .study)
                     }
                     .accessibilityLabel(NSLocalizedString("services_item_study", comment: ""))
+                    .accessibilityIdentifier("serviceLink_study")
 
                     if enableBetaSections {
                         NavigationLink(value: AppSection.schedule) {
                             serviceRow(for: .schedule)
                         }
                         .accessibilityLabel(NSLocalizedString("services_item_schedule", comment: ""))
+                        .accessibilityIdentifier("serviceLink_schedule")
 
                         NavigationLink(value: AppSection.headman) {
                             serviceRow(for: .headman)
@@ -141,6 +144,7 @@ struct OthersTabView: View {
                         serviceRow(for: .group)
                     }
                     .accessibilityLabel(NSLocalizedString("services_item_group", comment: ""))
+                    .accessibilityIdentifier("serviceLink_group")
                 }
 
                 Section(NSLocalizedString("services_section_resources", comment: "")) {
@@ -148,6 +152,7 @@ struct OthersTabView: View {
                         serviceRow(for: .dormitory)
                     }
                     .accessibilityLabel(NSLocalizedString("services_item_dormitory", comment: ""))
+                    .accessibilityIdentifier("serviceLink_dormitory")
 
                     NavigationLink(value: AppSection.library) {
                         serviceRow(for: .library)

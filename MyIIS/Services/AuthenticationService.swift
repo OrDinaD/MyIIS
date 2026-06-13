@@ -84,7 +84,7 @@ class AuthenticationService: ObservableObject {
             )
             self.currentUser = user
             if !isSilent {
-                AppRouter.shared.selectedTab = .home
+                AppRouter.shared.selectedTab = AppRouter.isSectionOrTabEnabled("home") ? .home : .profile
             }
             cacheUser(user)
             MyIISDataStore.update(userGroup: user.education.group)
@@ -182,7 +182,7 @@ class AuthenticationService: ObservableObject {
         }
 
         return User(
-            id: Int(loginResponse.username) ?? 0,
+            id: Int(loginResponse.username) ?? (APIService.isDemoMode ? 1 : 0),
             firstName: firstName,
             lastName: lastName,
             middleName: middleName,

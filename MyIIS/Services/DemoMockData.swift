@@ -307,3 +307,74 @@ struct DemoMockData {
     }()
     #endif
 }
+
+extension DemoMockData {
+    static let omissionApplications: [OmissionApplication] = decode([OmissionApplication].self, from: """
+    [
+        {
+            "id": 101,
+            "status": "Согласовано",
+            "number": 24,
+            "createdDate": 1778544000000,
+            "rejectionReason": null,
+            "omissionCertificateType": "Заявление ОРВИ",
+            "dateFrom": 1779062400000,
+            "dateTo": 1779235200000,
+            "placeOfStay": "Минск",
+            "signature": null
+        },
+        {
+            "id": 102,
+            "status": "На рассмотрении",
+            "number": 25,
+            "createdDate": 1775001600000,
+            "rejectionReason": null,
+            "omissionCertificateType": "Семейные обстоятельства",
+            "dateFrom": 1775001600000,
+            "dateTo": 1775088000000,
+            "placeOfStay": "Минск",
+            "signature": null
+        }
+    ]
+    """)
+
+    static let monthlyOmissionCounts: [MonthlyOmissionCount] = [
+        MonthlyOmissionCount(month: "февраль 2026", omissionCount: 2),
+        MonthlyOmissionCount(month: "март 2026", omissionCount: 4),
+        MonthlyOmissionCount(month: "апрель 2026", omissionCount: 1),
+        MonthlyOmissionCount(month: "май 2026", omissionCount: 0)
+    ]
+
+    static let omissionsByStudent = OmissionsByStudentResponse(
+        omissionDtoList: decode([OmissionCertificate].self, from: """
+        [
+            {
+                "id": 301,
+                "dateFrom": 1773100800000,
+                "dateTo": 1773705600000,
+                "note": "Медицинская справка принята деканатом",
+                "name": "Справка о временной нетрудоспособности",
+                "term": "6"
+            },
+            {
+                "id": 302,
+                "dateFrom": 1775001600000,
+                "dateTo": 1777507200000,
+                "note": "Освобождение от физкультуры",
+                "name": "Медицинская справка",
+                "term": "6"
+            }
+        ]
+        """),
+        faculty: "ФИТУ"
+    )
+
+    private static func decode<T: Decodable>(_ type: T.Type, from jsonString: String) -> T {
+        let data = Data(jsonString.utf8)
+        do {
+            return try JSONDecoder().decode(type, from: data)
+        } catch {
+            fatalError("Failed to decode demo \(type): \(error)")
+        }
+    }
+}

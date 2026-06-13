@@ -216,6 +216,7 @@ struct RatingView: View {
             } label: {
                 disciplineLabelContent(for: discipline)
             }
+            .accessibilityIdentifier("ratingDiscipline_\(discipline.code)")
             .padding(.vertical, 8)
         }
     }
