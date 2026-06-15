@@ -1,91 +1,91 @@
 {
-  "images": [
+  "images" : [
     {
-      "idiom": "iphone",
-      "filename": "imessage-icon-0-58x58.png",
-      "scale": "2x",
-      "size": "29x29"
+      "filename" : "imessage-icon-0-58x58.png",
+      "idiom" : "iphone",
+      "scale" : "2x",
+      "size" : "29x29"
     },
     {
-      "idiom": "iphone",
-      "filename": "imessage-icon-1-87x87.png",
-      "scale": "3x",
-      "size": "29x29"
+      "filename" : "imessage-icon-1-87x87.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "29x29"
     },
     {
-      "idiom": "iphone",
-      "filename": "imessage-icon-2-120x90.png",
-      "scale": "2x",
-      "size": "60x45"
+      "filename" : "imessage-icon-2-120x90.png",
+      "idiom" : "iphone",
+      "scale" : "2x",
+      "size" : "60x45"
     },
     {
-      "idiom": "iphone",
-      "filename": "imessage-icon-3-180x135.png",
-      "scale": "3x",
-      "size": "60x45"
+      "filename" : "imessage-icon-3-180x135.png",
+      "idiom" : "iphone",
+      "scale" : "3x",
+      "size" : "60x45"
     },
     {
-      "idiom": "ipad",
-      "filename": "imessage-icon-4-58x58.png",
-      "scale": "2x",
-      "size": "29x29"
+      "filename" : "imessage-icon-4-58x58.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "29x29"
     },
     {
-      "idiom": "ipad",
-      "filename": "imessage-icon-5-134x100.png",
-      "scale": "2x",
-      "size": "67x50"
+      "filename" : "imessage-icon-5-134x100.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "67x50"
     },
     {
-      "idiom": "ipad",
-      "filename": "imessage-icon-6-148x110.png",
-      "scale": "2x",
-      "size": "74x55"
+      "filename" : "imessage-icon-6-148x110.png",
+      "idiom" : "ipad",
+      "scale" : "2x",
+      "size" : "74x55"
     },
     {
-      "idiom": "ios-marketing",
-      "filename": "imessage-icon-7-1024x1024.png",
-      "scale": "1x",
-      "size": "1024x1024"
+      "filename" : "imessage-icon-7-1024x1024.png",
+      "idiom" : "ios-marketing",
+      "scale" : "1x",
+      "size" : "1024x1024"
     },
     {
-      "idiom": "universal",
-      "filename": "imessage-icon-8-54x40.png",
-      "scale": "2x",
-      "size": "27x20",
-      "platform": "ios"
+      "filename" : "imessage-icon-8-54x40.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "scale" : "2x",
+      "size" : "27x20"
     },
     {
-      "idiom": "universal",
-      "filename": "imessage-icon-9-81x60.png",
-      "scale": "3x",
-      "size": "27x20",
-      "platform": "ios"
+      "filename" : "imessage-icon-9-81x60.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "scale" : "3x",
+      "size" : "27x20"
     },
     {
-      "idiom": "universal",
-      "filename": "imessage-icon-10-64x48.png",
-      "scale": "2x",
-      "size": "32x24",
-      "platform": "ios"
+      "filename" : "imessage-icon-10-64x48.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "scale" : "2x",
+      "size" : "32x24"
     },
     {
-      "idiom": "universal",
-      "filename": "imessage-icon-11-96x72.png",
-      "scale": "3x",
-      "size": "32x24",
-      "platform": "ios"
+      "filename" : "imessage-icon-11-96x72.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "scale" : "3x",
+      "size" : "32x24"
     },
     {
-      "idiom": "ios-marketing",
-      "filename": "imessage-icon-12-1024x768.png",
-      "scale": "1x",
-      "size": "1024x768",
-      "platform": "ios"
+      "filename" : "bsuir_iMsg.png",
+      "idiom" : "ios-marketing",
+      "platform" : "ios",
+      "scale" : "1x",
+      "size" : "1024x768"
     }
   ],
-  "info": {
-    "author": "xcode",
-    "version": 1
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
   }
 }
