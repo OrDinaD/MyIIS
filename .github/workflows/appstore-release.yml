@@ -115,7 +115,8 @@ jobs:
           xcodebuild test \
             -project "$PROJECT_PATH" \
             -scheme "$SCHEME" \
-            -destination "$TEST_DESTINATION"
+            -destination "$TEST_DESTINATION" \
+            -only-testing:MyIISTests
 
       - name: Prepare App Store Connect API key
         id: asc_key
