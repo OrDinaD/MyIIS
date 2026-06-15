@@ -24,15 +24,8 @@ struct LoginView: View {
     }
 
     private var backgroundView: some View {
-        LinearGradient(
-            colors: [
-                Color(uiColor: .systemGroupedBackground),
-                Color(uiColor: .secondarySystemGroupedBackground)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .ignoresSafeArea()
+        Color(uiColor: .systemGroupedBackground)
+            .ignoresSafeArea()
     }
 
     @ViewBuilder
@@ -56,6 +49,27 @@ struct LoginView: View {
             .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
+        .disabled(viewModel.isLoading)
+        .overlay {
+            if viewModel.isLoading {
+                ZStack {
+                    Color(uiColor: .systemBackground).opacity(0.4)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .controlSize(.large)
+                        Text(NSLocalizedString("login_loading", value: "Авторизация...", comment: ""))
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(32)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    .shadow(color: Color.black.opacity(0.1), radius: 20, y: 10)
+                }
+                .transition(.opacity.animation(.easeInOut(duration: 0.2)))
+            }
+        }
     }
 
     private var header: some View {
@@ -120,24 +134,45 @@ struct LoginView: View {
             }
 
             if let errorMessage = viewModel.errorMessage {
-                HStack(spacing: 10) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                    Text(errorMessage)
-                        .font(.caption)
-                        .lineLimit(3)
+                VStack(spacing: 12) {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(Color.statusError)
+                            .padding(.top, 2)
+                        
+                        Text(errorMessage)
+                            .font(.footnote)
+                            .lineLimit(4)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .foregroundStyle(.primary)
+
+                    Link(destination: URL(string: "https://iis.bsuir.by")!) {
+                        HStack {
+                            Text(NSLocalizedString("login_open_website", value: "Войти на сайт", comment: ""))
+                                .fontWeight(.semibold)
+                            Image(systemName: "arrow.up.right.square")
+                        }
+                        .font(.footnote)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.accentColor.opacity(0.15))
+                    .foregroundStyle(Color.accentColor)
+                    .clipShape(Capsule())
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(16)
                 .background(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.statusError.opacity(0.12))
+                        .fill(Color.statusError.opacity(0.1))
                         .overlay {
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color.statusError.opacity(0.35), lineWidth: 1)
+                                .stroke(Color.statusError.opacity(0.2), lineWidth: 1)
                         }
                 )
-                .foregroundStyle(Color.statusError)
-                .transition(.scale.combined(with: .opacity))
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             actionButtons
@@ -161,20 +196,12 @@ struct LoginView: View {
                     await viewModel.login()
                 }
             } label: {
-                HStack(spacing: 12) {
-                    if viewModel.isLoading {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Text(NSLocalizedString("login_button", comment: ""))
-                            .fontWeight(.semibold)
-                    }
-                }
-                .frame(maxWidth: .infinity, minHeight: 44)
+                Text(NSLocalizedString("login_button", comment: ""))
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(viewModel.isLoading)
             .accessibilityLabel(NSLocalizedString("login_button", comment: ""))
             .accessibilityIdentifier("loginButton")
 
@@ -183,17 +210,12 @@ struct LoginView: View {
                     await viewModel.loginDemo()
                 }
             } label: {
-                Label(
-                    NSLocalizedString("login_demo_button", comment: ""),
-                    systemImage: "person.crop.circle.badge.checkmark"
-                )
-                .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                Text(NSLocalizedString("login_demo_button", comment: ""))
+                    .font(.footnote.weight(.medium))
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .tint(.accentColor)
-            .disabled(viewModel.isLoading)
+            .buttonStyle(.borderless)
+            .tint(.secondary)
+            .padding(.top, 4)
             .accessibilityLabel(NSLocalizedString("login_demo_button", comment: ""))
             .accessibilityHint(NSLocalizedString("login_demo_hint", comment: ""))
             .accessibilityIdentifier("demoModeButton")

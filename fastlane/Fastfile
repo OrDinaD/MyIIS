@@ -8,7 +8,7 @@ platform :ios do
 
     capture_screenshots(
       scheme: "MyIIS",
-      devices: ["iPhone 17"],
+      devices: ["iPhone 17", "iPad Pro 13-inch (M5)"],
       languages: ["ru-RU"],
       output_directory: "./fastlane/screenshots",
       clear_previous_screenshots: true,

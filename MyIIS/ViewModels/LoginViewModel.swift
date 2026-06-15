@@ -8,18 +8,24 @@ class LoginViewModel: ObservableObject {
     @Published var username: String = ""
     @Published var password: String = ""
 
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String? = nil
+
     private var authService: AuthenticationService
-
-    var isLoading: Bool {
-        authService.isLoading
-    }
-
-    var errorMessage: String? {
-        authService.errorMessage
-    }
+    private var cancellables = Set<AnyCancellable>()
 
     init(authService: AuthenticationService) {
         self.authService = authService
+        
+        authService.$isLoading
+            .receive(on: RunLoop.main)
+            .assign(to: \.isLoading, on: self)
+            .store(in: &cancellables)
+            
+        authService.$errorMessage
+            .receive(on: RunLoop.main)
+            .assign(to: \.errorMessage, on: self)
+            .store(in: &cancellables)
     }
 
     @MainActor
