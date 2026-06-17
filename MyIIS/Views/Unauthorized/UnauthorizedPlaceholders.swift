@@ -4,14 +4,7 @@ import SwiftUI
 
 
 
-struct UnauthorizedDirectoryView: View {
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView("Справочник", systemImage: "book.closed", description: Text("В разработке (Итерация 4)"))
-                .navigationTitle("Справочник")
-        }
-    }
-}
+
 
 struct UnauthorizedRatingView: View {
     var body: some View {
