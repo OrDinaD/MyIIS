@@ -20,7 +20,7 @@ struct ContentView: View {
             if authService.currentUser != nil {
                 MainTabView()
             } else {
-                LoginView()
+                UnauthorizedTabView()
             }
         }
         .redacted(reason: showSplash ? .placeholder : [])

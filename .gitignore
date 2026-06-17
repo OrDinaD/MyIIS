@@ -122,6 +122,7 @@ Tests/Videos/
 /Har/
 /Hars/
 /HARS/
+/HarsWithoutLogin/
 *.log
 coverage.txt
 *.xcresult
