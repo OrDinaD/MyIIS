@@ -23,6 +23,9 @@ struct UnauthorizedDirectoryView: View {
                 }
             }
             .navigationTitle("Справочник")
+            .navigationBarTitleDisplayMode(.large)
+            .glassNavigationBar()
+            .hiddenNavigationBarBackground()
             .searchable(text: $searchText, prompt: "Кого ищем?")
             .onChange(of: searchText) { _, newValue in
                 if newValue.count > 2 || newValue.isEmpty {

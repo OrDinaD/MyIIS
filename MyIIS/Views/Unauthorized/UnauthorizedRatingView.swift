@@ -116,7 +116,10 @@ struct UnauthorizedRatingView: View {
                     }
                 }
             }
-            .navigationTitle("Рейтинг")
+            .navigationTitle("Рейтинг группы")
+            .navigationBarTitleDisplayMode(.large)
+            .glassNavigationBar()
+            .hiddenNavigationBarBackground()
             .onAppear {
                 if service.faculties.isEmpty {
                     Task { await service.fetchFaculties() }

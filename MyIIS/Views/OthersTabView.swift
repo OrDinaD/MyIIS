@@ -159,13 +159,6 @@ struct OthersTabView: View {
                     .accessibilityIdentifier("serviceLink_group")
                 }
                 
-                Section("Открытые сервисы") {
-                    NavigationLink(value: AppSection.disciplines) { serviceRow(for: .disciplines) }
-                    NavigationLink(value: AppSection.studyWeeks) { serviceRow(for: .studyWeeks) }
-                    NavigationLink(value: AppSection.departments) { serviceRow(for: .departments) }
-                    NavigationLink(value: AppSection.directory) { serviceRow(for: .directory) }
-                }
-
                 Section(NSLocalizedString("services_section_resources", comment: "")) {
                     NavigationLink(value: AppSection.dormitory) {
                         serviceRow(for: .dormitory)
@@ -210,6 +203,13 @@ struct OthersTabView: View {
                     }
                     .accessibilityLabel(NSLocalizedString("services_item_about", comment: ""))
                 }
+                
+                Section("Открытые сервисы") {
+                    NavigationLink(value: AppSection.disciplines) { serviceRow(for: .disciplines) }
+                    NavigationLink(value: AppSection.studyWeeks) { serviceRow(for: .studyWeeks) }
+                    NavigationLink(value: AppSection.departments) { serviceRow(for: .departments) }
+                    NavigationLink(value: AppSection.directory) { serviceRow(for: .directory) }
+                }
             }
             .listStyle(.insetGrouped)
             .navigationTitle(NSLocalizedString("tab_services", comment: ""))
@@ -246,13 +246,6 @@ struct OthersTabView: View {
                     }
                 }
                 
-                Section("Открытые сервисы") {
-                    ForEach(openDestinations) { destination in
-                        serviceRow(for: destination)
-                            .tag(destination)
-                    }
-                }
-
                 Section(NSLocalizedString("services_section_resources", comment: "")) {
                     ForEach(resourceDestinations) { destination in
                         serviceRow(for: destination)
@@ -270,6 +263,13 @@ struct OthersTabView: View {
                 Section {
                     serviceRow(for: .about)
                         .tag(ServicesDestination.about)
+                }
+                
+                Section("Открытые сервисы") {
+                    ForEach(openDestinations) { destination in
+                        serviceRow(for: destination)
+                            .tag(destination)
+                    }
                 }
             }
             .listStyle(.insetGrouped)

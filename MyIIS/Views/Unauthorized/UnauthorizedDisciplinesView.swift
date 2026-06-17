@@ -114,6 +114,9 @@ struct UnauthorizedDisciplinesView: View {
                 }
             }
             .navigationTitle("Список дисциплин")
+            .navigationBarTitleDisplayMode(.large)
+            .glassNavigationBar()
+            .hiddenNavigationBarBackground()
             .onAppear {
                 if formService.faculties.isEmpty {
                     Task { await formService.fetchFaculties() }

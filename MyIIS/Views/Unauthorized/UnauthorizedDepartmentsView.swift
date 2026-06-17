@@ -19,6 +19,9 @@ struct UnauthorizedDepartmentsView: View {
                 }
             }
             .navigationTitle("Подразделения")
+            .navigationBarTitleDisplayMode(.large)
+            .glassNavigationBar()
+            .hiddenNavigationBarBackground()
             .searchable(text: $searchText, prompt: "Поиск подразделений")
         }
     }

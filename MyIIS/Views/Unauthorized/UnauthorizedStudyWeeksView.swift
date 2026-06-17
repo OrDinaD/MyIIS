@@ -72,7 +72,9 @@ struct UnauthorizedStudyWeeksView: View {
             }
             .padding(.top, 40)
             .navigationTitle("Учебные недели")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
+            .glassNavigationBar()
+            .hiddenNavigationBarBackground()
             .onAppear {
                 if service.currentWeek == nil {
                     Task { await service.fetchCurrentWeek() }
