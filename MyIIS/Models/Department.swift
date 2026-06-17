@@ -33,10 +33,37 @@ struct DepartmentEmployeeDetail: Codable, Identifiable {
     let urlId: String?
     let jobPositions: [DepartmentEmployeeJobPosition]?
     
+    let degree: String?
+    let degreeAbbrev: String?
+    let rank: String?
+    
+    let readingCourses: [EmployeeReadingCourse]?
+    let additionalInformation: [EmployeeAdditionalInfo]?
+    let profileLinks: [EmployeeProfileLink]?
+    
     var fio: String {
         let mid = middleName ?? ""
         return "\\(lastName) \\(firstName) \\(mid)".trimmingCharacters(in: .whitespaces)
     }
+}
+
+struct EmployeeReadingCourse: Codable {
+    let id: Int?
+    let disciplineName: String?
+    let disciplineAbbrev: String?
+}
+
+struct EmployeeAdditionalInfo: Codable {
+    let id: Int?
+    let idType: Int?
+    let nameType: String?
+    let content: String?
+}
+
+struct EmployeeProfileLink: Codable {
+    let id: Int?
+    let url: String?
+    let name: String?
 }
 
 struct DepartmentEmployeeJobPosition: Codable {

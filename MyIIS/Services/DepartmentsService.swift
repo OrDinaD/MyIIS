@@ -44,4 +44,18 @@ class DepartmentsService: ObservableObject {
             return []
         }
     }
+    
+    func fetchEmployeeDetails(for urlId: String) async -> DepartmentEmployeeDetail? {
+        guard let url = URL(string: "https://iis.bsuir.by/api/v1/employees/details-url?urlId=\\(urlId)") else { return nil }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let decoder = JSONDecoder()
+            let decoded = try decoder.decode(DepartmentEmployeeDetail.self, from: data)
+            return decoded
+        } catch {
+            print("Failed to fetch employee details: \\(error)")
+            return nil
+        }
+    }
 }
