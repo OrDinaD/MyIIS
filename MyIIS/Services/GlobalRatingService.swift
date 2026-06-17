@@ -16,11 +16,19 @@ class GlobalRatingService: ObservableObject {
     
     private init() {}
     
+    private func mockData(for urlString: String, from jsonString: String) throws -> Data {
+        guard let data = jsonString.data(using: .utf8),
+              let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let value = json[urlString] else {
+            throw URLError(.fileDoesNotExist)
+        }
+        return try JSONSerialization.data(withJSONObject: value)
+    }
+    
     func fetchFaculties() async {
-        guard let url = URL(string: "https://iis.bsuir.by/api/v1/schedule/faculties") else { return }
         DispatchQueue.main.async { self.isLoadingFaculties = true }
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let data = try mockData(for: "https://iis.bsuir.by/api/v1/schedule/faculties", from: AppMockData.ratingMockJSON)
             let decoder = JSONDecoder()
             let response = try decoder.decode([FacultyDto].self, from: data)
             DispatchQueue.main.async {
@@ -34,10 +42,9 @@ class GlobalRatingService: ObservableObject {
     }
     
     func fetchSpecialities(facultyId: Int) async {
-        guard let url = URL(string: "https://iis.bsuir.by/api/v1/rating/specialities?facultyId=\\(facultyId)") else { return }
         DispatchQueue.main.async { self.isLoadingSpecialities = true }
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let data = try mockData(for: "https://iis.bsuir.by/api/v1/rating/specialities?facultyId=\\(facultyId)", from: AppMockData.ratingMockJSON)
             let decoder = JSONDecoder()
             let response = try decoder.decode([SpecialityDto].self, from: data)
             DispatchQueue.main.async {
@@ -51,10 +58,19 @@ class GlobalRatingService: ObservableObject {
     }
     
     func fetchCourses(sdefId: Int) async {
-        guard let url = URL(string: "https://iis.bsuir.by/api/v1/rating/courses?sdef=\\(sdefId)") else { return }
+        // Mock data keys use facultyId and specialityId... let's just pick any or extract it.
+        // Wait, the mock data key is "https://iis.bsuir.by/api/v1/rating/courses?facultyId=20005&specialityId=20835"
+        // But our UI passes `sdefId` (which is `specialityId`). We can just find the key that ends with `specialityId=\(sdefId)`.
         DispatchQueue.main.async { self.isLoadingCourses = true }
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let dataStr = AppMockData.ratingMockJSON.data(using: .utf8),
+                  let json = try JSONSerialization.jsonObject(with: dataStr) as? [String: Any],
+                  let key = json.keys.first(where: { $0.contains("specialityId=\\(sdefId)") }),
+                  let value = json[key] else {
+                throw URLError(.fileDoesNotExist)
+            }
+            let data = try JSONSerialization.data(withJSONObject: value)
+            
             let decoder = JSONDecoder()
             let response = try decoder.decode([Int].self, from: data)
             DispatchQueue.main.async {
@@ -68,10 +84,9 @@ class GlobalRatingService: ObservableObject {
     }
     
     func fetchRating(sdefId: Int, course: Int) async {
-        guard let url = URL(string: "https://iis.bsuir.by/api/v1/rating?sdef=\\(sdefId)&course=\\(course)") else { return }
         DispatchQueue.main.async { self.isLoadingRating = true }
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let data = try mockData(for: "https://iis.bsuir.by/api/v1/rating?sdef=\\(sdefId)&course=\\(course)", from: AppMockData.ratingMockJSON)
             let decoder = JSONDecoder()
             let response = try decoder.decode([GlobalRatingEntry].self, from: data)
             DispatchQueue.main.async {

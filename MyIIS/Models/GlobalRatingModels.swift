@@ -17,36 +17,23 @@ struct GlobalRatingEntry: Codable, Identifiable {
 }
 
 struct FacultyDto: Codable, Identifiable {
-    var id: Int { self.id_ } // The property is usually id, but let's check
+    var id: Int { self.id_ }
     private let id_: Int
-    let name: String
-    let abbrev: String
+    let text: String
     
     enum CodingKeys: String, CodingKey {
         case id_ = "id"
-        case name
-        case abbrev
+        case text
     }
 }
 
 struct SpecialityDto: Codable, Identifiable {
     var id: Int { id_ }
     private let id_: Int
-    let name: String
-    let abbrev: String
-    let code: String
-    let educationForm: EducationFormDto?
+    let text: String
     
     enum CodingKeys: String, CodingKey {
         case id_ = "id"
-        case name
-        case abbrev
-        case code
-        case educationForm
+        case text
     }
-}
-
-struct EducationFormDto: Codable {
-    let id: Int
-    let name: String
 }

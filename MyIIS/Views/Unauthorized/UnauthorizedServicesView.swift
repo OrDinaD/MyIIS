@@ -43,6 +43,15 @@ struct UnauthorizedServicesView: View {
                     }
                 }
                 
+                Section("Информация") {
+                    NavigationLink(destination: UnauthorizedDepartmentsView()) {
+                        serviceRow(icon: "building.2.fill", title: "Подразделения")
+                    }
+                    NavigationLink(destination: UnauthorizedDirectoryView()) {
+                        serviceRow(icon: "book.closed.fill", title: "Справочник")
+                    }
+                }
+                
                 Section("Сервисы (требуется авторизация)") {
                     lockedServiceRow(icon: "book.closed.fill", title: "Электронная зачетка")
                     lockedServiceRow(icon: "calendar", title: "Расписание")

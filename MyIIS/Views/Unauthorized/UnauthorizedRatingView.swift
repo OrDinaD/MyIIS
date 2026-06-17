@@ -14,7 +14,7 @@ struct UnauthorizedRatingView: View {
                     Picker("Факультет", selection: $selectedFacultyId) {
                         Text("Не выбран").tag(Int?.none)
                         ForEach(service.faculties) { faculty in
-                            Text(faculty.abbrev).tag(Int?.some(faculty.id))
+                            Text(faculty.text).tag(Int?.some(faculty.id))
                         }
                     }
                     .onChange(of: selectedFacultyId) { _, newValue in
@@ -36,7 +36,7 @@ struct UnauthorizedRatingView: View {
                             Picker("Специальность", selection: $selectedSpecialityId) {
                                 Text("Не выбрана").tag(Int?.none)
                                 ForEach(service.specialities) { spec in
-                                    Text(spec.abbrev).tag(Int?.some(spec.id))
+                                    Text(spec.text).tag(Int?.some(spec.id))
                                 }
                             }
                             .onChange(of: selectedSpecialityId) { _, newValue in

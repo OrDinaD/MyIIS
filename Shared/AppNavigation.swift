@@ -22,6 +22,10 @@ enum AppSection: String, CaseIterable, Hashable {
     case library
     case lms
     case schedule
+    case disciplines
+    case studyWeeks
+    case departments
+    case directory
 }
 
 @MainActor
@@ -70,7 +74,7 @@ class AppRouter: ObservableObject {
             case .attendance: tab = .attendance
             case .rating: tab = .rating
             case .services: tab = .others
-            case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule:
+            case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule, .disciplines, .studyWeeks, .departments, .directory:
                 tab = .others
                 path.append(section)
             }
@@ -98,7 +102,7 @@ class AppRouter: ObservableObject {
             selectedTab = .rating
         case .services:
             selectedTab = .others
-        case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule:
+        case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule, .disciplines, .studyWeeks, .departments, .directory:
             selectedTab = .others
             servicesPath.append(section)
         }

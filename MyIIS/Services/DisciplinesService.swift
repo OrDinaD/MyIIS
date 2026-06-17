@@ -9,17 +9,24 @@ class DisciplinesService: ObservableObject {
     
     // We can reuse GlobalRatingService for faculties/specialities/courses to save code!
     
+    private func mockData(for urlString: String, from jsonString: String) throws -> Data {
+        guard let data = jsonString.data(using: .utf8),
+              let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let value = json[urlString] else {
+            throw URLError(.fileDoesNotExist)
+        }
+        return try JSONSerialization.data(withJSONObject: value)
+    }
+    
     func fetchDisciplines(sdefId: Int, course: Int, term: Int?) async {
         var urlStr = "https://iis.bsuir.by/api/v1/list-disciplines?id=\\(sdefId)&course=\\(course)&isForeign=false"
         if let term = term {
             urlStr += "&term=\\(term)"
         }
         
-        guard let url = URL(string: urlStr) else { return }
-        
         DispatchQueue.main.async { self.isLoading = true }
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let data = try mockData(for: urlStr, from: AppMockData.disciplinesMockJSON)
             let decoder = JSONDecoder()
             let response = try decoder.decode([DisciplineListEntry].self, from: data)
             DispatchQueue.main.async {

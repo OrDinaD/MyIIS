@@ -2,8 +2,6 @@ import SwiftUI
 
 enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
     case home
-    case departments
-    case directory
     case rating
     case services
     
@@ -12,8 +10,6 @@ enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
     var icon: String {
         switch self {
         case .home: return "house.fill"
-        case .departments: return "building.2.fill"
-        case .directory: return "book.closed.fill"
         case .rating: return "chart.bar.fill"
         case .services: return "square.grid.2x2.fill"
         }
@@ -22,9 +18,7 @@ enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .home: return "Главная"
-        case .departments: return "Подразделения"
-        case .directory: return "Справочник"
-        case .rating: return "Рейтинг"
+        case .rating: return "Рейтинг группы"
         case .services: return "Сервисы"
         }
     }
@@ -38,14 +32,6 @@ struct UnauthorizedTabView: View {
             UnauthorizedHomeView()
                 .tag(UnauthorizedAppTab.home)
                 .tabItem { Label(UnauthorizedAppTab.home.title, systemImage: UnauthorizedAppTab.home.icon) }
-                
-            UnauthorizedDepartmentsView()
-                .tag(UnauthorizedAppTab.departments)
-                .tabItem { Label(UnauthorizedAppTab.departments.title, systemImage: UnauthorizedAppTab.departments.icon) }
-                
-            UnauthorizedDirectoryView()
-                .tag(UnauthorizedAppTab.directory)
-                .tabItem { Label(UnauthorizedAppTab.directory.title, systemImage: UnauthorizedAppTab.directory.icon) }
                 
             UnauthorizedRatingView()
                 .tag(UnauthorizedAppTab.rating)

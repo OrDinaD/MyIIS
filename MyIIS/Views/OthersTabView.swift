@@ -18,6 +18,10 @@ private enum ServicesDestination: String, Identifiable, Hashable {
     case penalties
     case activities
     case about
+    case disciplines
+    case studyWeeks
+    case departments
+    case directory
 
     var id: String { rawValue }
 
@@ -47,6 +51,10 @@ private enum ServicesDestination: String, Identifiable, Hashable {
             return NSLocalizedString("services_item_activities", comment: "")
         case .about:
             return NSLocalizedString("services_item_about", comment: "")
+        case .disciplines: return "Список дисциплин"
+        case .studyWeeks: return "Учебные недели"
+        case .departments: return "Подразделения"
+        case .directory: return "Справочник"
         }
     }
 
@@ -76,6 +84,10 @@ private enum ServicesDestination: String, Identifiable, Hashable {
             return "sparkles.rectangle.stack.fill"
         case .about:
             return "info.circle.fill"
+        case .disciplines: return "list.bullet.rectangle.portrait.fill"
+        case .studyWeeks: return "calendar.day.timeline.left"
+        case .departments: return "building.2.fill"
+        case .directory: return "book.closed.fill"
         }
     }
 }
@@ -146,6 +158,13 @@ struct OthersTabView: View {
                     .accessibilityLabel(NSLocalizedString("services_item_group", comment: ""))
                     .accessibilityIdentifier("serviceLink_group")
                 }
+                
+                Section("Открытые сервисы") {
+                    NavigationLink(value: AppSection.disciplines) { serviceRow(for: .disciplines) }
+                    NavigationLink(value: AppSection.studyWeeks) { serviceRow(for: .studyWeeks) }
+                    NavigationLink(value: AppSection.departments) { serviceRow(for: .departments) }
+                    NavigationLink(value: AppSection.directory) { serviceRow(for: .directory) }
+                }
 
                 Section(NSLocalizedString("services_section_resources", comment: "")) {
                     NavigationLink(value: AppSection.dormitory) {
@@ -207,6 +226,10 @@ struct OthersTabView: View {
                 case .library: LibraryServiceView()
                 case .lms: LMSLoginView()
                 case .schedule: ScheduleServiceView()
+                case .disciplines: UnauthorizedDisciplinesView()
+                case .studyWeeks: UnauthorizedStudyWeeksView()
+                case .departments: UnauthorizedDepartmentsView()
+                case .directory: UnauthorizedDirectoryView()
                 default: EmptyView()
                 }
             }
@@ -218,6 +241,13 @@ struct OthersTabView: View {
             List(selection: $desktopSelection) {
                 Section(NSLocalizedString("services_section_study", comment: "")) {
                     ForEach(studyDestinations) { destination in
+                        serviceRow(for: destination)
+                            .tag(destination)
+                    }
+                }
+                
+                Section("Открытые сервисы") {
+                    ForEach(openDestinations) { destination in
                         serviceRow(for: destination)
                             .tag(destination)
                     }
@@ -274,14 +304,36 @@ struct OthersTabView: View {
     private var infoDestinations: [ServicesDestination] {
         [.announcements, .penalties, .activities]
     }
+    
+    private var openDestinations: [ServicesDestination] {
+        [.disciplines, .studyWeeks, .departments, .directory]
+    }
 
     @ViewBuilder
     private func destinationView(for destination: ServicesDestination) -> some View {
         switch destination {
         case .announcements, .penalties, .activities, .about:
             infoDestinationView(for: destination)
+        case .disciplines, .studyWeeks, .departments, .directory:
+            openDestinationView(for: destination)
         default:
             studyOrResourceDestinationView(for: destination)
+        }
+    }
+    
+    @ViewBuilder
+    private func openDestinationView(for destination: ServicesDestination) -> some View {
+        switch destination {
+        case .disciplines:
+            UnauthorizedDisciplinesView()
+        case .studyWeeks:
+            UnauthorizedStudyWeeksView()
+        case .departments:
+            UnauthorizedDepartmentsView()
+        case .directory:
+            UnauthorizedDirectoryView()
+        default:
+            EmptyView()
         }
     }
 
