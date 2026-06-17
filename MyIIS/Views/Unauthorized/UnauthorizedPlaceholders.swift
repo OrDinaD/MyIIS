@@ -6,15 +6,6 @@ import SwiftUI
 
 
 
-struct UnauthorizedRatingView: View {
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView("Рейтинг", systemImage: "chart.bar", description: Text("В разработке (Итерация 5)"))
-                .navigationTitle("Рейтинг")
-        }
-    }
-}
-
 struct UnauthorizedDisciplinesView: View {
     var body: some View {
         ContentUnavailableView("Список дисциплин", systemImage: "list.bullet.rectangle.portrait", description: Text("В разработке (Итерация 6)"))
