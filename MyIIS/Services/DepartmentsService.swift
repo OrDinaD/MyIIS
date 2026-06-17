@@ -8,30 +8,40 @@ class DepartmentsService: ObservableObject {
     @Published var departments: [DepartmentNode] = []
     @Published var isLoading = false
     
-    private init() {
-        loadMockData()
-    }
+    private init() {}
     
     func loadMockData() {
-        isLoading = true
+        guard let url = URL(string: "https://iis.bsuir.by/api/v1/departments/tree") else { return }
         
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let data = DepartmentsMockData.jsonString.data(using: .utf8) else {
-                DispatchQueue.main.async { self?.isLoading = false }
-                return
-            }
-            
+        DispatchQueue.main.async { self.isLoading = true }
+        
+        Task {
             do {
+                let (data, _) = try await URLSession.shared.data(from: url)
                 let decoder = JSONDecoder()
                 let decoded = try decoder.decode([DepartmentNode].self, from: data)
                 DispatchQueue.main.async {
-                    self?.departments = decoded
-                    self?.isLoading = false
+                    self.departments = decoded
+                    self.isLoading = false
                 }
             } catch {
                 print("Failed to decode departments: \\(error)")
-                DispatchQueue.main.async { self?.isLoading = false }
+                DispatchQueue.main.async { self.isLoading = false }
             }
+        }
+    }
+    
+    func fetchEmployees(for urlId: String) async -> [DepartmentEmployeeDetail] {
+        guard let url = URL(string: "https://iis.bsuir.by/api/v1/employees?departmentUrlId=\\(urlId)") else { return [] }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let decoder = JSONDecoder()
+            let decoded = try decoder.decode([DepartmentEmployeeDetail].self, from: data)
+            return decoded
+        } catch {
+            print("Failed to fetch employees: \\(error)")
+            return []
         }
     }
 }

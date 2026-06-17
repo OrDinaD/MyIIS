@@ -23,6 +23,11 @@ struct UnauthorizedDepartmentsView: View {
             .glassNavigationBar()
             .hiddenNavigationBarBackground()
             .searchable(text: $searchText, prompt: "Поиск подразделений")
+            .onAppear {
+                if service.departments.isEmpty {
+                    service.loadMockData()
+                }
+            }
         }
     }
     
@@ -77,6 +82,8 @@ private struct DepartmentRow: View {
 
 struct DepartmentDetailView: View {
     let node: DepartmentNode
+    @State private var detailedEmployees: [DepartmentEmployeeDetail] = []
+    @State private var isLoadingEmployees = false
     
     var body: some View {
         List {
@@ -89,8 +96,88 @@ struct DepartmentDetailView: View {
                 }
             }
             
-            if let employees = node.data.employees, !employees.isEmpty {
+            if isLoadingEmployees {
+                Section {
+                    HStack {
+                        Spacer()
+                        ProgressView("Загрузка сотрудников...")
+                        Spacer()
+                    }
+                }
+            } else if !detailedEmployees.isEmpty {
                 Section("Сотрудники") {
+                    ForEach(detailedEmployees) { emp in
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack(alignment: .top, spacing: 12) {
+                                if let photo = emp.photoLink, let url = URL(string: photo) {
+                                    AsyncImage(url: url) { phase in
+                                        if let image = phase.image {
+                                            image.resizable().scaledToFill()
+                                        } else if phase.error != nil {
+                                            Image(systemName: "person.circle.fill").foregroundStyle(.gray)
+                                        } else {
+                                            ProgressView()
+                                        }
+                                    }
+                                    .frame(width: 48, height: 48)
+                                    .clipShape(Circle())
+                                } else {
+                                    Image(systemName: "person.circle.fill")
+                                        .resizable()
+                                        .frame(width: 48, height: 48)
+                                        .foregroundStyle(.gray)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(emp.fio)
+                                        .font(.headline)
+                                    
+                                    if let positions = emp.jobPositions, !positions.isEmpty {
+                                        ForEach(positions, id: \.jobPosition) { pos in
+                                            if let title = pos.jobPosition {
+                                                Text(title)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if let email = emp.email, !email.isEmpty {
+                                HStack {
+                                    Image(systemName: "envelope.fill")
+                                        .foregroundStyle(.blue)
+                                        .font(.caption)
+                                    Text(email)
+                                        .font(.subheadline)
+                                }
+                                .padding(.top, 2)
+                            }
+                            
+                            if let positions = emp.jobPositions {
+                                ForEach(positions, id: \.jobPosition) { pos in
+                                    if let contacts = pos.contacts {
+                                        ForEach(contacts, id: \.phoneNumber) { contact in
+                                            if let phone = contact.phoneNumber {
+                                                HStack {
+                                                    Image(systemName: "phone.fill")
+                                                        .foregroundStyle(.green)
+                                                        .font(.caption)
+                                                    Text(phone)
+                                                        .font(.subheadline)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(.vertical, 6)
+                    }
+                }
+            } else if let employees = node.data.employees, !employees.isEmpty {
+                Section("Сотрудники (кратко)") {
                     ForEach(employees, id: \.fio) { emp in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(emp.fio)
@@ -111,5 +198,15 @@ struct DepartmentDetailView: View {
         }
         .navigationTitle(node.data.abbrev ?? node.data.name)
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            if let urlId = node.data.urlId, detailedEmployees.isEmpty {
+                isLoadingEmployees = true
+                Task {
+                    let emps = await DepartmentsService.shared.fetchEmployees(for: urlId)
+                    detailedEmployees = emps
+                    isLoadingEmployees = false
+                }
+            }
+        }
     }
 }
