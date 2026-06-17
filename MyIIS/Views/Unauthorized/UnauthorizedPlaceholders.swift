@@ -1,13 +1,6 @@
 import SwiftUI
 
-struct UnauthorizedHomeView: View {
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView("Главная", systemImage: "house", description: Text("В разработке (Итерация 2)"))
-                .navigationTitle("Главная")
-        }
-    }
-}
+
 
 struct UnauthorizedDepartmentsView: View {
     var body: some View {
