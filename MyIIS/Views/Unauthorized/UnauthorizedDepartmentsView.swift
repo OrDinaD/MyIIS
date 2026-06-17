@@ -1,0 +1,112 @@
+import SwiftUI
+
+struct UnauthorizedDepartmentsView: View {
+    @StateObject private var service = DepartmentsService.shared
+    @State private var searchText = ""
+    
+    var body: some View {
+        NavigationStack {
+            Group {
+                if service.isLoading && service.departments.isEmpty {
+                    ProgressView("Загрузка...")
+                } else if service.departments.isEmpty {
+                    ContentUnavailableView("Нет данных", systemImage: "building.2.crop.circle.fill", description: Text("Не удалось загрузить список подразделений."))
+                } else {
+                    List(filteredDepartments, children: \.children) { node in
+                        DepartmentRow(node: node)
+                    }
+                    .listStyle(.sidebar)
+                }
+            }
+            .navigationTitle("Подразделения")
+            .searchable(text: $searchText, prompt: "Поиск подразделений")
+        }
+    }
+    
+    private var filteredDepartments: [DepartmentNode] {
+        if searchText.isEmpty {
+            return service.departments
+        } else {
+            return filterNodes(service.departments, query: searchText.lowercased())
+        }
+    }
+    
+    private func filterNodes(_ nodes: [DepartmentNode], query: String) -> [DepartmentNode] {
+        var result: [DepartmentNode] = []
+        for node in nodes {
+            let matchesName = node.data.name.lowercased().contains(query)
+            let matchesAbbrev = node.data.abbrev?.lowercased().contains(query) ?? false
+            
+            let matchedChildren = filterNodes(node.children ?? [], query: query)
+            
+            if matchesName || matchesAbbrev || !matchedChildren.isEmpty {
+                let newNode = DepartmentNode(
+                    data: node.data,
+                    children: matchedChildren.isEmpty ? nil : matchedChildren
+                )
+                result.append(newNode)
+            }
+        }
+        return result
+    }
+}
+
+private struct DepartmentRow: View {
+    let node: DepartmentNode
+    
+    var body: some View {
+        NavigationLink(destination: DepartmentDetailView(node: node)) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(node.data.name)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                
+                if let abbrev = node.data.abbrev, abbrev != node.data.name {
+                    Text(abbrev)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+    }
+}
+
+struct DepartmentDetailView: View {
+    let node: DepartmentNode
+    
+    var body: some View {
+        List {
+            Section("Информация") {
+                if let abbrev = node.data.abbrev {
+                    LabeledContent("Аббревиатура", value: abbrev)
+                }
+                if let code = node.data.code {
+                    LabeledContent("Код", value: code)
+                }
+            }
+            
+            if let employees = node.data.employees, !employees.isEmpty {
+                Section("Сотрудники") {
+                    ForEach(employees, id: \.fio) { emp in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(emp.fio)
+                                .font(.headline)
+                            
+                            if let phones = emp.phoneNumbers {
+                                ForEach(phones, id: \.self) { phone in
+                                    Text(phone)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+        }
+        .navigationTitle(node.data.abbrev ?? node.data.name)
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}

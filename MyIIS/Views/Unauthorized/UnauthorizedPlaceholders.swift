@@ -2,14 +2,7 @@ import SwiftUI
 
 
 
-struct UnauthorizedDepartmentsView: View {
-    var body: some View {
-        NavigationStack {
-            ContentUnavailableView("Подразделения", systemImage: "building.2", description: Text("В разработке (Итерация 3)"))
-                .navigationTitle("Подразделения")
-        }
-    }
-}
+
 
 struct UnauthorizedDirectoryView: View {
     var body: some View {
