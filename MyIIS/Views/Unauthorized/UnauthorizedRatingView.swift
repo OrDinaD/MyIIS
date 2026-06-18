@@ -2,11 +2,11 @@ import SwiftUI
 
 struct UnauthorizedRatingView: View {
     @StateObject private var service = GlobalRatingService.shared
-    
+
     @State private var selectedFacultyId: Int?
     @State private var selectedSpecialityId: Int?
     @State private var selectedCourse: Int?
-    
+
     var body: some View {
         NavigationStack {
             Form {
@@ -28,7 +28,7 @@ struct UnauthorizedRatingView: View {
                             service.ratingEntries = []
                         }
                     }
-                    
+
                     if selectedFacultyId != nil {
                         if service.isLoadingSpecialities {
                             ProgressView("Загрузка специальностей...")
@@ -50,7 +50,7 @@ struct UnauthorizedRatingView: View {
                             }
                         }
                     }
-                    
+
                     if selectedSpecialityId != nil {
                         if service.isLoadingCourses {
                             ProgressView("Загрузка курсов...")
@@ -58,7 +58,7 @@ struct UnauthorizedRatingView: View {
                             Picker("Курс", selection: $selectedCourse) {
                                 Text("Не выбран").tag(Int?.none)
                                 ForEach(service.courses, id: \.self) { course in
-                                    Text("\\(course) курс").tag(Int?.some(course))
+                                    Text("\(course) курс").tag(Int?.some(course))
                                 }
                             }
                             .onChange(of: selectedCourse) { _, newValue in
@@ -71,7 +71,7 @@ struct UnauthorizedRatingView: View {
                         }
                     }
                 }
-                
+
                 if selectedCourse != nil {
                     Section("Рейтинг") {
                         if service.isLoadingRating {
@@ -86,23 +86,23 @@ struct UnauthorizedRatingView: View {
                         } else {
                             ForEach(Array(service.ratingEntries.enumerated()), id: \.element.id) { index, entry in
                                 HStack {
-                                    Text("\\(index + 1)")
+                                    Text("\(index + 1)")
                                         .font(.caption.weight(.bold))
                                         .foregroundStyle(.secondary)
                                         .frame(width: 24, alignment: .leading)
-                                    
+
                                     VStack(alignment: .leading) {
-                                        Text("Студ. билет: \\(entry.studentCardNumber)")
+                                        Text("Студ. билет: \(entry.studentCardNumber)")
                                             .font(.body)
                                         if let hours = entry.hours {
-                                            Text("Пропусков: \\(hours) ч")
+                                            Text("Пропусков: \(hours) ч")
                                                 .font(.caption)
                                                 .foregroundStyle(.orange)
                                         }
                                     }
-                                    
+
                                     Spacer()
-                                    
+
                                     if let average = entry.average {
                                         Text(String(format: "%.2f", average))
                                             .font(.system(.title3, design: .rounded).weight(.semibold))

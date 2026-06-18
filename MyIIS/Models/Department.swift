@@ -3,7 +3,7 @@ import Foundation
 struct DepartmentNode: Codable, Identifiable {
     let data: DepartmentData
     let children: [DepartmentNode]?
-    
+
     var id: Int { data.id }
 }
 
@@ -32,18 +32,18 @@ struct DepartmentEmployeeDetail: Codable, Identifiable {
     let email: String?
     let urlId: String?
     let jobPositions: [DepartmentEmployeeJobPosition]?
-    
+
     let degree: String?
     let degreeAbbrev: String?
     let rank: String?
-    
+
     let readingCourses: [EmployeeReadingCourse]?
     let additionalInformation: [EmployeeAdditionalInfo]?
     let profileLinks: [EmployeeProfileLink]?
-    
+
     var fio: String {
         let mid = middleName ?? ""
-        return "\\(lastName) \\(firstName) \\(mid)".trimmingCharacters(in: .whitespaces)
+        return "\(lastName) \(firstName) \(mid)".trimmingCharacters(in: .whitespaces)
     }
 }
 
