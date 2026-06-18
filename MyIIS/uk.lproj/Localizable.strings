@@ -72,6 +72,12 @@
 "services_section_study" = "Навчання";
 "services_section_resources" = "Ресурси";
 "services_section_info" = "Інфо";
+"services_section_open" = "Доступні сервіси";
+"services_sign_in_title" = "Увійдіть в акаунт";
+"services_sign_in_subtitle" = "Після входу відкриються заліковка, навчальні сервіси й персональні дані.";
+"services_account_locked_title" = "Сервіси акаунта";
+"services_account_locked_subtitle" = "Список можна розгорнути, але для переходу потрібен вхід.";
+"services_locked_hint" = "Потрібен вхід в акаунт.";
 "services_item_markbook" = "Заліковка";
 "services_item_study" = "Навчання";
 "services_item_diploma" = "Диплом";

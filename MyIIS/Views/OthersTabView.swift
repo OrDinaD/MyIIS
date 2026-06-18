@@ -95,8 +95,15 @@ private enum ServicesDestination: String, Identifiable, Hashable {
 struct OthersTabView: View {
     @StateObject private var router = AppRouter.shared
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
+    @EnvironmentObject private var authService: AuthenticationService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var desktopSelection: ServicesDestination?
+    @State private var showLogin = false
+    @State private var isGuestAccountServicesExpanded = false
+
+    private var isAuthenticated: Bool {
+        authService.currentUser != nil
+    }
 
     private var shouldUseDesktopSplitView: Bool {
         if ProcessInfo.processInfo.isiOSAppOnMac {
@@ -116,100 +123,17 @@ struct OthersTabView: View {
                 mobileStackView
             }
         }
+        .sheet(isPresented: $showLogin) {
+            LoginView()
+        }
     }
+}
 
+private extension OthersTabView {
     private var mobileStackView: some View {
         NavigationStack(path: $router.servicesPath) {
             List {
-                Section(NSLocalizedString("services_section_study", comment: "")) {
-                    NavigationLink(value: AppSection.gradebook) {
-                        serviceRow(for: .gradebook)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_markbook", comment: ""))
-                    .accessibilityIdentifier("serviceLink_gradebook")
-
-                    NavigationLink(value: AppSection.study) {
-                        serviceRow(for: .study)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_study", comment: ""))
-                    .accessibilityIdentifier("serviceLink_study")
-
-                    if enableBetaSections {
-                        NavigationLink(value: AppSection.schedule) {
-                            serviceRow(for: .schedule)
-                        }
-                        .accessibilityLabel(NSLocalizedString("services_item_schedule", comment: ""))
-                        .accessibilityIdentifier("serviceLink_schedule")
-
-                        NavigationLink(value: AppSection.headman) {
-                            serviceRow(for: .headman)
-                        }
-                        .accessibilityLabel(NSLocalizedString("services_item_headman", comment: ""))
-                    }
-
-                    NavigationLink(value: AppSection.diploma) {
-                        serviceRow(for: .diploma)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_diploma", comment: ""))
-
-                    NavigationLink(value: AppSection.group) {
-                        serviceRow(for: .group)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_group", comment: ""))
-                    .accessibilityIdentifier("serviceLink_group")
-                }
-                
-                Section(NSLocalizedString("services_section_resources", comment: "")) {
-                    NavigationLink(value: AppSection.dormitory) {
-                        serviceRow(for: .dormitory)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_dormitory", comment: ""))
-                    .accessibilityIdentifier("serviceLink_dormitory")
-
-                    NavigationLink(value: AppSection.library) {
-                        serviceRow(for: .library)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_library", comment: ""))
-                }
-
-                Section(NSLocalizedString("services_section_info", comment: "")) {
-                    NavigationLink {
-                        AnnouncementsServiceView()
-                    } label: {
-                        serviceRow(for: .announcements)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_announcements", comment: ""))
-
-                    NavigationLink {
-                        PenaltiesServiceView()
-                    } label: {
-                        serviceRow(for: .penalties)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_penalties", comment: ""))
-
-                    NavigationLink {
-                        ActivitiesServiceView()
-                    } label: {
-                        serviceRow(for: .activities)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_activities", comment: ""))
-                }
-
-                Section {
-                    NavigationLink {
-                        AboutAppView()
-                    } label: {
-                        serviceRow(for: .about)
-                    }
-                    .accessibilityLabel(NSLocalizedString("services_item_about", comment: ""))
-                }
-                
-                Section("Открытые сервисы") {
-                    NavigationLink(value: AppSection.disciplines) { serviceRow(for: .disciplines) }
-                    NavigationLink(value: AppSection.studyWeeks) { serviceRow(for: .studyWeeks) }
-                    NavigationLink(value: AppSection.departments) { serviceRow(for: .departments) }
-                    NavigationLink(value: AppSection.directory) { serviceRow(for: .directory) }
-                }
+                mobileServicesContent
             }
             .listStyle(.insetGrouped)
             .navigationTitle(NSLocalizedString("tab_services", comment: ""))
@@ -236,41 +160,146 @@ struct OthersTabView: View {
         }
     }
 
+    @ViewBuilder
+    private var mobileServicesContent: some View {
+        if isAuthenticated {
+            mobileAccountServicesSections
+            mobileAboutSection
+            mobileOpenServicesSection
+        } else {
+            mobileOpenServicesSection
+            mobileSignInSection
+            mobileLockedServicesSection
+        }
+    }
+
+    @ViewBuilder
+    private var mobileAccountServicesSections: some View {
+        Section(NSLocalizedString("services_section_study", comment: "")) {
+            NavigationLink(value: AppSection.gradebook) {
+                serviceRow(for: .gradebook)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_markbook", comment: ""))
+            .accessibilityIdentifier("serviceLink_gradebook")
+
+            NavigationLink(value: AppSection.study) {
+                serviceRow(for: .study)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_study", comment: ""))
+            .accessibilityIdentifier("serviceLink_study")
+
+            if enableBetaSections {
+                NavigationLink(value: AppSection.schedule) {
+                    serviceRow(for: .schedule)
+                }
+                .accessibilityLabel(NSLocalizedString("services_item_schedule", comment: ""))
+                .accessibilityIdentifier("serviceLink_schedule")
+
+                NavigationLink(value: AppSection.headman) {
+                    serviceRow(for: .headman)
+                }
+                .accessibilityLabel(NSLocalizedString("services_item_headman", comment: ""))
+            }
+
+            NavigationLink(value: AppSection.diploma) {
+                serviceRow(for: .diploma)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_diploma", comment: ""))
+
+            NavigationLink(value: AppSection.group) {
+                serviceRow(for: .group)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_group", comment: ""))
+            .accessibilityIdentifier("serviceLink_group")
+        }
+
+        Section(NSLocalizedString("services_section_resources", comment: "")) {
+            NavigationLink(value: AppSection.dormitory) {
+                serviceRow(for: .dormitory)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_dormitory", comment: ""))
+            .accessibilityIdentifier("serviceLink_dormitory")
+
+            NavigationLink(value: AppSection.library) {
+                serviceRow(for: .library)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_library", comment: ""))
+        }
+
+        Section(NSLocalizedString("services_section_info", comment: "")) {
+            NavigationLink {
+                AnnouncementsServiceView()
+            } label: {
+                serviceRow(for: .announcements)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_announcements", comment: ""))
+
+            NavigationLink {
+                PenaltiesServiceView()
+            } label: {
+                serviceRow(for: .penalties)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_penalties", comment: ""))
+
+            NavigationLink {
+                ActivitiesServiceView()
+            } label: {
+                serviceRow(for: .activities)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_activities", comment: ""))
+        }
+    }
+
+    private var mobileAboutSection: some View {
+        Section {
+            NavigationLink {
+                AboutAppView()
+            } label: {
+                serviceRow(for: .about)
+            }
+            .accessibilityLabel(NSLocalizedString("services_item_about", comment: ""))
+        }
+    }
+
+    private var mobileOpenServicesSection: some View {
+        Section(NSLocalizedString("services_section_open", comment: "")) {
+            NavigationLink(value: AppSection.disciplines) { serviceRow(for: .disciplines) }
+            NavigationLink(value: AppSection.studyWeeks) { serviceRow(for: .studyWeeks) }
+            NavigationLink(value: AppSection.departments) { serviceRow(for: .departments) }
+            NavigationLink(value: AppSection.directory) { serviceRow(for: .directory) }
+        }
+    }
+
+    private var mobileSignInSection: some View {
+        Section {
+            Button {
+                showLogin = true
+            } label: {
+                ServicesSignInPromptRow()
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("servicesSignInPrompt")
+        }
+    }
+
+    private var mobileLockedServicesSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $isGuestAccountServicesExpanded) {
+                ForEach(lockedDestinations) { destination in
+                    lockedServiceButton(for: destination)
+                }
+            } label: {
+                ServicesLockedHeader()
+            }
+            .tint(.secondary)
+            .accessibilityIdentifier("lockedAccountServicesDisclosure")
+        }
+    }
+
     private var desktopSplitView: some View {
         NavigationSplitView {
             List(selection: $desktopSelection) {
-                Section(NSLocalizedString("services_section_study", comment: "")) {
-                    ForEach(studyDestinations) { destination in
-                        serviceRow(for: destination)
-                            .tag(destination)
-                    }
-                }
-                
-                Section(NSLocalizedString("services_section_resources", comment: "")) {
-                    ForEach(resourceDestinations) { destination in
-                        serviceRow(for: destination)
-                            .tag(destination)
-                    }
-                }
-
-                Section(NSLocalizedString("services_section_info", comment: "")) {
-                    ForEach(infoDestinations) { destination in
-                        serviceRow(for: destination)
-                            .tag(destination)
-                    }
-                }
-
-                Section {
-                    serviceRow(for: .about)
-                        .tag(ServicesDestination.about)
-                }
-                
-                Section("Открытые сервисы") {
-                    ForEach(openDestinations) { destination in
-                        serviceRow(for: destination)
-                            .tag(destination)
-                    }
-                }
+                desktopServicesContent
             }
             .listStyle(.insetGrouped)
             .navigationTitle(NSLocalizedString("tab_services", comment: ""))
@@ -286,6 +315,77 @@ struct OthersTabView: View {
             .appBackground()
         }
         .navigationSplitViewStyle(.balanced)
+    }
+
+    @ViewBuilder
+    private var desktopServicesContent: some View {
+        if isAuthenticated {
+            desktopAccountServicesSections
+            Section {
+                serviceRow(for: .about)
+                    .tag(ServicesDestination.about)
+            }
+            desktopOpenServicesSection
+        } else {
+            desktopOpenServicesSection
+            Section {
+                Button {
+                    showLogin = true
+                } label: {
+                    ServicesSignInPromptRow()
+                }
+                .buttonStyle(.plain)
+                .tag(nil as ServicesDestination?)
+            }
+            desktopLockedServicesSection
+        }
+    }
+
+    @ViewBuilder
+    private var desktopAccountServicesSections: some View {
+        Section(NSLocalizedString("services_section_study", comment: "")) {
+            ForEach(studyDestinations) { destination in
+                serviceRow(for: destination)
+                    .tag(destination)
+            }
+        }
+
+        Section(NSLocalizedString("services_section_resources", comment: "")) {
+            ForEach(resourceDestinations) { destination in
+                serviceRow(for: destination)
+                    .tag(destination)
+            }
+        }
+
+        Section(NSLocalizedString("services_section_info", comment: "")) {
+            ForEach(infoDestinations) { destination in
+                serviceRow(for: destination)
+                    .tag(destination)
+            }
+        }
+    }
+
+    private var desktopOpenServicesSection: some View {
+        Section(NSLocalizedString("services_section_open", comment: "")) {
+            ForEach(openDestinations) { destination in
+                serviceRow(for: destination)
+                    .tag(destination)
+            }
+        }
+    }
+
+    private var desktopLockedServicesSection: some View {
+        Section {
+            DisclosureGroup(isExpanded: $isGuestAccountServicesExpanded) {
+                ForEach(lockedDestinations) { destination in
+                    lockedServiceButton(for: destination)
+                        .tag(nil as ServicesDestination?)
+                }
+            } label: {
+                ServicesLockedHeader()
+            }
+            .tint(.secondary)
+        }
     }
 
     private var studyDestinations: [ServicesDestination] {
@@ -304,9 +404,13 @@ struct OthersTabView: View {
     private var infoDestinations: [ServicesDestination] {
         [.announcements, .penalties, .activities]
     }
-    
+
     private var openDestinations: [ServicesDestination] {
         [.disciplines, .studyWeeks, .departments, .directory]
+    }
+
+    private var lockedDestinations: [ServicesDestination] {
+        studyDestinations + resourceDestinations + infoDestinations + [.about]
     }
 
     @ViewBuilder
@@ -320,7 +424,7 @@ struct OthersTabView: View {
             studyOrResourceDestinationView(for: destination)
         }
     }
-    
+
     @ViewBuilder
     private func openDestinationView(for destination: ServicesDestination) -> some View {
         switch destination {
@@ -381,6 +485,17 @@ struct OthersTabView: View {
         ServiceRow(icon: destination.icon, title: destination.title)
             .accessibilityLabel(destination.title)
     }
+
+    private func lockedServiceButton(for destination: ServicesDestination) -> some View {
+        Button {
+            showLogin = true
+        } label: {
+            ServicesLockedRow(icon: destination.icon, title: destination.title)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(destination.title)
+        .accessibilityHint(NSLocalizedString("services_locked_hint", comment: ""))
+    }
 }
 
 private struct ServicesPlaceholderView: View {
@@ -420,4 +535,5 @@ private struct ServiceRow: View {
 
 #Preview {
     OthersTabView()
+        .environmentObject(AuthenticationService.shared)
 }

@@ -72,6 +72,12 @@
 "services_section_study" = "Вучэба";
 "services_section_resources" = "Рэсурсы";
 "services_section_info" = "Інфа";
+"services_section_open" = "Даступныя сэрвісы";
+"services_sign_in_title" = "Увайдзіце ў акаўнт";
+"services_sign_in_subtitle" = "Пасля ўваходу адкрыюцца залікоўка, вучэбныя сэрвісы і персанальныя даныя.";
+"services_account_locked_title" = "Сэрвісы акаўнта";
+"services_account_locked_subtitle" = "Спіс можна разгарнуць, але для пераходу патрэбны ўваход.";
+"services_locked_hint" = "Патрэбны ўваход у акаўнт.";
 "services_item_markbook" = "Залікоўка";
 "services_item_study" = "Вучэба";
 "services_item_diploma" = "Дыплом";

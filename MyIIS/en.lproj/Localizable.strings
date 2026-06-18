@@ -72,6 +72,12 @@
 "services_section_study" = "Study";
 "services_section_resources" = "Resources";
 "services_section_info" = "Info";
+"services_section_open" = "Available services";
+"services_sign_in_title" = "Sign in to your account";
+"services_sign_in_subtitle" = "Gradebook, study services, and personal data unlock after sign-in.";
+"services_account_locked_title" = "Account services";
+"services_account_locked_subtitle" = "Expand the list now; sign-in is required to open items.";
+"services_locked_hint" = "Account sign-in required.";
 "services_item_markbook" = "Gradebook";
 "services_item_study" = "Study";
 "services_item_diploma" = "Diploma";

@@ -72,6 +72,12 @@
 "services_section_study" = "Учёба";
 "services_section_resources" = "Ресурсы";
 "services_section_info" = "Инфо";
+"services_section_open" = "Доступные сервисы";
+"services_sign_in_title" = "Войдите в аккаунт";
+"services_sign_in_subtitle" = "После входа откроются зачётка, учебные сервисы и персональные данные.";
+"services_account_locked_title" = "Сервисы аккаунта";
+"services_account_locked_subtitle" = "Можно развернуть список, но для перехода нужен вход.";
+"services_locked_hint" = "Требуется вход в аккаунт.";
 "services_item_markbook" = "Зачётка";
 "services_item_study" = "Учеба";
 "services_item_diploma" = "Диплом";
