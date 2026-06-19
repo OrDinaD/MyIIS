@@ -19,7 +19,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.6.7</string>
 	<key>CFBundleVersion</key>
-	<string>60</string>
+	<string>61</string>
 	<key>MinimumOSVersion</key>
 	<string>$(IPHONEOS_DEPLOYMENT_TARGET)</string>
 	<key>NSExtension</key>
