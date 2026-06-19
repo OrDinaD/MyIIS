@@ -3,34 +3,32 @@ import SwiftUI
 struct UnauthorizedDepartmentsView: View {
     @StateObject private var service = DepartmentsService.shared
     @State private var searchText = ""
-    
+
     var body: some View {
-        NavigationStack {
-            Group {
-                if service.isLoading && service.departments.isEmpty {
-                    ProgressView("Загрузка...")
-                } else if service.departments.isEmpty {
-                    ContentUnavailableView("Нет данных", systemImage: "building.2.crop.circle.fill", description: Text("Не удалось загрузить список подразделений."))
-                } else {
-                    List(filteredDepartments, children: \.children) { node in
-                        DepartmentRow(node: node)
-                    }
-                    .listStyle(.sidebar)
+        Group {
+            if service.isLoading && service.departments.isEmpty {
+                ProgressView("Загрузка...")
+            } else if service.departments.isEmpty {
+                ContentUnavailableView("Нет данных", systemImage: "building.2.crop.circle.fill", description: Text("Не удалось загрузить список подразделений."))
+            } else {
+                List(filteredDepartments, children: \.children) { node in
+                    DepartmentRow(node: node)
                 }
+                .listStyle(.sidebar)
             }
-            .navigationTitle("Подразделения")
-            .navigationBarTitleDisplayMode(.large)
-            .glassNavigationBar()
-            .hiddenNavigationBarBackground()
-            .searchable(text: $searchText, prompt: "Поиск подразделений")
-            .onAppear {
-                if service.departments.isEmpty {
-                    service.loadMockData()
-                }
+        }
+        .navigationTitle("Подразделения")
+        .navigationBarTitleDisplayMode(.large)
+        .glassNavigationBar()
+        .hiddenNavigationBarBackground()
+        .searchable(text: $searchText, prompt: "Поиск подразделений")
+        .onAppear {
+            if service.departments.isEmpty {
+                service.loadMockData()
             }
         }
     }
-    
+
     private var filteredDepartments: [DepartmentNode] {
         if searchText.isEmpty {
             return service.departments
@@ -38,15 +36,15 @@ struct UnauthorizedDepartmentsView: View {
             return filterNodes(service.departments, query: searchText.lowercased())
         }
     }
-    
+
     private func filterNodes(_ nodes: [DepartmentNode], query: String) -> [DepartmentNode] {
         var result: [DepartmentNode] = []
         for node in nodes {
             let matchesName = node.data.name.lowercased().contains(query)
             let matchesAbbrev = node.data.abbrev?.lowercased().contains(query) ?? false
-            
+
             let matchedChildren = filterNodes(node.children ?? [], query: query)
-            
+
             if matchesName || matchesAbbrev || !matchedChildren.isEmpty {
                 let newNode = DepartmentNode(
                     data: node.data,
@@ -61,14 +59,14 @@ struct UnauthorizedDepartmentsView: View {
 
 private struct DepartmentRow: View {
     let node: DepartmentNode
-    
+
     var body: some View {
         NavigationLink(destination: DepartmentDetailView(node: node)) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(node.data.name)
                     .font(.body)
                     .foregroundStyle(.primary)
-                
+
                 if let abbrev = node.data.abbrev, abbrev != node.data.name {
                     Text(abbrev)
                         .font(.caption)
@@ -84,7 +82,7 @@ struct DepartmentDetailView: View {
     let node: DepartmentNode
     @State private var detailedEmployees: [DepartmentEmployeeDetail] = []
     @State private var isLoadingEmployees = false
-    
+
     var body: some View {
         List {
             Section("Информация") {
@@ -95,7 +93,7 @@ struct DepartmentDetailView: View {
                     LabeledContent("Код", value: code)
                 }
             }
-            
+
             if isLoadingEmployees {
                 Section {
                     HStack {
@@ -128,11 +126,11 @@ struct DepartmentDetailView: View {
                                             .frame(width: 48, height: 48)
                                             .foregroundStyle(.gray)
                                     }
-                                    
+
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(emp.fio)
                                             .font(.headline)
-                                        
+
                                         if let positions = emp.jobPositions, !positions.isEmpty {
                                             ForEach(positions, id: \.jobPosition) { pos in
                                                 if let title = pos.jobPosition {
@@ -144,7 +142,7 @@ struct DepartmentDetailView: View {
                                         }
                                     }
                                 }
-                                
+
                                 if let email = emp.email, !email.isEmpty {
                                     HStack {
                                         Image(systemName: "envelope.fill")
@@ -155,7 +153,7 @@ struct DepartmentDetailView: View {
                                     }
                                     .padding(.top, 2)
                                 }
-                                
+
                                 if let positions = emp.jobPositions {
                                     ForEach(positions, id: \.jobPosition) { pos in
                                         if let contacts = pos.contacts {
@@ -184,7 +182,7 @@ struct DepartmentDetailView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(emp.fio)
                                 .font(.headline)
-                            
+
                             if let phones = emp.phoneNumbers {
                                 ForEach(phones, id: \.self) { phone in
                                     Text(phone)

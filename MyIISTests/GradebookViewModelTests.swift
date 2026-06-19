@@ -180,10 +180,12 @@ final class GradebookViewModelTests: XCTestCase {
         viewModel.selectedSemesterKey = "1"
 
         // Mock sets overall to 0.0, semester to 0.0, and marks to 8.5
+        let zeroAverage = 0.0.formatted(.number.precision(.fractionLength(2)))
+        let yearlyAverage = 8.5.formatted(.number.precision(.fractionLength(2)))
         XCTAssertEqual(viewModel.numberText, "123")
-        XCTAssertEqual(viewModel.overallAverageText, "0.00")
-        XCTAssertEqual(viewModel.semesterAverageText, "0.00")
-        XCTAssertEqual(viewModel.yearlyAverageText, "8.50")
+        XCTAssertEqual(viewModel.overallAverageText, zeroAverage)
+        XCTAssertEqual(viewModel.semesterAverageText, zeroAverage)
+        XCTAssertEqual(viewModel.yearlyAverageText, yearlyAverage)
         XCTAssertEqual(viewModel.marksForSelectedSemester.count, 1)
     }
 
@@ -246,7 +248,7 @@ final class GradebookViewModelTests: XCTestCase {
     func testLoadIfNeeded_OnlyLoadsOnce() async {
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, "{}".data(using: .utf8)!)
+            return (response, Data("{}".utf8))
         }
 
         XCTAssertFalse(viewModel.isLoading)

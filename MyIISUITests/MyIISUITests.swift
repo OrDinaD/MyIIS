@@ -71,6 +71,12 @@ final class MyIISUITests: XCTestCase {
     private func loginWithDemoAccount(_ app: XCUIApplication) {
         XCTContext.runActivity(named: "Login with demo account") { _ in
             let demoButton = app.buttons["demoModeButton"]
+            if !demoButton.waitForExistence(timeout: 5) {
+                let signInButton = app.buttons["Войти в аккаунт"].firstMatch
+                XCTAssertTrue(signInButton.waitForExistence(timeout: 5), "Sign in button did not appear")
+                signInButton.tap()
+            }
+
             XCTAssertTrue(demoButton.waitForExistence(timeout: 10), "Demo login button did not appear")
             demoButton.tap()
 

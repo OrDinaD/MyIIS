@@ -200,7 +200,7 @@ final class GlobalRatingService: ObservableObject {
         case let urlError as URLError where urlError.code == .timedOut:
             return "Сервер не ответил вовремя. Попробуйте ещё раз."
         default:
-            return "Не удалось загрузить данные рейтинга. Попробуйте ещё раз."
+            return "Не удалось загрузить данные IIS. Попробуйте ещё раз."
         }
     }
 }

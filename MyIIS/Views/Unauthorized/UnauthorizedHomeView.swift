@@ -12,7 +12,9 @@ struct UnauthorizedHomeView: View {
             }
             .listStyle(.insetGrouped)
             .navigationTitle("Главная")
-            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.large)
+            .glassNavigationBar()
+            .hiddenNavigationBarBackground()
             .sheet(isPresented: $showLogin) {
                 LoginView()
             }
