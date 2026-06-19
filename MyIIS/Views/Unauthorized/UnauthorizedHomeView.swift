@@ -2,19 +2,15 @@ import SwiftUI
 
 struct UnauthorizedHomeView: View {
     @State private var showLogin = false
-    
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    headerIcon
-                    welcomeCard
-                    featuresSection
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 24)
+            List {
+                signInSection
+                publicSections
+                accountSections
             }
-            .background(Color(uiColor: .systemGroupedBackground))
+            .listStyle(.insetGrouped)
             .navigationTitle("Главная")
             .navigationBarTitleDisplayMode(.large)
             .glassNavigationBar()
@@ -24,98 +20,161 @@ struct UnauthorizedHomeView: View {
             }
         }
     }
-    
-    private var headerIcon: some View {
-        Image(systemName: "graduationcap.circle.fill")
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 120, height: 120)
-            .foregroundStyle(Color.accentColor.opacity(0.8), Color.accentColor.opacity(0.15))
-            .padding(.top, 16)
-            .padding(.bottom, 8)
-    }
-    
-    private var welcomeCard: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Добро пожаловать!")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.primary)
-                
-                Text("Интегрированная информационная система (ИИС) «БГУИР: Университет» предоставляет удобный доступ ко всем необходимым образовательным сервисам.")
+
+    private var signInSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .center, spacing: 14) {
+                    Image(systemName: "graduationcap.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 54, height: 54)
+                        .background(Color.accentColor, in: Circle())
+                        .accessibilityHidden(true)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("БГУИР ИИС")
+                            .font(.title3.weight(.semibold))
+                        Text("Гостевой доступ")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Text("Войдите, чтобы открыть личное расписание, зачётку, группу и остальные сервисы студента.")
                     .font(.body)
                     .foregroundStyle(.secondary)
-                    .lineSpacing(4)
-                
+                    .fixedSize(horizontal: false, vertical: true)
+
                 Button {
                     showLogin = true
                 } label: {
-                    Text("Войти в аккаунт")
-                        .font(.headline)
+                    Label("Войти в аккаунт", systemImage: "person.crop.circle.badge.checkmark")
                         .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.accentColor)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
-                .padding(.top, 8)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
             }
-            .padding(20)
+            .padding(.vertical, 8)
         }
     }
-    
-    private var featuresSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Возможности ИИС")
-                .font(.title3.weight(.bold))
-                .foregroundStyle(.primary)
-                .padding(.leading, 8)
-            
-            VStack(spacing: 12) {
-                featureRow(
-                    icon: "list.bullet.rectangle.portrait",
-                    title: "Расписание и Успеваемость",
-                    description: "Следите за занятиями и оценками в реальном времени.",
-                    color: .blue
+
+    private var publicSections: some View {
+        Section("Доступно без входа") {
+            NavigationLink {
+                UnauthorizedRatingView()
+            } label: {
+                HomeServiceRow(
+                    icon: "chart.bar.fill",
+                    tint: .blue,
+                    title: "Рейтинг группы",
+                    subtitle: "Факультет, специальность, курс и детали по студентам"
                 )
-                featureRow(
-                    icon: "doc.text.fill",
-                    title: "Электронная зачетка",
-                    description: "Все результаты сессий, зачеты и экзамены всегда под рукой.",
-                    color: .green
+            }
+
+            NavigationLink {
+                UnauthorizedDisciplinesView()
+            } label: {
+                HomeServiceRow(
+                    icon: "list.bullet.rectangle.portrait.fill",
+                    tint: .indigo,
+                    title: "Список дисциплин",
+                    subtitle: "Учебные планы по специальности и курсу"
                 )
-                featureRow(
-                    icon: "building.2.fill",
-                    title: "Справочник и Подразделения",
-                    description: "Быстрый поиск контактов преподавателей и кафедр.",
-                    color: .orange
+            }
+
+            NavigationLink {
+                UnauthorizedStudyWeeksView()
+            } label: {
+                HomeServiceRow(
+                    icon: "calendar.day.timeline.left",
+                    tint: .orange,
+                    title: "Учебные недели",
+                    subtitle: "Текущая неделя и календарь семестра"
+                )
+            }
+
+            NavigationLink {
+                UnauthorizedDirectoryView()
+            } label: {
+                HomeServiceRow(
+                    icon: "book.closed.fill",
+                    tint: .green,
+                    title: "Справочник",
+                    subtitle: "Контакты сотрудников и подразделений"
                 )
             }
         }
     }
-    
-    private func featureRow(icon: String, title: String, description: String, color: Color) -> some View {
-        GlassCard {
-            HStack(alignment: .top, spacing: 16) {
-                Image(systemName: icon)
-                    .font(.title2)
-                    .foregroundStyle(color)
-                    .frame(width: 48, height: 48)
-                    .background(color.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    
-                    Text(description)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(16)
+
+    private var accountSections: some View {
+        Section("После входа") {
+            lockedRow(icon: "calendar", title: "Личное расписание")
+            lockedRow(icon: "book.closed.fill", title: "Электронная зачётка")
+            lockedRow(icon: "person.3.fill", title: "Моя группа")
         }
+    }
+
+    private func lockedRow(icon: String, title: String) -> some View {
+        Button {
+            showLogin = true
+        } label: {
+            HStack(spacing: 12) {
+                HomeIcon(icon: icon, tint: .secondary)
+
+                Text(title)
+                    .foregroundStyle(.primary)
+
+                Spacer()
+
+                Image(systemName: "lock.fill")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Требуется вход в аккаунт")
+    }
+}
+
+private struct HomeServiceRow: View {
+    let icon: String
+    let tint: Color
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            HomeIcon(icon: icon, tint: tint)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+}
+
+private struct HomeIcon: View {
+    let icon: String
+    let tint: Color
+
+    var body: some View {
+        Image(systemName: icon)
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundStyle(tint)
+            .frame(width: 36, height: 36)
+            .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .accessibilityHidden(true)
     }
 }

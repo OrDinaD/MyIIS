@@ -3,12 +3,12 @@ import SwiftUI
 struct UnauthorizedDisciplinesView: View {
     @StateObject private var service = DisciplinesService.shared
     @StateObject private var formService = GlobalRatingService.shared // Reuse for faculty picking
-    
+
     @State private var selectedFacultyId: Int?
     @State private var selectedSpecialityId: Int?
     @State private var selectedCourse: Int?
     @State private var selectedTerm: Int? // 1, 2, ... based on course?
-    
+
     var body: some View {
         NavigationStack {
             Form {
@@ -31,7 +31,7 @@ struct UnauthorizedDisciplinesView: View {
                             service.disciplines = []
                         }
                     }
-                    
+
                     if selectedFacultyId != nil {
                         if formService.isLoadingSpecialities {
                             ProgressView("Загрузка специальностей...")
@@ -45,8 +45,8 @@ struct UnauthorizedDisciplinesView: View {
                             .onChange(of: selectedSpecialityId) { _, newValue in
                                 selectedCourse = nil
                                 selectedTerm = nil
-                                if let specId = newValue {
-                                    Task { await formService.fetchCourses(sdefId: specId) }
+                                if let facultyId = selectedFacultyId, let specId = newValue {
+                                    Task { await formService.fetchCourses(facultyId: facultyId, specialityId: specId) }
                                 } else {
                                     formService.courses = []
                                     service.disciplines = []
@@ -54,24 +54,24 @@ struct UnauthorizedDisciplinesView: View {
                             }
                         }
                     }
-                    
+
                     if selectedSpecialityId != nil {
                         if formService.isLoadingCourses {
                             ProgressView("Загрузка курсов...")
                         } else {
                             Picker("Курс", selection: $selectedCourse) {
                                 Text("Не выбран").tag(Int?.none)
-                                ForEach(formService.courses, id: \.self) { course in
-                                    Text("\(course) курс").tag(Int?.some(course))
+                                ForEach(formService.courses) { course in
+                                    Text(course.title).tag(Int?.some(course.course))
                                 }
                             }
-                            .onChange(of: selectedCourse) { _, newValue in
+                            .onChange(of: selectedCourse) { _, _ in
                                 selectedTerm = nil
                                 fetchDisciplines()
                             }
                         }
                     }
-                    
+
                     if let course = selectedCourse {
                         Picker("Семестр", selection: $selectedTerm) {
                             Text("Весь год").tag(Int?.none)
@@ -83,7 +83,7 @@ struct UnauthorizedDisciplinesView: View {
                         }
                     }
                 }
-                
+
                 if selectedCourse != nil {
                     Section("Дисциплины") {
                         if service.isLoading {
@@ -124,7 +124,7 @@ struct UnauthorizedDisciplinesView: View {
             }
         }
     }
-    
+
     private func fetchDisciplines() {
         if let specId = selectedSpecialityId, let course = selectedCourse {
             Task { await service.fetchDisciplines(sdefId: specId, course: course, term: selectedTerm) }

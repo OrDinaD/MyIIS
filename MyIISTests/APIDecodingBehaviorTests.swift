@@ -257,4 +257,78 @@ final class APIDecodingBehaviorTests: XCTestCase {
         XCTAssertTrue(lesson.isScheduled(on: middle, calendar: calendar))
         XCTAssertFalse(lesson.isScheduled(on: outside, calendar: calendar))
     }
+
+    func testGlobalRatingCoursesDecodeHarShape() throws {
+        let json = #"""
+        [
+          {"course": 1, "hasForeignPlan": false},
+          {"course": 2, "hasForeignPlan": true}
+        ]
+        """#
+
+        let decoded = try JSONDecoder().decode([RatingCourseDto].self, from: Data(json.utf8))
+
+        XCTAssertEqual(decoded.map(\.course), [1, 2])
+        XCTAssertFalse(decoded[0].hasForeignPlan)
+        XCTAssertTrue(decoded[1].hasForeignPlan)
+        XCTAssertEqual(decoded[1].title, "2 курс")
+    }
+
+    func testGlobalRatingEntryDecodesHarShape() throws {
+        let json = #"""
+        {
+          "studentCardNumber": "42850015",
+          "average": 9.27,
+          "hours": 0,
+          "firstAverage": 8.83,
+          "firstHours": 0,
+          "secondAverage": 9.43,
+          "secondHours": 0,
+          "thirdAverage": 9.5,
+          "thirdHours": 0,
+          "averageShift": 0.01
+        }
+        """#
+
+        let decoded = try JSONDecoder().decode(GlobalRatingEntry.self, from: Data(json.utf8))
+
+        XCTAssertEqual(decoded.id, "42850015")
+        XCTAssertEqual(decoded.average, 9.27)
+        XCTAssertEqual(decoded.secondAverage, 9.43)
+        XCTAssertEqual(decoded.thirdHours, 0)
+    }
+
+    func testStudentGlobalRatingDetailDecodesHarShape() throws {
+        let json = #"""
+        {
+          "id": 553899,
+          "fio": "  ",
+          "subGroup": 0,
+          "subGroupStudent": 2,
+          "lessons": [
+            {
+              "id": 1454892,
+              "dateString": "09.02.2026",
+              "gradeBookOmissions": 0,
+              "isRespectfulOmission": false,
+              "lessonTypeId": 4,
+              "lessonTypeAbbrev": "ЛР",
+              "lessonNameAbbrev": "БД",
+              "subGroup": 0,
+              "marks": [9],
+              "controlPoint": "01.03.2026"
+            }
+          ]
+        }
+        """#
+
+        let decoded = try JSONDecoder().decode(StudentGlobalRatingDetail.self, from: Data(json.utf8))
+
+        XCTAssertEqual(decoded.id, 553899)
+        XCTAssertNil(decoded.displayName)
+        XCTAssertEqual(decoded.subGroupStudent, 2)
+        XCTAssertEqual(decoded.lessons.count, 1)
+        XCTAssertEqual(decoded.subjectCount, 1)
+        XCTAssertEqual(decoded.averageMark, 9)
+    }
 }
