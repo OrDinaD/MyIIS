@@ -38,7 +38,7 @@ struct GroupView: View {
             )
             .ignoresSafeArea()
         )
-        .navigationTitle("Группа")
+        .navigationTitle(NSLocalizedString("group_title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
         .toolbar {
@@ -53,7 +53,7 @@ struct GroupView: View {
                         Image(systemName: "square.and.arrow.down")
                     }
                 }
-                .accessibilityLabel("Скачать список группы")
+                .accessibilityLabel(NSLocalizedString("group_download_accessibility", comment: ""))
             }
         }
         .refreshable {
@@ -76,12 +76,15 @@ struct GroupView: View {
     private var summaryCard: some View {
         cardContainer {
             VStack(alignment: .leading, spacing: 12) {
-                Label("Группа \(viewModel.groupTitle)", systemImage: "person.3.fill")
+                Label(
+                    String(format: NSLocalizedString("group_summary_title_format", comment: ""), viewModel.groupTitle),
+                    systemImage: "person.3.fill"
+                )
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.primary)
 
                 metricTile(
-                    title: "Студентов",
+                    title: NSLocalizedString("group_students_count", comment: ""),
                     value: "\(viewModel.studentsCount)",
                     icon: "person.2"
                 )
@@ -92,7 +95,10 @@ struct GroupView: View {
     private func curatorCard(_ curator: GroupCurator) -> some View {
         cardContainer {
             VStack(alignment: .leading, spacing: 10) {
-                Label("Куратор", systemImage: "person.crop.square.filled.and.at.rectangle")
+                Label(
+                    NSLocalizedString("group_curator_title", comment: ""),
+                    systemImage: "person.crop.square.filled.and.at.rectangle"
+                )
                     .font(.headline)
                     .foregroundStyle(.primary)
 
@@ -112,21 +118,21 @@ struct GroupView: View {
                             Button {
                                 UIPasteboard.general.string = phone
                             } label: {
-                                Label("Скопировать номер", systemImage: "doc.on.doc")
+                                Label(NSLocalizedString("group_copy_phone", comment: ""), systemImage: "doc.on.doc")
                             }
                             Button {
                                 openPhone(phone)
                             } label: {
-                                Label("Открыть в Телефоне", systemImage: "phone")
+                                Label(NSLocalizedString("group_open_phone", comment: ""), systemImage: "phone")
                             }
                         }
                         .onTapGesture {
                             openPhone(phone)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("Телефон куратора")
+                        .accessibilityLabel(NSLocalizedString("group_curator_phone_accessibility", comment: ""))
                         .accessibilityValue(phone)
-                        .accessibilityHint("Открывает номер в Телефоне")
+                        .accessibilityHint(NSLocalizedString("group_curator_phone_hint", comment: ""))
                         .accessibilityAddTraits(.isButton)
                         .accessibilityAction {
                             openPhone(phone)
@@ -144,7 +150,7 @@ struct GroupView: View {
         cardContainer {
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
-                    Label("Состав группы", systemImage: "list.bullet")
+                    Label(NSLocalizedString("group_roster_title", comment: ""), systemImage: "list.bullet")
                         .font(.headline)
                     Spacer()
                     if viewModel.isLoading {
@@ -155,13 +161,13 @@ struct GroupView: View {
 
                 if let error = viewModel.errorMessage, viewModel.groupInfo == nil {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label("Не удалось загрузить группу", systemImage: "exclamationmark.triangle.fill")
+                        Label(NSLocalizedString("group_load_failed", comment: ""), systemImage: "exclamationmark.triangle.fill")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.orange)
                         Text(error)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
-                        Button("Повторить") {
+                        Button(NSLocalizedString("common_retry", comment: "")) {
                             Task { await viewModel.reload() }
                         }
                         .buttonStyle(.borderedProminent)
@@ -169,7 +175,11 @@ struct GroupView: View {
                     }
                     .padding(.vertical, 6)
                 } else if viewModel.students.isEmpty {
-                    Text(viewModel.isLoading ? "Загрузка списка..." : "Студенты не найдены")
+                    Text(
+                        viewModel.isLoading
+                            ? NSLocalizedString("group_students_loading", comment: "")
+                            : NSLocalizedString("group_students_empty", comment: "")
+                    )
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -200,11 +210,11 @@ struct GroupView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     if viewModel.isCurrentUser(student) {
-                        roleBadge(text: "Я", tint: .blue)
+                        roleBadge(text: NSLocalizedString("group_role_me", comment: ""), tint: .blue)
                     }
 
                     if student.isHeadman {
-                        roleBadge(text: "Староста", tint: .orange)
+                        roleBadge(text: NSLocalizedString("group_role_headman", comment: ""), tint: .orange)
                     }
                 }
 

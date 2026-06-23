@@ -51,10 +51,10 @@ private enum ServicesDestination: String, Identifiable, Hashable {
             return NSLocalizedString("services_item_activities", comment: "")
         case .about:
             return NSLocalizedString("services_item_about", comment: "")
-        case .disciplines: return "Список дисциплин"
-        case .studyWeeks: return "Учебные недели"
-        case .departments: return "Подразделения"
-        case .directory: return "Справочник"
+        case .disciplines: return NSLocalizedString("services_item_disciplines", comment: "")
+        case .studyWeeks: return NSLocalizedString("services_item_study_weeks", comment: "")
+        case .departments: return NSLocalizedString("services_item_departments", comment: "")
+        case .directory: return NSLocalizedString("services_item_directory", comment: "")
         }
     }
 

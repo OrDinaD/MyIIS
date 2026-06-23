@@ -122,7 +122,9 @@ struct SectionHeader: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: icon)
+                .font(.headline)
                 .foregroundStyle(Color.accentColor)
+                .frame(width: 24, alignment: .center)
             Text(title)
                 .font(.headline)
         }
@@ -201,7 +203,9 @@ struct SettingRow: View {
     let isEnabled: Bool
 
     private var stateText: String {
-        isEnabled ? "Включено" : "Выключено"
+        isEnabled
+            ? NSLocalizedString("common_enabled", comment: "")
+            : NSLocalizedString("common_disabled", comment: "")
     }
 
     var body: some View {

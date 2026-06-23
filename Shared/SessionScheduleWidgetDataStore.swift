@@ -40,15 +40,19 @@ enum SessionScheduleWidgetConstants {
 enum SessionScheduleWidgetDateFormatting {
     nonisolated static func numericDateText(from date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = .autoupdatingCurrent
         formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.dateFormat = "dd.MM.yyyy"
+        formatter.dateStyle = .short
+        formatter.timeStyle = .none
 
         return "\(formatter.string(from: date))(\(weekdayShortText(from: date)))"
     }
 
     private nonisolated static func weekdayShortText(from date: Date) -> String {
-        let weekdays = ["Вс", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"]
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.calendar = Calendar(identifier: .gregorian)
+        let weekdays = formatter.shortWeekdaySymbols ?? []
         let calendar = Calendar(identifier: .gregorian)
         let index = calendar.component(.weekday, from: date) - 1
         guard weekdays.indices.contains(index) else { return "" }

@@ -27,7 +27,7 @@ struct MyIISGradebookMessageSnapshot: Codable, Equatable, Sendable {
         let subjects: [Subject]
 
         var title: String {
-            "Семестр \(id)"
+            String(format: NSLocalizedString("gradebook_share_semester_format", comment: ""), id)
         }
     }
 

@@ -66,7 +66,7 @@ private extension ProfileView {
                 educationSection(for: user)
                     .padding(.horizontal)
 
-                if user.birthDay != "Не указана" {
+                if isBirthDayVisible(user.birthDay) {
                     personalInfoSection(for: user)
                         .padding(.horizontal)
                 }
@@ -200,10 +200,10 @@ private extension ProfileView {
             .opacity(showFullScreenAvatar ? 0.001 : 1)
             .allowsHitTesting(!showFullScreenAvatar)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Фото профиля")
-            .accessibilityHint("Открывает фото на весь экран")
+            .accessibilityLabel(NSLocalizedString("profile_photo_accessibility", comment: ""))
+            .accessibilityHint(NSLocalizedString("profile_photo_open_hint", comment: ""))
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction(named: "Открыть фото") {
+            .accessibilityAction(named: NSLocalizedString("profile_photo_open_action", comment: "")) {
                 presentFullScreenAvatar()
             }
     }
@@ -237,9 +237,9 @@ private extension ProfileView {
             showRatingInfo = true
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Рейтинг")
-        .accessibilityValue("\(user.rating) из 5")
-        .accessibilityHint("Показывает описание рейтинга")
+        .accessibilityLabel(NSLocalizedString("profile_rating_accessibility", comment: ""))
+        .accessibilityValue(String(format: NSLocalizedString("profile_rating_value_format", comment: ""), user.rating))
+        .accessibilityHint(NSLocalizedString("profile_rating_info_hint", comment: ""))
         .accessibilityAddTraits(.isButton)
         .accessibilityAction {
             showRatingInfo = true
@@ -363,6 +363,14 @@ private extension ProfileView {
             : NSLocalizedString("profile_contacts_show", comment: "")
     }
 
+    func isBirthDayVisible(_ birthDay: String) -> Bool {
+        let hiddenValues = [
+            "Не указана",
+            NSLocalizedString("common_not_specified_feminine", comment: "")
+        ]
+        return !hiddenValues.contains(birthDay)
+    }
+
     func contactRow(systemImage: String, value: String) -> some View {
         HStack {
             Image(systemName: systemImage)
@@ -388,6 +396,7 @@ private extension ProfileView {
                 HStack {
                     Image(systemName: "rectangle.portrait.and.arrow.right")
                         .foregroundStyle(.red)
+                        .frame(width: 24, alignment: .center)
                     Text(NSLocalizedString("profile_logout_button", comment: ""))
                         .fontWeight(.medium)
                         .foregroundStyle(.primary)
@@ -465,8 +474,8 @@ private extension ProfileView {
         }
         .ignoresSafeArea()
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Фото профиля на весь экран")
-        .accessibilityAction(named: "Закрыть") {
+        .accessibilityLabel(NSLocalizedString("profile_fullscreen_photo_accessibility", comment: ""))
+        .accessibilityAction(named: NSLocalizedString("common_close", comment: "")) {
             dismissFullScreenAvatar()
         }
     }

@@ -3,11 +3,12 @@ import SwiftUI
 extension ProfileView {
     func formatDate(_ dateString: String) -> String {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
         guard let date = formatter.date(from: dateString) else { return dateString }
 
+        formatter.locale = .autoupdatingCurrent
         formatter.dateFormat = "d MMMM yyyy"
-        formatter.locale = Locale(identifier: "ru_RU")
         return formatter.string(from: date)
     }
 

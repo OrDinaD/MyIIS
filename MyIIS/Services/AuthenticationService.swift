@@ -114,7 +114,7 @@ class AuthenticationService: ObservableObject {
                 clearCachedUser()
             }
         } catch {
-            self.errorMessage = "Произошла непредвиденная ошибка."
+            self.errorMessage = NSLocalizedString("common_unexpected_error", comment: "")
             logService.log("❌ Unexpected Error: \(error.localizedDescription)")
         }
 
@@ -170,13 +170,14 @@ class AuthenticationService: ObservableObject {
         let middleName = personalProfile.middleName ?? fallbackMiddleName
 
         // Форматируем дату рождения из dd.MM.yyyy в человекочитаемый формат
-        var formattedBirthDay = "Не указана"
+        var formattedBirthDay = NSLocalizedString("common_not_specified_feminine", comment: "")
         if let birthDate = personalProfile.birthDate {
             let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
             formatter.dateFormat = "dd.MM.yyyy"
             if let date = formatter.date(from: birthDate) {
+                formatter.locale = .autoupdatingCurrent
                 formatter.dateFormat = "d MMMM yyyy"
-                formatter.locale = Locale(identifier: "ru_RU")
                 formattedBirthDay = formatter.string(from: date)
             }
         }
@@ -198,7 +199,7 @@ class AuthenticationService: ObservableObject {
             education: Education(
                 faculty: personalProfile.faculty ?? loginResponse.group,
                 course: personalProfile.course ?? 1,
-                speciality: personalProfile.speciality ?? "Не указано",
+                speciality: personalProfile.speciality ?? NSLocalizedString("common_not_specified_neuter", comment: ""),
                 group: personalProfile.studentGroup ?? loginResponse.group,
                 specialityDepartmentEducationFormId: nil
             ),

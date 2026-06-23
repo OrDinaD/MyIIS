@@ -178,7 +178,7 @@ struct GradebookView: View {
                             .foregroundStyle(yearlyAverage > 8.75 ? .green : .yellow)
                             .fontWeight(.medium)
                     } label: {
-                        Text("Средний балл за год")
+                        Text(NSLocalizedString("gradebook_year_average", comment: ""))
                     }
                 }
             }
@@ -271,11 +271,21 @@ private struct MarkRow: View {
         .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(mark.subject)
-        .accessibilityValue("Оценка \(mark.displayGrade)")
-        .accessibilityHint(isExpanded ? "Скрывает подробности" : "Показывает подробности")
+        .accessibilityValue(String(format: NSLocalizedString("gradebook_grade_accessibility_format", comment: ""), mark.displayGrade))
+        .accessibilityHint(
+            NSLocalizedString(
+                isExpanded ? "gradebook_hide_details_hint" : "gradebook_show_details_hint",
+                comment: ""
+            )
+        )
         .accessibilityIdentifier("gradebookMark_\(mark.subject)")
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction(named: isExpanded ? "Скрыть подробности" : "Показать подробности") {
+        .accessibilityAction(
+            named: NSLocalizedString(
+                isExpanded ? "gradebook_hide_details_action" : "gradebook_show_details_action",
+                comment: ""
+            )
+        ) {
             onToggle()
         }
     }
