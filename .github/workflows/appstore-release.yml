@@ -30,7 +30,7 @@ env:
   TEAM_ID: Y85TSUMM4F
   BUNDLE_ID: com.OrDinaD.MyIIS
   XCODE_PATH: /Applications/Xcode_26.5.app
-  TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=26.5
+  TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17
   APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
   APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
   APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
