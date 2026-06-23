@@ -42,14 +42,29 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for source changes
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **/*.swift
+            **/*.storyboard
+            **/*.xib
+            **/*.plist
+            MyIIS.xcodeproj/**
 
       - name: Select Xcode 26.5
+        if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
           sudo xcode-select -s "$XCODE_PATH"
 
       - name: Build for Testing
+        if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail
@@ -60,6 +75,7 @@ jobs:
             -destination "$TEST_DESTINATION"
 
       - name: Run Tests
+        if: steps.changed-files.outputs.any_changed == 'true' || github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           set -euo pipefail

@@ -615,7 +615,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISIntents;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -645,7 +645,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISIntents;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -676,7 +676,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISMessages;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -707,7 +707,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.MyIISMessages;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -865,7 +865,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -897,7 +897,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -925,7 +925,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIISTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -949,7 +949,7 @@
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIISTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -976,7 +976,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1003,7 +1003,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.6.7;
+				MARKETING_VERSION = 0.6.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
