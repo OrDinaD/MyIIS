@@ -18,9 +18,7 @@ struct UnauthorizedDisciplinesView: View {
             disciplinesSection
         }
         .navigationTitle("Список дисциплин")
-        .navigationBarTitleDisplayMode(.large)
-        .glassNavigationBar()
-        .hiddenNavigationBarBackground()
+        .transparentInlineNavigationBar()
         .task {
             if formService.faculties.isEmpty {
                 await formService.fetchFaculties()

@@ -75,6 +75,11 @@ extension View {
         modifier(GlassScrollPaddingModifier(top: top))
     }
 
+    func transparentInlineNavigationBar() -> some View {
+        navigationBarTitleDisplayMode(.inline)
+            .hiddenNavigationBarBackground()
+    }
+
     @ViewBuilder
     func hiddenNavigationBarBackground() -> some View {
         if #available(iOS 18.0, *) {

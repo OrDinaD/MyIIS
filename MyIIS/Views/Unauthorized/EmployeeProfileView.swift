@@ -2,14 +2,14 @@ import SwiftUI
 
 struct EmployeeProfileView: View {
     let basicEmployee: DepartmentEmployeeDetail
-    
+
     @State private var detailedEmployee: DepartmentEmployeeDetail?
     @State private var isLoading = false
-    
+
     var employee: DepartmentEmployeeDetail {
         detailedEmployee ?? basicEmployee
     }
-    
+
     var body: some View {
         List {
             Section {
@@ -34,11 +34,11 @@ struct EmployeeProfileView: View {
                             .frame(width: 80, height: 80)
                             .foregroundStyle(.gray)
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text(employee.fio)
                             .font(.title3.weight(.bold))
-                        
+
                         if let degree = employee.degree, !degree.isEmpty {
                             Text(degree)
                                 .font(.subheadline)
@@ -49,7 +49,7 @@ struct EmployeeProfileView: View {
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
-                        
+
                         if let email = employee.email, !email.isEmpty {
                             HStack {
                                 Image(systemName: "envelope.fill")
@@ -64,7 +64,7 @@ struct EmployeeProfileView: View {
                 }
                 .padding(.vertical, 8)
             }
-            
+
             if let positions = employee.jobPositions, !positions.isEmpty {
                 Section("Должности") {
                     ForEach(positions, id: \.jobPosition) { pos in
@@ -105,7 +105,7 @@ struct EmployeeProfileView: View {
                     }
                 }
             }
-            
+
             if let reading = employee.readingCourses, !reading.isEmpty {
                 Section("Читаемые курсы") {
                     ForEach(reading, id: \.id) { course in
@@ -121,7 +121,7 @@ struct EmployeeProfileView: View {
                     }
                 }
             }
-            
+
             if let additional = employee.additionalInformation, !additional.isEmpty {
                 ForEach(additional, id: \.idType) { info in
                     if let typeName = info.nameType, let content = info.content, !content.isEmpty {
@@ -134,7 +134,7 @@ struct EmployeeProfileView: View {
             }
         }
         .navigationTitle(employee.lastName)
-        .navigationBarTitleDisplayMode(.inline)
+        .transparentInlineNavigationBar()
         .onAppear {
             if detailedEmployee == nil, let urlId = basicEmployee.urlId {
                 isLoading = true

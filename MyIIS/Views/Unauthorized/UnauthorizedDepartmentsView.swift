@@ -18,9 +18,7 @@ struct UnauthorizedDepartmentsView: View {
             }
         }
         .navigationTitle("Подразделения")
-        .navigationBarTitleDisplayMode(.large)
-        .glassNavigationBar()
-        .hiddenNavigationBarBackground()
+        .transparentInlineNavigationBar()
         .searchable(text: $searchText, prompt: "Поиск подразделений")
         .onAppear {
             if service.departments.isEmpty {
@@ -197,7 +195,7 @@ struct DepartmentDetailView: View {
             }
         }
         .navigationTitle(node.data.abbrev ?? node.data.name)
-        .navigationBarTitleDisplayMode(.inline)
+        .transparentInlineNavigationBar()
         .onAppear {
             if let urlId = node.data.urlId, detailedEmployees.isEmpty {
                 isLoadingEmployees = true
