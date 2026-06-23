@@ -137,3 +137,4 @@ coverage.txt
 # Agent coding files
 agents.md
 .antigravity.md
+archive_fail_log*.txt

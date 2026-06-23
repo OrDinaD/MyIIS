@@ -149,19 +149,14 @@ struct LoginView: View {
                     .foregroundStyle(.primary)
 
                     Link(destination: URL(string: "https://iis.bsuir.by")!) {
-                        HStack {
-                            Text(NSLocalizedString("login_open_website", value: "Войти на сайт", comment: ""))
-                                .fontWeight(.semibold)
-                            Image(systemName: "arrow.up.right.square")
-                        }
-                        .font(.footnote)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        Text(NSLocalizedString("login_open_website", value: "Войти на сайт", comment: ""))
+                            .font(.footnote.weight(.semibold))
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.accentColor.opacity(0.15))
+                    .buttonStyle(.plain)
                     .foregroundStyle(Color.accentColor)
-                    .clipShape(Capsule())
+                    .accessibilityHint(NSLocalizedString("login_open_website_hint", value: "Откроет сайт ИИС в браузере", comment: ""))
                 }
                 .padding(16)
                 .background(
@@ -201,6 +196,7 @@ struct LoginView: View {
                     .frame(maxWidth: .infinity, minHeight: 44)
             }
             .buttonStyle(.borderedProminent)
+            .buttonBorderShape(.roundedRectangle(radius: 16))
             .controlSize(.large)
             .accessibilityLabel(NSLocalizedString("login_button", comment: ""))
             .accessibilityIdentifier("loginButton")
