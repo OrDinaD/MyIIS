@@ -17,9 +17,9 @@ enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .home: return "Главная"
-        case .rating: return "Рейтинг группы"
-        case .services: return "Сервисы"
+        case .home: return NSLocalizedString("tab_home", comment: "")
+        case .rating: return NSLocalizedString("unauthorized_rating_title", comment: "")
+        case .services: return NSLocalizedString("tab_services", comment: "")
         }
     }
 }

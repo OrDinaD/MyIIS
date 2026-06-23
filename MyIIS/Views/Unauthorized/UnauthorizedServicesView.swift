@@ -2,7 +2,7 @@ import SwiftUI
 
 struct UnauthorizedServicesView: View {
     @State private var showLogin = false
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -16,12 +16,12 @@ struct UnauthorizedServicesView: View {
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 40, height: 40)
                                 .foregroundStyle(.blue)
-                            
+
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Войти в аккаунт")
+                                Text(NSLocalizedString("services_sign_in_title", comment: ""))
                                     .font(.headline)
                                     .foregroundStyle(.primary)
-                                Text("Для доступа ко всем функциям")
+                                Text(NSLocalizedString("unauthorized_all_features_subtitle", comment: ""))
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
@@ -33,40 +33,40 @@ struct UnauthorizedServicesView: View {
                         .padding(.vertical, 4)
                     }
                 }
-                
-                Section("Учеба") {
+
+                Section(NSLocalizedString("services_section_study", comment: "")) {
                     NavigationLink(destination: UnauthorizedDisciplinesView()) {
-                        serviceRow(icon: "list.bullet.rectangle.portrait.fill", title: "Список дисциплин")
+                        serviceRow(icon: "list.bullet.rectangle.portrait.fill", title: NSLocalizedString("services_item_disciplines", comment: ""))
                     }
                     NavigationLink(destination: UnauthorizedStudyWeeksView()) {
-                        serviceRow(icon: "calendar.day.timeline.left", title: "Учебные недели")
+                        serviceRow(icon: "calendar.day.timeline.left", title: NSLocalizedString("services_item_study_weeks", comment: ""))
                     }
                 }
-                
-                Section("Информация") {
+
+                Section(NSLocalizedString("services_section_info", comment: "")) {
                     NavigationLink(destination: UnauthorizedDepartmentsView()) {
-                        serviceRow(icon: "building.2.fill", title: "Подразделения")
+                        serviceRow(icon: "building.2.fill", title: NSLocalizedString("services_item_departments", comment: ""))
                     }
                     NavigationLink(destination: UnauthorizedDirectoryView()) {
-                        serviceRow(icon: "book.closed.fill", title: "Справочник")
+                        serviceRow(icon: "book.closed.fill", title: NSLocalizedString("services_item_directory", comment: ""))
                     }
                 }
-                
-                Section("Сервисы (требуется авторизация)") {
-                    lockedServiceRow(icon: "book.closed.fill", title: "Электронная зачетка")
-                    lockedServiceRow(icon: "calendar", title: "Расписание")
-                    lockedServiceRow(icon: "graduationcap.fill", title: "Успеваемость")
-                    lockedServiceRow(icon: "person.3.fill", title: "Моя группа")
+
+                Section(NSLocalizedString("unauthorized_services_locked_section", comment: "")) {
+                    lockedServiceRow(icon: "book.closed.fill", title: NSLocalizedString("services_item_markbook", comment: ""))
+                    lockedServiceRow(icon: "calendar", title: NSLocalizedString("services_item_schedule", comment: ""))
+                    lockedServiceRow(icon: "graduationcap.fill", title: NSLocalizedString("services_item_study", comment: ""))
+                    lockedServiceRow(icon: "person.3.fill", title: NSLocalizedString("services_item_group", comment: ""))
                 }
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Сервисы")
+            .navigationTitle(NSLocalizedString("tab_services", comment: ""))
             .sheet(isPresented: $showLogin) {
                 LoginView()
             }
         }
     }
-    
+
     private func serviceRow(icon: String, title: String) -> some View {
         HStack(spacing: 14) {
             Image(systemName: icon)
@@ -77,14 +77,14 @@ struct UnauthorizedServicesView: View {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(Color.blue.opacity(0.12))
                 )
-            
+
             Text(title)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(.primary)
         }
         .padding(.vertical, 4)
     }
-    
+
     private func lockedServiceRow(icon: String, title: String) -> some View {
         Button {
             showLogin = true
@@ -98,13 +98,13 @@ struct UnauthorizedServicesView: View {
                         RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .fill(Color.secondary.opacity(0.12))
                     )
-                
+
                 Text(title)
                     .font(.body.weight(.regular))
                     .foregroundStyle(.secondary)
-                
+
                 Spacer()
-                
+
                 Image(systemName: "lock.fill")
                     .foregroundStyle(.secondary)
                     .font(.system(size: 14, weight: .semibold))

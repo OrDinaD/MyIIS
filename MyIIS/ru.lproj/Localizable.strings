@@ -379,3 +379,16 @@
 "gradebook_hide_details_hint" = "Скрывает подробности";
 "gradebook_show_details_action" = "Показать подробности";
 "gradebook_hide_details_action" = "Скрыть подробности";
+"tab_home" = "Главная";
+"unauthorized_app_title" = "БГУИР ИИС";
+"unauthorized_guest_access" = "Гостевой доступ";
+"unauthorized_home_sign_in_message" = "Войдите, чтобы открыть личное расписание, зачётку, группу и остальные сервисы студента.";
+"unauthorized_available_without_sign_in" = "Доступно без входа";
+"unauthorized_rating_title" = "Рейтинг группы";
+"unauthorized_rating_subtitle" = "Факультет, специальность, курс и детали по студентам";
+"unauthorized_disciplines_subtitle" = "Учебные планы по специальности и курсу";
+"unauthorized_study_weeks_subtitle" = "Текущая неделя и календарь семестра";
+"unauthorized_directory_subtitle" = "Контакты сотрудников и подразделений";
+"unauthorized_after_sign_in" = "После входа";
+"unauthorized_all_features_subtitle" = "Для доступа ко всем функциям";
+"unauthorized_services_locked_section" = "Сервисы (требуется авторизация)";

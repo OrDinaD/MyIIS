@@ -11,7 +11,7 @@ struct UnauthorizedHomeView: View {
                 accountSections
             }
             .listStyle(.insetGrouped)
-            .navigationTitle("Главная")
+            .navigationTitle(NSLocalizedString("tab_home", comment: ""))
             .navigationBarTitleDisplayMode(.large)
             .glassNavigationBar()
             .hiddenNavigationBarBackground()
@@ -33,15 +33,15 @@ struct UnauthorizedHomeView: View {
                         .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("БГУИР ИИС")
+                        Text(NSLocalizedString("unauthorized_app_title", comment: ""))
                             .font(.title3.weight(.semibold))
-                        Text("Гостевой доступ")
+                        Text(NSLocalizedString("unauthorized_guest_access", comment: ""))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                Text("Войдите, чтобы открыть личное расписание, зачётку, группу и остальные сервисы студента.")
+                Text(NSLocalizedString("unauthorized_home_sign_in_message", comment: ""))
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -49,7 +49,7 @@ struct UnauthorizedHomeView: View {
                 Button {
                     showLogin = true
                 } label: {
-                    Label("Войти в аккаунт", systemImage: "person.crop.circle.badge.checkmark")
+                    Label(NSLocalizedString("services_sign_in_title", comment: ""), systemImage: "person.crop.circle.badge.checkmark")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -60,15 +60,15 @@ struct UnauthorizedHomeView: View {
     }
 
     private var publicSections: some View {
-        Section("Доступно без входа") {
+        Section(NSLocalizedString("unauthorized_available_without_sign_in", comment: "")) {
             NavigationLink {
                 UnauthorizedRatingView()
             } label: {
                 HomeServiceRow(
                     icon: "chart.bar.fill",
                     tint: .blue,
-                    title: "Рейтинг группы",
-                    subtitle: "Факультет, специальность, курс и детали по студентам"
+                    title: NSLocalizedString("unauthorized_rating_title", comment: ""),
+                    subtitle: NSLocalizedString("unauthorized_rating_subtitle", comment: "")
                 )
             }
 
@@ -78,8 +78,8 @@ struct UnauthorizedHomeView: View {
                 HomeServiceRow(
                     icon: "list.bullet.rectangle.portrait.fill",
                     tint: .indigo,
-                    title: "Список дисциплин",
-                    subtitle: "Учебные планы по специальности и курсу"
+                    title: NSLocalizedString("services_item_disciplines", comment: ""),
+                    subtitle: NSLocalizedString("unauthorized_disciplines_subtitle", comment: "")
                 )
             }
 
@@ -89,8 +89,8 @@ struct UnauthorizedHomeView: View {
                 HomeServiceRow(
                     icon: "calendar.day.timeline.left",
                     tint: .orange,
-                    title: "Учебные недели",
-                    subtitle: "Текущая неделя и календарь семестра"
+                    title: NSLocalizedString("services_item_study_weeks", comment: ""),
+                    subtitle: NSLocalizedString("unauthorized_study_weeks_subtitle", comment: "")
                 )
             }
 
@@ -100,18 +100,18 @@ struct UnauthorizedHomeView: View {
                 HomeServiceRow(
                     icon: "book.closed.fill",
                     tint: .green,
-                    title: "Справочник",
-                    subtitle: "Контакты сотрудников и подразделений"
+                    title: NSLocalizedString("services_item_directory", comment: ""),
+                    subtitle: NSLocalizedString("unauthorized_directory_subtitle", comment: "")
                 )
             }
         }
     }
 
     private var accountSections: some View {
-        Section("После входа") {
-            lockedRow(icon: "calendar", title: "Личное расписание")
-            lockedRow(icon: "book.closed.fill", title: "Электронная зачётка")
-            lockedRow(icon: "person.3.fill", title: "Моя группа")
+        Section(NSLocalizedString("unauthorized_after_sign_in", comment: "")) {
+            lockedRow(icon: "calendar", title: NSLocalizedString("services_item_schedule", comment: ""))
+            lockedRow(icon: "book.closed.fill", title: NSLocalizedString("services_item_markbook", comment: ""))
+            lockedRow(icon: "person.3.fill", title: NSLocalizedString("services_item_group", comment: ""))
         }
     }
 
@@ -135,7 +135,7 @@ struct UnauthorizedHomeView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityHint("Требуется вход в аккаунт")
+        .accessibilityHint(NSLocalizedString("services_locked_hint", comment: ""))
     }
 }
 

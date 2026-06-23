@@ -374,3 +374,16 @@
 "gradebook_hide_details_hint" = "Хавае падрабязнасці";
 "gradebook_show_details_action" = "Паказаць падрабязнасці";
 "gradebook_hide_details_action" = "Схаваць падрабязнасці";
+"tab_home" = "Галоўная";
+"unauthorized_app_title" = "БДУІР ІІС";
+"unauthorized_guest_access" = "Гасцявы доступ";
+"unauthorized_home_sign_in_message" = "Увайдзіце, каб адкрыць асабісты расклад, залікоўку, групу і іншыя студэнцкія сэрвісы.";
+"unauthorized_available_without_sign_in" = "Даступна без уваходу";
+"unauthorized_rating_title" = "Рэйтынг групы";
+"unauthorized_rating_subtitle" = "Факультэт, спецыяльнасць, курс і падрабязнасці па студэнтах";
+"unauthorized_disciplines_subtitle" = "Вучэбныя планы па спецыяльнасці і курсе";
+"unauthorized_study_weeks_subtitle" = "Бягучы тыдзень і каляндар семестра";
+"unauthorized_directory_subtitle" = "Кантакты супрацоўнікаў і падраздзяленняў";
+"unauthorized_after_sign_in" = "Пасля ўваходу";
+"unauthorized_all_features_subtitle" = "Для доступу да ўсіх функцый";
+"unauthorized_services_locked_section" = "Сэрвісы (патрабуецца аўтарызацыя)";

@@ -379,3 +379,16 @@
 "gradebook_hide_details_hint" = "Hides details";
 "gradebook_show_details_action" = "Show details";
 "gradebook_hide_details_action" = "Hide details";
+"tab_home" = "Home";
+"unauthorized_app_title" = "BSUIR IIS";
+"unauthorized_guest_access" = "Guest access";
+"unauthorized_home_sign_in_message" = "Sign in to open your personal schedule, gradebook, group, and other student services.";
+"unauthorized_available_without_sign_in" = "Available without sign-in";
+"unauthorized_rating_title" = "Group Rating";
+"unauthorized_rating_subtitle" = "Faculty, speciality, course, and student details";
+"unauthorized_disciplines_subtitle" = "Study plans by speciality and course";
+"unauthorized_study_weeks_subtitle" = "Current week and semester calendar";
+"unauthorized_directory_subtitle" = "Employee and department contacts";
+"unauthorized_after_sign_in" = "After sign-in";
+"unauthorized_all_features_subtitle" = "For access to all features";
+"unauthorized_services_locked_section" = "Services (authorization required)";
