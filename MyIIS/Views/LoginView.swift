@@ -55,7 +55,7 @@ struct LoginView: View {
                 ZStack {
                     Color(uiColor: .systemBackground).opacity(0.4)
                         .ignoresSafeArea()
-                    
+
                     VStack(spacing: 16) {
                         ProgressView()
                             .controlSize(.large)
@@ -139,7 +139,7 @@ struct LoginView: View {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .foregroundStyle(Color.statusError)
                             .padding(.top, 2)
-                        
+
                         Text(errorMessage)
                             .font(.footnote)
                             .lineLimit(4)
@@ -205,20 +205,6 @@ struct LoginView: View {
             .accessibilityLabel(NSLocalizedString("login_button", comment: ""))
             .accessibilityIdentifier("loginButton")
 
-            Button {
-                Task {
-                    await viewModel.loginDemo()
-                }
-            } label: {
-                Text(NSLocalizedString("login_demo_button", comment: ""))
-                    .font(.footnote.weight(.medium))
-            }
-            .buttonStyle(.borderless)
-            .tint(.secondary)
-            .padding(.top, 4)
-            .accessibilityLabel(NSLocalizedString("login_demo_button", comment: ""))
-            .accessibilityHint(NSLocalizedString("login_demo_hint", comment: ""))
-            .accessibilityIdentifier("demoModeButton")
         }
     }
 

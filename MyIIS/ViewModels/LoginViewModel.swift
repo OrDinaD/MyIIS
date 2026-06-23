@@ -9,19 +9,19 @@ class LoginViewModel: ObservableObject {
     @Published var password: String = ""
 
     @Published var isLoading: Bool = false
-    @Published var errorMessage: String? = nil
+    @Published var errorMessage: String?
 
     private var authService: AuthenticationService
     private var cancellables = Set<AnyCancellable>()
 
     init(authService: AuthenticationService) {
         self.authService = authService
-        
+
         authService.$isLoading
             .receive(on: RunLoop.main)
             .assign(to: \.isLoading, on: self)
             .store(in: &cancellables)
-            
+
         authService.$errorMessage
             .receive(on: RunLoop.main)
             .assign(to: \.errorMessage, on: self)
@@ -35,12 +35,6 @@ class LoginViewModel: ObservableObject {
 
     func login() async {
         guard validateInput() else { return }
-        await authService.login(username: username, password: password)
-    }
-
-    func loginDemo() async {
-        username = APIService.demoUsername
-        password = APIService.demoPassword
         await authService.login(username: username, password: password)
     }
 

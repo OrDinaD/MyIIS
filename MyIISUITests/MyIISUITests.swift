@@ -70,15 +70,25 @@ final class MyIISUITests: XCTestCase {
     @MainActor
     private func loginWithDemoAccount(_ app: XCUIApplication) {
         XCTContext.runActivity(named: "Login with demo account") { _ in
-            let demoButton = app.buttons["demoModeButton"]
-            if !demoButton.waitForExistence(timeout: 5) {
+            let usernameField = app.textFields["usernameField"]
+            if !usernameField.waitForExistence(timeout: 5) {
                 let signInButton = app.buttons["Войти в аккаунт"].firstMatch
                 XCTAssertTrue(signInButton.waitForExistence(timeout: 5), "Sign in button did not appear")
                 signInButton.tap()
             }
 
-            XCTAssertTrue(demoButton.waitForExistence(timeout: 10), "Demo login button did not appear")
-            demoButton.tap()
+            XCTAssertTrue(usernameField.waitForExistence(timeout: 10), "Username field did not appear")
+            usernameField.tap()
+            usernameField.typeText("demo")
+
+            let passwordField = app.secureTextFields["passwordField"]
+            XCTAssertTrue(passwordField.waitForExistence(timeout: 5), "Password field did not appear")
+            passwordField.tap()
+            passwordField.typeText("demo")
+
+            let loginButton = app.buttons["loginButton"]
+            XCTAssertTrue(loginButton.waitForExistence(timeout: 5), "Login button did not appear")
+            loginButton.tap()
 
             let tabBar = app.tabBars.firstMatch
             XCTAssertTrue(tabBar.waitForExistence(timeout: 20), "Main tab bar did not appear after demo login")

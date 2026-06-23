@@ -18,12 +18,14 @@ final class LoginViewModelTests: XCTestCase {
         try await super.tearDown()
     }
 
-    func testLoginDemoUsesBuiltInCredentials() async {
-        await viewModel.loginDemo()
+    func testLoginWithDemoCredentialsUsesDemoAccount() async {
+        viewModel.username = APIService.demoUsername
+        viewModel.password = APIService.demoPassword
 
-        XCTAssertEqual(viewModel.username, APIService.demoUsername)
-        XCTAssertEqual(viewModel.password, APIService.demoPassword)
+        await viewModel.login()
+
         XCTAssertNotNil(authService.currentUser)
+        XCTAssertTrue(APIService.isDemoMode)
     }
 
     func testClearForm() {

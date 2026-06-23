@@ -7,6 +7,7 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showContacts = false
     @State private var showLogoutConfirmation = false
@@ -92,14 +93,16 @@ private extension ProfileView {
 
     @ToolbarContentBuilder
     var profileToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                showingSettings = true
-            } label: {
-                Image(systemName: "gearshape.fill")
-                    .foregroundStyle(.primary)
+        if enableBetaSections {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showingSettings = true
+                } label: {
+                    Image(systemName: "gearshape.fill")
+                        .foregroundStyle(.primary)
+                }
+                .accessibilityLabel(NSLocalizedString("settings_title", comment: ""))
             }
-            .accessibilityLabel(NSLocalizedString("settings_title", comment: ""))
         }
     }
 
