@@ -49,10 +49,12 @@ struct UnauthorizedHomeView: View {
                 Button {
                     showLogin = true
                 } label: {
-                    Label(NSLocalizedString("services_sign_in_title", comment: ""), systemImage: "person.crop.circle.badge.checkmark")
-                        .frame(maxWidth: .infinity)
+                    Text(NSLocalizedString("services_sign_in_title", comment: ""))
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 16))
                 .controlSize(.large)
             }
             .padding(.vertical, 8)
