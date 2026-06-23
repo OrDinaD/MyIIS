@@ -36,10 +36,9 @@ env:
   APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
 
 jobs:
-  testflight:
-    name: Build, test, archive, upload
+  test:
+    name: Run Unit Tests
     runs-on: macos-26
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -49,8 +48,40 @@ jobs:
         run: |
           set -euo pipefail
           sudo xcode-select -s "$XCODE_PATH"
-          xcodebuild -version
-          xcodebuild -showsdks | grep -E 'iphoneos26\.5|iphonesimulator26\.5'
+
+      - name: Build for Testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild build-for-testing \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -configuration Debug \
+            -destination "$TEST_DESTINATION"
+
+      - name: Run Tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild test-without-building \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -destination "$TEST_DESTINATION" \
+            -only-testing:MyIISTests
+
+  deploy:
+    name: Archive & Upload to TestFlight
+    needs: test
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 26.5
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo xcode-select -s "$XCODE_PATH"
 
       - name: Resolve build metadata
         id: metadata
@@ -97,26 +128,6 @@ jobs:
             echo "available=false" >> "$GITHUB_OUTPUT"
             echo "::notice::App Store Connect secrets are missing. This run will build and test only."
           fi
-
-      - name: Build
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild build \
-            -project "$PROJECT_PATH" \
-            -scheme "$SCHEME" \
-            -configuration Debug \
-            -destination "$TEST_DESTINATION"
-
-      - name: Test
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild test \
-            -project "$PROJECT_PATH" \
-            -scheme "$SCHEME" \
-            -destination "$TEST_DESTINATION" \
-            -only-testing:MyIISTests
 
       - name: Prepare App Store Connect API key
         id: asc_key
