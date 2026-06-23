@@ -17,9 +17,7 @@ struct UnauthorizedRatingView: View {
                 ratingEntriesSection
             }
             .navigationTitle("Рейтинг группы")
-            .navigationBarTitleDisplayMode(.large)
-            .glassNavigationBar()
-            .hiddenNavigationBarBackground()
+            .transparentInlineNavigationBar()
             .task {
                 if service.faculties.isEmpty {
                     await service.fetchFaculties()
