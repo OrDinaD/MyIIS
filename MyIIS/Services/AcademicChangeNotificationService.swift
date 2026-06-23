@@ -18,6 +18,7 @@ final class AcademicChangeNotificationService: NSObject {
     private static let maxNotificationItems = 4
 
     private let apiService = APIService()
+    private lazy var dormitoryService = DormitoryService(apiService: apiService)
     private let credentialStore = CredentialStore.shared
     private let userDefaults = UserDefaults.standard
     private let notificationCenter = UNUserNotificationCenter.current()
@@ -93,11 +94,21 @@ final class AcademicChangeNotificationService: NSObject {
 
             async let markbookResponse = apiService.getMarkbook()
             async let ratingLessonsResponse = apiService.getPortalGradeBookLessons()
-            let (markbook, lessons) = try await (markbookResponse, ratingLessonsResponse)
+            async let dormitoryApplicationsResponse = fetchDormitoryApplicationsForMonitoring()
+            let (markbook, lessons, dormitoryApplications) = try await (
+                markbookResponse,
+                ratingLessonsResponse,
+                dormitoryApplicationsResponse
+            )
             let now = Date()
 
-            let newSnapshot = AcademicChangeSnapshot(markbook: markbook, ratingLessons: lessons)
             let oldSnapshot = loadSnapshot()
+            let newSnapshot = AcademicChangeSnapshot(
+                markbook: markbook,
+                ratingLessons: lessons,
+                dormitoryApplications: dormitoryApplications,
+                previousSnapshot: oldSnapshot
+            )
             GradebookCacheStore.save(markbook: markbook, currentCourse: personalProfile.course, updatedAt: now)
             saveSnapshot(newSnapshot)
             updateWidgetSnapshot(with: newSnapshot)
@@ -202,13 +213,18 @@ final class AcademicChangeNotificationService: NSObject {
         let hasMarkbook = changes.contains { $0.source == .markbook }
         let hasRating = changes.contains { $0.source == .rating }
         let hasOmissions = changes.contains { $0.source == .omission }
+        let hasDormitory = changes.contains { $0.source == .dormitory }
 
-        if hasOmissions && !hasMarkbook && !hasRating {
+        if hasDormitory && !hasMarkbook && !hasRating && !hasOmissions {
+            return "Общежитие обновлено"
+        }
+
+        if hasOmissions && !hasMarkbook && !hasRating && !hasDormitory {
             return "Новые пропуски"
         }
 
-        if hasOmissions {
-            return "Учебные данные обновлены"
+        if hasDormitory || hasOmissions {
+            return "Личный кабинет обновлён"
         }
 
         switch (hasMarkbook, hasRating) {
@@ -219,7 +235,7 @@ final class AcademicChangeNotificationService: NSObject {
         case (false, true):
             return "Рейтинг обновлён"
         case (false, false):
-            return "Учебные данные обновлены"
+            return "Личный кабинет обновлён"
         }
     }
 
@@ -245,6 +261,17 @@ final class AcademicChangeNotificationService: NSObject {
 
             _ = try await apiService.login(username: credentials.username, password: credentials.password)
             return try await apiService.getPersonalProfile()
+        }
+    }
+
+    private func fetchDormitoryApplicationsForMonitoring() async -> [DormitoryQueueApplication]? {
+        do {
+            return try await dormitoryService.fetchApplications()
+        } catch is CancellationError {
+            return nil
+        } catch {
+            logService.log("⚠️ Dormitory change check failed: \(error.localizedDescription)")
+            return nil
         }
     }
 
@@ -299,12 +326,16 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
     let markbookItems: [AcademicChangeItem]
     let ratingItems: [AcademicChangeItem]
     let omissionItems: [AcademicOmissionItem]
+    let dormitoryItems: [DormitoryApplicationItem]
+    let hasDormitoryBaseline: Bool
     let capturedAt: Date
 
     private enum CodingKeys: String, CodingKey {
         case markbookItems
         case ratingItems
         case omissionItems
+        case dormitoryItems
+        case hasDormitoryBaseline
         case capturedAt
     }
 
@@ -313,13 +344,29 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         self.markbookItems = try container.decode([AcademicChangeItem].self, forKey: .markbookItems)
         self.ratingItems = try container.decode([AcademicChangeItem].self, forKey: .ratingItems)
         self.omissionItems = try container.decodeIfPresent([AcademicOmissionItem].self, forKey: .omissionItems) ?? []
+        self.dormitoryItems = try container.decodeIfPresent([DormitoryApplicationItem].self, forKey: .dormitoryItems) ?? []
+        self.hasDormitoryBaseline = try container.decodeIfPresent(Bool.self, forKey: .hasDormitoryBaseline) ?? false
         self.capturedAt = try container.decode(Date.self, forKey: .capturedAt)
     }
 
-    init(markbook: MarkbookResponse, ratingLessons: [PortalGradeBookLesson]) {
+    init(
+        markbook: MarkbookResponse,
+        ratingLessons: [PortalGradeBookLesson],
+        dormitoryApplications: [DormitoryQueueApplication]?,
+        previousSnapshot: AcademicChangeSnapshot?
+    ) {
         self.markbookItems = Self.makeMarkbookItems(from: markbook)
         self.ratingItems = Self.makeRatingItems(from: ratingLessons)
         self.omissionItems = Self.makeOmissionItems(from: ratingLessons)
+
+        if let dormitoryApplications {
+            self.dormitoryItems = Self.makeDormitoryItems(from: dormitoryApplications)
+            self.hasDormitoryBaseline = true
+        } else {
+            self.dormitoryItems = previousSnapshot?.dormitoryItems ?? []
+            self.hasDormitoryBaseline = previousSnapshot?.hasDormitoryBaseline == true
+        }
+
         self.capturedAt = Date()
     }
 
@@ -328,7 +375,11 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         let gradeChanges = (markbookItems + ratingItems)
             .filter { !oldKeys.contains($0.signature) }
 
-        return (gradeChanges + omissionChanges(since: oldSnapshot))
+        let dormitoryChanges = hasDormitoryBaseline && oldSnapshot.hasDormitoryBaseline
+            ? dormitoryChanges(since: oldSnapshot)
+            : []
+
+        return (gradeChanges + omissionChanges(since: oldSnapshot) + dormitoryChanges)
             .sorted(by: AcademicChangeItem.defaultSort)
     }
 
@@ -348,6 +399,21 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
                 date: nil,
                 context: "Неуважительные пропуски"
             )
+        }
+    }
+
+    private func dormitoryChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
+        let oldItemsById = Dictionary(uniqueKeysWithValues: oldSnapshot.dormitoryItems.map { ($0.id, $0) })
+
+        return dormitoryItems.flatMap { item -> [AcademicChangeItem] in
+            guard let oldItem = oldItemsById[item.id] else {
+                return [item.change(field: "created", value: "Появилась новая заявка", context: "Общежитие")]
+            }
+
+            return item.changedFields(comparedTo: oldItem).map { field in
+                let value = field.newValue == "-" ? "\(field.title): не указано" : "\(field.title): \(field.newValue)"
+                return item.change(field: field.key, value: value, context: field.title)
+            }
         }
     }
 
@@ -410,12 +476,96 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         }
         .sorted { $0.subject.localizedCaseInsensitiveCompare($1.subject) == .orderedAscending }
     }
+
+    private static func makeDormitoryItems(from applications: [DormitoryQueueApplication]) -> [DormitoryApplicationItem] {
+        applications
+            .map(DormitoryApplicationItem.init(application:))
+            .sorted { $0.id > $1.id }
+    }
 }
 
 private struct AcademicOmissionItem: Codable, Hashable {
     let subject: String
     let hours: Int
 }
+
+private struct DormitoryChangedField {
+    let key: String
+    let title: String
+    let newValue: String
+}
+
+private struct DormitoryApplicationItem: Codable, Hashable {
+    let id: Int
+    let number: Int
+    let status: String
+    let queueText: String
+    let documentText: String
+    let acceptedDate: String
+    let settledDate: String
+    let rejectionReason: String
+    let roomInfo: String
+
+    init(application: DormitoryQueueApplication) {
+        self.id = application.id
+        self.number = application.number
+        self.status = application.status
+        self.queueText = application.numberInQueue.map { "№\($0)" } ?? "-"
+        self.documentText = Self.documentText(for: application)
+        self.acceptedDate = Self.formattedDate(application.acceptedDate)
+        self.settledDate = Self.formattedDate(application.settledDate)
+        self.rejectionReason = Self.normalized(application.rejectionReason)
+        self.roomInfo = Self.normalized(application.roomInfo)
+    }
+
+    func changedFields(comparedTo oldItem: DormitoryApplicationItem) -> [DormitoryChangedField] {
+        [
+            oldItem.status == status ? nil : DormitoryChangedField(key: "status", title: "Статус", newValue: status),
+            oldItem.queueText == queueText ? nil : DormitoryChangedField(key: "queue", title: "Очередь", newValue: queueText),
+            oldItem.documentText == documentText ? nil : DormitoryChangedField(key: "document", title: "Документ", newValue: documentText),
+            oldItem.acceptedDate == acceptedDate ? nil : DormitoryChangedField(key: "acceptedDate", title: "Документы приняты", newValue: acceptedDate),
+            oldItem.settledDate == settledDate ? nil : DormitoryChangedField(key: "settledDate", title: "Дата заселения", newValue: settledDate),
+            oldItem.roomInfo == roomInfo ? nil : DormitoryChangedField(key: "room", title: "Комната", newValue: roomInfo),
+            oldItem.rejectionReason == rejectionReason ? nil : DormitoryChangedField(key: "rejectionReason", title: "Причина отклонения", newValue: rejectionReason)
+        ].compactMap { $0 }
+    }
+
+    func change(field: String, value: String, context: String) -> AcademicChangeItem {
+        AcademicChangeItem(
+            signature: "dormitory|\(id)|\(field)|\(value)",
+            source: .dormitory,
+            subject: "Заявка №\(number)",
+            value: value,
+            date: nil,
+            context: context
+        )
+    }
+
+    private static func documentText(for application: DormitoryQueueApplication) -> String {
+        guard application.hasDocument else { return "-" }
+        return normalized(application.docReference, fallback: "Документ прикреплён")
+    }
+
+    private static func formattedDate(_ date: Date?) -> String {
+        guard let date else { return "-" }
+        return dormitoryNotificationDateFormatter.string(from: date)
+    }
+
+    private static func normalized(_ value: String?, fallback: String = "-") -> String {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+            return fallback
+        }
+        return value
+    }
+}
+
+private let dormitoryNotificationDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .none
+    return formatter
+}()
 
 private struct AcademicChangeItem: Codable, Hashable {
     let signature: String
@@ -440,4 +590,5 @@ private enum AcademicChangeSource: String, Codable {
     case markbook
     case rating
     case omission
+    case dormitory
 }
