@@ -95,13 +95,14 @@ struct ScheduleServiceView: View {
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text(viewModel.examDayTitle(for: day))
                                         .font(.title3.weight(.bold))
-                                        .foregroundStyle(Calendar.current.isDateInTomorrow(day.date) ? Color.red : Color.primary)
+                                        .foregroundStyle(examDayTitleColor(for: day))
 
                                     ForEach(day.lessons) { exam in
                                         ScheduleLessonCard(
                                             lesson: exam,
                                             isCurrent: false,
                                             progress: nil,
+                                            isPast: viewModel.isExamPast(exam, on: day.date),
                                             presentation: .sessionCompact,
                                             onTeacherTap: { teacher in
                                                 Task { await viewModel.openTeacherSchedule(teacher) }
@@ -325,6 +326,16 @@ struct ScheduleServiceView: View {
     }
 }
 
+private extension ScheduleServiceView {
+    func examDayTitleColor(for day: ExamScheduleDay) -> Color {
+        if !day.lessons.isEmpty,
+           day.lessons.allSatisfy({ viewModel.isExamPast($0, on: day.date) }) {
+            return .secondary
+        }
+        return Calendar.current.isDateInTomorrow(day.date) ? .red : .primary
+    }
+}
+
 private enum ScheduleLessonCardPresentation {
     case regular
     case sessionCompact
@@ -334,6 +345,7 @@ private struct ScheduleLessonCard: View {
     let lesson: DisciplineSchedule
     let isCurrent: Bool
     let progress: Double?
+    var isPast = false
     var presentation: ScheduleLessonCardPresentation = .regular
     let onTeacherTap: (DisciplineEmployee) -> Void
     let onGroupTap: (String) -> Void
@@ -360,7 +372,7 @@ private struct ScheduleLessonCard: View {
                         HStack(spacing: 8) {
                             Text(lesson.title)
                                 .font(.headline.weight(.semibold))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(cardPrimaryForeground)
                                 .lineLimit(2)
                             if isCurrent {
                                 currentBadge
@@ -370,13 +382,13 @@ private struct ScheduleLessonCard: View {
                         if !lesson.location.isEmpty {
                             Text(lesson.location)
                                 .font(.subheadline.weight(.regular))
-                                .foregroundStyle(.white.opacity(0.75))
+                                .foregroundStyle(cardSecondaryForeground)
                         }
 
                         if let note = lesson.note.nilIfBlank {
                             Text(note)
                                 .font(.subheadline.weight(.regular))
-                                .foregroundStyle(.white.opacity(0.75))
+                                .foregroundStyle(cardSecondaryForeground)
                                 .lineLimit(2)
                         }
 
@@ -386,7 +398,7 @@ private struct ScheduleLessonCard: View {
                             } label: {
                                 Label(teacher.fullName, systemImage: "person.fill")
                                     .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.white.opacity(0.9))
+                                    .foregroundStyle(cardSecondaryForeground)
                             }
                             .buttonStyle(.plain)
                         }
@@ -397,7 +409,7 @@ private struct ScheduleLessonCard: View {
                             } label: {
                                 Label(groupName, systemImage: "person.3.fill")
                                     .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.white.opacity(0.85))
+                                    .foregroundStyle(cardSecondaryForeground)
                             }
                             .buttonStyle(.plain)
                         }
@@ -425,14 +437,14 @@ private struct ScheduleLessonCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(compactTitle)
                     .font(.headline.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(cardPrimaryForeground)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
 
                 if let compactSubtitle {
                     Text(compactSubtitle)
                         .font(.subheadline.weight(.regular))
-                        .foregroundStyle(.white.opacity(0.72))
+                        .foregroundStyle(cardSecondaryForeground)
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                 }
@@ -450,12 +462,8 @@ private struct ScheduleLessonCard: View {
 
     private func timeColumn(font: Font) -> some View {
         VStack(spacing: 3) {
-            Text(lesson.startLessonTime)
-                .font(font.weight(.semibold))
-                .foregroundStyle(.white)
-            Text(lesson.endLessonTime)
-                .font(font.weight(.regular))
-                .foregroundStyle(.white.opacity(0.85))
+            Text(lesson.startLessonTime).font(font.weight(.semibold)).foregroundStyle(cardPrimaryForeground)
+            Text(lesson.endLessonTime).font(font.weight(.regular)).foregroundStyle(cardSecondaryForeground)
         }
     }
 
@@ -478,7 +486,7 @@ private struct ScheduleLessonCard: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
             .background(accentColor.opacity(0.3), in: Capsule())
-            .foregroundStyle(.white)
+            .foregroundStyle(cardPrimaryForeground)
     }
 
     private func teacherAvatarButton(size: CGFloat) -> some View {
@@ -503,12 +511,14 @@ private struct ScheduleLessonCard: View {
                 ZStack {
                     Circle().fill(.white.opacity(0.14))
                     Image(systemName: "person.fill")
-                        .foregroundStyle(.white.opacity(0.85))
+                        .foregroundStyle(cardSecondaryForeground)
                 }
             }
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
+        .saturation(isPast ? 0 : 1)
+        .opacity(isPast ? 0.7 : 1)
     }
 
     @ViewBuilder
@@ -520,12 +530,19 @@ private struct ScheduleLessonCard: View {
     }
 
     private var cardBackground: LinearGradient {
-        LinearGradient(
-            colors: [Color(red: 0.11, green: 0.12, blue: 0.16), Color(red: 0.13, green: 0.14, blue: 0.18)],
+        let colors = isPast
+            ? [Color(uiColor: .systemGray3), Color(uiColor: .systemGray4)]
+            : [Color(red: 0.11, green: 0.12, blue: 0.16), Color(red: 0.13, green: 0.14, blue: 0.18)]
+        return LinearGradient(
+            colors: colors,
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
     }
+
+    private var cardPrimaryForeground: Color { isPast ? Color.white.opacity(0.78) : .white }
+
+    private var cardSecondaryForeground: Color { isPast ? Color.white.opacity(0.58) : Color.white.opacity(0.75) }
 
     private var compactTitle: String {
         if lesson.isAnnouncement { return "📣 Объявление" }
@@ -543,6 +560,9 @@ private struct ScheduleLessonCard: View {
     }
 
     private var accentColor: Color {
+        if isPast {
+            return Color.white.opacity(0.45)
+        }
         let type = lesson.lessonTypeAbbrev.lowercased()
         if type.contains("экзам") {
             return .red

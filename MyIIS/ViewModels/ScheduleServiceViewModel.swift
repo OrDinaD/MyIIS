@@ -1093,6 +1093,17 @@ extension ScheduleServiceViewModel {
         return now.timeIntervalSince(interval.start) / all
     }
 
+    func isExamPast(_ exam: DisciplineSchedule, on date: Date, now: Date = Date()) -> Bool {
+        guard date != Date.distantFuture else { return false }
+        if let interval = lessonInterval(for: exam, on: date) {
+            return interval.end < now
+        }
+
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
+        return nextDay <= now
+    }
+
     var scheduleHeaderTitle: String {
         if let group = schedule?.group?.name.nilIfBlank {
             return group

@@ -1,6 +1,10 @@
 import SwiftUI
 import UIKit
 
+private final class CachedAsyncImageMemoryCache {
+    static let shared = NSCache<NSURL, UIImage>()
+}
+
 struct CachedAsyncImage<Content: View, Placeholder: View>: View {
     let url: URL?
     var transaction: Transaction = Transaction(animation: .easeInOut(duration: 0.18))
@@ -29,10 +33,19 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
         uiImage = nil
 
         guard let url else { return }
+        let cacheKey = url as NSURL
+        if let cachedImage = CachedAsyncImageMemoryCache.shared.object(forKey: cacheKey) {
+            withTransaction(transaction) {
+                uiImage = cachedImage
+            }
+            return
+        }
+
         let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
 
         if let cached = URLCache.shared.cachedResponse(for: request),
            let image = UIImage(data: cached.data) {
+            CachedAsyncImageMemoryCache.shared.setObject(image, forKey: cacheKey)
             withTransaction(transaction) {
                 uiImage = image
             }
@@ -42,6 +55,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard !Task.isCancelled, let image = UIImage(data: data) else { return }
+            CachedAsyncImageMemoryCache.shared.setObject(image, forKey: cacheKey)
             URLCache.shared.storeCachedResponse(CachedURLResponse(response: response, data: data), for: request)
             withTransaction(transaction) {
                 uiImage = image
