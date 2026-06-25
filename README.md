@@ -37,10 +37,9 @@ MyIIS - iOS-приложение для студентов БГУИР. Оно с
   <img src="public/showcase/3.jpg" width="72%" alt="Все ресурсы в одном приложении">
 </p>
 <p align="center">
-  <img src="public/showcase/1.jpg" width="46%" alt="Кабинет студента в кармане">
-</p>
-<p align="center">
-  <img src="public/showcase/2.jpg" width="46%" alt="Все необходимое без переключения между сайтами">
+  <img src="public/showcase/1.jpg" width="32%" alt="Кабинет студента в кармане">
+  &nbsp;&nbsp;&nbsp;
+  <img src="public/showcase/2.jpg" width="32%" alt="Все необходимое без переключения между сайтами">
 </p>
 
 ## Для кого
