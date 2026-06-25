@@ -392,3 +392,7 @@
 "unauthorized_after_sign_in" = "После входа";
 "unauthorized_all_features_subtitle" = "Для доступа ко всем функциям";
 "unauthorized_services_locked_section" = "Сервисы (требуется авторизация)";
+
+"json_key_note" = "Заметка";
+"json_key_status" = "Статус";
+"json_key_date" = "Дата";

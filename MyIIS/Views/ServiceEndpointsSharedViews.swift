@@ -1,8 +1,17 @@
 import SwiftUI
 
+func localizedJSONKey(_ key: String) -> String {
+    let lower = key.lowercased()
+    if lower == "id" { return "ID" }
+    
+    let localized = NSLocalizedString("json_key_\(lower)", value: key.capitalized, comment: "")
+    // Fallback to capitalized if not found (assuming NSLocalizedString returns key if value is not set and key not in dict, but with value param it returns value)
+    return localized
+}
+
 struct ServiceEndpointSection<Content: View>: View {
     let title: String
-    let subtitle: String
+    let subtitle: String?
     let icon: String
     @ViewBuilder let content: Content
 
@@ -18,9 +27,11 @@ struct ServiceEndpointSection<Content: View>: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
-                    Text(subtitle)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    if let subtitle, !subtitle.isEmpty {
+                        Text(subtitle)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Spacer(minLength: 8)
@@ -52,7 +63,7 @@ struct ServiceJSONItemCard: View {
             VStack(spacing: 6) {
                 ForEach(Array(item.detailPairs.prefix(5).enumerated()), id: \.offset) { _, pair in
                     HStack(alignment: .top, spacing: 8) {
-                        Text(pair.0)
+                        Text(localizedJSONKey(pair.0))
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
                             .frame(width: 110, alignment: .leading)
@@ -121,7 +132,7 @@ struct PenaltyItemCard: View {
                 VStack(spacing: 6) {
                     ForEach(Array(filteredPairs.enumerated()), id: \.offset) { _, pair in
                         HStack(alignment: .top, spacing: 8) {
-                            Text(pair.0)
+                            Text(localizedJSONKey(pair.0))
                                 .font(.caption.weight(.medium))
                                 .foregroundStyle(.secondary)
                                 .frame(width: 110, alignment: .leading)

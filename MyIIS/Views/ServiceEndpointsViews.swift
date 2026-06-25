@@ -44,7 +44,7 @@ struct LibraryServiceView: View {
 
                 ServiceEndpointSection(
                     title: NSLocalizedString("services_library_books_title", comment: ""),
-                    subtitle: NSLocalizedString("services_library_books_subtitle", comment: ""),
+                    subtitle: nil,
                     icon: "books.vertical.fill"
                 ) {
                     if viewModel.books.isEmpty {
@@ -60,7 +60,7 @@ struct LibraryServiceView: View {
 
                 ServiceEndpointSection(
                     title: NSLocalizedString("services_library_news_title", comment: ""),
-                    subtitle: NSLocalizedString("services_library_news_subtitle", comment: ""),
+                    subtitle: nil,
                     icon: "newspaper.fill"
                 ) {
                     if viewModel.news.isEmpty {
@@ -272,7 +272,7 @@ struct AnnouncementsServiceView: View {
 
                 ServiceEndpointSection(
                     title: NSLocalizedString("services_announcements_title", comment: ""),
-                    subtitle: NSLocalizedString("services_announcements_subtitle", comment: ""),
+                    subtitle: nil,
                     icon: "megaphone.fill"
                 ) {
                     if viewModel.items.isEmpty {
@@ -402,7 +402,7 @@ struct PenaltiesServiceView: View {
 
                 ServiceEndpointSection(
                     title: NSLocalizedString("services_penalties_title", comment: ""),
-                    subtitle: NSLocalizedString("services_penalties_subtitle", comment: ""),
+                    subtitle: nil,
                     icon: "exclamationmark.bubble.fill"
                 ) {
                     if viewModel.items.isEmpty {
