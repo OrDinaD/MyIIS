@@ -35,7 +35,15 @@ struct MainTabView: View {
     }
 
     private var baseTabView: some View {
-        TabView(selection: $router.selectedTab) {
+        TabView(selection: Binding(
+            get: { router.selectedTab },
+            set: { newTab in
+                if newTab == router.selectedTab && newTab == .others {
+                    router.servicesPath = NavigationPath()
+                }
+                router.selectedTab = newTab
+            }
+        )) {
             if enableBetaSections {
                 SEOHomeView()
                     .tag(AppTab.home)
