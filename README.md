@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Default-iOS-Default-1024x1024@1x.png" width="112" alt="MyIIS app icon">
+  <img src="public/showcase/app-icon.png" width="112" alt="MyIIS app icon">
 </p>
 
 # MyIIS
@@ -14,15 +14,40 @@
 
 MyIIS - iOS-приложение для студентов БГУИР. Оно собирает личный кабинет, учебные данные, сервисы университета и СЭО в одном SwiftUI-интерфейсе без необходимости переключаться между разными веб-страницами.
 
+## Приложение доступно в App Store
+
+<table>
+  <tr>
+    <td width="96">
+      <img src="public/showcase/app-icon.png" width="72" alt="MyIIS">
+    </td>
+    <td>
+      <strong>MyIIS</strong><br>
+      Личный кабинет, расписание, рейтинг, пропуски, СЭО и университетские сервисы БГУИР в одном приложении для iPhone.<br><br>
+      <a href="https://apps.apple.com/us/app/myiis/id6779668761">
+        <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ru-ru?size=250x83" height="42" alt="Загрузить в App Store">
+      </a>
+    </td>
+  </tr>
+</table>
+
 ## Инфографика
 
 <p align="center">
-  <img src="public/showcase/1.jpg" width="32%" alt="Инфографика 1">
-  <img src="public/showcase/2.jpg" width="32%" alt="Инфографика 2">
-  <img src="public/showcase/3.jpg" width="32%" alt="Инфографика 3">
+  <img src="public/showcase/3.jpg" width="72%" alt="Все ресурсы в одном приложении">
+</p>
+<p align="center">
+  <img src="public/showcase/1.jpg" width="46%" alt="Кабинет студента в кармане">
+</p>
+<p align="center">
+  <img src="public/showcase/2.jpg" width="46%" alt="Все необходимое без переключения между сайтами">
 </p>
 
-## Возможности
+## Для кого
+
+MyIIS сделан для студентов БГУИР, которым нужен быстрый доступ к учебным данным без постоянного перехода между личным кабинетом, СЭО и отдельными университетскими сервисами.
+
+## Что внутри
 
 **Личный кабинет**
 
@@ -66,25 +91,7 @@ MyIIS - iOS-приложение для студентов БГУИР. Оно с
   <img alt="GitHub Actions" src="https://img.shields.io/badge/GitHub_Actions-111827?style=for-the-badge&logo=githubactions&logoColor=white">
 </div>
 
-## Структура проекта
-
-```text
-MyIIS/                  Основное iOS-приложение
-MyIIS/Models/           Модели API и доменные сущности
-MyIIS/Services/         Сетевые клиенты, авторизация, настройки и интеграции
-MyIIS/ViewModels/       Состояние экранов и бизнес-логика
-MyIIS/Views/            SwiftUI-экраны и переиспользуемые представления
-Shared/                 Общий код приложения, виджета и App Intents
-MyIISWidget/            WidgetKit-расширение
-MyIISIntents/           App Intents extension
-MyIISTests/             Unit/API decoding tests
-MyIISUITests/           UI-тесты и snapshot-сценарии
-API/                    Документация и заметки по IIS API
-Configs/                Конфигурации таргетов и Info.plist
-fastlane/               Автоматизация App Store screenshots
-static/                 GitHub Pages: about, privacy policy, terms
-public/showcase/        Скриншоты для README и публичной витрины
-```
+## Как устроено приложение
 
 ```mermaid
 flowchart LR
@@ -99,14 +106,6 @@ flowchart LR
     Tests["XCTest / XCUITest"] --> Models["Models"]
     Tests --> Services
 ```
-
-## API
-
-Приложение работает с IIS БГУИР и ориентируется на фактические endpoint-контракты:
-
-- [API/REAL_API_ENDPOINTS.md](API/REAL_API_ENDPOINTS.md) - актуальные рабочие endpoint'ы.
-- [API/API_REFERENCE.swift](API/API_REFERENCE.swift) - Swift-справочник по API-контрактам.
-- [SwaggerHub BsuirAdditionalApi](https://app.swaggerhub.com/apis-docs/N1ghtF1re/BsuirAdditionalApi/2.0.0) - внешняя справка, которая может отставать от реального API.
 
 ## Лицензия
 
