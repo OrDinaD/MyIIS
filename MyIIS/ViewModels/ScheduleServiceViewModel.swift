@@ -871,7 +871,7 @@ extension StudyWeekFilter {
         case .all:
             return NSLocalizedString("services_schedule_week_all", comment: "")
         case .week(let value):
-            return String(format: NSLocalizedString("services_schedule_week_number", comment: ""), value)
+            return "\(value)"
         }
     }
 }

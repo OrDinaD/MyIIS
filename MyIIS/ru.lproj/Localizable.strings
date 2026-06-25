@@ -396,3 +396,4 @@
 "json_key_note" = "Заметка";
 "json_key_status" = "Статус";
 "json_key_date" = "Дата";
+"services_schedule_past_exams" = "Пройденные экзамены";

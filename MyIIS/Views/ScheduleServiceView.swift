@@ -78,13 +78,18 @@ struct ScheduleServiceView: View {
                                     ForEach(day.lessons) { lesson in
                                         ScheduleLessonCard(
                                             lesson: lesson,
-                                            isCurrent: viewModel.isLessonCurrent(lesson, on: day.weekday),
-                                            progress: viewModel.currentLessonProgress(lesson, on: day.weekday),
+                                            isCurrent: false,
+                                            progress: nil,
+                                            isPast: false,
+                                            presentation: .sessionCompact,
                                             onTeacherTap: { teacher in
                                                 Task { await viewModel.openTeacherSchedule(teacher) }
                                             },
                                             onGroupTap: { groupName in
                                                 Task { await viewModel.openGroupSchedule(groupName) }
+                                            },
+                                            onDetailsTap: {
+                                                selectedExamLesson = lesson
                                             }
                                         )
                                     }
@@ -500,8 +505,30 @@ private struct ScheduleLessonCard: View {
     private func timeColumn(font: Font) -> some View {
         VStack(spacing: 3) {
             Text(lesson.startLessonTime).font(font.weight(.semibold)).foregroundStyle(cardPrimaryForeground)
+            
+            if let breakTime = calculateBreakTime() {
+                Text(breakTime)
+                    .font(font.weight(.regular).width(.compressed))
+                    .foregroundStyle(cardSecondaryForeground.opacity(0.7))
+                    .scaleEffect(0.85)
+            }
+            
             Text(lesson.endLessonTime).font(font.weight(.regular)).foregroundStyle(cardSecondaryForeground)
         }
+    }
+
+    private func calculateBreakTime() -> String? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        guard let start = formatter.date(from: lesson.startLessonTime),
+              let end = formatter.date(from: lesson.endLessonTime) else { return nil }
+        
+        let diff = end.timeIntervalSince(start)
+        if diff == 95 * 60 {
+            let breakStart = start.addingTimeInterval(45 * 60)
+            return formatter.string(from: breakStart)
+        }
+        return nil
     }
 
     private func accentBar(width: CGFloat) -> some View {
@@ -512,6 +539,16 @@ private struct ScheduleLessonCard: View {
                 }
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
                     .fill(accentColor)
+            }
+            .mask {
+                if calculateBreakTime() != nil {
+                    VStack(spacing: 2) {
+                        Rectangle()
+                        Rectangle()
+                    }
+                } else {
+                    Rectangle()
+                }
             }
         }
         .frame(width: width)
