@@ -118,11 +118,24 @@ final class AccountSettingsService {
             case 200 ... 299:
                 return data
             case 401:
-                throw APIError.unauthorized(message: "Сессия истекла. Войдите заново.")
+                throw APIError.unauthorized(
+                    message: NSLocalizedString(
+                        "api_error_session_expired",
+                        value: "Сессия истекла. Войдите заново.",
+                        comment: ""
+                    )
+                )
             case 418:
-                throw APIError.serviceUnavailable(message: "Сервис временно недоступен")
+                throw APIError.serviceUnavailable(
+                    message: NSLocalizedString(
+                        "api_error_service_temporarily_unavailable",
+                        value: "Сервис временно недоступен",
+                        comment: ""
+                    )
+                )
             default:
-                let serverMessage = parseServerMessage(data) ?? "Ошибка сервера"
+                let serverMessage = parseServerMessage(data)
+                    ?? NSLocalizedString("api_error_server", value: "Ошибка сервера", comment: "")
                 throw APIError.serverError(statusCode: httpResponse.statusCode, message: serverMessage)
             }
         } catch let apiError as APIError {
@@ -186,7 +199,13 @@ final class AccountSettingsService {
             NSError(
                 domain: "AccountSettingsService",
                 code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Не удалось декодировать Boolean-ответ"]
+                userInfo: [
+                    NSLocalizedDescriptionKey: NSLocalizedString(
+                        "api_error_decode_boolean",
+                        value: "Не удалось декодировать Boolean-ответ",
+                        comment: ""
+                    )
+                ]
             )
         )
     }

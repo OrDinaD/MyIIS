@@ -244,7 +244,7 @@ struct AccountSettingsView: View {
                                 .resizable()
                                 .scaledToFill()
                         } else if let url = viewModel.photoURL {
-                            CachedAsyncImage(url: url) { image in
+                            CachedAsyncImage(url: url, maxPixelSize: 360) { image in
                                 image.resizable().scaledToFill()
                             } placeholder: {
                                 Image(systemName: "person.crop.circle.fill")
@@ -298,8 +298,16 @@ struct AccountSettingsView: View {
                     .onChange(of: selectedPhotoItem) { _, newValue in
                         guard let newValue else { return }
                         Task {
-                            if let data = try? await newValue.loadTransferable(type: Data.self) {
+                            do {
+                                guard let data = try await newValue.loadTransferable(type: Data.self) else {
+                                    viewModel.showError("Ошибка", "Не удалось прочитать выбранное фото.")
+                                    selectedPhotoItem = nil
+                                    return
+                                }
+
                                 await viewModel.updatePhoto(from: data)
+                            } catch {
+                                viewModel.showError("Ошибка", error.localizedDescription)
                             }
                             selectedPhotoItem = nil
                         }

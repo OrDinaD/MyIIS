@@ -78,7 +78,7 @@ struct GroupView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Label(
                     String(format: NSLocalizedString("group_summary_title_format", comment: ""), viewModel.groupTitle),
-                    systemImage: "person.3.fill"
+                    systemImage: "person.2"
                 )
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.primary)

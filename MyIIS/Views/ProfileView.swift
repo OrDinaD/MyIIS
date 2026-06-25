@@ -147,16 +147,11 @@ private extension ProfileView {
 
     @ViewBuilder
     func avatarThumbnail(for user: User) -> some View {
-        CachedAsyncImage(url: user.photoURL) { image in
+        CachedAsyncImage(url: user.photoURL, maxPixelSize: 360) { image in
             interactiveAvatarThumbnail {
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .matchedGeometryEffect(
-                        id: "avatar",
-                        in: avatarNamespace,
-                        isSource: !showFullScreenAvatar
-                    )
             }
         } placeholder: {
             interactiveAvatarThumbnail {
@@ -167,11 +162,6 @@ private extension ProfileView {
                             .font(.system(size: 44, weight: .semibold))
                             .foregroundStyle(Color.accentColor)
                     }
-                    .matchedGeometryEffect(
-                        id: "avatar",
-                        in: avatarNamespace,
-                        isSource: !showFullScreenAvatar
-                    )
             }
         }
     }
@@ -182,6 +172,13 @@ private extension ProfileView {
         content()
             .frame(width: 132, height: 132)
             .clipShape(Circle())
+            .matchedGeometryEffect(
+                id: "avatar",
+                in: avatarNamespace,
+                properties: .frame,
+                anchor: .center,
+                isSource: !showFullScreenAvatar
+            )
             .overlay { avatarStroke }
             .shadow(
                 color: Color.accentColor.opacity(isPressingAvatar ? 0.28 : 0.12),
@@ -191,6 +188,9 @@ private extension ProfileView {
             .scaleEffect(isPressingAvatar ? 0.94 : 1.0)
             .rotationEffect(.degrees(isPressingAvatar && !reduceMotion ? -3 : 0))
             .contentShape(Circle())
+            .onTapGesture {
+                presentFullScreenAvatar()
+            }
             .onLongPressGesture(
                 minimumDuration: 0.28,
                 maximumDistance: 24,
@@ -454,7 +454,7 @@ private extension ProfileView {
                     dismissFullScreenAvatar()
                 }
 
-            CachedAsyncImage(url: user.photoURL) { image in
+            CachedAsyncImage(url: user.photoURL, maxPixelSize: 2_048) { image in
                 fullScreenAvatarContent {
                     image
                         .resizable()
@@ -468,9 +468,29 @@ private extension ProfileView {
                             Text(user.initials)
                                 .font(.system(size: 72, weight: .semibold))
                                 .foregroundStyle(Color.accentColor)
-                        }
+                    }
                 }
             }
+
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismissFullScreenAvatar()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 32, weight: .semibold))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.white.opacity(0.92))
+                            .shadow(color: .black.opacity(0.35), radius: 8, y: 3)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(NSLocalizedString("common_close", comment: ""))
+                }
+                Spacer()
+            }
+            .padding(.top, 52)
+            .padding(.trailing, 22)
         }
         .ignoresSafeArea()
         .accessibilityElement(children: .contain)
@@ -598,6 +618,7 @@ private extension ProfileView {
     }
 
     func presentFullScreenAvatar() {
+        guard !showFullScreenAvatar else { return }
         UIImpactFeedbackGenerator(style: .rigid).impactOccurred(intensity: 0.95)
         resetAvatarInteractionState()
         AccessibilitySupport.update(

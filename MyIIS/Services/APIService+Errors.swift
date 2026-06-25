@@ -14,17 +14,32 @@ enum APIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Неверный URL"
+            return NSLocalizedString("api_error_invalid_url", value: "Неверный URL", comment: "")
         case .invalidResponse:
-            return "Неверный ответ от сервера"
+            return NSLocalizedString("api_error_invalid_response", value: "Неверный ответ от сервера", comment: "")
         case .unauthorized(let message):
             return message
         case .serviceUnavailable(let message):
             return message
         case .serverError(let code, let message):
-            return "Ошибка сервера (\(code)): \(message)"
+            return String(
+                format: NSLocalizedString(
+                    "api_error_server_with_code",
+                    value: "Ошибка сервера (%d): %@",
+                    comment: ""
+                ),
+                code,
+                message
+            )
         case .decodingError(let error):
-            return "Ошибка парсинга данных: \(error.localizedDescription)"
+            return String(
+                format: NSLocalizedString(
+                    "api_error_decoding",
+                    value: "Ошибка парсинга данных: %@",
+                    comment: ""
+                ),
+                error.localizedDescription
+            )
         case .networkError(let error):
             return Self.formattedNetworkError(error)
         }
@@ -33,7 +48,14 @@ enum APIError: LocalizedError {
     private static func formattedNetworkError(_ error: Error) -> String {
         if let urlError = error as? URLError {
             var details: [String] = [
-                "Сетевая ошибка: \(urlError.localizedDescription)",
+                String(
+                    format: NSLocalizedString(
+                        "api_error_network",
+                        value: "Сетевая ошибка: %@",
+                        comment: ""
+                    ),
+                    urlError.localizedDescription
+                ),
                 "URLError code: \(urlError.code.rawValue) (\(urlError.code))"
             ]
 
@@ -46,7 +68,14 @@ enum APIError: LocalizedError {
 
         let nsError = error as NSError
         return [
-            "Сетевая ошибка: \(error.localizedDescription)",
+            String(
+                format: NSLocalizedString(
+                    "api_error_network",
+                    value: "Сетевая ошибка: %@",
+                    comment: ""
+                ),
+                error.localizedDescription
+            ),
             "Domain: \(nsError.domain)",
             "Code: \(nsError.code)"
         ].joined(separator: "\n")

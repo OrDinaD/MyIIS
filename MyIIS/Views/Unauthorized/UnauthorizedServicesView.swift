@@ -56,7 +56,7 @@ struct UnauthorizedServicesView: View {
                     lockedServiceRow(icon: "book.closed.fill", title: NSLocalizedString("services_item_markbook", comment: ""))
                     lockedServiceRow(icon: "calendar", title: NSLocalizedString("services_item_schedule", comment: ""))
                     lockedServiceRow(icon: "graduationcap.fill", title: NSLocalizedString("services_item_study", comment: ""))
-                    lockedServiceRow(icon: "person.3.fill", title: NSLocalizedString("services_item_group", comment: ""))
+                    lockedServiceRow(icon: "person.2", title: NSLocalizedString("services_item_group", comment: ""))
                 }
             }
             .listStyle(.insetGrouped)

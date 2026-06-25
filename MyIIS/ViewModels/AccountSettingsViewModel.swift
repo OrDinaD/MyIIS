@@ -7,6 +7,11 @@ import Foundation
 import SwiftUI
 import UIKit
 
+enum AccountSettingsImagePolicy {
+    static let maxProfilePhotoPixelSize: CGFloat = 1_024
+    static let jpegCompressionQuality: CGFloat = 0.86
+}
+
 @MainActor
 final class AccountSettingsViewModel: ObservableObject {
     struct AlertMessage: Identifiable {
@@ -254,11 +259,16 @@ final class AccountSettingsViewModel: ObservableObject {
 
     func updatePhoto(from imageData: Data) async {
         guard !isUploadingPhoto else { return }
-        guard let image = UIImage(data: imageData) else {
+        guard let image = ImageDownsampler.image(
+            from: imageData,
+            maxPixelSize: AccountSettingsImagePolicy.maxProfilePhotoPixelSize
+        ) else {
             showError("Ошибка", "Не удалось прочитать изображение.")
             return
         }
-        guard let pngData = image.pngData() else {
+        guard let uploadData = image.jpegData(
+            compressionQuality: AccountSettingsImagePolicy.jpegCompressionQuality
+        ) ?? image.pngData() else {
             showError("Ошибка", "Не удалось подготовить изображение.")
             return
         }
@@ -267,7 +277,7 @@ final class AccountSettingsViewModel: ObservableObject {
         defer { isUploadingPhoto = false }
 
         do {
-            let base64 = pngData.base64EncodedString()
+            let base64 = uploadData.base64EncodedString()
             if let returnedBase64 = try await service.changePhoto(base64: base64),
                let returnedImage = decodeBase64Image(returnedBase64) {
                 photoImage = returnedImage

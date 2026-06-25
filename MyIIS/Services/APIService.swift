@@ -18,6 +18,7 @@ class APIService {
     }
 
     private static let responseCachePrefix = "APIService.responseCache."
+    private static let responseCacheLifetime: TimeInterval = 24 * 60 * 60
 
     private struct CachedResponseEnvelope: Codable {
         let data: Data
@@ -31,6 +32,16 @@ class APIService {
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
+
+    static func resetDemoMode() {
+        isDemoMode = false
+    }
+
+    static func clearResponseCache(in defaults: UserDefaults = .standard) {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(responseCachePrefix) {
+            defaults.removeObject(forKey: key)
+        }
+    }
 
     /// Аутентификация пользователя
     /// - Parameters:
@@ -177,7 +188,10 @@ class APIService {
             logService.log("Status Code: \(httpResponse.statusCode)")
 
             guard (200...299).contains(httpResponse.statusCode) else {
-                throw APIError.serverError(statusCode: httpResponse.statusCode, message: "Ошибка сервера")
+                throw APIError.serverError(
+                    statusCode: httpResponse.statusCode,
+                    message: NSLocalizedString("api_error_server", value: "Ошибка сервера", comment: "")
+                )
             }
 
             let suggestedName = httpResponse.value(forHTTPHeaderField: "Content-Disposition")
@@ -297,11 +311,10 @@ class APIService {
     }
 
     private func logResponse(_ data: Data, _ response: URLResponse) {
-        if let responseString = String(data: data, encoding: .utf8) {
-            logService.log("Response Data: \(responseString)")
-        }
         if let httpResponse = response as? HTTPURLResponse {
-            logService.log("Status Code: \(httpResponse.statusCode)")
+            logService.log("Response: HTTP \(httpResponse.statusCode), \(data.count) bytes")
+        } else {
+            logService.log("Response: \(type(of: response)), \(data.count) bytes")
         }
     }
 
@@ -337,13 +350,28 @@ class APIService {
         switch statusCode {
         case 401:
             logService.log("❌ 401 Unauthorized: \(message ?? "nil")")
-            throw APIError.unauthorized(message: message ?? "Неверный логин или пароль")
+            throw APIError.unauthorized(
+                message: message ?? NSLocalizedString(
+                    "api_error_bad_credentials",
+                    value: "Неверный логин или пароль",
+                    comment: ""
+                )
+            )
         case 418:
             logService.log("❌ 418 IIS Unavailable: \(message ?? "nil")")
-            throw APIError.serviceUnavailable(message: message ?? "Сервис ИИС недоступен")
+            throw APIError.serviceUnavailable(
+                message: message ?? NSLocalizedString(
+                    "api_error_iis_unavailable",
+                    value: "Сервис ИИС недоступен",
+                    comment: ""
+                )
+            )
         default:
             logService.log("❌ Server Error \(statusCode): \(message ?? "nil")")
-            throw APIError.serverError(statusCode: statusCode, message: message ?? "Ошибка сервера")
+            throw APIError.serverError(
+                statusCode: statusCode,
+                message: message ?? NSLocalizedString("api_error_server", value: "Ошибка сервера", comment: "")
+            )
         }
     }
 
@@ -363,6 +391,11 @@ class APIService {
         guard let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults) else { return nil }
         guard let envelope = try? JSONDecoder().decode(CachedResponseEnvelope.self, from: payload) else { return nil }
 
+        guard Date().timeIntervalSince(envelope.cachedAt) <= Self.responseCacheLifetime else {
+            userDefaults.removeObject(forKey: key)
+            return nil
+        }
+
         do {
             let decoded: T = try decode(envelope.data)
             let method = request.httpMethod ?? "GET"
@@ -377,8 +410,11 @@ class APIService {
     private func shouldCache(_ request: URLRequest) -> Bool {
         let method = request.httpMethod?.uppercased() ?? "GET"
         guard method == "GET" else { return false }
-        guard request.url != nil else { return false }
-        return true
+        guard let url = request.url else { return false }
+
+        // Keep the generic API cache narrow. Authenticated/student endpoints
+        // can contain personal data and should use explicit feature-level caches.
+        return url.path.hasSuffix("/api/v1/schedule")
     }
 
     private func cacheKey(for request: URLRequest) -> String? {

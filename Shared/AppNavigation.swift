@@ -108,6 +108,11 @@ class AppRouter: ObservableObject {
         }
     }
 
+    func resetForLogout() {
+        selectedTab = .profile
+        servicesPath = NavigationPath()
+    }
+
     func handleURL(_ url: URL) {
         guard url.scheme == "myiis" else { return }
 

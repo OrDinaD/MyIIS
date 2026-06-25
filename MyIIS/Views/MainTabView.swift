@@ -6,7 +6,7 @@ import SwiftUI
 import UIKit
 
 struct MainTabView: View {
-    @StateObject private var router = AppRouter.shared
+    @ObservedObject private var router = AppRouter.shared
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @AppStorage("show_tab_profile") private var showProfile = true
     @AppStorage("show_tab_attendance") private var showAttendance = true

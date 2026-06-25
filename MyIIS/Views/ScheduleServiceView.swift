@@ -407,7 +407,7 @@ private struct ScheduleLessonCard: View {
                             Button {
                                 onGroupTap(groupName)
                             } label: {
-                                Label(groupName, systemImage: "person.3.fill")
+                                Label(groupName, systemImage: "person.2")
                                     .font(.subheadline.weight(.medium))
                                     .foregroundStyle(cardSecondaryForeground)
                             }

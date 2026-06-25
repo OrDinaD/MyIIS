@@ -70,9 +70,13 @@ final class MyIISUITests: XCTestCase {
     @MainActor
     private func loginWithDemoAccount(_ app: XCUIApplication) {
         XCTContext.runActivity(named: "Login with demo account") { _ in
+            if app.tabBars.firstMatch.waitForExistence(timeout: 2) {
+                return
+            }
+
             let usernameField = app.textFields["usernameField"]
-            if !usernameField.waitForExistence(timeout: 5) {
-                let signInButton = app.buttons["Войти в аккаунт"].firstMatch
+            if !usernameField.waitForExistence(timeout: 3) {
+                let signInButton = firstExistingSignInButton(in: app)
                 XCTAssertTrue(signInButton.waitForExistence(timeout: 5), "Sign in button did not appear")
                 signInButton.tap()
             }
@@ -95,6 +99,18 @@ final class MyIISUITests: XCTestCase {
             dismissSystemAlertsIfNeeded()
             waitForUIToSettle()
         }
+    }
+
+    @MainActor
+    private func firstExistingSignInButton(in app: XCUIApplication) -> XCUIElement {
+        let candidates = [
+            app.buttons["homeSignInButton"],
+            app.buttons["servicesSignInPrompt"],
+            app.buttons["Войти в аккаунт"],
+            app.buttons["Sign in"]
+        ]
+
+        return candidates.first(where: { $0.exists }) ?? candidates[0]
     }
 
     @MainActor

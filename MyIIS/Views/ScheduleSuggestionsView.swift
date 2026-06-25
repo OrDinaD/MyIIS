@@ -15,7 +15,7 @@ struct ScheduleSuggestionsView: View {
                         onSelect(group)
                     } label: {
                         HStack(spacing: 10) {
-                            Image(systemName: group.name == accountGroupName ? "person.crop.circle.badge.checkmark" : "person.3.fill")
+                            Image(systemName: group.name == accountGroupName ? "person.crop.circle.badge.checkmark" : "person.2")
                                 .foregroundStyle(group.name == accountGroupName ? .green : .blue)
                             VStack(alignment: .leading, spacing: 2) {
                                 HStack(spacing: 6) {

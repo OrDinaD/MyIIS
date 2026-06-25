@@ -30,7 +30,7 @@ extension AccountSettingsViewModel {
         parser.dateFormat = "yyyy-MM-dd"
         if let date = parser.date(from: raw) {
             let output = DateFormatter()
-            output.locale = Locale(identifier: "ru_RU")
+            output.locale = .autoupdatingCurrent
             output.dateFormat = "dd.MM.yyyy"
             return output.string(from: date)
         }
@@ -44,7 +44,10 @@ extension AccountSettingsViewModel {
         guard let data = Data(base64Encoded: normalized) else {
             return nil
         }
-        return UIImage(data: data)
+        return ImageDownsampler.image(
+            from: data,
+            maxPixelSize: AccountSettingsImagePolicy.maxProfilePhotoPixelSize
+        )
     }
 
     func isPasswordValid(_ password: String) -> Bool {

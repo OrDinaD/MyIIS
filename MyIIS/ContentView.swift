@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     /// Получаем доступ к сервису аутентификации из окружения
     @EnvironmentObject var authService: AuthenticationService
-    @StateObject private var router = AppRouter.shared
+    @ObservedObject private var router = AppRouter.shared
 
     var body: some View {
         Group {

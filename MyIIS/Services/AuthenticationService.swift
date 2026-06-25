@@ -211,6 +211,9 @@ class AuthenticationService: ObservableObject {
     func logout() {
         self.currentUser = nil
         self.token = nil
+        APIService.resetDemoMode()
+        APIService.clearResponseCache()
+        AppRouter.shared.resetForLogout()
         clearCachedUser()
 
         do {

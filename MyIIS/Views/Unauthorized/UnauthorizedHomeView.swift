@@ -56,6 +56,7 @@ struct UnauthorizedHomeView: View {
                 .buttonStyle(.borderedProminent)
                 .buttonBorderShape(.roundedRectangle(radius: 16))
                 .controlSize(.large)
+                .accessibilityIdentifier("homeSignInButton")
             }
             .padding(.vertical, 8)
         }
@@ -113,7 +114,7 @@ struct UnauthorizedHomeView: View {
         Section(NSLocalizedString("unauthorized_after_sign_in", comment: "")) {
             lockedRow(icon: "calendar", title: NSLocalizedString("services_item_schedule", comment: ""))
             lockedRow(icon: "book.closed.fill", title: NSLocalizedString("services_item_markbook", comment: ""))
-            lockedRow(icon: "person.3.fill", title: NSLocalizedString("services_item_group", comment: ""))
+            lockedRow(icon: "person.2", title: NSLocalizedString("services_item_group", comment: ""))
         }
     }
 

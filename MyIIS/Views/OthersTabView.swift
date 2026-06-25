@@ -71,7 +71,7 @@ private enum ServicesDestination: String, Identifiable, Hashable {
         case .diploma:
             return "studentdesk"
         case .group:
-            return "person.3.fill"
+            return "person.2"
         case .dormitory:
             return "building.2.crop.circle.fill"
         case .library:
@@ -93,7 +93,7 @@ private enum ServicesDestination: String, Identifiable, Hashable {
 }
 
 struct OthersTabView: View {
-    @StateObject private var router = AppRouter.shared
+    @ObservedObject private var router = AppRouter.shared
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @EnvironmentObject private var authService: AuthenticationService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
