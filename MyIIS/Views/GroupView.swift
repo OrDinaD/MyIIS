@@ -30,14 +30,7 @@ struct GroupView: View {
             .padding(.bottom, 28)
         }
         .glassScrollPadding(top: 20)
-        .background(
-            LinearGradient(
-                colors: Color.gradientBackground,
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-        )
+        .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
         .navigationTitle(NSLocalizedString("group_title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()

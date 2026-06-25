@@ -250,11 +250,11 @@ final class DiplomaApplicationViewModel: ObservableObject {
     private func persist(context: DiplomaContext) {
         let snapshot = CachedSnapshot(context: context, updatedAt: Date())
         guard let payload = try? JSONEncoder().encode(snapshot) else { return }
-        userDefaults.set(payload, forKey: Self.cacheKey)
+        UserDefaultsPayloadStore.save(payload, forKey: Self.cacheKey, in: userDefaults)
     }
 
     private func applyCachedSnapshotIfAvailable(markStale: Bool, message: String?) -> Bool {
-        guard let payload = userDefaults.data(forKey: Self.cacheKey),
+        guard let payload = UserDefaultsPayloadStore.load(forKey: Self.cacheKey, from: userDefaults),
               let snapshot = try? JSONDecoder().decode(CachedSnapshot.self, from: payload) else {
             return false
         }

@@ -22,24 +22,11 @@ enum APIError: LocalizedError {
         case .serviceUnavailable(let message):
             return message
         case .serverError(let code, let message):
-            return String(
-                format: NSLocalizedString(
-                    "api_error_server_with_code",
-                    value: "Ошибка сервера (%d): %@",
-                    comment: ""
-                ),
-                code,
-                message
-            )
+            let prefix = NSLocalizedString("api_error_server", value: "Ошибка сервера", comment: "")
+            return "\(prefix) (\(code)): \(message)"
         case .decodingError(let error):
-            return String(
-                format: NSLocalizedString(
-                    "api_error_decoding",
-                    value: "Ошибка парсинга данных: %@",
-                    comment: ""
-                ),
-                error.localizedDescription
-            )
+            let prefix = NSLocalizedString("api_error_decoding_prefix", value: "Ошибка парсинга данных", comment: "")
+            return "\(prefix): \(error.localizedDescription)"
         case .networkError(let error):
             return Self.formattedNetworkError(error)
         }
@@ -47,15 +34,9 @@ enum APIError: LocalizedError {
 
     private static func formattedNetworkError(_ error: Error) -> String {
         if let urlError = error as? URLError {
+            let prefix = NSLocalizedString("api_error_network_prefix", value: "Сетевая ошибка", comment: "")
             var details: [String] = [
-                String(
-                    format: NSLocalizedString(
-                        "api_error_network",
-                        value: "Сетевая ошибка: %@",
-                        comment: ""
-                    ),
-                    urlError.localizedDescription
-                ),
+                "\(prefix): \(urlError.localizedDescription)",
                 "URLError code: \(urlError.code.rawValue) (\(urlError.code))"
             ]
 
@@ -67,15 +48,9 @@ enum APIError: LocalizedError {
         }
 
         let nsError = error as NSError
+        let prefix = NSLocalizedString("api_error_network_prefix", value: "Сетевая ошибка", comment: "")
         return [
-            String(
-                format: NSLocalizedString(
-                    "api_error_network",
-                    value: "Сетевая ошибка: %@",
-                    comment: ""
-                ),
-                error.localizedDescription
-            ),
+            "\(prefix): \(error.localizedDescription)",
             "Domain: \(nsError.domain)",
             "Code: \(nsError.code)"
         ].joined(separator: "\n")

@@ -33,14 +33,10 @@ extension GroupView {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(Color(uiColor: .secondarySystemGroupedBackground))
                 .overlay {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(LinearGradient.glassOverlay)
-                }
-                .overlay {
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(LinearGradient.glassBorder, lineWidth: 1)
+                        .stroke(Color(uiColor: .separator).opacity(0.35), lineWidth: 1)
                 }
         )
     }

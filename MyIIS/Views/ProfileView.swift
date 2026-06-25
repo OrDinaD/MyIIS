@@ -20,7 +20,6 @@ struct ProfileView: View {
     @State fileprivate var currentOffset: CGSize = .zero
     @State fileprivate var steadyOffset: CGSize = .zero
     @State fileprivate var isPressingAvatar = false
-    @Namespace fileprivate var avatarNamespace
 
     fileprivate let avatarDismissThreshold: CGFloat = 140
     fileprivate let maximumAvatarZoom: CGFloat = 4.0
@@ -43,7 +42,7 @@ private extension ProfileView {
 
             if showFullScreenAvatar, let user = viewModel.user {
                 fullScreenAvatar(for: user)
-                    .transition(.identity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     .zIndex(100)
             }
         }
@@ -172,13 +171,6 @@ private extension ProfileView {
         content()
             .frame(width: 132, height: 132)
             .clipShape(Circle())
-            .matchedGeometryEffect(
-                id: "avatar",
-                in: avatarNamespace,
-                properties: .frame,
-                anchor: .center,
-                isSource: !showFullScreenAvatar
-            )
             .overlay { avatarStroke }
             .shadow(
                 color: Color.accentColor.opacity(isPressingAvatar ? 0.28 : 0.12),
@@ -504,13 +496,6 @@ private extension ProfileView {
         @ViewBuilder content: () -> Content
     ) -> some View {
         content()
-            .matchedGeometryEffect(
-                id: "avatar",
-                in: avatarNamespace,
-                properties: .frame,
-                anchor: .center,
-                isSource: showFullScreenAvatar
-            )
             .clipShape(
                 RoundedRectangle(
                     cornerRadius: fullScreenCornerRadius,
