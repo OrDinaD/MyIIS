@@ -31,7 +31,8 @@ struct MainTabView: View {
     }
 
     private var shouldUseSidebarAdaptableStyle: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad || ProcessInfo.processInfo.isiOSAppOnMac
+        let idiom = UIDevice.current.userInterfaceIdiom
+        return idiom == .pad || idiom == .mac || ProcessInfo.processInfo.isiOSAppOnMac
     }
 
     private var baseTabView: some View {

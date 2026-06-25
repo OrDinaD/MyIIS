@@ -475,7 +475,6 @@ struct SessionScheduleWidget: Widget {
         .description("Показывает ближайшие экзамены, консультации и объявления вашей группы.")
         .supportedFamilies([.systemMedium, .systemLarge])
         .contentMarginsDisabled()
-        .containerBackgroundRemovable(false)
     }
 }
 
@@ -494,7 +493,7 @@ struct SessionScheduleWidget: Widget {
 private extension View {
     @ViewBuilder
     func applySessionWidgetBackground() -> some View {
-        if #available(iOSApplicationExtension 17.0, *) {
+        if #available(iOSApplicationExtension 17.0, macOS 14.0, *) {
             containerBackground(for: .widget) {
                 Color(red: 0.04, green: 0.08, blue: 0.10)
             }

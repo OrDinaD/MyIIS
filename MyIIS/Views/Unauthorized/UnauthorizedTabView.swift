@@ -28,6 +28,20 @@ struct UnauthorizedTabView: View {
     @State private var selectedTab: UnauthorizedAppTab = .home
 
     var body: some View {
+        if #available(iOS 18.0, *), shouldUseSidebarAdaptableStyle {
+            baseTabView
+                .tabViewStyle(.sidebarAdaptable)
+        } else {
+            baseTabView
+        }
+    }
+
+    private var shouldUseSidebarAdaptableStyle: Bool {
+        let idiom = UIDevice.current.userInterfaceIdiom
+        return idiom == .pad || idiom == .mac || ProcessInfo.processInfo.isiOSAppOnMac
+    }
+
+    private var baseTabView: some View {
         TabView(selection: $selectedTab) {
             UnauthorizedHomeView()
                 .tag(UnauthorizedAppTab.home)
