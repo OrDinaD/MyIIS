@@ -14,7 +14,7 @@ struct EmployeeProfileView: View {
         List {
             Section {
                 HStack(alignment: .top, spacing: 16) {
-                    if let photo = employee.photoLink, let url = URL(string: photo) {
+                    if let photo = employee.photoLink, let url = URL(string: photo.replacingOccurrences(of: "http://", with: "https://").replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")) {
                         AsyncImage(url: url) { phase in
                             if let image = phase.image {
                                 image.resizable().scaledToFill()
