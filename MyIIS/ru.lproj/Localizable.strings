@@ -224,12 +224,12 @@
 "dormitory_title" = "Общежитие";
 "dormitory_loading" = "Загружаем информацию об общежитии";
 "dormitory_doc_unavailable" = "Документ недоступен";
-"dormitory_section_applications" = "Информация о засялении";
+"dormitory_section_applications" = "Информация о заселении";
 "dormitory_no_applications" = "Заявки на заселение не найдены";
 "dormitory_application_number" = "Заявка №%lld";
 "dormitory_application_accepted" = "Принята: %@";
 "dormitory_label_app_date" = "Дата подачи";
-"dormitory_label_settle_date" = "Дата засяления";
+"dormitory_label_settle_date" = "Дата заселения";
 "dormitory_label_room" = "Комната";
 "dormitory_label_queue_number" = "Номер в очереди";
 "dormitory_label_reason" = "Причина";
