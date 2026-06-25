@@ -75,6 +75,8 @@ struct User: Codable, Identifiable, Equatable {
     let references: [UserReference]
     let settings: UserSettings
 
+    let isHeadman: Bool
+
     /// Полное имя для отображения
     var fullName: String {
         "\(lastName) \(firstName) \(middleName)"
@@ -118,7 +120,8 @@ extension User {
             education: education,
             skills: skills,
             references: references,
-            settings: settings
+            settings: settings,
+            isHeadman: isHeadman
         )
     }
 }
@@ -160,7 +163,8 @@ extension User {
             isPublicProfile: true,
             isSearchJob: true,
             isShowRating: true
-        )
+        ),
+        isHeadman: true
     )
 }
 #endif

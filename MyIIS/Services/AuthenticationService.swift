@@ -205,7 +205,8 @@ class AuthenticationService: ObservableObject {
             ),
             skills: [], // Пока пустой массив - можно будет добавить позже
             references: [], // Пока пустой массив
-            settings: .default
+            settings: .default,
+            isHeadman: loginResponse.isGroupHead
         )
     }
     func logout() {
