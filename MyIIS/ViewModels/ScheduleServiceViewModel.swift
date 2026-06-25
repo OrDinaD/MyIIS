@@ -410,14 +410,6 @@ final class ScheduleServiceViewModel: ObservableObject {
         }
     }
 
-    var googleCalendarURL: URL? {
-        guard let calendarId = schedule?.group?.calendarId?.nilIfBlank,
-              let encodedCalendarID = calendarId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
-            return nil
-        }
-        return URL(string: "https://calendar.google.com/calendar/u/0/r?cid=\(encodedCalendarID)")
-    }
-
     private func setMode(_ newMode: ScheduleLookupMode, preservingQuery newQuery: String) {
         shouldResetQueryOnModeChange = false
         mode = newMode
@@ -972,6 +964,18 @@ extension ScheduleServiceViewModel {
         }
     }
 
+    var pastExamDays: [ExamScheduleDay] {
+        examDays.filter { day in
+            day.lessons.allSatisfy { isExamPast($0, on: day.date) }
+        }
+    }
+
+    var upcomingExamDays: [ExamScheduleDay] {
+        examDays.filter { day in
+            !day.lessons.allSatisfy { isExamPast($0, on: day.date) }
+        }
+    }
+
     var displayedDays: [StudyDaySchedule] {
         let days = filteredDays
         guard let currentWeekday = currentStudyWeekday else { return days }
@@ -1000,7 +1004,7 @@ extension ScheduleServiceViewModel {
     }
 
     var showsSubgroupPicker: Bool {
-        subgroupFilters.count > 1
+        displayMode != .exams && subgroupFilters.count > 1
     }
 
     var shouldShowWeekFilter: Bool {

@@ -183,7 +183,7 @@ struct TeacherAvatarView: View {
 
     var body: some View {
         Group {
-            if let link = teacher?.photoLink, let url = URL(string: link) {
+            if let link = teacher?.photoLink, let url = URL(string: link.replacingOccurrences(of: "http://", with: "https://")) {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
@@ -216,7 +216,7 @@ private struct TeacherPhotoPreview: View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
 
-            if let link = teacher?.photoLink, let url = URL(string: link) {
+            if let link = teacher?.photoLink, let url = URL(string: link.replacingOccurrences(of: "http://", with: "https://")) {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFit()
                 } placeholder: {

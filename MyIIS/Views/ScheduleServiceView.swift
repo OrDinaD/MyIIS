@@ -91,7 +91,47 @@ struct ScheduleServiceView: View {
                                 }
                             }
                         case .exams:
-                            ForEach(viewModel.examDays) { day in
+                            if !viewModel.pastExamDays.isEmpty {
+                                DisclosureGroup {
+                                    VStack(alignment: .leading, spacing: 14) {
+                                        ForEach(viewModel.pastExamDays) { day in
+                                            VStack(alignment: .leading, spacing: 10) {
+                                                Text(viewModel.examDayTitle(for: day))
+                                                    .font(.title3.weight(.bold))
+                                                    .foregroundStyle(examDayTitleColor(for: day))
+
+                                                ForEach(day.lessons) { exam in
+                                                    ScheduleLessonCard(
+                                                        lesson: exam,
+                                                        isCurrent: false,
+                                                        progress: nil,
+                                                        isPast: viewModel.isExamPast(exam, on: day.date),
+                                                        presentation: .sessionCompact,
+                                                        onTeacherTap: { teacher in
+                                                            Task { await viewModel.openTeacherSchedule(teacher) }
+                                                        },
+                                                        onGroupTap: { groupName in
+                                                            Task { await viewModel.openGroupSchedule(groupName) }
+                                                        },
+                                                        onDetailsTap: {
+                                                            selectedExamLesson = exam
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .padding(.top, 10)
+                                } label: {
+                                    Label(NSLocalizedString("services_schedule_past_exams", comment: "Пройденные экзамены"), systemImage: "clock.arrow.circlepath")
+                                        .font(.headline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(16)
+                                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            }
+
+                            ForEach(viewModel.upcomingExamDays) { day in
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text(viewModel.examDayTitle(for: day))
                                         .font(.title3.weight(.bold))
@@ -183,12 +223,6 @@ struct ScheduleServiceView: View {
                         }
                         .disabled(viewModel.isDownloadingReport)
 
-                        if let googleCalendarURL = viewModel.googleCalendarURL {
-                            Link(destination: googleCalendarURL) {
-                                Label(NSLocalizedString("services_schedule_google_calendar", comment: ""), systemImage: "calendar.badge.plus")
-                            }
-                        }
-
                         Button {
                             Task { await viewModel.enableExamRemindersFromUserAction() }
                         } label: {
@@ -205,6 +239,9 @@ struct ScheduleServiceView: View {
         .overlay {
             if (viewModel.isLoading && viewModel.schedule == nil) || viewModel.isDownloadingReport {
                 ProgressView(loadingOverlayTitle)
+                    .padding(20)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             }
         }
         .task { await viewModel.loadInitialDataIfNeeded() }
@@ -501,7 +538,7 @@ private struct ScheduleLessonCard: View {
 
     private func teacherAvatar(size: CGFloat) -> some View {
         Group {
-            if let link = lesson.employees.first?.photoLink, let url = URL(string: link) {
+            if let link = lesson.employees.first?.photoLink, let url = URL(string: link.replacingOccurrences(of: "http://", with: "https://")) {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
