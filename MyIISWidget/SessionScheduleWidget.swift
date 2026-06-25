@@ -403,6 +403,7 @@ private struct SessionWidgetEventRow: View {
             .lineLimit(1)
             .minimumScaleFactor(0.76)
             .frame(width: compact ? 58 : 54)
+            .widgetAccentable()
 
             progressStrip
 
@@ -415,6 +416,7 @@ private struct SessionWidgetEventRow: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.62)
                     .allowsTightening(true)
+                    .widgetAccentable()
 
                 if let subtitle = event.subtitle, !subtitle.isEmpty {
                     Text(subtitle)
@@ -425,6 +427,7 @@ private struct SessionWidgetEventRow: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.68)
                         .allowsTightening(true)
+                        .widgetAccentable()
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -444,6 +447,7 @@ private struct SessionWidgetEventRow: View {
                     .fill(accentColor)
                     .frame(height: proxy.size.height * progress)
             }
+            .widgetAccentable()
         }
         .frame(width: compact ? 5 : 6, height: compact ? 38 : 36)
     }
@@ -494,7 +498,7 @@ struct SessionScheduleWidget: Widget {
 private extension View {
     @ViewBuilder
     func applySessionWidgetBackground() -> some View {
-        if #available(iOSApplicationExtension 17.0, macOS 14.0, *) {
+        if #available(iOSApplicationExtension 17.0, *) {
             containerBackground(for: .widget) {
                 Color(red: 0.04, green: 0.08, blue: 0.10)
             }

@@ -241,7 +241,7 @@ struct AttendanceWidgetBundle: WidgetBundle {
 private extension View {
     @ViewBuilder
     func applyWidgetBackground() -> some View {
-        if #available(iOSApplicationExtension 17.0, macOS 14.0, *) {
+        if #available(iOSApplicationExtension 17.0, *) {
             containerBackground(for: .widget) {
                 Color(uiColor: .systemBackground)
             }
