@@ -79,7 +79,16 @@ private struct ApplicationsSection: View {
             } else if let errorMessage, applications.isEmpty {
                 SectionErrorView(message: errorMessage, action: onRetry)
             } else if applications.isEmpty {
-                EmptyStateView(message: NSLocalizedString("attendance_no_applications", comment: ""), action: onRetry)
+                VStack(spacing: 8) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.largeTitle)
+                        .foregroundStyle(.tertiary)
+                    Text("Заявлений нет")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
             } else {
                 VStack(spacing: 12) {
                     ForEach(applications) { application in

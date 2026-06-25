@@ -95,10 +95,14 @@ final class AcademicChangeNotificationService: NSObject {
             async let markbookResponse = apiService.getMarkbook()
             async let ratingLessonsResponse = apiService.getPortalGradeBookLessons()
             async let dormitoryApplicationsResponse = fetchDormitoryApplicationsForMonitoring()
-            let (markbook, lessons, dormitoryApplications) = try await (
+            async let penaltiesResponse = fetchPenaltiesForMonitoring()
+            async let certificatesResponse = fetchCertificatesForMonitoring()
+            let (markbook, lessons, dormitoryApplications, penalties, certificates) = try await (
                 markbookResponse,
                 ratingLessonsResponse,
-                dormitoryApplicationsResponse
+                dormitoryApplicationsResponse,
+                penaltiesResponse,
+                certificatesResponse
             )
             let now = Date()
 
@@ -107,6 +111,8 @@ final class AcademicChangeNotificationService: NSObject {
                 markbook: markbook,
                 ratingLessons: lessons,
                 dormitoryApplications: dormitoryApplications,
+                penalties: penalties,
+                certificates: certificates,
                 previousSnapshot: oldSnapshot
             )
             GradebookCacheStore.save(markbook: markbook, currentCourse: personalProfile.course, updatedAt: now)
@@ -214,16 +220,26 @@ final class AcademicChangeNotificationService: NSObject {
         let hasRating = changes.contains { $0.source == .rating }
         let hasOmissions = changes.contains { $0.source == .omission }
         let hasDormitory = changes.contains { $0.source == .dormitory }
+        let hasPenalty = changes.contains { $0.source == .penalty }
+        let hasCertificate = changes.contains { $0.source == .certificate }
 
-        if hasDormitory && !hasMarkbook && !hasRating && !hasOmissions {
+        if hasCertificate && !hasMarkbook && !hasRating && !hasOmissions && !hasDormitory && !hasPenalty {
+            return "Обновление справок"
+        }
+
+        if hasPenalty && !hasMarkbook && !hasRating && !hasOmissions && !hasDormitory && !hasCertificate {
+            return "Взыскания и поощрения"
+        }
+
+        if hasDormitory && !hasMarkbook && !hasRating && !hasOmissions && !hasPenalty && !hasCertificate {
             return "Общежитие обновлено"
         }
 
-        if hasOmissions && !hasMarkbook && !hasRating && !hasDormitory {
+        if hasOmissions && !hasMarkbook && !hasRating && !hasDormitory && !hasPenalty && !hasCertificate {
             return "Новые пропуски"
         }
 
-        if hasDormitory || hasOmissions {
+        if hasDormitory || hasOmissions || hasPenalty || hasCertificate {
             return "Личный кабинет обновлён"
         }
 
@@ -271,6 +287,30 @@ final class AcademicChangeNotificationService: NSObject {
             return nil
         } catch {
             logService.log("⚠️ Dormitory change check failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func fetchPenaltiesForMonitoring() async -> [ServiceJSONObject]? {
+        do {
+            let api = ServiceEndpointsAPI()
+            return try await api.fetchPenalties()
+        } catch is CancellationError {
+            return nil
+        } catch {
+            logService.log("⚠️ Penalties change check failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func fetchCertificatesForMonitoring() async -> [CertificateRequest]? {
+        do {
+            let service = StudyService()
+            return try await service.fetchDashboard().certificates
+        } catch is CancellationError {
+            return nil
+        } catch {
+            logService.log("⚠️ Certificates change check failed: \(error.localizedDescription)")
             return nil
         }
     }
@@ -327,7 +367,11 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
     let ratingItems: [AcademicChangeItem]
     let omissionItems: [AcademicOmissionItem]
     let dormitoryItems: [DormitoryApplicationItem]
+    let penaltyItems: [PenaltyNotificationItem]
+    let certificateItems: [CertificateNotificationItem]
     let hasDormitoryBaseline: Bool
+    let hasPenaltiesBaseline: Bool
+    let hasCertificatesBaseline: Bool
     let capturedAt: Date
 
     private enum CodingKeys: String, CodingKey {
@@ -335,7 +379,11 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         case ratingItems
         case omissionItems
         case dormitoryItems
+        case penaltyItems
+        case certificateItems
         case hasDormitoryBaseline
+        case hasPenaltiesBaseline
+        case hasCertificatesBaseline
         case capturedAt
     }
 
@@ -345,7 +393,11 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         self.ratingItems = try container.decode([AcademicChangeItem].self, forKey: .ratingItems)
         self.omissionItems = try container.decodeIfPresent([AcademicOmissionItem].self, forKey: .omissionItems) ?? []
         self.dormitoryItems = try container.decodeIfPresent([DormitoryApplicationItem].self, forKey: .dormitoryItems) ?? []
+        self.penaltyItems = try container.decodeIfPresent([PenaltyNotificationItem].self, forKey: .penaltyItems) ?? []
+        self.certificateItems = try container.decodeIfPresent([CertificateNotificationItem].self, forKey: .certificateItems) ?? []
         self.hasDormitoryBaseline = try container.decodeIfPresent(Bool.self, forKey: .hasDormitoryBaseline) ?? false
+        self.hasPenaltiesBaseline = try container.decodeIfPresent(Bool.self, forKey: .hasPenaltiesBaseline) ?? false
+        self.hasCertificatesBaseline = try container.decodeIfPresent(Bool.self, forKey: .hasCertificatesBaseline) ?? false
         self.capturedAt = try container.decode(Date.self, forKey: .capturedAt)
     }
 
@@ -353,6 +405,8 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         markbook: MarkbookResponse,
         ratingLessons: [PortalGradeBookLesson],
         dormitoryApplications: [DormitoryQueueApplication]?,
+        penalties: [ServiceJSONObject]?,
+        certificates: [CertificateRequest]?,
         previousSnapshot: AcademicChangeSnapshot?
     ) {
         self.markbookItems = Self.makeMarkbookItems(from: markbook)
@@ -366,6 +420,22 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
             self.dormitoryItems = previousSnapshot?.dormitoryItems ?? []
             self.hasDormitoryBaseline = previousSnapshot?.hasDormitoryBaseline == true
         }
+        
+        if let penalties {
+            self.penaltyItems = Self.makePenaltyItems(from: penalties)
+            self.hasPenaltiesBaseline = true
+        } else {
+            self.penaltyItems = previousSnapshot?.penaltyItems ?? []
+            self.hasPenaltiesBaseline = previousSnapshot?.hasPenaltiesBaseline == true
+        }
+
+        if let certificates {
+            self.certificateItems = Self.makeCertificateItems(from: certificates)
+            self.hasCertificatesBaseline = true
+        } else {
+            self.certificateItems = previousSnapshot?.certificateItems ?? []
+            self.hasCertificatesBaseline = previousSnapshot?.hasCertificatesBaseline == true
+        }
 
         self.capturedAt = Date()
     }
@@ -378,9 +448,44 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         let dormitoryChanges = hasDormitoryBaseline && oldSnapshot.hasDormitoryBaseline
             ? dormitoryChanges(since: oldSnapshot)
             : []
+            
+        let penChanges = hasPenaltiesBaseline && oldSnapshot.hasPenaltiesBaseline
+            ? penaltyChanges(since: oldSnapshot)
+            : []
+            
+        let certChanges = hasCertificatesBaseline && oldSnapshot.hasCertificatesBaseline
+            ? certificateChanges(since: oldSnapshot)
+            : []
 
-        return (gradeChanges + omissionChanges(since: oldSnapshot) + dormitoryChanges)
+        return (gradeChanges + omissionChanges(since: oldSnapshot) + dormitoryChanges + penChanges + certChanges)
             .sorted(by: AcademicChangeItem.defaultSort)
+    }
+
+    private func penaltyChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
+        let oldItemsById = Dictionary(uniqueKeysWithValues: oldSnapshot.penaltyItems.map { ($0.id, $0) })
+        return penaltyItems.flatMap { item -> [AcademicChangeItem] in
+            guard let oldItem = oldItemsById[item.id] else {
+                return [AcademicChangeItem(signature: "penalty|\(item.id)|created", source: .penalty, subject: item.reason, value: "Новая запись", date: nil, context: "Взыскания и поощрения")]
+            }
+            if oldItem.status != item.status {
+                return [AcademicChangeItem(signature: "penalty|\(item.id)|status|\(item.status)", source: .penalty, subject: item.reason, value: "Статус: \(item.status)", date: nil, context: "Взыскания и поощрения")]
+            }
+            return []
+        }
+    }
+
+    private func certificateChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
+        let oldItemsById = Dictionary(uniqueKeysWithValues: oldSnapshot.certificateItems.map { ($0.id, $0) })
+        return certificateItems.flatMap { item -> [AcademicChangeItem] in
+            guard let oldItem = oldItemsById[item.id] else {
+                return [AcademicChangeItem(signature: "cert|\(item.id)|created", source: .certificate, subject: item.provisionPlace, value: "Заказана", date: nil, context: "Справка")]
+            }
+            if oldItem.status != item.status {
+                let statusText = item.status == 1 ? "Напечатана" : (item.status == 2 ? "Обрабатывается" : "Статус изменен")
+                return [AcademicChangeItem(signature: "cert|\(item.id)|status|\(item.status)", source: .certificate, subject: item.provisionPlace, value: statusText, date: nil, context: "Справка")]
+            }
+            return []
+        }
     }
 
     private func omissionChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
@@ -481,6 +586,14 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         applications
             .map(DormitoryApplicationItem.init(application:))
             .sorted { $0.id > $1.id }
+    }
+
+    private static func makePenaltyItems(from penalties: [ServiceJSONObject]) -> [PenaltyNotificationItem] {
+        penalties.map(PenaltyNotificationItem.init(object:))
+    }
+
+    private static func makeCertificateItems(from certificates: [CertificateRequest]) -> [CertificateNotificationItem] {
+        certificates.map(CertificateNotificationItem.init(request:))
     }
 }
 
@@ -591,4 +704,30 @@ private enum AcademicChangeSource: String, Codable {
     case rating
     case omission
     case dormitory
+    case penalty
+    case certificate
+}
+
+private struct PenaltyNotificationItem: Codable, Hashable {
+    let id: String
+    let reason: String
+    let status: String
+    
+    init(object: ServiceJSONObject) {
+        self.id = object.stableID
+        self.reason = object.fields["reason"]?.scalarText ?? object.primaryText
+        self.status = object.fields["status"]?.scalarText ?? ""
+    }
+}
+
+private struct CertificateNotificationItem: Codable, Hashable {
+    let id: Int
+    let status: Int
+    let provisionPlace: String
+    
+    init(request: CertificateRequest) {
+        self.id = request.id
+        self.status = request.status
+        self.provisionPlace = request.provisionPlace
+    }
 }
