@@ -72,7 +72,7 @@
 "services_section_study" = "Учёба";
 "services_section_resources" = "Ресурсы";
 "services_section_info" = "Инфо";
-"services_section_open" = "Доступные сервисы";
+"services_section_open" = "Общие сервисы";
 "services_sign_in_title" = "Войдите в аккаунт";
 "services_sign_in_subtitle" = "После входа откроются зачётка, учебные сервисы и персональные данные.";
 "services_account_locked_title" = "Сервисы аккаунта";

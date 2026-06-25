@@ -164,8 +164,8 @@ private extension OthersTabView {
     private var mobileServicesContent: some View {
         if isAuthenticated {
             mobileAccountServicesSections
-            mobileAboutSection
             mobileOpenServicesSection
+            mobileAboutSection
         } else {
             mobileOpenServicesSection
             mobileSignInSection
@@ -321,11 +321,11 @@ private extension OthersTabView {
     private var desktopServicesContent: some View {
         if isAuthenticated {
             desktopAccountServicesSections
+            desktopOpenServicesSection
             Section {
                 serviceRow(for: .about)
                     .tag(ServicesDestination.about)
             }
-            desktopOpenServicesSection
         } else {
             desktopOpenServicesSection
             Section {

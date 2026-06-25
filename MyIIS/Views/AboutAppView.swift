@@ -18,7 +18,7 @@ struct AboutAppView: View {
             VStack(alignment: .leading, spacing: 26) {
                 versionSection
                 academicNotificationsSection
-                supportSection
+                // supportSection
                 linksSection
                 documentsSection
                 if AppIconManager.supportsAlternateIcons && enableBetaSections {

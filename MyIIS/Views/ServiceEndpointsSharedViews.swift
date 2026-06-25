@@ -69,6 +69,85 @@ struct ServiceJSONItemCard: View {
     }
 }
 
+struct PenaltyItemCard: View {
+    let item: ServiceJSONObject
+
+    var body: some View {
+        let reason = item.fields["reason"]?.scalarText ?? item.primaryText
+        let information = item.fields["information"]?.scalarText ?? item.secondaryText ?? ""
+        let status = item.fields["status"]?.scalarText ?? ""
+        
+        let lowerReason = reason.lowercased()
+        let isPositive = lowerReason.contains("грамот") || lowerReason.contains("поощрение") || lowerReason.contains("благодарность")
+        
+        let backgroundColor = isPositive ? Color.green.opacity(0.12) : Color(uiColor: .tertiarySystemGroupedBackground)
+        let primaryColor = isPositive ? Color.green : Color.primary
+        let iconName = isPositive ? "star.fill" : "exclamationmark.triangle.fill"
+        let iconColor = isPositive ? Color.green : Color.orange
+        
+        let lowerStatus = status.lowercased()
+        let isStatusActive = lowerStatus.contains("активен")
+
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: iconName)
+                    .foregroundStyle(iconColor)
+                    .font(.title3)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(reason)
+                        .font(.headline)
+                        .foregroundStyle(primaryColor)
+                        .fixedSize(horizontal: false, vertical: true)
+                    
+                    if !information.isEmpty {
+                        Text(information)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            
+            let filteredPairs = item.detailPairs.filter { pair in
+                let lowerKey = pair.0.lowercased()
+                let isDirective = lowerKey.contains("directive")
+                let isReasonOrInfo = lowerKey == "reason" || lowerKey == "information"
+                let isObject = pair.1.hasPrefix("Объект") || pair.1.hasPrefix("Массив")
+                return !isDirective && !isReasonOrInfo && !isObject
+            }
+            
+            if !filteredPairs.isEmpty {
+                VStack(spacing: 6) {
+                    ForEach(Array(filteredPairs.enumerated()), id: \.offset) { _, pair in
+                        HStack(alignment: .top, spacing: 8) {
+                            Text(pair.0)
+                                .font(.caption.weight(.medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 110, alignment: .leading)
+                            
+                            if pair.0.lowercased() == "status" {
+                                Text(pair.1)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(isStatusActive ? .green : .primary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            } else {
+                                Text(pair.1)
+                                    .font(.caption)
+                                    .foregroundStyle(.primary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding(14)
+        .background(backgroundColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
 struct ServiceEmptyState: View {
     let text: String
 

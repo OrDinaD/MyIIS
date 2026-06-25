@@ -410,7 +410,7 @@ struct PenaltiesServiceView: View {
                     } else {
                         VStack(spacing: 10) {
                             ForEach(Array(viewModel.items.enumerated()), id: \.offset) { _, item in
-                                ServiceJSONItemCard(item: item)
+                                PenaltyItemCard(item: item)
                             }
                         }
                     }
