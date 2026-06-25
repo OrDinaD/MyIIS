@@ -991,6 +991,18 @@ extension ScheduleServiceViewModel {
         displayedDays
     }
 
+    var pastContinuousDays: [ScheduleContinuousDay] {
+        continuousTimelineDays.filter { day in
+            day.lessons.allSatisfy { isExamPast($0, on: day.date) }
+        }
+    }
+
+    var upcomingContinuousDays: [ScheduleContinuousDay] {
+        continuousTimelineDays.filter { day in
+            !day.lessons.allSatisfy { isExamPast($0, on: day.date) }
+        }
+    }
+
     var subgroupFilters: [ScheduleSubgroupFilter] {
         guard let schedule else { return [.all] }
         let lessonSubgroups = schedule.orderedDays
@@ -1043,20 +1055,6 @@ extension ScheduleServiceViewModel {
     }
 
     func dayTitle(for day: StudyDaySchedule) -> String {
-        if let selectedWeek = selectedWeekNumber,
-           let dayDate = date(for: day.weekday, selectedWeekNumber: selectedWeek) {
-            let dateText = Self.dayDateFormatter.string(from: dayDate)
-            let weekText = String(format: NSLocalizedString("services_schedule_week_number", comment: ""), selectedWeek)
-            if Calendar.current.isDateInToday(dayDate) {
-                return "\(NSLocalizedString("services_schedule_today_prefix", comment: "")), \(day.weekday.shortTitle), \(dateText), \(weekText)"
-            }
-            return "\(day.weekday.shortTitle), \(dateText), \(weekText)"
-        }
-
-        if case .week(let value) = weekFilter {
-            let weekText = String(format: NSLocalizedString("services_schedule_week_number", comment: ""), value)
-            return "\(day.weekday.rawValue), \(weekText)"
-        }
         return day.weekday.rawValue
     }
 

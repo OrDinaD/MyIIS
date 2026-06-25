@@ -44,7 +44,56 @@ struct ScheduleServiceView: View {
 
                         switch viewModel.displayMode {
                         case .continuous:
-                            ForEach(viewModel.continuousTimelineDays) { day in
+                            if !viewModel.pastContinuousDays.isEmpty {
+                                DisclosureGroup {
+                                    VStack(alignment: .leading, spacing: 14) {
+                                        ForEach(viewModel.pastContinuousDays) { day in
+                                            VStack(alignment: .leading, spacing: 10) {
+                                                Text(viewModel.continuousDayTitle(for: day))
+                                                    .font(.title3.weight(.bold))
+                                                    .foregroundStyle(.secondary)
+
+                                                ForEach(day.lessons) { lesson in
+                                                    ScheduleLessonCard(
+                                                        lesson: lesson,
+                                                        isCurrent: false,
+                                                        progress: nil,
+                                                        isPast: true,
+                                                        presentation: .sessionCompact,
+                                                        onTeacherTap: { teacher in
+                                                            Task { await viewModel.openTeacherSchedule(teacher) }
+                                                        },
+                                                        onGroupTap: { groupName in
+                                                            Task { await viewModel.openGroupSchedule(groupName) }
+                                                        },
+                                                        onDetailsTap: {
+                                                            selectedExamLesson = lesson
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    .padding(.top, 10)
+                                } label: {
+                                    Label(NSLocalizedString("services_schedule_past_lessons", comment: "Прошедшие занятия"), systemImage: "clock.arrow.circlepath")
+                                        .font(.headline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(16)
+                                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            }
+                            
+                            if viewModel.pastContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) &&
+                               !viewModel.upcomingContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) {
+                                Text(NSLocalizedString("services_schedule_no_more_today", comment: "На сегодня занятий больше нет 🎉"))
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(.secondary)
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .padding(.vertical, 8)
+                            }
+
+                            ForEach(viewModel.upcomingContinuousDays) { day in
                                 VStack(alignment: .leading, spacing: 10) {
                                     Text(viewModel.continuousDayTitle(for: day))
                                         .font(.title3.weight(.bold))
@@ -55,11 +104,16 @@ struct ScheduleServiceView: View {
                                             lesson: lesson,
                                             isCurrent: viewModel.isLessonCurrent(lesson, on: day.weekday, for: day.date),
                                             progress: viewModel.currentLessonProgress(lesson, on: day.weekday, for: day.date),
+                                            isPast: false,
+                                            presentation: .sessionCompact,
                                             onTeacherTap: { teacher in
                                                 Task { await viewModel.openTeacherSchedule(teacher) }
                                             },
                                             onGroupTap: { groupName in
                                                 Task { await viewModel.openGroupSchedule(groupName) }
+                                            },
+                                            onDetailsTap: {
+                                                selectedExamLesson = lesson
                                             }
                                         )
                                     }

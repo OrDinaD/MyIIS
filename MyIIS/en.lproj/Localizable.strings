@@ -393,3 +393,5 @@
 "unauthorized_all_features_subtitle" = "For access to all features";
 "unauthorized_services_locked_section" = "Services (authorization required)";
 "services_schedule_past_exams" = "Past exams";
+"services_schedule_past_lessons" = "Past lessons";
+"services_schedule_no_more_today" = "No more classes today 🎉";
