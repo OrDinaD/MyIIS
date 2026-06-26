@@ -66,6 +66,12 @@ final class LMSQuizService {
         }
 
         let response = try await submit(form: form)
+        
+        if let preflightForm = parsePreflightForm(from: response.html) {
+            let preflightResponse = try await submit(form: preflightForm)
+            return try parseScreen(from: preflightResponse)
+        }
+        
         return try parseScreen(from: response)
     }
 
@@ -182,6 +188,28 @@ private extension LMSQuizService {
         let action = formBlock.captureGroup(at: 1, pattern: #"action=\"([^\"]+)\""#).flatMap(self.absoluteURL)
         let method = formBlock.captureGroup(at: 1, pattern: #"method=\"([^\"]+)\""#)?.uppercased() ?? "GET"
         let fields = parseInputFields(in: formBlock)
+
+        guard let action else { return nil }
+        return LMSQuizForm(actionURL: action, method: method, fields: fields)
+    }
+
+    private func parsePreflightForm(from html: String) -> LMSQuizForm? {
+        guard let formBlock = html.captureGroup(
+            at: 1,
+            pattern: #"(<form[^>]*id=\"mod_quiz_preflight_form\"[\s\S]*?</form>)"#
+        ) else {
+            return nil
+        }
+
+        let action = formBlock.captureGroup(at: 1, pattern: #"action=\"([^\"]+)\""#).flatMap(self.absoluteURL)
+        let method = formBlock.captureGroup(at: 1, pattern: #"method=\"([^\"]+)\""#)?.uppercased() ?? "POST"
+        var fields = parseInputFields(in: formBlock)
+        
+        if let submitValue = formBlock.captureGroup(at: 1, pattern: #"name=\"submitbutton\"[^>]*value=\"([^\"]+)\""#) {
+            fields["submitbutton"] = submitValue.decodingHTMLEntities()
+        } else {
+            fields["submitbutton"] = "Начать попытку"
+        }
 
         guard let action else { return nil }
         return LMSQuizForm(actionURL: action, method: method, fields: fields)
