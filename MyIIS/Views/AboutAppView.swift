@@ -132,6 +132,15 @@ struct AboutAppView: View {
                 ) {
                     openURL(AppAboutLinks.telegram)
                 }
+
+                divider
+                
+                linkRow(
+                    icon: "star.fill",
+                    title: NSLocalizedString("about_rate_app", comment: "Оценить приложение")
+                ) {
+                    openURL(AppAboutLinks.appStoreReview)
+                }
             }
 
             Text(NSLocalizedString("about_contact_me", comment: ""))
@@ -395,6 +404,8 @@ private enum AppAboutLinks {
     static let telegram = URLFactory.require("https://t.me/lokhotonkot")
     static let privacyPolicy = URLFactory.require("https://ordinad.github.io/MyIIS/static/privacy-policy/")
     static let termsAndConditions = URLFactory.require("https://ordinad.github.io/MyIIS/static/terms-and-conditions/")
+    // TODO: Замените YOUR_APP_ID на реальный ID приложения в App Store
+    static let appStoreReview = URLFactory.require("https://apps.apple.com/app/idYOUR_APP_ID?action=write-review")
 }
 
 #Preview {

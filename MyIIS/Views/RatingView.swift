@@ -1,10 +1,13 @@
 import SwiftUI
+import StoreKit
 
 struct RatingView: View {
     @EnvironmentObject private var authService: AuthenticationService
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.requestReview) private var requestReview
     @StateObject var viewModel: RatingViewModel
     @State private var expandedDisciplineIDs: Set<String> = []
+    @AppStorage("rating_view_open_count") private var ratingViewOpenCount = 0
 
     @MainActor
     init() {
@@ -48,6 +51,12 @@ struct RatingView: View {
             .listStyle(.insetGrouped)
             .task(id: user.id) {
                 await viewModel.loadRating(for: user)
+                
+                ratingViewOpenCount += 1
+                if ratingViewOpenCount == 5 || (ratingViewOpenCount > 5 && ratingViewOpenCount % 20 == 0) {
+                    try? await Task.sleep(for: .seconds(2))
+                    requestReview()
+                }
             }
             .refreshable {
                 await viewModel.refresh(for: user)
