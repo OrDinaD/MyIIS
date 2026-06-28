@@ -1,12 +1,14 @@
-import SwiftUI
 import StoreKit
+import SwiftUI
 
 struct RatingView: View {
     @EnvironmentObject private var authService: AuthenticationService
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.requestReview) private var requestReview
     @StateObject var viewModel: RatingViewModel
     @State private var expandedDisciplineIDs: Set<String> = []
+    @State private var hasRevealedContent = false
     @AppStorage("rating_view_open_count") private var ratingViewOpenCount = 0
 
     @MainActor
@@ -17,6 +19,10 @@ struct RatingView: View {
     @MainActor
     init(viewModel: RatingViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    private var ratingAnimation: Animation? {
+        accessibilityReduceMotion ? nil : .snappy(duration: 0.28)
     }
 
     var body: some View {
@@ -44,14 +50,19 @@ struct RatingView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
+                    .transition(.move(edge: .top).combined(with: .opacity))
                 }
 
                 ratingStateView(user: user)
             }
             .listStyle(.insetGrouped)
+            .animation(ratingAnimation, value: viewModel.isShowingStaleDataWarning)
+            .animation(ratingAnimation, value: viewModel.disciplines.count)
+            .animation(ratingAnimation, value: viewModel.isLoading)
             .task(id: user.id) {
+                revealContentIfNeeded()
                 await viewModel.loadRating(for: user)
-                
+
                 ratingViewOpenCount += 1
                 if ratingViewOpenCount == 5 || (ratingViewOpenCount > 5 && ratingViewOpenCount % 20 == 0) {
                     try? await Task.sleep(for: .seconds(2))
@@ -66,6 +77,19 @@ struct RatingView: View {
                 Label(NSLocalizedString("rating_auth_required", comment: ""), systemImage: "person.crop.circle.badge.exclamationmark")
             } description: {
                 Text(NSLocalizedString("rating_auth_description", comment: ""))
+            }
+        }
+    }
+
+    @MainActor
+    private func revealContentIfNeeded() {
+        guard !hasRevealedContent else { return }
+
+        if accessibilityReduceMotion {
+            hasRevealedContent = true
+        } else {
+            withAnimation(.smooth(duration: 0.35)) {
+                hasRevealedContent = true
             }
         }
     }
@@ -105,6 +129,8 @@ struct RatingView: View {
         }
         .padding(16)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .opacity(hasRevealedContent ? 1 : 0)
+        .offset(y: hasRevealedContent || accessibilityReduceMotion ? 0 : 8)
     }
 
     @ViewBuilder
@@ -205,6 +231,7 @@ struct RatingView: View {
 
             ForEach(viewModel.disciplines) { discipline in
                 disciplineRatingRow(discipline: discipline)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
 
@@ -234,10 +261,20 @@ struct RatingView: View {
         Binding(
             get: { expandedDisciplineIDs.contains(discipline.id) },
             set: { isExpanded in
-                if isExpanded {
-                    expandedDisciplineIDs.insert(discipline.id)
+                let updateExpansion = {
+                    if isExpanded {
+                        expandedDisciplineIDs.insert(discipline.id)
+                    } else {
+                        expandedDisciplineIDs.remove(discipline.id)
+                    }
+                }
+
+                if accessibilityReduceMotion {
+                    updateExpansion()
                 } else {
-                    expandedDisciplineIDs.remove(discipline.id)
+                    withAnimation(.snappy(duration: 0.24)) {
+                        updateExpansion()
+                    }
                 }
             }
         )
@@ -304,9 +341,11 @@ struct RatingView: View {
                     .font(.system(.title3, design: .rounded).weight(.semibold))
                     .foregroundStyle(gradeTint(average))
                     .monospacedDigit()
+                    .contentTransition(.numericText(value: average))
                     .frame(minWidth: 64, alignment: .trailing)
                     .multilineTextAlignment(.trailing)
                     .padding(.trailing, 4)
+                    .animation(ratingAnimation, value: average)
             } else {
                 Text("—")
                     .font(.system(.title3, design: .rounded).weight(.semibold))
@@ -321,10 +360,23 @@ struct RatingView: View {
 }
 
 private struct RatingHeaderMetric: View {
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     let title: String
     let value: String
     let systemImage: String
     let tint: Color
+
+    private var numericValue: Double? {
+        Double(value.replacingOccurrences(of: ",", with: "."))
+    }
+
+    private var metricAnimation: Animation? {
+        accessibilityReduceMotion ? nil : .snappy(duration: 0.25)
+    }
+
+    private var valueTransition: ContentTransition {
+        numericValue.map { .numericText(value: $0) } ?? .opacity
+    }
 
     var body: some View {
         VStack(spacing: 8) {
@@ -336,7 +388,9 @@ private struct RatingHeaderMetric: View {
             Text(value)
                 .font(.system(.title3, design: .rounded).weight(.bold))
                 .monospacedDigit()
+                .contentTransition(valueTransition)
                 .foregroundStyle(.primary)
+                .animation(metricAnimation, value: value)
 
             Text(title)
                 .font(.caption)

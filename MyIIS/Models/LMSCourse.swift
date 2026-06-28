@@ -40,6 +40,9 @@ struct LMSModule: Identifiable, Codable {
         case label    // Text label
         case folder   // Folder
         case url      // Link
+        case feedback // Poll/Feedback
+        case choice   // Choice/Poll
+        case survey   // Survey
         case unknown
 
         var icon: String {
@@ -52,6 +55,7 @@ struct LMSModule: Identifiable, Codable {
             case .label: return "info.circle"
             case .folder: return "folder.fill"
             case .url: return "link"
+            case .feedback, .survey, .choice: return "checklist"
             case .unknown: return "questionmark.circle"
             }
         }

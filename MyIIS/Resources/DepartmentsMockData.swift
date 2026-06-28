@@ -51,7 +51,7 @@ extension DepartmentsMockData {
     private static func phoneBookEntry(from node: DepartmentNode) -> PhoneBookEntry {
         let employees = node.data.employees?.enumerated().map { index, employee in
             PhoneBookEmployee(
-                id: node.data.id * 1_000 + index,
+                employeeId: node.data.id * 1_000 + index,
                 fio: employee.fio,
                 degree: nil,
                 rank: nil,

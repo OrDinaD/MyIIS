@@ -439,8 +439,23 @@ private struct LMSMaterialWebView: UIViewRepresentable {
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
 
+        // Hide Moodle's web UI elements to make it feel like a native app page
+        let cssString = """
+        header, footer, nav, #page-header, .navbar, .block, #region-pre, #region-post, .activity-navigation { display: none !important; }
+        #region-main { padding: 16px !important; width: 100% !important; margin: 0 !important; border: none !important; box-shadow: none !important; background: transparent !important; }
+        body, #page, #page-content { background-color: transparent !important; padding: 0 !important; margin: 0 !important; }
+        """
+        let jsString = "var style = document.createElement('style'); style.innerHTML = '\(cssString)'; document.head.appendChild(style);"
+        let script = WKUserScript(source: jsString, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+        configuration.userContentController.addUserScript(script)
+
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
+        // Set background color to clear so SwiftUI background shows through
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
+
         context.coordinator.load(url: normalize(url), in: webView)
         return webView
     }
@@ -513,6 +528,7 @@ extension LMSModule.LMSModuleType {
         case .label: return .gray
         case .folder: return .indigo
         case .url: return .cyan
+        case .feedback, .survey, .choice: return .pink
         case .unknown: return .secondary
         }
     }
@@ -527,6 +543,8 @@ extension LMSModule.LMSModuleType {
         case .label: return "Информация"
         case .folder: return "Папка"
         case .url: return "Ссылка"
+        case .feedback, .survey: return "Опрос"
+        case .choice: return "Выбор"
         case .unknown: return "Элемент"
         }
     }

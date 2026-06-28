@@ -7,6 +7,7 @@ struct LMSQuizOverview {
     let quizId: Int?
     let resumeAttemptURL: URL?
     let startForm: LMSQuizForm?
+    let preflightForm: LMSQuizForm?
     let warningText: String?
     let previousAttempts: [LMSQuizPreviousAttempt]
 }

@@ -51,6 +51,7 @@ final class LMSQuizService {
             quizId: quizId,
             resumeAttemptURL: resumeAttemptURL,
             startForm: startForm,
+            preflightForm: nil,
             warningText: warningText,
             previousAttempts: previousAttempts
         )
@@ -59,6 +60,12 @@ final class LMSQuizService {
     func startAttempt(using overview: LMSQuizOverview) async throws -> LMSQuizScreenState {
         if let resumeURL = overview.resumeAttemptURL {
             return try await fetchScreen(url: resumeURL)
+        }
+
+        // If the preflight form is already on the overview page, we submit it directly
+        if let preflightForm = overview.preflightForm {
+            let response = try await submit(form: preflightForm)
+            return try parseScreen(from: response)
         }
 
         guard let form = overview.startForm else {
@@ -157,6 +164,7 @@ private extension LMSQuizService {
             .captureGroup(at: 1, pattern: #"href=\"(https://lms\.bsuir\.by/mod/quiz/attempt\.php[^\"]*)\""#)
             .flatMap(self.absoluteURL)
         let startForm = parseStartForm(from: html)
+        let preflightForm = parsePreflightForm(from: html)
         let warningText = html.captureGroup(
             at: 1,
             pattern: #"<div class=\"quizinfo\">[\s\S]*?<div class=\"quizattempt\">([\s\S]*?)</div>"#
@@ -172,6 +180,7 @@ private extension LMSQuizService {
             quizId: URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first(where: { $0.name == "id" })?.value.flatMap(Int.init),
             resumeAttemptURL: resumeAttemptURL,
             startForm: startForm,
+            preflightForm: preflightForm,
             warningText: warningText,
             previousAttempts: previousAttempts
         )
@@ -204,6 +213,7 @@ private extension LMSQuizService {
         let action = formBlock.captureGroup(at: 1, pattern: #"action=\"([^\"]+)\""#).flatMap(self.absoluteURL)
         let method = formBlock.captureGroup(at: 1, pattern: #"method=\"([^\"]+)\""#)?.uppercased() ?? "POST"
         var fields = parseInputFields(in: formBlock)
+        fields.removeValue(forKey: "cancel")
         
         if let submitValue = formBlock.captureGroup(at: 1, pattern: #"name=\"submitbutton\"[^>]*value=\"([^\"]+)\""#) {
             fields["submitbutton"] = submitValue.decodingHTMLEntities()

@@ -17,7 +17,8 @@ struct PhoneBookEntry: Codable, Identifiable {
 }
 
 struct PhoneBookEmployee: Codable, Identifiable {
-    let id: Int
+    var id: String { "\(employeeId)-\(UUID().uuidString)" }
+    let employeeId: Int
     let fio: String
     let degree: String?
     let rank: String?
@@ -26,6 +27,11 @@ struct PhoneBookEmployee: Codable, Identifiable {
     let photoLink: String?
     let email: String?
     let urlId: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case employeeId = "id"
+        case fio, degree, rank, jobPosition, department, photoLink, email, urlId
+    }
 }
 
 struct PhoneBookDepartment: Codable, Identifiable {

@@ -447,7 +447,7 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
             self.dormitoryItems = previousSnapshot?.dormitoryItems ?? []
             self.hasDormitoryBaseline = previousSnapshot?.hasDormitoryBaseline == true
         }
-        
+
         if let penalties {
             self.penaltyItems = Self.makePenaltyItems(from: penalties)
             self.hasPenaltiesBaseline = true
@@ -483,31 +483,62 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         let dormitoryChanges = hasDormitoryBaseline && oldSnapshot.hasDormitoryBaseline
             ? dormitoryChanges(since: oldSnapshot)
             : []
-            
+
         let penChanges = hasPenaltiesBaseline && oldSnapshot.hasPenaltiesBaseline
             ? penaltyChanges(since: oldSnapshot)
             : []
-            
+
         let certChanges = hasCertificatesBaseline && oldSnapshot.hasCertificatesBaseline
             ? certificateChanges(since: oldSnapshot)
             : []
-            
+
         let scheduleChanges = hasScheduleBaseline && oldSnapshot.hasScheduleBaseline
-            ? scheduleItems.filter { item in !oldSnapshot.scheduleItems.contains(where: { $0.signature == item.signature }) }
+            ? scheduleChanges(since: oldSnapshot)
             : []
 
         return (gradeChanges + omissionChanges(since: oldSnapshot) + dormitoryChanges + penChanges + certChanges + scheduleChanges)
             .sorted(by: AcademicChangeItem.defaultSort)
     }
 
+    private func scheduleChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
+        if oldSnapshot.scheduleItems.isEmpty, !scheduleItems.isEmpty {
+            let firstSignature = scheduleItems.first?.signature ?? "schedule"
+            return [AcademicChangeItem(
+                signature: "schedule|appeared|\(scheduleItems.count)|\(firstSignature)",
+                source: .schedule,
+                subject: "Расписание группы",
+                value: "Появилось новое расписание",
+                date: nil,
+                context: "Расписание"
+            )]
+        }
+
+        let oldSignatures = Set(oldSnapshot.scheduleItems.map(\.signature))
+        return scheduleItems.filter { item in !oldSignatures.contains(item.signature) }
+    }
+
     private func penaltyChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
         let oldItemsById = Dictionary(uniqueKeysWithValues: oldSnapshot.penaltyItems.map { ($0.id, $0) })
         return penaltyItems.flatMap { item -> [AcademicChangeItem] in
             guard let oldItem = oldItemsById[item.id] else {
-                return [AcademicChangeItem(signature: "penalty|\(item.id)|created", source: .penalty, subject: item.reason, value: "Новая запись", date: nil, context: "Взыскания и поощрения")]
+                return [AcademicChangeItem(
+                    signature: "penalty|\(item.id)|created",
+                    source: .penalty,
+                    subject: item.reason,
+                    value: "Новая запись",
+                    date: nil,
+                    context: "Взыскания и поощрения"
+                )]
             }
             if oldItem.status != item.status {
-                return [AcademicChangeItem(signature: "penalty|\(item.id)|status|\(item.status)", source: .penalty, subject: item.reason, value: "Статус: \(item.status)", date: nil, context: "Взыскания и поощрения")]
+                return [AcademicChangeItem(
+                    signature: "penalty|\(item.id)|status|\(item.status)",
+                    source: .penalty,
+                    subject: item.reason,
+                    value: "Статус: \(item.status)",
+                    date: nil,
+                    context: "Взыскания и поощрения"
+                )]
             }
             return []
         }
@@ -517,11 +548,27 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         let oldItemsById = Dictionary(uniqueKeysWithValues: oldSnapshot.certificateItems.map { ($0.id, $0) })
         return certificateItems.flatMap { item -> [AcademicChangeItem] in
             guard let oldItem = oldItemsById[item.id] else {
-                return [AcademicChangeItem(signature: "cert|\(item.id)|created", source: .certificate, subject: item.provisionPlace, value: "Заказана", date: nil, context: "Справка")]
+                return [AcademicChangeItem(
+                    signature: "cert|\(item.id)|created",
+                    source: .certificate,
+                    subject: item.provisionPlace,
+                    value: "Заказана",
+                    date: nil,
+                    context: "Справка"
+                )]
             }
             if oldItem.status != item.status {
-                let statusText = item.status == 1 ? "Напечатана" : (item.status == 2 ? "Обрабатывается" : "Статус изменен")
-                return [AcademicChangeItem(signature: "cert|\(item.id)|status|\(item.status)", source: .certificate, subject: item.provisionPlace, value: statusText, date: nil, context: "Справка")]
+                let statusText = item.status == 1
+                    ? "Напечатана"
+                    : (item.status == 2 ? "Обрабатывается" : "Статус изменен")
+                return [AcademicChangeItem(
+                    signature: "cert|\(item.id)|status|\(item.status)",
+                    source: .certificate,
+                    subject: item.provisionPlace,
+                    value: statusText,
+                    date: nil,
+                    context: "Справка"
+                )]
             }
             return []
         }
@@ -637,6 +684,22 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
 
     private static func makeScheduleItems(from plan: StudyPlan) -> [AcademicChangeItem] {
         var items = [AcademicChangeItem]()
+        let disciplineTitles = plan.uniqueDisciplines().map(\.title)
+
+        if !disciplineTitles.isEmpty {
+            let visibleTitles = disciplineTitles.prefix(3).joined(separator: ", ")
+            let remainingCount = disciplineTitles.count - min(disciplineTitles.count, 3)
+            let suffix = remainingCount > 0 ? " и еще \(remainingCount)" : ""
+            items.append(AcademicChangeItem(
+                signature: "schedule|lessons|\(disciplineTitles.joined(separator: "|"))",
+                source: .schedule,
+                subject: "Расписание занятий",
+                value: "Появились пары: \(visibleTitles)\(suffix)",
+                date: nil,
+                context: "Расписание"
+            ))
+        }
+
         if let startDate = plan.startDate {
             items.append(AcademicChangeItem(
                 signature: "schedule|semester|\(startDate.timeIntervalSince1970)",
@@ -777,7 +840,7 @@ private struct PenaltyNotificationItem: Codable, Hashable {
     let id: String
     let reason: String
     let status: String
-    
+
     init(object: ServiceJSONObject) {
         self.id = object.stableID
         self.reason = object.fields["reason"]?.scalarText ?? object.primaryText
@@ -789,7 +852,7 @@ private struct CertificateNotificationItem: Codable, Hashable {
     let id: Int
     let status: Int
     let provisionPlace: String
-    
+
     init(request: CertificateRequest) {
         self.id = request.id
         self.status = request.status
