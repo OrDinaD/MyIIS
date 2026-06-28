@@ -97,12 +97,14 @@ final class AcademicChangeNotificationService: NSObject {
             async let dormitoryApplicationsResponse = fetchDormitoryApplicationsForMonitoring()
             async let penaltiesResponse = fetchPenaltiesForMonitoring()
             async let certificatesResponse = fetchCertificatesForMonitoring()
-            let (markbook, lessons, dormitoryApplications, penalties, certificates) = try await (
+            async let studyPlanResponse = fetchStudyPlanForMonitoring(group: personalProfile.studentGroup)
+            let (markbook, lessons, dormitoryApplications, penalties, certificates, studyPlan) = try await (
                 markbookResponse,
                 ratingLessonsResponse,
                 dormitoryApplicationsResponse,
                 penaltiesResponse,
-                certificatesResponse
+                certificatesResponse,
+                studyPlanResponse
             )
             let now = Date()
 
@@ -113,6 +115,7 @@ final class AcademicChangeNotificationService: NSObject {
                 dormitoryApplications: dormitoryApplications,
                 penalties: penalties,
                 certificates: certificates,
+                studyPlan: studyPlan,
                 previousSnapshot: oldSnapshot
             )
             GradebookCacheStore.save(markbook: markbook, currentCourse: personalProfile.course, updatedAt: now)
@@ -222,6 +225,11 @@ final class AcademicChangeNotificationService: NSObject {
         let hasDormitory = changes.contains { $0.source == .dormitory }
         let hasPenalty = changes.contains { $0.source == .penalty }
         let hasCertificate = changes.contains { $0.source == .certificate }
+        let hasSchedule = changes.contains { $0.source == .schedule }
+
+        if hasSchedule {
+            return "Обновление расписания"
+        }
 
         if hasCertificate && !hasMarkbook && !hasRating && !hasOmissions && !hasDormitory && !hasPenalty {
             return "Обновление справок"
@@ -315,6 +323,18 @@ final class AcademicChangeNotificationService: NSObject {
         }
     }
 
+    private func fetchStudyPlanForMonitoring(group: String?) async -> StudyPlan? {
+        guard let group = group, !group.isEmpty else { return nil }
+        do {
+            return try await apiService.getStudyPlan(for: group)
+        } catch is CancellationError {
+            return nil
+        } catch {
+            logService.log("⚠️ Study plan change check failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     private func updateWidgetSnapshot(with snapshot: AcademicChangeSnapshot) {
         let totalHours = snapshot.omissionItems.reduce(0) { $0 + $1.hours }
         let previousHours = MyIISDataStore.loadData()?.unexcusedAbsences
@@ -369,9 +389,11 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
     let dormitoryItems: [DormitoryApplicationItem]
     let penaltyItems: [PenaltyNotificationItem]
     let certificateItems: [CertificateNotificationItem]
+    let scheduleItems: [AcademicChangeItem]
     let hasDormitoryBaseline: Bool
     let hasPenaltiesBaseline: Bool
     let hasCertificatesBaseline: Bool
+    let hasScheduleBaseline: Bool
     let capturedAt: Date
 
     private enum CodingKeys: String, CodingKey {
@@ -381,9 +403,11 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         case dormitoryItems
         case penaltyItems
         case certificateItems
+        case scheduleItems
         case hasDormitoryBaseline
         case hasPenaltiesBaseline
         case hasCertificatesBaseline
+        case hasScheduleBaseline
         case capturedAt
     }
 
@@ -395,9 +419,11 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         self.dormitoryItems = try container.decodeIfPresent([DormitoryApplicationItem].self, forKey: .dormitoryItems) ?? []
         self.penaltyItems = try container.decodeIfPresent([PenaltyNotificationItem].self, forKey: .penaltyItems) ?? []
         self.certificateItems = try container.decodeIfPresent([CertificateNotificationItem].self, forKey: .certificateItems) ?? []
+        self.scheduleItems = try container.decodeIfPresent([AcademicChangeItem].self, forKey: .scheduleItems) ?? []
         self.hasDormitoryBaseline = try container.decodeIfPresent(Bool.self, forKey: .hasDormitoryBaseline) ?? false
         self.hasPenaltiesBaseline = try container.decodeIfPresent(Bool.self, forKey: .hasPenaltiesBaseline) ?? false
         self.hasCertificatesBaseline = try container.decodeIfPresent(Bool.self, forKey: .hasCertificatesBaseline) ?? false
+        self.hasScheduleBaseline = try container.decodeIfPresent(Bool.self, forKey: .hasScheduleBaseline) ?? false
         self.capturedAt = try container.decode(Date.self, forKey: .capturedAt)
     }
 
@@ -407,6 +433,7 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         dormitoryApplications: [DormitoryQueueApplication]?,
         penalties: [ServiceJSONObject]?,
         certificates: [CertificateRequest]?,
+        studyPlan: StudyPlan?,
         previousSnapshot: AcademicChangeSnapshot?
     ) {
         self.markbookItems = Self.makeMarkbookItems(from: markbook)
@@ -437,6 +464,14 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
             self.hasCertificatesBaseline = previousSnapshot?.hasCertificatesBaseline == true
         }
 
+        if let studyPlan {
+            self.scheduleItems = Self.makeScheduleItems(from: studyPlan)
+            self.hasScheduleBaseline = true
+        } else {
+            self.scheduleItems = previousSnapshot?.scheduleItems ?? []
+            self.hasScheduleBaseline = previousSnapshot?.hasScheduleBaseline == true
+        }
+
         self.capturedAt = Date()
     }
 
@@ -456,8 +491,12 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
         let certChanges = hasCertificatesBaseline && oldSnapshot.hasCertificatesBaseline
             ? certificateChanges(since: oldSnapshot)
             : []
+            
+        let scheduleChanges = hasScheduleBaseline && oldSnapshot.hasScheduleBaseline
+            ? scheduleItems.filter { item in !oldSnapshot.scheduleItems.contains(where: { $0.signature == item.signature }) }
+            : []
 
-        return (gradeChanges + omissionChanges(since: oldSnapshot) + dormitoryChanges + penChanges + certChanges)
+        return (gradeChanges + omissionChanges(since: oldSnapshot) + dormitoryChanges + penChanges + certChanges + scheduleChanges)
             .sorted(by: AcademicChangeItem.defaultSort)
     }
 
@@ -595,6 +634,31 @@ private struct AcademicChangeSnapshot: Codable, Equatable {
     private static func makeCertificateItems(from certificates: [CertificateRequest]) -> [CertificateNotificationItem] {
         certificates.map(CertificateNotificationItem.init(request:))
     }
+
+    private static func makeScheduleItems(from plan: StudyPlan) -> [AcademicChangeItem] {
+        var items = [AcademicChangeItem]()
+        if let startDate = plan.startDate {
+            items.append(AcademicChangeItem(
+                signature: "schedule|semester|\(startDate.timeIntervalSince1970)",
+                source: .schedule,
+                subject: "Расписание занятий",
+                value: "Добавлено на новый семестр",
+                date: nil,
+                context: "Расписание"
+            ))
+        }
+        if let startExamsDate = plan.startExamsDate {
+            items.append(AcademicChangeItem(
+                signature: "schedule|exams|\(startExamsDate.timeIntervalSince1970)",
+                source: .schedule,
+                subject: "Расписание экзаменов",
+                value: "Добавлена новая сессия",
+                date: nil,
+                context: "Расписание"
+            ))
+        }
+        return items
+    }
 }
 
 private struct AcademicOmissionItem: Codable, Hashable {
@@ -706,6 +770,7 @@ private enum AcademicChangeSource: String, Codable {
     case dormitory
     case penalty
     case certificate
+    case schedule
 }
 
 private struct PenaltyNotificationItem: Codable, Hashable {
