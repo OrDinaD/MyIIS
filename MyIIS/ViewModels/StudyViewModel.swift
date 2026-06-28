@@ -15,18 +15,24 @@ final class StudyViewModel: ObservableObject {
     @Published var isShowingStaleDataWarning = false
 
     private let service: StudyServiceProtocol
-    private static var cachedSnapshot: Snapshot?
+    private let userDefaults: UserDefaults
+    private static let cacheKey = "StudyViewModel.dashboardSnapshot"
 
-    private struct Snapshot {
+    private struct Snapshot: Codable {
         let dashboard: StudyDashboard
         let lastUpdateTime: Date?
     }
 
-    init(service: StudyServiceProtocol? = nil, initialDashboard: StudyDashboard? = nil) {
+    init(
+        service: StudyServiceProtocol? = nil,
+        initialDashboard: StudyDashboard? = nil,
+        userDefaults: UserDefaults = .standard
+    ) {
         self.service = service ?? StudyService()
+        self.userDefaults = userDefaults
         if let initialDashboard {
             self.dashboard = initialDashboard
-        } else if let cachedSnapshot = Self.cachedSnapshot {
+        } else if let cachedSnapshot = Self.restoreSnapshot(from: userDefaults) {
             self.dashboard = cachedSnapshot.dashboard
             self.lastUpdateTime = cachedSnapshot.lastUpdateTime
         } else {
@@ -35,7 +41,11 @@ final class StudyViewModel: ObservableObject {
     }
 
     var hasLoadedContent: Bool {
-        !dashboard.markSheetSubjects.isEmpty || !dashboard.certificates.isEmpty || !dashboard.certificatePlaceSections.isEmpty
+        !dashboard.markSheets.isEmpty
+            || !dashboard.markSheetSubjects.isEmpty
+            || !dashboard.certificates.isEmpty
+            || !dashboard.certificatePlaceSections.isEmpty
+            || !dashboard.lmsApplications.isEmpty
     }
 
     var certificatePlaces: [CertificatePlace] {
@@ -62,9 +72,10 @@ final class StudyViewModel: ObservableObject {
         errorMessage = nil
         isShowingStaleDataWarning = false
         do {
-            dashboard = try await service.fetchDashboard()
+            let fetchedDashboard = try await service.fetchDashboard()
+            dashboard = mergedDashboardPreservingVisibleData(fetchedDashboard)
             lastUpdateTime = Date()
-            Self.cachedSnapshot = Snapshot(dashboard: dashboard, lastUpdateTime: lastUpdateTime)
+            saveSnapshot()
         } catch let apiError as APIError {
             if hasLoadedContent {
                 isShowingStaleDataWarning = true
@@ -142,6 +153,7 @@ final class StudyViewModel: ObservableObject {
         do {
             let newRequest = try await service.orderMarkSheet(request)
             dashboard.markSheets.insert(newRequest, at: 0)
+            saveSnapshot()
             toastMessage = "Ведомостичка заказана."
             return true
         } catch let apiError as APIError {
@@ -161,6 +173,7 @@ final class StudyViewModel: ObservableObject {
         do {
             let newRequests = try await service.orderCertificate(request)
             dashboard.certificates.insert(contentsOf: newRequests, at: 0)
+            saveSnapshot()
             toastMessage = newRequests.count > 1 ? "Справки заказаны." : "Справка заказана."
             return true
         } catch let apiError as APIError {
@@ -176,6 +189,7 @@ final class StudyViewModel: ObservableObject {
         do {
             let updated = try await service.cancelMarkSheetRequest(id: request.id)
             replaceMarkSheet(updated)
+            saveSnapshot()
             toastMessage = "Ведомостичка отменена."
         } catch {
             toastMessage = "Не удалось отменить ведомостичку."
@@ -186,10 +200,22 @@ final class StudyViewModel: ObservableObject {
         do {
             let updated = try await service.cancelCertificateRequest(id: request.id)
             replaceCertificate(updated)
+            saveSnapshot()
             toastMessage = "Справка отменена."
         } catch {
             toastMessage = "Не удалось отменить справку."
         }
+    }
+
+    private func mergedDashboardPreservingVisibleData(_ fetched: StudyDashboard) -> StudyDashboard {
+        StudyDashboard(
+            markSheets: fetched.markSheets.isEmpty ? dashboard.markSheets : fetched.markSheets,
+            markSheetTypes: fetched.markSheetTypes.isEmpty ? dashboard.markSheetTypes : fetched.markSheetTypes,
+            markSheetSubjects: fetched.markSheetSubjects.isEmpty ? dashboard.markSheetSubjects : fetched.markSheetSubjects,
+            certificates: fetched.certificates.isEmpty ? dashboard.certificates : fetched.certificates,
+            certificatePlaceSections: fetched.certificatePlaceSections.isEmpty ? dashboard.certificatePlaceSections : fetched.certificatePlaceSections,
+            lmsApplications: fetched.lmsApplications.isEmpty ? dashboard.lmsApplications : fetched.lmsApplications
+        )
     }
 
     private func replaceMarkSheet(_ request: MarkSheetRequest) {
@@ -200,6 +226,19 @@ final class StudyViewModel: ObservableObject {
     private func replaceCertificate(_ request: CertificateRequest) {
         guard let index = dashboard.certificates.firstIndex(where: { $0.id == request.id }) else { return }
         dashboard.certificates[index] = request
+    }
+
+    private func saveSnapshot() {
+        let snapshot = Snapshot(dashboard: dashboard, lastUpdateTime: lastUpdateTime ?? Date())
+        guard let payload = try? JSONEncoder().encode(snapshot) else { return }
+        _ = UserDefaultsPayloadStore.save(payload, forKey: Self.cacheKey, in: userDefaults)
+    }
+
+    private static func restoreSnapshot(from userDefaults: UserDefaults) -> Snapshot? {
+        guard let payload = UserDefaultsPayloadStore.load(forKey: cacheKey, from: userDefaults) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(Snapshot.self, from: payload)
     }
 }
 

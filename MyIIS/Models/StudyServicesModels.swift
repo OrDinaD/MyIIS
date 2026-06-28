@@ -1,6 +1,6 @@
 import Foundation
 
-struct StudyDashboard: Equatable {
+struct StudyDashboard: Codable, Equatable {
     var markSheets: [MarkSheetRequest]
     var markSheetTypes: [MarkSheetType]
     var markSheetSubjects: [MarkSheetSubject]
@@ -18,7 +18,7 @@ struct StudyDashboard: Equatable {
     )
 }
 
-struct MarkSheetRequest: Decodable, Equatable, Identifiable {
+struct MarkSheetRequest: Codable, Equatable, Identifiable {
     let id: Int
     let number: Int?
     let createdDate: String?
@@ -77,6 +77,21 @@ struct MarkSheetRequest: Decodable, Equatable, Identifiable {
         employee = try container.decodeIfPresent(MarkSheetEmployee.self, forKey: .employee)
     }
 
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encodeIfPresent(number, forKey: .number)
+        try container.encodeIfPresent(createdDate, forKey: .createdDate)
+        try container.encodeIfPresent(absentDate, forKey: .absentDate)
+        try container.encode(status, forKey: .status)
+        try container.encodeIfPresent(rejectionReason, forKey: .rejectionReason)
+        try container.encodeIfPresent(price, forKey: .price)
+        try container.encodeIfPresent(retakeCount, forKey: .retakeCount)
+        try container.encodeIfPresent(subject, forKey: .subject)
+        try container.encodeIfPresent(markSheetType, forKey: .markSheetType)
+        try container.encodeIfPresent(employee, forKey: .employee)
+    }
+
     var title: String {
         subject?.displayName ?? markSheetType?.shortName ?? "Ведомостичка"
     }
@@ -86,7 +101,7 @@ struct MarkSheetRequest: Decodable, Equatable, Identifiable {
     }
 }
 
-struct MarkSheetRequestSubject: Decodable, Equatable {
+struct MarkSheetRequestSubject: Codable, Equatable {
     let abbrev: String?
     let focsId: Int?
     let thId: Int?
@@ -107,7 +122,7 @@ struct MarkSheetType: Codable, Hashable, Identifiable {
     let isRemote: Bool?
 }
 
-struct MarkSheetSubject: Decodable, Hashable, Identifiable {
+struct MarkSheetSubject: Codable, Hashable, Identifiable {
     let etId: Int
     let abbrev: String
     let term: Int
@@ -181,7 +196,7 @@ struct MarkSheetOrderRequest: Encodable, Equatable {
     let employee: MarkSheetEmployee
 }
 
-struct CertificateRequest: Decodable, Equatable, Identifiable {
+struct CertificateRequest: Codable, Equatable, Identifiable {
     let id: Int
     let number: Int
     let provisionPlace: String
@@ -204,14 +219,14 @@ struct CertificateRequest: Decodable, Equatable, Identifiable {
     var isProcessing: Bool { status == 2 }
 }
 
-struct CertificatePlaceSection: Decodable, Equatable, Identifiable {
+struct CertificatePlaceSection: Codable, Equatable, Identifiable {
     let type: String
     let places: [CertificatePlace]
 
     var id: String { type }
 }
 
-struct CertificatePlace: Decodable, Hashable, Identifiable {
+struct CertificatePlace: Codable, Hashable, Identifiable {
     let name: String
     let id: Int
     let type: Int
@@ -239,7 +254,7 @@ struct CertificateRequestPayload: Encodable, Equatable {
     let provisionPlace: String
 }
 
-struct LMSApplication: Decodable, Equatable, Identifiable {
+struct LMSApplication: Codable, Equatable, Identifiable {
     let id: String
     let title: String
     let status: String?
@@ -260,6 +275,14 @@ struct LMSApplication: Decodable, Equatable, Identifiable {
         title = titleValue
         status = container.decodeLossyString(for: ["status", "applicationStatus"])
         detail = container.decodeLossyString(for: ["educationTerm", "term", "comment"])
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: DynamicCodingKey.self)
+        try container.encode(id, forKey: DynamicCodingKey(stringValue: "id")!)
+        try container.encode(title, forKey: DynamicCodingKey(stringValue: "title")!)
+        try container.encodeIfPresent(status, forKey: DynamicCodingKey(stringValue: "status")!)
+        try container.encodeIfPresent(detail, forKey: DynamicCodingKey(stringValue: "detail")!)
     }
 }
 

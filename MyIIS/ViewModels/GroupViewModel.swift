@@ -13,21 +13,25 @@ final class GroupViewModel: ObservableObject {
 
     private let apiService: APIService
     private let authService: AuthenticationService
+    private let userDefaults: UserDefaults
     private var hasLoadedOnce = false
-    private static var cachedSnapshot: Snapshot?
+    private static let cachePrefix = "GroupViewModel.snapshot."
+    private static let refreshInterval: TimeInterval = 7 * 24 * 60 * 60
 
-    private struct Snapshot {
+    private struct Snapshot: Codable {
         let groupInfo: UserGroupInfoResponse
         let lastUpdateTime: Date?
     }
 
     init(
         apiService: APIService,
-        authService: AuthenticationService
+        authService: AuthenticationService,
+        userDefaults: UserDefaults = .standard
     ) {
         self.apiService = apiService
         self.authService = authService
-        if let cachedSnapshot = Self.cachedSnapshot {
+        self.userDefaults = userDefaults
+        if let cachedSnapshot = restoreSnapshot() {
             groupInfo = cachedSnapshot.groupInfo
             lastUpdateTime = cachedSnapshot.lastUpdateTime
             hasLoadedOnce = true
@@ -85,7 +89,7 @@ final class GroupViewModel: ObservableObject {
 
     private func load(force: Bool) async {
         if isLoading { return }
-        if hasLoadedOnce && !force { return }
+        if hasLoadedOnce && !force && !shouldRefreshCachedGroup { return }
 
         isLoading = true
         errorMessage = nil
@@ -98,7 +102,7 @@ final class GroupViewModel: ObservableObject {
             groupInfo = response
             hasLoadedOnce = true
             lastUpdateTime = Date()
-            Self.cachedSnapshot = Snapshot(groupInfo: response, lastUpdateTime: lastUpdateTime)
+            saveSnapshot(groupInfo: response)
         } catch {
             let resolved = resolveErrorMessage(error)
             if hasLoadedOnce {
@@ -108,6 +112,31 @@ final class GroupViewModel: ObservableObject {
                 errorMessage = resolved
             }
         }
+    }
+
+    private var shouldRefreshCachedGroup: Bool {
+        guard let lastUpdateTime else { return true }
+        return Date().timeIntervalSince(lastUpdateTime) > Self.refreshInterval
+    }
+
+    private func saveSnapshot(groupInfo: UserGroupInfoResponse) {
+        let snapshot = Snapshot(groupInfo: groupInfo, lastUpdateTime: lastUpdateTime ?? Date())
+        guard let payload = try? JSONEncoder().encode(snapshot) else { return }
+        _ = UserDefaultsPayloadStore.save(payload, forKey: cacheKey, in: userDefaults)
+    }
+
+    private func restoreSnapshot() -> Snapshot? {
+        guard let payload = UserDefaultsPayloadStore.load(forKey: cacheKey, from: userDefaults) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(Snapshot.self, from: payload)
+    }
+
+    private var cacheKey: String {
+        if let user = authService.currentUser {
+            return Self.cachePrefix + "user-\(user.id)-\(user.education.group)"
+        }
+        return Self.cachePrefix + "anonymous"
     }
 
     private func resolveErrorMessage(_ error: Error) -> String {

@@ -166,7 +166,7 @@ struct PortalGradeBookLesson: Decodable {
     let controlPoint: String
 }
 
-struct UserGroupInfoResponse: Decodable {
+struct UserGroupInfoResponse: Codable {
     let numberOfGroup: String
     let studentGroupCuratorDto: GroupCurator?
     let groupInfoStudentDto: [GroupStudent]
@@ -183,9 +183,16 @@ struct UserGroupInfoResponse: Decodable {
         studentGroupCuratorDto = try container.decodeIfPresent(GroupCurator.self, forKey: .studentGroupCuratorDto)
         groupInfoStudentDto = try container.decodeIfPresent([GroupStudent].self, forKey: .groupInfoStudentDto) ?? []
     }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(numberOfGroup, forKey: .numberOfGroup)
+        try container.encodeIfPresent(studentGroupCuratorDto, forKey: .studentGroupCuratorDto)
+        try container.encode(groupInfoStudentDto, forKey: .groupInfoStudentDto)
+    }
 }
 
-struct GroupCurator: Decodable {
+struct GroupCurator: Codable {
     let position: String
     let fio: String
     let phone: String?
@@ -193,7 +200,7 @@ struct GroupCurator: Decodable {
     let urlId: String?
 }
 
-struct GroupStudent: Decodable, Identifiable {
+struct GroupStudent: Codable, Identifiable {
     let position: String
     let fio: String
     let urlId: String?

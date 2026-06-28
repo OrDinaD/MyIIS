@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Rating Models
 
-struct StudentRating: Identifiable, Decodable, Equatable {
+struct StudentRating: Identifiable, Codable, Equatable {
     let recordBookNumber: String
     let studentName: String?
     let averageGrade: Double?
@@ -53,9 +53,19 @@ struct StudentRating: Identifiable, Decodable, Equatable {
         self.averageShift = container.decodeDouble(forKeys: [.averageShift, .averageShiftMark])
         self.checkpoints = container.decodeArray(RatingCheckpoint.self, forKeys: [.checkPoint, .checkPoints])
     }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(recordBookNumber, forKey: .recordBookNumber)
+        try container.encodeIfPresent(studentName, forKey: .studentName)
+        try container.encodeIfPresent(averageGrade, forKey: .averageGrade)
+        try container.encodeIfPresent(missedHours, forKey: .missedHours)
+        try container.encodeIfPresent(averageShift, forKey: .averageShift)
+        try container.encode(checkpoints, forKey: .checkPoints)
+    }
 }
 
-struct RatingCheckpoint: Identifiable, Decodable, Equatable {
+struct RatingCheckpoint: Identifiable, Codable, Equatable {
     let number: Int
     let title: String?
     let averageGrade: Double?
@@ -88,6 +98,14 @@ struct RatingCheckpoint: Identifiable, Decodable, Equatable {
         self.title = try? container.decodeIfPresent(String.self, forKey: .title)
         self.averageGrade = container.decodeDouble(forKeys: [.averageGrade, .averageMark])
         self.missedHours = container.decodeInt(forKeys: [.missedHours, .missedLessons])
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(number, forKey: .number)
+        try container.encodeIfPresent(title, forKey: .title)
+        try container.encodeIfPresent(averageGrade, forKey: .averageGrade)
+        try container.encodeIfPresent(missedHours, forKey: .missedHours)
     }
 }
 

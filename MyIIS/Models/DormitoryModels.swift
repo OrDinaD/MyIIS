@@ -1,6 +1,6 @@
 import Foundation
 
-struct DormitoryQueueApplication: Decodable, Identifiable, Equatable {
+struct DormitoryQueueApplication: Codable, Identifiable, Equatable {
     let id: Int
     let acceptedDate: Date?
     let applicationDate: Date?
@@ -84,6 +84,21 @@ struct DormitoryQueueApplication: Decodable, Identifiable, Equatable {
         settledDate = DormitoryDateParser.parse(settledDateSource)
     }
 
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(status, forKey: .status)
+        try container.encode(number, forKey: .number)
+        try container.encodeIfPresent(numberInQueue, forKey: .numberInQueue)
+        try container.encodeIfPresent(docReference, forKey: .docReference)
+        try container.encodeIfPresent(docContent, forKey: .docContent)
+        try container.encodeIfPresent(rejectionReason, forKey: .rejectionReason)
+        try container.encodeIfPresent(roomInfo, forKey: .roomInfo)
+        try container.encodeIfPresent(acceptedDateSource ?? DormitoryDateParser.apiString(from: acceptedDate), forKey: .acceptedDate)
+        try container.encodeIfPresent(applicationDateSource ?? DormitoryDateParser.apiString(from: applicationDate), forKey: .applicationDate)
+        try container.encodeIfPresent(settledDateSource ?? DormitoryDateParser.apiString(from: settledDate), forKey: .settledDate)
+    }
+
     var hasDocument: Bool {
         !(docReference?.isEmpty ?? true) || !(docContent?.isEmpty ?? true)
     }
@@ -127,7 +142,7 @@ struct DormitoryQueueApplicationUpdatePayload: Encodable {
     let roomInfo: String?
 }
 
-struct DormitoryPrivilegeRecord: Decodable, Identifiable, Equatable {
+struct DormitoryPrivilegeRecord: Codable, Identifiable, Equatable {
     let id: Int
     let year: Int
     let dormitoryPrivilegeCategoryId: Int

@@ -20,6 +20,7 @@ final class RatingViewModel: ObservableObject {
     @Published private(set) var gradebookAverage: Double?
 
     private let apiService: APIService
+    private let userDefaults: UserDefaults
     private let logService = LogService.shared
     private var currentGroup: String?
     private var currentStudentId: String?
@@ -27,10 +28,9 @@ final class RatingViewModel: ObservableObject {
     private let isPreview: Bool
     private var backgroundRefreshTask: Task<Void, Never>?
 
-    private struct RatingCacheSnapshot {
+    private struct RatingCacheSnapshot: Codable {
         let students: [StudentRating]
         let checkpointNumbers: [Int]
-        let summary: RatingSummary?
         let disciplines: [GradebookDiscipline]
         let subjectOmissions: [String: Int]
         let userCheckpoints: [RatingCheckpoint]
@@ -42,14 +42,16 @@ final class RatingViewModel: ObservableObject {
         let updatedAt: Date
     }
 
-    private static var ratingCacheByKey: [String: RatingCacheSnapshot] = [:]
+    private static let ratingCachePrefix = "RatingViewModel.snapshot."
 
     init(
         apiService: APIService? = nil,
-        isPreview: Bool = false
+        isPreview: Bool = false,
+        userDefaults: UserDefaults = .standard
     ) {
         self.apiService = apiService ?? APIService()
         self.isPreview = isPreview
+        self.userDefaults = userDefaults
 
         if isPreview {
             students = StudentRating.previewData
@@ -161,24 +163,30 @@ extension RatingViewModel {
         currentGroup = group
         currentStudentId = cacheStudentId
 
-        if errorMessage != nil, applyCachedSnapshotIfAvailable(group: group, studentId: cacheStudentId) {
+        if let staleMessage = errorMessage,
+           applyCachedSnapshotIfAvailable(group: group, studentId: cacheStudentId) {
+            errorMessage = staleMessage
             isShowingStaleDataWarning = true
         } else if errorMessage == nil {
             lastUpdateTime = Date()
+            saveCurrentStateToCache(group: group, studentId: cacheStudentId)
         }
     }
 
     private func cacheKey(group: String, studentId: String) -> String {
-        "\(group)|\(studentId)"
+        Self.ratingCachePrefix + "\(group)|\(studentId)"
     }
 
     private func applyCachedSnapshotIfAvailable(group: String, studentId: String) -> Bool {
         let key = cacheKey(group: group, studentId: studentId)
-        guard let cached = Self.ratingCacheByKey[key] else { return false }
+        guard let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults),
+              let cached = try? JSONDecoder().decode(RatingCacheSnapshot.self, from: payload) else {
+            return false
+        }
 
         students = cached.students
         checkpointNumbers = cached.checkpointNumbers
-        summary = cached.summary
+        summary = RatingSummary(students: cached.students)
         disciplines = cached.disciplines
         subjectOmissions = cached.subjectOmissions
         userCheckpoints = cached.userCheckpoints
@@ -194,11 +202,10 @@ extension RatingViewModel {
     }
 
     private func saveCurrentStateToCache(group: String, studentId: String) {
-        let key = cacheKey(group: group, studentId: studentId)
-        Self.ratingCacheByKey[key] = RatingCacheSnapshot(
+        guard !students.isEmpty || !disciplines.isEmpty else { return }
+        let snapshot = RatingCacheSnapshot(
             students: students,
             checkpointNumbers: checkpointNumbers,
-            summary: summary,
             disciplines: disciplines,
             subjectOmissions: subjectOmissions,
             userCheckpoints: userCheckpoints,
@@ -207,8 +214,10 @@ extension RatingViewModel {
             resolvedRecordBookNumber: resolvedRecordBookNumber,
             currentGroup: group,
             currentStudentId: studentId,
-            updatedAt: Date()
+            updatedAt: lastUpdateTime ?? Date()
         )
+        guard let payload = try? JSONEncoder().encode(snapshot) else { return }
+        _ = UserDefaultsPayloadStore.save(payload, forKey: cacheKey(group: group, studentId: studentId), in: userDefaults)
     }
 
     private func scheduleBackgroundRefresh(for user: User) {

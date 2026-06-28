@@ -241,16 +241,18 @@ struct ErrorDetailsView: View {
             }
 
             let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
-            let isReachable = (200 ... 599).contains(http.statusCode)
-            let summary = isReachable ? "Доступен" : "Недоступен"
-            let detail = "HTTP \(http.statusCode), \(elapsedMs) мс"
+            let isAvailable = (200 ... 399).contains(http.statusCode)
+            let summary = isAvailable ? "Доступен" : "Недоступен"
+            let detail = isAvailable
+                ? "HTTP \(http.statusCode), \(elapsedMs) мс"
+                : "HTTP \(http.statusCode), \(elapsedMs) мс — сервер вернул ошибку"
 
             return BSUIRServerStatus(
                 name: name,
                 url: rawURL,
                 summary: summary,
                 detail: detail,
-                tint: isReachable ? .green : .orange
+                tint: isAvailable ? .green : .red
             )
         } catch {
             if let urlError = error as? URLError {

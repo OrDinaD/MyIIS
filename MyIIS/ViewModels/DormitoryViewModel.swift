@@ -11,37 +11,46 @@ final class DormitoryViewModel: ObservableObject {
     @Published var isDownloadingFile: Bool
     @Published var errorMessage: String?
     @Published var actionErrorMessage: String?
+    @Published var lastUpdateTime: Date?
+    @Published var isShowingStaleDataWarning = false
 
     private let dormitoryService: DormitoryServicing
+    private let userDefaults: UserDefaults
     private var hasLoadedOnce: Bool
-    private static var cachedSnapshot: Snapshot?
+    private static let cachePrefix = "DormitoryViewModel.snapshot."
 
-    private struct Snapshot {
+    private struct Snapshot: Codable {
         let applications: [DormitoryQueueApplication]
         let privilegeRecords: [DormitoryPrivilegeRecord]
+        let lastUpdateTime: Date?
     }
 
     init(
         dormitoryService: DormitoryServicing? = nil,
         initialApplications: [DormitoryQueueApplication] = [],
         initialPrivilegeRecords: [DormitoryPrivilegeRecord] = [],
-        announcementDate: Date = .now
+        announcementDate: Date = .now,
+        userDefaults: UserDefaults = .standard
     ) {
         #if DEBUG
         self.dormitoryService = dormitoryService ?? (APIService.isDemoMode ? DormitoryPreviewService() : DormitoryService())
         #else
         self.dormitoryService = dormitoryService ?? DormitoryService()
         #endif
+        self.userDefaults = userDefaults
         let resolvedApplications: [DormitoryQueueApplication]
         let resolvedPrivilegeRecords: [DormitoryPrivilegeRecord]
+        let resolvedLastUpdateTime: Date?
         if initialApplications.isEmpty,
            initialPrivilegeRecords.isEmpty,
-           let cachedSnapshot = Self.cachedSnapshot {
+           let cachedSnapshot = Self.restoreSnapshot(from: userDefaults) {
             resolvedApplications = cachedSnapshot.applications
             resolvedPrivilegeRecords = cachedSnapshot.privilegeRecords
+            resolvedLastUpdateTime = cachedSnapshot.lastUpdateTime
         } else {
             resolvedApplications = initialApplications
             resolvedPrivilegeRecords = initialPrivilegeRecords
+            resolvedLastUpdateTime = nil
         }
         self.applications = resolvedApplications
         self.privilegeRecords = resolvedPrivilegeRecords
@@ -51,6 +60,7 @@ final class DormitoryViewModel: ObservableObject {
         self.isDownloadingFile = false
         self.errorMessage = nil
         self.actionErrorMessage = nil
+        self.lastUpdateTime = resolvedLastUpdateTime
         self.hasLoadedOnce = !resolvedApplications.isEmpty || !resolvedPrivilegeRecords.isEmpty
     }
 
@@ -174,16 +184,16 @@ final class DormitoryViewModel: ObservableObject {
             }
 
             hasLoadedOnce = true
-            Self.cachedSnapshot = Snapshot(
-                applications: self.applications,
-                privilegeRecords: self.privilegeRecords
-            )
+            lastUpdateTime = Date()
+            isShowingStaleDataWarning = false
+            saveSnapshot()
         } catch {
             if let error = error as? LocalizedError, let message = error.errorDescription {
                 errorMessage = message
             } else {
                 errorMessage = error.localizedDescription
             }
+            isShowingStaleDataWarning = hasLoadedOnce
         }
 
         isLoading = false
@@ -197,10 +207,8 @@ final class DormitoryViewModel: ObservableObject {
             updated.append(application)
         }
         applications = sorted(updated)
-        Self.cachedSnapshot = Snapshot(
-            applications: applications,
-            privilegeRecords: privilegeRecords
-        )
+        lastUpdateTime = Date()
+        saveSnapshot()
     }
 
     private func sorted(_ applications: [DormitoryQueueApplication]) -> [DormitoryQueueApplication] {
@@ -216,6 +224,30 @@ final class DormitoryViewModel: ObservableObject {
             return message
         }
         return error.localizedDescription
+    }
+
+    private func saveSnapshot() {
+        let snapshot = Snapshot(
+            applications: applications,
+            privilegeRecords: privilegeRecords,
+            lastUpdateTime: lastUpdateTime ?? Date()
+        )
+        guard let payload = try? JSONEncoder().encode(snapshot) else { return }
+        _ = UserDefaultsPayloadStore.save(payload, forKey: Self.cacheKey, in: userDefaults)
+    }
+
+    private static func restoreSnapshot(from userDefaults: UserDefaults) -> Snapshot? {
+        guard let payload = UserDefaultsPayloadStore.load(forKey: cacheKey, from: userDefaults) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(Snapshot.self, from: payload)
+    }
+
+    private static var cacheKey: String {
+        if let user = AuthenticationService.shared.currentUser {
+            return cachePrefix + "user-\(user.id)"
+        }
+        return cachePrefix + "anonymous"
     }
 
     private func isCurrentApplicationSeason(_ date: Date, referenceYear: Int? = nil) -> Bool {

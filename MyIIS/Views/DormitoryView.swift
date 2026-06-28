@@ -64,10 +64,18 @@ struct DormitoryView: View {
     @ViewBuilder
     private var dormitoryContent: some View {
         VStack(spacing: 16) {
+            if viewModel.isShowingStaleDataWarning {
+                StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
+                    Task { await viewModel.reload() }
+                }
+            }
+
             if viewModel.isLoading && viewModel.applications.isEmpty && viewModel.privilegeRecords.isEmpty {
-                ProgressView(NSLocalizedString("dormitory_loading", comment: ""))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.top, 8)
+                ContentUnavailableView(
+                    NSLocalizedString("dormitory_loading", comment: ""),
+                    systemImage: "building.2",
+                    description: Text("Проверяем заявки и льготы.")
+                )
             }
 
             if let error = viewModel.errorMessage,
