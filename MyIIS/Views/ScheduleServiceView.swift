@@ -398,6 +398,10 @@ struct ScheduleServiceView: View {
             }
             .pickerStyle(.segmented)
 
+            if viewModel.mode == .group {
+                MilitaryScheduleImportButton(viewModel: viewModel)
+            }
+
             if showTextField {
                 TextField(viewModel.searchPlaceholder, text: $viewModel.query)
                     .textInputAutocapitalization(.never)

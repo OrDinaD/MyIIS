@@ -504,7 +504,7 @@ final class ScheduleServiceViewModel: ObservableObject {
         defaults.set(Array(pinnedGroupNames.prefix(12)), forKey: Self.pinnedGroupsDefaultsKey)
     }
 
-    private func applyGroupSchedule(_ scheduleResponse: PublicScheduleResponse, week: Int?, groupNumber: String) {
+    func applyGroupSchedule(_ scheduleResponse: PublicScheduleResponse, week: Int?, groupNumber: String) {
         schedule = scheduleResponse
         currentWeekNumber = resolveCurrentWeekNumber(
             backendValue: week,
