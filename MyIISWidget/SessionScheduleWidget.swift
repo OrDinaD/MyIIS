@@ -717,6 +717,7 @@ struct ClassScheduleWidget: Widget {
         .description("Показывает ближайшую пару вашей группы: время, предмет и аудиторию.")
         .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular])
         .contentMarginsDisabled()
+        .containerBackgroundRemovable(false)
     }
 }
 
@@ -729,6 +730,7 @@ struct SessionScheduleWidget: Widget {
         .description("Показывает ближайшие экзамены, консультации и объявления вашей группы.")
         .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular])
         .contentMarginsDisabled()
+        .containerBackgroundRemovable(false)
     }
 }
 
