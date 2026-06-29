@@ -30,6 +30,13 @@ final class GradebookViewModelTests: XCTestCase {
         for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("APIService.responseCache.") {
             defaults.removeObject(forKey: key)
         }
+        
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.OrDinaD.MyIIS") {
+            try? FileManager.default.removeItem(at: containerURL.appendingPathComponent("PayloadStore"))
+        }
+        if let cachesURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
+            try? FileManager.default.removeItem(at: cachesURL.appendingPathComponent("PayloadStore"))
+        }
     }
 
     // MARK: - Equivalence Partitioning & Boundary Value Analysis for yearlyAverage
