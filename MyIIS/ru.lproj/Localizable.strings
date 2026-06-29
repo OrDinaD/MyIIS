@@ -105,6 +105,7 @@
 "services_schedule_empty_hint" = "Введите запрос и нажмите «Загрузить расписание»";
 "services_schedule_groups_empty" = "Группы не найдены";
 "services_schedule_employees_empty" = "Преподаватели не найдены";
+"services_schedule_teacher_search_hint" = "Введите минимум 2 символа для поиска преподавателя";
 "services_schedule_current_week" = "Текущая неделя: %d";
 "services_schedule_query_required" = "Введите номер группы или выберите преподавателя";
 "services_schedule_teacher_pick_hint" = "Выберите преподавателя из списка";

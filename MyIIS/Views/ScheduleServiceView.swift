@@ -436,6 +436,7 @@ struct ScheduleServiceView: View {
             } else {
                 ScheduleTeacherSuggestionsView(
                     employees: viewModel.filteredEmployees,
+                    isWaitingForQuery: viewModel.isTeacherSearchQueryTooShort,
                     onSelect: { employee in
                         Task { await viewModel.loadEmployee(employee) }
                     }

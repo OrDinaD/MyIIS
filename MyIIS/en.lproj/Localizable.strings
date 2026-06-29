@@ -105,6 +105,7 @@
 "services_schedule_empty_hint" = "Enter a query and tap “Load Schedule”";
 "services_schedule_groups_empty" = "No groups found";
 "services_schedule_employees_empty" = "No teachers found";
+"services_schedule_teacher_search_hint" = "Enter at least 2 characters to search teachers";
 "services_schedule_current_week" = "Current week: %d";
 "services_schedule_query_required" = "Enter a group number or pick a teacher";
 "services_schedule_teacher_pick_hint" = "Pick a teacher from the list";

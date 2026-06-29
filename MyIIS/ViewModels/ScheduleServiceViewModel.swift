@@ -104,7 +104,10 @@ final class ScheduleServiceViewModel: ObservableObject {
             }
         }
     }
-    @Published var query = ""
+    @Published var query = "" {
+        didSet { scheduleDebouncedSearchUpdate() }
+    }
+    @Published private var debouncedQuery = ""
     @Published var groups: [StudyGroup] = []
     @Published var employees: [ScheduleEmployeeDirectoryEntry] = []
     @Published var schedule: PublicScheduleResponse?
@@ -134,6 +137,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     private var continuousCursorDate: Date?
     private var isContinuousEndReached = false
     private var isLoadingContinuousChunk = false
+    private var searchDebounceTask: Task<Void, Never>?
 
     private static let displayModeDefaultsKey = "services.schedule.displayMode"
     private static let subgroupFilterDefaultsKey = "services.schedule.subgroupFilter"
@@ -191,6 +195,7 @@ final class ScheduleServiceViewModel: ObservableObject {
         if !applyCachedSnapshotIfAvailable() {
             restorePersistedScheduleIfAvailable()
         }
+        debouncedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     @discardableResult
@@ -251,6 +256,16 @@ final class ScheduleServiceViewModel: ObservableObject {
         setMode(.group, preservingQuery: groupNumber)
         saveSnapshot()
         errorMessage = nil
+    }
+
+    private func scheduleDebouncedSearchUpdate() {
+        searchDebounceTask?.cancel()
+        let value = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        searchDebounceTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(180))
+            guard !Task.isCancelled else { return }
+            debouncedQuery = value
+        }
     }
 
     private func saveSnapshot() {
@@ -344,7 +359,9 @@ final class ScheduleServiceViewModel: ObservableObject {
         case .group:
             await loadGroup(trimmed)
         case .teacher:
-            if let direct = filteredEmployees.first(where: { $0.urlId == trimmed || $0.displayName.compare(trimmed, options: .caseInsensitive) == .orderedSame }) {
+            if let direct = matchingEmployees(for: trimmed, limit: 12).first(where: {
+                $0.urlId == trimmed || $0.displayName.compare(trimmed, options: .caseInsensitive) == .orderedSame
+            }) ?? matchingEmployees(for: trimmed, limit: 1).first {
                 await loadEmployee(direct)
             } else {
                 errorMessage = NSLocalizedString("services_schedule_teacher_pick_hint", comment: "")
@@ -725,6 +742,7 @@ final class ScheduleServiceViewModel: ObservableObject {
             title: title,
             subtitle: subtitle,
             location: lesson.location.nilIfBlank,
+            lessonType: lesson.lessonTypeAbbrev.nilIfBlank,
             kind: widgetEventKind(for: lesson)
         )
     }
@@ -1056,14 +1074,46 @@ extension ScheduleServiceViewModel {
     }
 
     var filteredEmployees: [ScheduleEmployeeDirectoryEntry] {
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !needle.isEmpty else {
-            return Array(employees.prefix(8))
+        let needle = debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard needle.count >= 2 else {
+            return recentEmployeeSuggestions
         }
-        return employees.filter { employee in
-            employee.displayName.localizedCaseInsensitiveContains(needle)
-                || (employee.urlId?.localizedCaseInsensitiveContains(needle) ?? false)
+        return matchingEmployees(for: needle, limit: 10)
+    }
+
+    private var recentEmployeeSuggestions: [ScheduleEmployeeDirectoryEntry] {
+        guard let urlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank else {
+            return []
         }
+        return employees.filter { $0.urlId == urlId }.prefix(2).map { $0 }
+    }
+
+    private func matchingEmployees(for query: String, limit: Int) -> [ScheduleEmployeeDirectoryEntry] {
+        let tokens = normalizedSearchTokens(from: query)
+        guard !tokens.isEmpty else { return [] }
+
+        var matches: [ScheduleEmployeeDirectoryEntry] = []
+        matches.reserveCapacity(limit)
+
+        for employee in employees where employee.matchesSearchTokens(tokens) {
+            matches.append(employee)
+            if matches.count >= limit { break }
+        }
+        return matches
+    }
+
+    private func normalizedSearchTokens(from query: String) -> [String] {
+        query
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .split(whereSeparator: { $0.isWhitespace || $0 == "." || $0 == "," })
+            .map(String.init)
+            .filter { !$0.isEmpty }
+    }
+
+    var isTeacherSearchQueryTooShort: Bool {
+        mode == .teacher
+            && query.trimmingCharacters(in: .whitespacesAndNewlines).count < 2
+            && recentEmployeeSuggestions.isEmpty
     }
 
     var weekFilters: [StudyWeekFilter] {
@@ -1336,6 +1386,16 @@ private extension ScheduleServiceViewModel {
         let rangeEnd = schedule.endExamsDate
         guard let rangeStart, let rangeEnd else { return nil }
         return "\(Self.examPeriodFormatter.string(from: rangeStart)) – \(Self.examPeriodFormatter.string(from: rangeEnd))"
+    }
+}
+
+private extension ScheduleEmployeeDirectoryEntry {
+    func matchesSearchTokens(_ tokens: [String]) -> Bool {
+        let searchIndex = [displayName.nilIfBlank, urlId?.nilIfBlank]
+            .compactMap { $0 }
+            .joined(separator: " ")
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        return tokens.allSatisfy { searchIndex.contains($0) }
     }
 }
 

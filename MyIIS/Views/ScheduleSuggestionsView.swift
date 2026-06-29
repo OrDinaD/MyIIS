@@ -105,10 +105,13 @@ struct ScheduleSuggestionsView: View {
 
 struct ScheduleTeacherSuggestionsView: View {
     let employees: [ScheduleEmployeeDirectoryEntry]
+    let isWaitingForQuery: Bool
     let onSelect: (ScheduleEmployeeDirectoryEntry) -> Void
 
     var body: some View {
-        if employees.isEmpty {
+        if isWaitingForQuery {
+            ServiceEmptyState(text: NSLocalizedString("services_schedule_teacher_search_hint", comment: ""))
+        } else if employees.isEmpty {
             ServiceEmptyState(text: NSLocalizedString("services_schedule_employees_empty", comment: ""))
         } else {
             VStack(spacing: 8) {

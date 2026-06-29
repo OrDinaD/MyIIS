@@ -29,6 +29,7 @@ struct SessionScheduleWidgetSnapshot: Codable, Sendable {
         let title: String
         let subtitle: String?
         let location: String?
+        let lessonType: String?
         let kind: SessionScheduleWidgetEventKind
     }
 }
