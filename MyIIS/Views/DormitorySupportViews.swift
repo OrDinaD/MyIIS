@@ -3,7 +3,7 @@ import SwiftUI
 struct DormitoryStatusTag: View {
     let status: String
 
-    private var tint: Color {
+    var tint: Color {
         let normalized = status.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
         if normalized.contains("засел") {
