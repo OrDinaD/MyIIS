@@ -44,8 +44,10 @@ class AppRouter: ObservableObject {
     static func isSectionOrTabEnabled(_ rawValue: String) -> Bool {
         let isBeta = UserDefaults.standard.bool(forKey: "enable_beta_sections")
         switch rawValue {
-        case "home", "lms", "schedule", "headman":
+        case "home", "lms", "headman":
             return isBeta
+        case "schedule":
+            return true
         case "profile":
             return UserDefaults.standard.object(forKey: "show_tab_profile") == nil ? true : UserDefaults.standard.bool(forKey: "show_tab_profile")
         case "attendance":

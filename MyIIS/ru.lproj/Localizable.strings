@@ -99,6 +99,7 @@
 "services_schedule_load_button" = "Загрузить расписание";
 "services_schedule_exams" = "Экзамены и консультации";
 "services_schedule_empty_week" = "На выбранной неделе занятий нет";
+"services_schedule_no_future_lessons" = "Занятий больше нет";
 "services_schedule_empty_title" = "Расписание";
 "services_schedule_empty_subtitle" = "Выберите группу или преподавателя";
 "services_schedule_empty_hint" = "Введите запрос и нажмите «Загрузить расписание»";

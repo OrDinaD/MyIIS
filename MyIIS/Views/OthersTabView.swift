@@ -94,7 +94,6 @@ private enum ServicesDestination: String, Identifiable, Hashable {
 
 struct OthersTabView: View {
     @ObservedObject private var router = AppRouter.shared
-    @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @EnvironmentObject private var authService: AuthenticationService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var desktopSelection: ServicesDestination?
@@ -188,13 +187,11 @@ private extension OthersTabView {
             .accessibilityLabel(NSLocalizedString("services_item_study", comment: ""))
             .accessibilityIdentifier("serviceLink_study")
 
-            if enableBetaSections {
-                NavigationLink(value: AppSection.schedule) {
-                    serviceRow(for: .schedule)
-                }
-                .accessibilityLabel(NSLocalizedString("services_item_schedule", comment: ""))
-                .accessibilityIdentifier("serviceLink_schedule")
+            NavigationLink(value: AppSection.schedule) {
+                serviceRow(for: .schedule)
             }
+            .accessibilityLabel(NSLocalizedString("services_item_schedule", comment: ""))
+            .accessibilityIdentifier("serviceLink_schedule")
 
             if authService.currentUser?.isHeadman == true {
                 NavigationLink(value: AppSection.headman) {
@@ -391,10 +388,7 @@ private extension OthersTabView {
     }
 
     private var studyDestinations: [ServicesDestination] {
-        var values: [ServicesDestination] = [.gradebook, .study]
-        if enableBetaSections {
-            values.append(.schedule)
-        }
+        var values: [ServicesDestination] = [.gradebook, .study, .schedule]
         if authService.currentUser?.isHeadman == true {
             values.append(.headman)
         }

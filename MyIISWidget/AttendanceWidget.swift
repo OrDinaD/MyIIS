@@ -2,8 +2,8 @@
 //  AttendanceWidget.swift
 //  MyIISWidgetExtension
 //
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
 struct AttendanceWidgetEntry: TimelineEntry {
     let date: Date
@@ -228,6 +228,7 @@ struct AttendanceWidget: Widget {
 struct AttendanceWidgetBundle: WidgetBundle {
     var body: some Widget {
         AttendanceWidget()
+        ClassScheduleWidget()
         SessionScheduleWidget()
     }
 }

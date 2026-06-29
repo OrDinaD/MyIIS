@@ -124,6 +124,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var noticeMessage: String?
     @Published private(set) var continuousTimelineDays: [ScheduleContinuousDay] = []
+    @Published private(set) var pinnedGroupNames: [String] = []
 
     private let api: ServiceEndpointsAPI
     private let authService: AuthenticationService
@@ -140,6 +141,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     private static let lastGroupDefaultsKey = "services.schedule.lastGroup"
     private static let lastTeacherURLIDDefaultsKey = "services.schedule.lastTeacherURLID"
     private static let lastTeacherNameDefaultsKey = "services.schedule.lastTeacherName"
+    private static let pinnedGroupsDefaultsKey = "services.schedule.pinnedGroups"
     private static let continuousChunkSizeDays = 28
     private static let continuousFallbackHorizonDays = 120
     private static var cachedSnapshot: Snapshot?
@@ -178,17 +180,22 @@ final class ScheduleServiceViewModel: ObservableObject {
             subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
         }
 
+        pinnedGroupNames = defaults.stringArray(forKey: Self.pinnedGroupsDefaultsKey) ?? []
+
         if mode == .group, let lastGroup = defaults.string(forKey: Self.lastGroupDefaultsKey) {
             query = lastGroup
         } else if mode == .teacher, let lastTeacherName = defaults.string(forKey: Self.lastTeacherNameDefaultsKey) {
             query = lastTeacherName
         }
 
-        applyCachedSnapshotIfAvailable()
+        if !applyCachedSnapshotIfAvailable() {
+            restorePersistedScheduleIfAvailable()
+        }
     }
 
-    private func applyCachedSnapshotIfAvailable() {
-        guard let snapshot = Self.cachedSnapshot else { return }
+    @discardableResult
+    private func applyCachedSnapshotIfAvailable() -> Bool {
+        guard let snapshot = Self.cachedSnapshot else { return false }
         shouldResetQueryOnModeChange = false
         mode = snapshot.mode
         shouldResetQueryOnModeChange = true
@@ -199,7 +206,51 @@ final class ScheduleServiceViewModel: ObservableObject {
         displayMode = snapshot.displayMode
         subgroupFilter = snapshot.subgroupFilter
         continuousTimelineDays = snapshot.continuousTimelineDays
-        hasLoadedInitialData = true
+        hasLoadedInitialData = false
+        return true
+    }
+
+    private func restorePersistedScheduleIfAvailable() {
+        if let group = accountGroupName ?? defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank,
+           let cachedSchedule = api.cachedGroupSchedule(groupNumber: group) {
+            applyRestoredGroupSchedule(cachedSchedule, groupNumber: group)
+            return
+        }
+
+        guard mode == .teacher,
+              let urlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank,
+              let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId) else {
+            return
+        }
+        let displayName = defaults.string(forKey: Self.lastTeacherNameDefaultsKey) ?? urlId
+        let restored = ScheduleEmployeeDirectoryEntry(
+            firstName: nil,
+            lastName: nil,
+            middleName: nil,
+            degree: nil,
+            rank: nil,
+            photoLink: nil,
+            calendarId: nil,
+            id: Int.min,
+            urlId: urlId,
+            fio: displayName
+        )
+        applyEmployeeSchedule(cachedSchedule, week: nil, employee: restored, urlId: urlId)
+    }
+
+    private func applyRestoredGroupSchedule(_ scheduleResponse: PublicScheduleResponse, groupNumber: String) {
+        schedule = scheduleResponse
+        currentWeekNumber = resolveCurrentWeekNumber(
+            backendValue: nil,
+            termStartDate: scheduleResponse.startDate
+        )
+        preferExamDisplayIfNeeded(for: scheduleResponse)
+        applyDefaultWeekFilter()
+        sanitizeSubgroupFilter()
+        rebuildContinuousTimeline(reset: true)
+        setMode(.group, preservingQuery: groupNumber)
+        saveSnapshot()
+        errorMessage = nil
     }
 
     private func saveSnapshot() {
@@ -328,24 +379,18 @@ final class ScheduleServiceViewModel: ObservableObject {
             return
         }
         if isLoading { return }
-        isLoading = true
+
+        if let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId) {
+            applyEmployeeSchedule(cachedSchedule, week: nil, employee: employee, urlId: urlId)
+        }
+
+        isLoading = schedule == nil
         defer { isLoading = false }
 
         do {
             let scheduleResponse = try await api.fetchEmployeeSchedule(urlId: urlId)
             let week = try? await api.fetchCurrentWeek()
-            schedule = scheduleResponse
-            currentWeekNumber = resolveCurrentWeekNumber(
-                backendValue: week,
-                termStartDate: scheduleResponse.startDate
-            )
-            applyDefaultWeekFilter()
-            sanitizeSubgroupFilter()
-            rebuildContinuousTimeline(reset: true)
-            setMode(.teacher, preservingQuery: employee.displayName)
-            persistTeacherSelection(urlId: urlId, displayName: employee.displayName)
-            saveSnapshot()
-            errorMessage = nil
+            applyEmployeeSchedule(scheduleResponse, week: week, employee: employee, urlId: urlId)
         } catch is CancellationError {
             return
         } catch {
@@ -429,6 +474,19 @@ final class ScheduleServiceViewModel: ObservableObject {
         defaults.set(displayName, forKey: Self.lastTeacherNameDefaultsKey)
     }
 
+    func togglePinnedGroup(_ group: StudyGroup) {
+        let name = group.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+
+        if pinnedGroupNames.contains(name) {
+            pinnedGroupNames.removeAll { $0 == name }
+        } else {
+            pinnedGroupNames.insert(name, at: 0)
+        }
+
+        defaults.set(Array(pinnedGroupNames.prefix(12)), forKey: Self.pinnedGroupsDefaultsKey)
+    }
+
     private func applyGroupSchedule(_ scheduleResponse: PublicScheduleResponse, week: Int?, groupNumber: String) {
         schedule = scheduleResponse
         currentWeekNumber = resolveCurrentWeekNumber(
@@ -443,8 +501,29 @@ final class ScheduleServiceViewModel: ObservableObject {
         persistGroupSelection(groupNumber)
         saveSnapshot()
         errorMessage = nil
+        updateClassScheduleWidgetSnapshot(from: scheduleResponse)
         updateSessionScheduleWidgetSnapshot(from: scheduleResponse)
         scheduleExamRemindersIfAuthorized()
+    }
+
+    private func applyEmployeeSchedule(
+        _ scheduleResponse: PublicScheduleResponse,
+        week: Int?,
+        employee: ScheduleEmployeeDirectoryEntry,
+        urlId: String
+    ) {
+        schedule = scheduleResponse
+        currentWeekNumber = resolveCurrentWeekNumber(
+            backendValue: week,
+            termStartDate: scheduleResponse.startDate
+        )
+        applyDefaultWeekFilter()
+        sanitizeSubgroupFilter()
+        rebuildContinuousTimeline(reset: true)
+        setMode(.teacher, preservingQuery: employee.displayName)
+        persistTeacherSelection(urlId: urlId, displayName: employee.displayName)
+        saveSnapshot()
+        errorMessage = nil
     }
 
     func loadMoreContinuousDaysIfNeeded(lastVisibleDayID: String) {
@@ -538,7 +617,7 @@ final class ScheduleServiceViewModel: ObservableObject {
             to: calendar.startOfDay(for: now)
         ) ?? now
         guard let endDate = schedule.endDate else { return fallback }
-        return max(calendar.startOfDay(for: endDate), fallback)
+        return calendar.startOfDay(for: endDate)
     }
 
     private func lessonsForContinuousDay(weekday: StudyWeekday, weekNumber: Int, date: Date) -> [DisciplineSchedule] {
@@ -586,6 +665,27 @@ final class ScheduleServiceViewModel: ObservableObject {
         }
     }
 
+    private func updateClassScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {
+        guard let groupName = scheduleResponse.group?.name.nilIfBlank else { return }
+        if let accountGroupName, accountGroupName != groupName {
+            return
+        }
+
+        let events = continuousTimelineDays
+            .flatMap { day in day.lessons.map { Self.widgetEvent(from: $0, on: day.date) } }
+            .sorted(by: Self.widgetEventSortingComparator)
+            .prefix(80)
+
+        let snapshot = SessionScheduleWidgetSnapshot(
+            groupName: groupName,
+            startDate: scheduleResponse.startDate,
+            endDate: scheduleResponse.endDate,
+            events: Array(events),
+            updatedAt: Date()
+        )
+        ClassScheduleWidgetDataStore.save(snapshot)
+    }
+
     private func updateSessionScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {
         guard let groupName = scheduleResponse.group?.name.nilIfBlank else { return }
         if let accountGroupName, accountGroupName != groupName {
@@ -594,7 +694,8 @@ final class ScheduleServiceViewModel: ObservableObject {
 
         let events = scheduleResponse.exams
             .sorted(by: Self.examSortingComparator)
-            .map(Self.widgetEvent)
+            .map { Self.widgetEvent(from: $0, on: $0.lessonDate ?? $0.startLessonDate) }
+
         let snapshot = SessionScheduleWidgetSnapshot(
             groupName: groupName,
             startDate: scheduleResponse.startExamsDate,
@@ -605,17 +706,20 @@ final class ScheduleServiceViewModel: ObservableObject {
         SessionScheduleWidgetDataStore.save(snapshot)
     }
 
-    private static func widgetEvent(from lesson: DisciplineSchedule) -> SessionScheduleWidgetSnapshot.Event {
+    private static func widgetEvent(
+        from lesson: DisciplineSchedule,
+        on date: Date?
+    ) -> SessionScheduleWidgetSnapshot.Event {
         let title = lesson.isAnnouncement
             ? lesson.title.replacingOccurrences(of: "📣 ", with: "")
             : (lesson.subject.nilIfBlank ?? lesson.title)
-        let subtitle = [lesson.location.nilIfBlank, lesson.note.nilIfBlank]
+        let subtitle = [lesson.lessonTypeAbbrev.nilIfBlank, lesson.location.nilIfBlank, lesson.note.nilIfBlank]
             .compactMap { $0 }
             .joined(separator: ", ")
             .nilIfBlank
         return SessionScheduleWidgetSnapshot.Event(
-            id: lesson.id,
-            date: lesson.lessonDate ?? lesson.startLessonDate,
+            id: "\(lesson.id)|\(date?.timeIntervalSince1970 ?? 0)",
+            date: date,
             startTime: lesson.startLessonTime,
             endTime: lesson.endLessonTime,
             title: title,
@@ -623,6 +727,18 @@ final class ScheduleServiceViewModel: ObservableObject {
             location: lesson.location.nilIfBlank,
             kind: widgetEventKind(for: lesson)
         )
+    }
+
+    private static func widgetEventSortingComparator(
+        lhs: SessionScheduleWidgetSnapshot.Event,
+        rhs: SessionScheduleWidgetSnapshot.Event
+    ) -> Bool {
+        let leftDate = lhs.interval()?.start ?? lhs.date ?? .distantFuture
+        let rightDate = rhs.interval()?.start ?? rhs.date ?? .distantFuture
+        if leftDate != rightDate {
+            return leftDate < rightDate
+        }
+        return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
     }
 
     private static func widgetEventKind(for lesson: DisciplineSchedule) -> SessionScheduleWidgetEventKind {
@@ -654,7 +770,15 @@ final class ScheduleServiceViewModel: ObservableObject {
         }
 
         if isLoading { return }
-        isLoading = true
+
+        if shouldLoadGroups, let cachedGroups = api.cachedStudentGroups() {
+            groups = cachedGroups.sorted { $0.name < $1.name }
+        }
+        if shouldLoadEmployees, let cachedEmployees = api.cachedEmployees() {
+            employees = Self.filteredEmployeeDirectory(cachedEmployees)
+        }
+
+        isLoading = (shouldLoadGroups && groups.isEmpty) || (shouldLoadEmployees && employees.isEmpty)
         defer {
             isLoading = false
             hasLoadedInitialData = true
@@ -666,9 +790,7 @@ final class ScheduleServiceViewModel: ObservableObject {
                     .sorted { $0.name < $1.name }
             }
             if shouldLoadEmployees {
-                employees = try await api.fetchAllEmployees()
-                    .filter { ($0.urlId?.isEmpty == false) }
-                    .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
+                employees = Self.filteredEmployeeDirectory(try await api.fetchAllEmployees())
             }
             errorMessage = nil
         } catch is CancellationError {
@@ -676,6 +798,14 @@ final class ScheduleServiceViewModel: ObservableObject {
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
+    }
+
+    private static func filteredEmployeeDirectory(
+        _ entries: [ScheduleEmployeeDirectoryEntry]
+    ) -> [ScheduleEmployeeDirectoryEntry] {
+        entries
+            .filter { ($0.urlId?.isEmpty == false) }
+            .sorted { $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending }
     }
 
     private func sanitizeSubgroupFilter() {
@@ -869,7 +999,7 @@ extension StudyWeekFilter {
     var localizedTitle: String {
         switch self {
         case .all:
-            return NSLocalizedString("services_schedule_week_all", comment: "")
+            return NSLocalizedString("services_schedule_subgroup_short_all", comment: "")
         case .week(let value):
             return "\(value)"
         }
@@ -893,17 +1023,36 @@ extension ScheduleServiceViewModel {
     var filteredGroups: [StudyGroup] {
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else {
-            if let accountGroupName,
-               let accountGroup = groups.first(where: { $0.name == accountGroupName }) {
-                let withoutAccount = groups.filter { $0.name != accountGroupName }
-                return [accountGroup] + Array(withoutAccount.prefix(29))
-            }
-            return Array(groups.prefix(30))
+            return prioritizedGroups(groups)
         }
-        return groups.filter { group in
+
+        let matched = groups.filter { group in
             group.name.localizedCaseInsensitiveContains(needle)
             || (group.specialityName?.localizedCaseInsensitiveContains(needle) ?? false)
         }
+        return prioritizedGroups(matched)
+    }
+
+    private func prioritizedGroups(_ source: [StudyGroup], limit: Int = 30) -> [StudyGroup] {
+        var seen: Set<String> = []
+        var result: [StudyGroup] = []
+
+        func append(_ group: StudyGroup?) {
+            guard let group, seen.insert(group.name).inserted else { return }
+            result.append(group)
+        }
+
+        if let accountGroupName {
+            append(source.first { $0.name == accountGroupName })
+        }
+        for name in pinnedGroupNames {
+            append(source.first { $0.name == name })
+        }
+        for group in source {
+            append(group)
+            if result.count >= limit { break }
+        }
+        return Array(result.prefix(limit))
     }
 
     var filteredEmployees: [ScheduleEmployeeDirectoryEntry] {
@@ -1032,6 +1181,24 @@ extension ScheduleServiceViewModel {
         case .exams:
             return filteredExams.isEmpty
         }
+    }
+
+    var currentModeEmptyText: String {
+        if displayMode == .continuous, isSchedulePastEnd {
+            return NSLocalizedString("services_schedule_no_future_lessons", comment: "")
+        }
+        return NSLocalizedString("services_schedule_empty_week", comment: "")
+    }
+
+    private var isSchedulePastEnd: Bool {
+        guard let endDate = schedule?.endDate else { return false }
+        let calendar = Calendar.current
+        let endExclusive = calendar.date(
+            byAdding: .day,
+            value: 1,
+            to: calendar.startOfDay(for: endDate)
+        ) ?? endDate
+        return Date() >= endExclusive
     }
 
     func examDayTitle(for day: ExamScheduleDay) -> String {

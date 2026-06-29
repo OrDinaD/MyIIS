@@ -37,6 +37,10 @@ enum SessionScheduleWidgetConstants {
     static let kind = "com.OrDinaD.MyIIS.sessionSchedule"
 }
 
+enum ClassScheduleWidgetConstants {
+    static let kind = "com.OrDinaD.MyIIS.classSchedule"
+}
+
 enum SessionScheduleWidgetDateFormatting {
     nonisolated static func numericDateText(from date: Date) -> String {
         let formatter = DateFormatter()
@@ -65,6 +69,52 @@ enum SessionScheduleWidgetDataStore {
         static let snapshot = "session_schedule_widget_snapshot_v1"
     }
 
+    static func save(_ snapshot: SessionScheduleWidgetSnapshot) {
+        ScheduleWidgetSnapshotStore.save(
+            snapshot,
+            key: Key.snapshot,
+            widgetKind: SessionScheduleWidgetConstants.kind
+        )
+    }
+
+    static func loadSnapshot() -> SessionScheduleWidgetSnapshot? {
+        ScheduleWidgetSnapshotStore.load(key: Key.snapshot)
+    }
+
+    static func clear() {
+        ScheduleWidgetSnapshotStore.clear(
+            key: Key.snapshot,
+            widgetKind: SessionScheduleWidgetConstants.kind
+        )
+    }
+}
+
+enum ClassScheduleWidgetDataStore {
+    private enum Key {
+        static let snapshot = "class_schedule_widget_snapshot_v1"
+    }
+
+    static func save(_ snapshot: SessionScheduleWidgetSnapshot) {
+        ScheduleWidgetSnapshotStore.save(
+            snapshot,
+            key: Key.snapshot,
+            widgetKind: ClassScheduleWidgetConstants.kind
+        )
+    }
+
+    static func loadSnapshot() -> SessionScheduleWidgetSnapshot? {
+        ScheduleWidgetSnapshotStore.load(key: Key.snapshot)
+    }
+
+    static func clear() {
+        ScheduleWidgetSnapshotStore.clear(
+            key: Key.snapshot,
+            widgetKind: ClassScheduleWidgetConstants.kind
+        )
+    }
+}
+
+private enum ScheduleWidgetSnapshotStore {
     private static var defaults: UserDefaults? {
         guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier) != nil else {
             return nil
@@ -72,32 +122,32 @@ enum SessionScheduleWidgetDataStore {
         return UserDefaults(suiteName: AppGroup.identifier)
     }
 
-    static func save(_ snapshot: SessionScheduleWidgetSnapshot) {
+    static func save(_ snapshot: SessionScheduleWidgetSnapshot, key: String, widgetKind: String) {
         guard let defaults else { return }
         do {
             let data = try JSONEncoder().encode(snapshot)
-            _ = UserDefaultsPayloadStore.save(data, forKey: Key.snapshot, in: defaults)
+            _ = UserDefaultsPayloadStore.save(data, forKey: key, in: defaults)
 #if canImport(WidgetKit)
-            WidgetCenter.shared.reloadTimelines(ofKind: SessionScheduleWidgetConstants.kind)
+            WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
 #endif
         } catch {
             assertionFailure("Failed to encode SessionScheduleWidgetSnapshot: \(error)")
         }
     }
 
-    static func loadSnapshot() -> SessionScheduleWidgetSnapshot? {
+    static func load(key: String) -> SessionScheduleWidgetSnapshot? {
         guard let defaults,
-              let data = UserDefaultsPayloadStore.load(forKey: Key.snapshot, from: defaults) else {
+              let data = UserDefaultsPayloadStore.load(forKey: key, from: defaults) else {
             return nil
         }
         return try? JSONDecoder().decode(SessionScheduleWidgetSnapshot.self, from: data)
     }
 
-    static func clear() {
+    static func clear(key: String, widgetKind: String) {
         guard let defaults else { return }
-        defaults.removeObject(forKey: Key.snapshot)
+        defaults.removeObject(forKey: key)
 #if canImport(WidgetKit)
-        WidgetCenter.shared.reloadTimelines(ofKind: SessionScheduleWidgetConstants.kind)
+        WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
 #endif
     }
 }
@@ -138,5 +188,15 @@ extension SessionScheduleWidgetSnapshot.Event {
     nonisolated func isActive(at now: Date, calendar: Calendar = .current) -> Bool {
         guard let interval = interval(calendar: calendar) else { return false }
         return interval.contains(now)
+    }
+
+    nonisolated func isUpcoming(at referenceDate: Date, calendar: Calendar = .current) -> Bool {
+        if let interval = interval(calendar: calendar) {
+            return interval.end >= referenceDate
+        }
+        guard let date else { return true }
+        let eventDay = calendar.startOfDay(for: date)
+        let referenceDay = calendar.startOfDay(for: referenceDate)
+        return eventDay >= referenceDay
     }
 }

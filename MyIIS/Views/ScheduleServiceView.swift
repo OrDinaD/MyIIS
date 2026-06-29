@@ -22,7 +22,7 @@ struct ScheduleServiceView: View {
         ScrollView {
             LazyVStack(spacing: 14) {
                 if viewModel.schedule == nil, !viewModel.isLoading {
-                    searchBlock
+                    searchBlock()
                 }
 
                 if viewModel.schedule != nil {
@@ -83,7 +83,7 @@ struct ScheduleServiceView: View {
                                 .padding(16)
                                 .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                             }
-                            
+
                             if viewModel.pastContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) &&
                                !viewModel.upcomingContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) {
                                 Text(NSLocalizedString("services_schedule_no_more_today", comment: "На сегодня занятий больше нет 🎉"))
@@ -219,7 +219,7 @@ struct ScheduleServiceView: View {
                         }
 
                         if viewModel.isCurrentModeEmpty {
-                            ServiceEmptyState(text: NSLocalizedString("services_schedule_empty_week", comment: ""))
+                            ServiceEmptyState(text: viewModel.currentModeEmptyText)
                         }
                     }
                 } else {
@@ -344,10 +344,18 @@ struct ScheduleServiceView: View {
         .sheet(isPresented: $isSearchSheetPresented) {
             NavigationStack {
                 ScrollView {
-                    searchBlock
+                    searchBlock(inSheet: true)
                         .padding()
                 }
                 .background(Color(uiColor: .systemGroupedBackground))
+                .searchable(
+                    text: $viewModel.query,
+                    placement: .navigationBarDrawer(displayMode: .always),
+                    prompt: Text(viewModel.searchPlaceholder)
+                )
+                .onSubmit(of: .search) {
+                    Task { await viewModel.loadByQuery() }
+                }
                 .navigationTitle("Поиск расписания")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -365,58 +373,73 @@ struct ScheduleServiceView: View {
         }
     }
 
-    private var searchBlock: some View {
-        ServiceEndpointSection(
-            title: NSLocalizedString("services_schedule_title", comment: ""),
-            subtitle: NSLocalizedString("services_schedule_subtitle", comment: ""),
-            icon: "calendar"
-        ) {
-            VStack(spacing: 12) {
-                Picker("", selection: $viewModel.mode) {
-                    Text(NSLocalizedString("services_schedule_mode_group", comment: "")).tag(ScheduleLookupMode.group)
-                    Text(NSLocalizedString("services_schedule_mode_teacher", comment: "")).tag(ScheduleLookupMode.teacher)
-                }
-                .pickerStyle(.segmented)
+    @ViewBuilder
+    private func searchBlock(inSheet: Bool = false) -> some View {
+        if inSheet {
+            searchControls(showTextField: false)
+                .padding(14)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        } else {
+            ServiceEndpointSection(
+                title: NSLocalizedString("services_schedule_title", comment: ""),
+                subtitle: NSLocalizedString("services_schedule_subtitle", comment: ""),
+                icon: "calendar"
+            ) {
+                searchControls(showTextField: true)
+            }
+        }
+    }
 
+    private func searchControls(showTextField: Bool) -> some View {
+        VStack(spacing: 12) {
+            Picker("", selection: $viewModel.mode) {
+                Text(NSLocalizedString("services_schedule_mode_group", comment: "")).tag(ScheduleLookupMode.group)
+                Text(NSLocalizedString("services_schedule_mode_teacher", comment: "")).tag(ScheduleLookupMode.teacher)
+            }
+            .pickerStyle(.segmented)
+
+            if showTextField {
                 TextField(viewModel.searchPlaceholder, text: $viewModel.query)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .padding(10)
+                    .padding(12)
                     .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(Color(uiColor: .tertiarySystemGroupedBackground))
+                        RoundedRectangle(cornerRadius: 13, style: .continuous)
+                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
                     )
                     .onSubmit {
                         Task { await viewModel.loadByQuery() }
                     }
+            }
 
-                Button {
-                    Task { await viewModel.loadByQuery() }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.down.circle.fill")
-                        Text(NSLocalizedString("services_schedule_load_button", comment: ""))
-                    }
+            Button {
+                Task { await viewModel.loadByQuery() }
+            } label: {
+                Label(NSLocalizedString("services_schedule_load_button", comment: ""), systemImage: "arrow.down.circle.fill")
                     .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
-                if viewModel.mode == .group {
-                    ScheduleSuggestionsView(
-                        groups: viewModel.filteredGroups,
-                        accountGroupName: viewModel.accountGroupName,
-                        onSelect: { group in
-                            Task { await viewModel.loadGroup(group.name) }
-                        }
-                    )
-                } else {
-                    ScheduleTeacherSuggestionsView(
-                        employees: viewModel.filteredEmployees,
-                        onSelect: { employee in
-                            Task { await viewModel.loadEmployee(employee) }
-                        }
-                    )
-                }
+            if viewModel.mode == .group {
+                ScheduleSuggestionsView(
+                    groups: viewModel.filteredGroups,
+                    accountGroupName: viewModel.accountGroupName,
+                    pinnedGroupNames: viewModel.pinnedGroupNames,
+                    onSelect: { group in
+                        Task { await viewModel.loadGroup(group.name) }
+                    },
+                    onTogglePin: { group in
+                        viewModel.togglePinnedGroup(group)
+                    }
+                )
+            } else {
+                ScheduleTeacherSuggestionsView(
+                    employees: viewModel.filteredEmployees,
+                    onSelect: { employee in
+                        Task { await viewModel.loadEmployee(employee) }
+                    }
+                )
             }
         }
     }
@@ -559,14 +582,14 @@ private struct ScheduleLessonCard: View {
     private func timeColumn(font: Font) -> some View {
         VStack(spacing: 3) {
             Text(lesson.startLessonTime).font(font.weight(.semibold)).foregroundStyle(cardPrimaryForeground)
-            
+
             if let breakTime = calculateBreakTime() {
                 Text(breakTime)
                     .font(font.weight(.regular).width(.compressed))
                     .foregroundStyle(cardSecondaryForeground.opacity(0.7))
                     .scaleEffect(0.85)
             }
-            
+
             Text(lesson.endLessonTime).font(font.weight(.regular)).foregroundStyle(cardSecondaryForeground)
         }
     }
@@ -576,7 +599,7 @@ private struct ScheduleLessonCard: View {
         formatter.dateFormat = "HH:mm"
         guard let start = formatter.date(from: lesson.startLessonTime),
               let end = formatter.date(from: lesson.endLessonTime) else { return nil }
-        
+
         let diff = end.timeIntervalSince(start)
         if diff == 95 * 60 {
             let breakStart = start.addingTimeInterval(45 * 60)
@@ -629,7 +652,7 @@ private struct ScheduleLessonCard: View {
 
     private func teacherAvatar(size: CGFloat) -> some View {
         Group {
-            if let link = lesson.employees.first?.photoLink, let url = URL(string: link.replacingOccurrences(of: "http://", with: "https://").replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")) {
+            if let url = teacherPhotoURL {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
@@ -647,6 +670,14 @@ private struct ScheduleLessonCard: View {
         .clipShape(Circle())
         .saturation(isPast ? 0 : 1)
         .opacity(isPast ? 0.7 : 1)
+    }
+
+    private var teacherPhotoURL: URL? {
+        guard let link = lesson.employees.first?.photoLink.nilIfBlank else { return nil }
+        let normalized = link
+            .replacingOccurrences(of: "http://", with: "https://")
+            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")
+        return URL(string: normalized)
     }
 
     @ViewBuilder

@@ -99,6 +99,7 @@
 "services_schedule_load_button" = "Завантажити розклад";
 "services_schedule_exams" = "Іспити та консультації";
 "services_schedule_empty_week" = "На вибраному тижні занять немає";
+"services_schedule_no_future_lessons" = "Занять більше немає";
 "services_schedule_empty_title" = "Розклад";
 "services_schedule_empty_subtitle" = "Оберіть групу або викладача";
 "services_schedule_empty_hint" = "Введіть запит і натисніть «Завантажити розклад»";

@@ -398,6 +398,30 @@ final class ServiceEndpointsAPI {
         return try? JSONDecoder().decode(PublicScheduleResponse.self, from: data)
     }
 
+    func cachedEmployeeSchedule(urlId: String) -> PublicScheduleResponse? {
+        guard let request = try? makeGETRequest(path: "employees/schedule/\(urlId)"),
+              let data = cachedData(for: request) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(PublicScheduleResponse.self, from: data)
+    }
+
+    func cachedStudentGroups() -> [StudyGroup]? {
+        guard let request = try? makeGETRequest(path: "student-groups"),
+              let data = cachedData(for: request) else {
+            return nil
+        }
+        return try? JSONDecoder().decode([StudyGroup].self, from: data)
+    }
+
+    func cachedEmployees() -> [ScheduleEmployeeDirectoryEntry]? {
+        guard let request = try? makeGETRequest(path: "employees/all"),
+              let data = cachedData(for: request) else {
+            return nil
+        }
+        return try? JSONDecoder().decode([ScheduleEmployeeDirectoryEntry].self, from: data)
+    }
+
     func downloadGroupScheduleReport(groupNumber: String) async throws -> URL {
         let data = try await fetchData(path: "schedule/report", queryItems: [
             URLQueryItem(name: "student-group-name", value: groupNumber)

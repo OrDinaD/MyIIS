@@ -14,13 +14,17 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
     }
 
     var upcomingEvents: [SessionScheduleWidgetSnapshot.Event] {
+        upcomingEvents(from: date)
+    }
+
+    func upcomingEvents(
+        from referenceDate: Date,
+        calendar: Calendar = .current
+    ) -> [SessionScheduleWidgetSnapshot.Event] {
         guard let snapshot else { return Self.placeholderSnapshot.events }
-        let today = Calendar.current.startOfDay(for: Date())
-        let future = snapshot.events.filter { event in
-            guard let date = event.date else { return true }
-            return Calendar.current.startOfDay(for: date) >= today
+        return snapshot.events.filter { event in
+            event.isUpcoming(at: referenceDate, calendar: calendar)
         }
-        return future.isEmpty ? snapshot.events : future
     }
 
     static let placeholderSnapshot = SessionScheduleWidgetSnapshot(
@@ -39,26 +43,6 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
                 kind: .announcement
             ),
             .init(
-                id: "announcement-2",
-                date: Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 8)),
-                startTime: "16:00",
-                endTime: "18:00",
-                title: "Объявление",
-                subtitle: "601а-5 к, Зачет по САиИО",
-                location: "601а-5 к",
-                kind: .announcement
-            ),
-            .init(
-                id: "tppo-consultation",
-                date: Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 11)),
-                startTime: "12:00",
-                endTime: "13:00",
-                title: "ТППО",
-                subtitle: "604-5 к",
-                location: "604-5 к",
-                kind: .consultation
-            ),
-            .init(
                 id: "tppo-exam",
                 date: Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 12)),
                 startTime: "08:30",
@@ -67,16 +51,6 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
                 subtitle: "604-5 к",
                 location: "604-5 к",
                 kind: .exam
-            ),
-            .init(
-                id: "db-consultation",
-                date: Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 16)),
-                startTime: "14:00",
-                endTime: "15:00",
-                title: "БД",
-                subtitle: "604-5 к",
-                location: "604-5 к",
-                kind: .consultation
             )
         ],
         updatedAt: Date()
@@ -100,18 +74,17 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
         let snapshot = SessionScheduleWidgetDataStore.loadSnapshot()
         let now = Date()
 
-        let dates = makeTimelineDates(snapshot: snapshot, from: now)
+        let dates = Self.makeTimelineDates(snapshot: snapshot, from: now)
         let entries = dates.map {
             SessionScheduleWidgetEntry(date: $0, snapshot: snapshot)
         }
 
-        let nextRefresh = Calendar.current.date(byAdding: .hour, value: 2, to: now)
-            ?? now.addingTimeInterval(2 * 60 * 60)
+        let nextRefresh = Self.nextRefreshDate(snapshot: snapshot, from: now)
 
         completion(Timeline(entries: entries, policy: .after(nextRefresh)))
     }
 
-    private func makeTimelineDates(
+    static func makeTimelineDates(
         snapshot: SessionScheduleWidgetSnapshot?,
         from now: Date,
         calendar: Calendar = .current
@@ -129,7 +102,7 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
 
                 var cursor = max(interval.start, now)
                 while cursor < interval.end {
-                    if let next = calendar.date(byAdding: .minute, value: 15, to: cursor) {
+                    if let next = calendar.date(byAdding: .minute, value: 5, to: cursor) {
                         dates.insert(next)
                         cursor = next
                     } else {
@@ -142,8 +115,54 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
         return dates
             .filter { $0 >= now }
             .sorted()
-            .prefix(24)
+            .prefix(64)
             .map { $0 }
+    }
+
+    static func nextRefreshDate(
+        snapshot: SessionScheduleWidgetSnapshot?,
+        from now: Date,
+        calendar: Calendar = .current
+    ) -> Date {
+        let fallbackMinutes = snapshot == nil ? 30 : 120
+        let fallback = calendar.date(byAdding: .minute, value: fallbackMinutes, to: now)
+            ?? now.addingTimeInterval(TimeInterval(fallbackMinutes * 60))
+
+        guard let snapshot else { return fallback }
+        let nextBoundary = snapshot.events
+            .flatMap { event -> [Date] in
+                guard let interval = event.interval(calendar: calendar) else { return [] }
+                return [interval.start, interval.end]
+            }
+            .filter { $0 > now }
+            .sorted()
+            .first
+
+        guard let nextBoundary else { return fallback }
+        return min(nextBoundary, fallback)
+    }
+}
+
+struct ClassScheduleWidgetProvider: TimelineProvider {
+    func placeholder(in context: Context) -> SessionScheduleWidgetEntry {
+        SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (SessionScheduleWidgetEntry) -> Void) {
+        if context.isPreview {
+            completion(placeholder(in: context))
+            return
+        }
+        completion(SessionScheduleWidgetEntry(date: .now, snapshot: ClassScheduleWidgetDataStore.loadSnapshot()))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
+        let snapshot = ClassScheduleWidgetDataStore.loadSnapshot()
+        let now = Date()
+        let dates = SessionScheduleWidgetProvider.makeTimelineDates(snapshot: snapshot, from: now)
+        let entries = dates.map { SessionScheduleWidgetEntry(date: $0, snapshot: snapshot) }
+        let nextRefresh = SessionScheduleWidgetProvider.nextRefreshDate(snapshot: snapshot, from: now)
+        completion(Timeline(entries: entries, policy: .after(nextRefresh)))
     }
 }
 
@@ -173,8 +192,12 @@ struct SessionScheduleWidgetView: View {
 
     var body: some View {
         Group {
-            if entry.snapshot == nil {
+            if family == .accessoryRectangular {
+                accessoryContent
+            } else if entry.snapshot == nil {
                 emptyContent
+            } else if visibleEvents.isEmpty {
+                noUpcomingContent
             } else {
                 content
             }
@@ -207,6 +230,67 @@ struct SessionScheduleWidgetView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    private var accessoryContent: some View {
+        ZStack(alignment: .leading) {
+            AccessoryWidgetBackground()
+
+            if let event = visibleEvents.first {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar")
+                            .font(.caption2.weight(.semibold))
+                        Text(accessoryStatus(for: event))
+                            .font(.caption2.weight(.semibold))
+                            .monospacedDigit()
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(.secondary)
+                    .widgetAccentable()
+
+                    Text(event.title)
+                        .font(.headline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .privacySensitive()
+
+                    Text(accessorySubtitle(for: event))
+                        .font(.caption.weight(.medium))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
+                        .foregroundStyle(.secondary)
+                        .privacySensitive()
+                }
+                .padding(.horizontal, 6)
+            } else {
+                Text("Нет ближайших событий")
+                    .font(.headline.weight(.semibold))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.78)
+                    .padding(.horizontal, 6)
+            }
+        }
+    }
+
+    private func accessoryStatus(for event: SessionScheduleWidgetSnapshot.Event) -> String {
+        if event.isActive(at: entry.date) {
+            return "Сейчас до \(event.endTime)"
+        }
+        return "Следующая в \(event.startTime)"
+    }
+
+    private func accessorySubtitle(for event: SessionScheduleWidgetSnapshot.Event) -> String {
+        let chunks = [nonEmpty(event.location), nonEmpty(event.subtitle)].compactMap { $0 }
+        let value = chunks.joined(separator: " • ")
+        return nonEmpty(value) ?? event.endTime
+    }
+
+    private func nonEmpty(_ value: String?) -> String? {
+        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+        return trimmed
     }
 
     private var showsFooter: Bool {
@@ -314,17 +398,33 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var emptyContent: some View {
+        widgetMessageContent(
+            icon: "calendar.badge.exclamationmark",
+            title: "Открой расписание в приложении",
+            subtitle: "После первой загрузки виджет будет обновляться из кэша."
+        )
+    }
+
+    private var noUpcomingContent: some View {
+        widgetMessageContent(
+            icon: "calendar.badge.clock",
+            title: "Ближайших событий нет",
+            subtitle: "Последний кэш расписания сохранен для офлайн-доступа."
+        )
+    }
+
+    private func widgetMessageContent(icon: String, title: String, subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             header
             Spacer(minLength: 0)
-            Image(systemName: "calendar.badge.exclamationmark")
+            Image(systemName: icon)
                 .font(.system(size: 28, weight: .semibold))
                 .foregroundStyle(.white.opacity(0.75))
-            Text("Открой расписание сессии в приложении")
+            Text(title)
                 .font(.headline.weight(.semibold))
                 .foregroundStyle(.white)
                 .lineLimit(2)
-            Text("После первой загрузки виджет будет обновляться из кэша.")
+            Text(subtitle)
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.65))
                 .lineLimit(2)
@@ -470,6 +570,18 @@ private struct SessionWidgetEventRow: View {
     }
 }
 
+struct ClassScheduleWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: ClassScheduleWidgetConstants.kind, provider: ClassScheduleWidgetProvider()) { entry in
+            SessionScheduleWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Пары")
+        .description("Показывает ближайшую пару вашей группы: время, предмет и аудиторию.")
+        .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular])
+        .contentMarginsDisabled()
+    }
+}
+
 struct SessionScheduleWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: SessionScheduleWidgetConstants.kind, provider: SessionScheduleWidgetProvider()) { entry in
@@ -477,9 +589,8 @@ struct SessionScheduleWidget: Widget {
         }
         .configurationDisplayName("Сессия")
         .description("Показывает ближайшие экзамены, консультации и объявления вашей группы.")
-        .supportedFamilies([.systemMedium, .systemLarge])
+        .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular])
         .contentMarginsDisabled()
-        .containerBackgroundRemovable(false)
     }
 }
 
@@ -491,6 +602,12 @@ struct SessionScheduleWidget: Widget {
 
 #Preview("Сессия Large", as: .systemLarge) {
     SessionScheduleWidget()
+} timeline: {
+    SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
+}
+
+#Preview("Пары Lock Screen", as: .accessoryRectangular) {
+    ClassScheduleWidget()
 } timeline: {
     SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
 }
