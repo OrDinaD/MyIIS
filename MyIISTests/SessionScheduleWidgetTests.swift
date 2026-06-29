@@ -19,7 +19,7 @@ final class SessionScheduleWidgetTests: XCTestCase {
         let event = SessionScheduleWidgetSnapshot.Event(
             id: "1", date: date,
             startTime: "12:00", endTime: "13:30",
-            title: "Test", subtitle: nil, location: nil, kind: .other
+            title: "Test", subtitle: nil, location: nil, lessonType: nil, kind: .other
         )
 
         let interval = event.interval(calendar: calendar)
@@ -37,7 +37,7 @@ final class SessionScheduleWidgetTests: XCTestCase {
         let event = SessionScheduleWidgetSnapshot.Event(
             id: "1", date: date,
             startTime: "12:00", endTime: "13:30", // 90 mins
-            title: "Test", subtitle: nil, location: nil, kind: .other
+            title: "Test", subtitle: nil, location: nil, lessonType: nil, kind: .other
         )
 
         let before = calendar.date(from: DateComponents(year: 2026, month: 6, day: 10, hour: 11, minute: 59))!
@@ -54,12 +54,12 @@ final class SessionScheduleWidgetTests: XCTestCase {
         let event1 = SessionScheduleWidgetSnapshot.Event(
             id: "1", date: date,
             startTime: "invalid", endTime: "13:30",
-            title: "Test", subtitle: nil, location: nil, kind: .other
+            title: "Test", subtitle: nil, location: nil, lessonType: nil, kind: .other
         )
         let event2 = SessionScheduleWidgetSnapshot.Event(
             id: "2", date: date,
             startTime: "13:30", endTime: "12:00", // start > end
-            title: "Test", subtitle: nil, location: nil, kind: .other
+            title: "Test", subtitle: nil, location: nil, lessonType: nil, kind: .other
         )
 
         XCTAssertNil(event1.interval(calendar: calendar))

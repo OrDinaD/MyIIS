@@ -49,7 +49,8 @@ final class UserModelTests: XCTestCase {
             education: Education(faculty: "ФКП", course: 3, speciality: "ПОИТ", group: "123456"),
             skills: [UserSkill(id: 1, name: "Swift")],
             references: [UserReference(id: 1, name: "telegram", reference: "https://t.me/user")],
-            settings: settings
+            settings: settings,
+            isHeadman: false
         )
     }
 }

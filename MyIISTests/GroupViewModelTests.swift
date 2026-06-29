@@ -290,7 +290,8 @@ final class GroupViewModelTests: XCTestCase {
             ),
             skills: [],
             references: [],
-            settings: .default
+            settings: .default,
+            isHeadman: false
         )
     }
 }
