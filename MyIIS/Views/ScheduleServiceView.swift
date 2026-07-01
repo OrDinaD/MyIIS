@@ -21,12 +21,15 @@ struct ScheduleServiceView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 14) {
-                if viewModel.schedule == nil, !viewModel.isLoading {
-                    searchBlock()
-                }
+                if viewModel.dataSource == .localExcel {
+                    localExcelBlock()
+                } else {
+                    if viewModel.schedule == nil, !viewModel.isLoading {
+                        searchBlock()
+                    }
 
-                if viewModel.schedule != nil {
-                    LazyVStack(alignment: .leading, spacing: 14) {
+                    if viewModel.schedule != nil {
+                        LazyVStack(alignment: .leading, spacing: 14) {
                         ServiceEndpointSection(
                             title: viewModel.scheduleHeaderTitle,
                             subtitle: viewModel.scheduleHeaderSubtitle,
@@ -231,6 +234,7 @@ struct ScheduleServiceView: View {
                         ServiceEmptyState(text: NSLocalizedString("services_schedule_empty_hint", comment: ""))
                     }
                 }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -240,55 +244,69 @@ struct ScheduleServiceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .hiddenNavigationBarBackground()
         .toolbar {
-            if viewModel.schedule != nil {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        isSearchSheetPresented = true
-                    } label: {
-                        Label("Поиск расписания", systemImage: "magnifyingglass")
+            if viewModel.schedule != nil || viewModel.dataSource == .localExcel {
+                if viewModel.schedule != nil {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            isSearchSheetPresented = true
+                        } label: {
+                            Label("Поиск расписания", systemImage: "magnifyingglass")
+                        }
                     }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
                         Picker(
-                            NSLocalizedString("services_schedule_display_mode", comment: ""),
-                            selection: $viewModel.displayMode
+                            "Источник данных",
+                            selection: $viewModel.dataSource
                         ) {
-                            ForEach(ScheduleDisplayMode.allCases) { mode in
-                                Label(mode.localizedTitle, systemImage: mode.icon).tag(mode)
+                            ForEach(ScheduleDataSource.allCases) { source in
+                                Label(source.localizedTitle, systemImage: source.icon).tag(source)
                             }
                         }
 
-                        if viewModel.showsSubgroupPicker {
+                        if viewModel.schedule != nil {
                             Divider()
+
                             Picker(
-                                NSLocalizedString("services_schedule_subgroup_filter", comment: ""),
-                                selection: $viewModel.subgroupFilter
+                                NSLocalizedString("services_schedule_display_mode", comment: ""),
+                                selection: $viewModel.displayMode
                             ) {
-                                ForEach(viewModel.subgroupFilters) { filter in
-                                    Text(filter.localizedTitle).tag(filter)
+                                ForEach(ScheduleDisplayMode.allCases) { mode in
+                                    Label(mode.localizedTitle, systemImage: mode.icon).tag(mode)
                                 }
                             }
-                        }
 
-                        Divider()
-                        Button {
-                            Task {
-                                scheduleReportURL = await viewModel.downloadScheduleReport()
+                            if viewModel.showsSubgroupPicker {
+                                Divider()
+                                Picker(
+                                    NSLocalizedString("services_schedule_subgroup_filter", comment: ""),
+                                    selection: $viewModel.subgroupFilter
+                                ) {
+                                    ForEach(viewModel.subgroupFilters) { filter in
+                                        Text(filter.localizedTitle).tag(filter)
+                                    }
+                                }
                             }
-                        } label: {
-                            Label(NSLocalizedString("services_schedule_report_download", comment: ""), systemImage: "square.and.arrow.down")
-                        }
-                        .disabled(viewModel.isDownloadingReport)
 
-                        Button {
-                            Task { await viewModel.enableExamRemindersFromUserAction() }
-                        } label: {
-                            Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
-                        }
-                        .disabled(viewModel.filteredExams.isEmpty)
+                            Divider()
+                            Button {
+                                Task {
+                                    scheduleReportURL = await viewModel.downloadScheduleReport()
+                                }
+                            } label: {
+                                Label(NSLocalizedString("services_schedule_report_download", comment: ""), systemImage: "square.and.arrow.down")
+                            }
+                            .disabled(viewModel.isDownloadingReport)
 
+                            Button {
+                                Task { await viewModel.enableExamRemindersFromUserAction() }
+                            } label: {
+                                Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
+                            }
+                            .disabled(viewModel.filteredExams.isEmpty)
+                        }
                     } label: {
                         Label(NSLocalizedString("services_schedule_actions", comment: ""), systemImage: "ellipsis.circle")
                     }
@@ -446,6 +464,33 @@ struct ScheduleServiceView: View {
                     }
                 )
             }
+        }
+    }
+    @ViewBuilder
+    private func localExcelBlock() -> some View {
+        ServiceEndpointSection(
+            title: "Локальное расписание",
+            subtitle: "Загрузка из файла Excel",
+            icon: "doc.text.image"
+        ) {
+            VStack(spacing: 16) {
+                Text("Функция импорта расписания из локального Excel-файла. Здесь вы сможете загрузить свой файл с расписанием, и приложение отобразит его вместо расписания с сервера БГУИР.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+
+                Button {
+                    // TODO: Реализовать выбор Excel-файла
+                } label: {
+                    Label("Выбрать Excel-файл", systemImage: "folder")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.borderedProminent)
+                .buttonBorderShape(.roundedRectangle(radius: 12))
+                .controlSize(.large)
+            }
+            .padding(.vertical, 8)
         }
     }
 }

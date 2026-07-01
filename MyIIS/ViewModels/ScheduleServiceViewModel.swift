@@ -7,6 +7,31 @@ enum ScheduleLookupMode: String, CaseIterable {
     case teacher
 }
 
+enum ScheduleDataSource: String, CaseIterable, Identifiable {
+    case api
+    case localExcel
+
+    var id: String { rawValue }
+
+    var localizedTitle: String {
+        switch self {
+        case .api:
+            return "Через API"
+        case .localExcel:
+            return "Из Excel (Локально)"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .api:
+            return "network"
+        case .localExcel:
+            return "doc.text.image"
+        }
+    }
+}
+
 enum ScheduleDisplayMode: String, CaseIterable, Identifiable {
     case continuous
     case byDay
@@ -104,6 +129,11 @@ final class ScheduleServiceViewModel: ObservableObject {
             }
         }
     }
+    @Published var dataSource: ScheduleDataSource = .api {
+        didSet {
+            defaults.set(dataSource.rawValue, forKey: Self.dataSourceDefaultsKey)
+        }
+    }
     @Published var query = "" {
         didSet { scheduleDebouncedSearchUpdate() }
     }
@@ -140,6 +170,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     private var searchDebounceTask: Task<Void, Never>?
 
     private static let displayModeDefaultsKey = "services.schedule.displayMode"
+    private static let dataSourceDefaultsKey = "services.schedule.dataSource"
     private static let subgroupFilterDefaultsKey = "services.schedule.subgroupFilter"
     private static let selectedModeDefaultsKey = "services.schedule.selectedMode"
     private static let lastGroupDefaultsKey = "services.schedule.lastGroup"
@@ -173,6 +204,11 @@ final class ScheduleServiceViewModel: ObservableObject {
         if let modeRaw = defaults.string(forKey: Self.displayModeDefaultsKey),
            let restoredMode = ScheduleDisplayMode(rawValue: modeRaw) {
             displayMode = restoredMode
+        }
+
+        if let dataSourceRaw = defaults.string(forKey: Self.dataSourceDefaultsKey),
+           let restoredDataSource = ScheduleDataSource(rawValue: dataSourceRaw) {
+            dataSource = restoredDataSource
         }
 
         if let selectedModeRaw = defaults.string(forKey: Self.selectedModeDefaultsKey),
