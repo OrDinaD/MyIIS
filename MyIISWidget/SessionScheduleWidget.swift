@@ -552,23 +552,29 @@ struct SessionScheduleWidgetView: View {
     }
 
     private func widgetMessageContent(icon: String, title: String, subtitle: String) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(spacing: 0) {
             header
-            Spacer(minLength: 0)
-            Image(systemName: icon)
-                .font(.system(size: 28, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.75))
-            Text(title)
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(.white)
-                .lineLimit(2)
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.white.opacity(0.65))
-                .lineLimit(2)
-            Spacer(minLength: 0)
+                .layoutPriority(10)
+            
+            VStack(alignment: .leading, spacing: 10) {
+                Spacer(minLength: 0)
+                Image(systemName: icon)
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.75))
+                Text(title)
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.65))
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, contentHorizontalPadding)
+            .padding(.bottom, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.bottom, 14)
     }
 
     private var groupedVisibleEvents: [SessionWidgetDay] {
