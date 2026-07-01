@@ -57,6 +57,19 @@ class AuthenticationService: ObservableObject {
         }
     }
 
+    func checkServerStatus() async -> Bool {
+        do {
+            let request = URLRequest(url: URL(string: "https://iis.bsuir.by/api/v1/faculties")!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 5.0)
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse {
+                return (200...299).contains(httpResponse.statusCode)
+            }
+            return false
+        } catch {
+            return false
+        }
+    }
+
     func login(
         username: String,
         password: String,

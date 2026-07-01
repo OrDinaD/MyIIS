@@ -10,6 +10,7 @@ class LoginViewModel: ObservableObject {
 
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var isServerActive: Bool? = nil
 
     private var authService: AuthenticationService
     private var cancellables = Set<AnyCancellable>()
@@ -26,6 +27,15 @@ class LoginViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .assign(to: \.errorMessage, on: self)
             .store(in: &cancellables)
+
+        checkServerStatus()
+    }
+
+    func checkServerStatus() {
+        Task {
+            let active = await authService.checkServerStatus()
+            self.isServerActive = active
+        }
     }
 
     @MainActor
@@ -34,6 +44,7 @@ class LoginViewModel: ObservableObject {
     }
 
     func login() async {
+        guard isServerActive == true else { return }
         guard validateInput() else { return }
         await authService.login(username: username, password: password)
     }

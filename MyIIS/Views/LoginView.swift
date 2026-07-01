@@ -191,16 +191,30 @@ struct LoginView: View {
                     await viewModel.login()
                 }
             } label: {
-                Text(NSLocalizedString("login_button", comment: ""))
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity, minHeight: 44)
+                if viewModel.isServerActive == nil {
+                    ProgressView()
+                        .tint(.white)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                } else {
+                    Text(NSLocalizedString("login_button", comment: ""))
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
             }
             .buttonStyle(.borderedProminent)
             .buttonBorderShape(.roundedRectangle(radius: 16))
             .controlSize(.large)
+            .disabled(viewModel.isServerActive != true)
             .accessibilityLabel(NSLocalizedString("login_button", comment: ""))
             .accessibilityIdentifier("loginButton")
 
+            if viewModel.isServerActive == false {
+                Text("Попробуйте зайти позже. Сервер БГУИР сейчас недоступен, и приложение не может ничего с этим сделать.")
+                    .font(.footnote)
+                    .foregroundStyle(Color.statusError)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
+            }
         }
     }
 
