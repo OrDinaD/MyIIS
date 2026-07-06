@@ -3,6 +3,8 @@ import XCTest
 
 @MainActor
 final class APIDecodingBehaviorTests: XCTestCase {
+    private static let lmsCourseBackgroundURL = "https://lms.bsuir.by/pluginfile.php/459007/course/overviewfiles/bsuir_course_background.png"
+
     func testOmissionApplicationDecodesMixedDateFormats() throws {
         let json = #"""
         {
@@ -352,6 +354,44 @@ final class APIDecodingBehaviorTests: XCTestCase {
         let lessons = decoded.compactMap(\.student).flatMap(\.lessons)
 
         XCTAssertTrue(lessons.isEmpty)
+    }
+
+    func testLMSCoursesParseFrontpageCourseListFromHarShape() throws {
+        let html = #"""
+        <div id="frontpage-course-list">
+        <h2>Мои курсы</h2><div class="courses frontpage-course-list-enrolled">
+        <div class="coursebox clearfix odd first" data-courseid="5892" data-type="1">
+        <div class="info"><h3 class="coursename"><a class="aalink"
+        href="https://lms.bsuir.by/course/view.php?id=5892">
+        Автоматизированное проектирование электрических цепей. Часть 2 (ДН) Шилин
+        </a></h3></div>
+        <div class="content"><div class="d-flex"><div class="courseimage"><img
+        src="https://lms.bsuir.by/pluginfile.php/459007/course/overviewfiles/bsuir_course_background.png"
+        alt="" /></div><div class="flex-grow-1"><ul class="teachers"><li>
+        <span class="font-weight-bold">Преподаватель: </span>
+        <a href="https://lms.bsuir.by/user/profile.php?id=5009">Нехайчик Елена Владимировна</a>
+        </li><li><span class="font-weight-bold">Преподаватель: </span>
+        <a href="https://lms.bsuir.by/user/profile.php?id=2000">Пригара Виктория Николаевна</a>
+        </li></ul></div></div></div></div>
+        <div data-courseid="5893" class="coursebox clearfix even" data-type="1">
+        <div class="info"><h3 class="coursename"><a class="aalink"
+        href="https://lms.bsuir.by/course/view.php?id=5893">
+        Базы данных. Часть 2 (каф. ИТАС) (ДН) Лаппо
+        </a></h3></div>
+        <div class="content"><div class="d-flex"><div class="flex-grow-1"><ul class="teachers"><li>
+        <span class="font-weight-bold">Преподаватель: </span>
+        <a href="https://lms.bsuir.by/user/profile.php?id=1788">Лаппо Александр Игоревич</a>
+        </li></ul></div></div></div></div>
+        </div></div><span class="skip-block-to" id="skipmycourses"></span>
+        <div class="coursebox clearfix" data-courseid="236"><h3 class="coursename"><a>Для преподавателей</a></h3></div>
+        """#
+
+        let courses = LMSService.parseCourses(from: html)
+
+        XCTAssertEqual(courses.map(\.id), [5892, 5893])
+        XCTAssertEqual(courses.first?.teachers.count, 2)
+        XCTAssertEqual(courses.first?.backgroundUrl?.absoluteString, Self.lmsCourseBackgroundURL)
+        XCTAssertEqual(courses.last?.teachersString, "Лаппо Александр Игоревич")
     }
 
     func testCertificateRegisterRequestEncodesHarPayloadShape() throws {

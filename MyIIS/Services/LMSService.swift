@@ -46,8 +46,8 @@ class LMSService: ObservableObject {
 
         logService.log("📡 LMS: Starting courses fetch")
         let urls = [
-            "https://lms.bsuir.by/my/",
-            "https://lms.bsuir.by/"
+            "https://lms.bsuir.by/",
+            "https://lms.bsuir.by/my/"
         ]
 
         var allCourses: [LMSCourse] = []
@@ -68,7 +68,7 @@ class LMSService: ObservableObject {
 
                 if let html = String(data: data, encoding: .utf8) {
                     logService.log("📡 LMS: Received HTML (\(html.count) chars) from \(urlString)")
-                    let parsed = parseCourses(from: html)
+                    let parsed = Self.parseCourses(from: html)
                     if !parsed.isEmpty {
                         logService.log("📡 LMS: Successfully parsed \(parsed.count) courses")
                         allCourses = parsed
@@ -78,7 +78,7 @@ class LMSService: ObservableObject {
             } catch {
                 if let cachedData = cachedData(for: request),
                    let html = String(data: cachedData, encoding: .utf8) {
-                    let parsed = parseCourses(from: html)
+                    let parsed = Self.parseCourses(from: html)
                     if !parsed.isEmpty {
                         logService.log("⚠️ LMS: Loaded courses from offline cache for \(urlString).")
                         allCourses = parsed
@@ -93,32 +93,33 @@ class LMSService: ObservableObject {
         }
     }
 
-    private func parseCourses(from html: String) -> [LMSCourse] {
+    static func parseCourses(from html: String) -> [LMSCourse] {
+        let scopedHTML = coursesHTMLScope(in: html)
         var results: [LMSCourse] = []
-        let startPattern = #"<div[^>]*class="[^"]*coursebox[^"]*"[^>]*data-courseid="(\d+)"[^>]*>"#
-        let matches = html.matches(pattern: startPattern)
+        let startPattern = #"<div\b(?=[^>]*\bclass="[^"]*\bcoursebox\b[^"]*")(?=[^>]*\bdata-courseid="\d+")[^>]*>"#
+        let matches = scopedHTML.matches(pattern: startPattern)
         guard !matches.isEmpty else { return [] }
 
         for (idx, match) in matches.enumerated() {
-            guard let idText = match.groups[safe: 0],
+            guard let idText = match.fullText.captureGroup(at: 1, pattern: #"\bdata-courseid="(\d+)""#),
                   let courseId = Int(idText) else { continue }
 
             let start = match.fullRange.lowerBound
-            let end = idx + 1 < matches.count ? matches[idx + 1].fullRange.lowerBound : html.endIndex
-            let content = String(html[start..<end])
+            let end = idx + 1 < matches.count ? matches[idx + 1].fullRange.lowerBound : scopedHTML.endIndex
+            let content = String(scopedHTML[start..<end])
 
-            let namePattern = #"<h3[^>]*class="coursename"[^>]*><a[^>]*>([\s\S]*?)<\/a><\/h3>"#
-            let nameRaw = content.captureGroup(at: 1, pattern: namePattern)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Курс \(courseId)"
-            let name = nameRaw.decodingHTMLEntities()
+            let namePattern = #"<h3[^>]*class="[^"]*\bcoursename\b[^"]*"[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>\s*<\/h3>"#
+            let nameRaw = content.captureGroup(at: 1, pattern: namePattern) ?? "Курс \(courseId)"
+            let name = cleanHTMLText(nameRaw)
 
-            let imgPattern = #"<div[^>]*class="courseimage"[^>]*><img[^>]*src="([^"]+)"[^>]*>"#
+            let imgPattern = #"<div[^>]*class="[^"]*\bcourseimage\b[^"]*"[^>]*>\s*<img[^>]*src="([^"]+)""#
             let imgUrlStr = content.captureGroup(at: 1, pattern: imgPattern)?.decodingHTMLEntities()
             let imgUrl = imgUrlStr.flatMap(URL.init(string:))
 
-            let teacherPattern = #"<li>\s*<span[^>]*>\s*Преподаватель:\s*<\/span>\s*<a[^>]*>([\s\S]*?)<\/a>\s*<\/li>"#
+            let teacherPattern = #"<li>\s*(?:<span[^>]*>[\s\S]*?<\/span>\s*)?<a[^>]*href="[^"]*\/user\/profile\.php\?id=\d+[^"]*"[^>]*>([\s\S]*?)<\/a>\s*<\/li>"#
             let teachers = content
                 .captureGroups(at: 1, pattern: teacherPattern)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).decodingHTMLEntities() }
+                .map(cleanHTMLText)
                 .filter { !$0.isEmpty }
 
             results.append(
@@ -131,6 +132,24 @@ class LMSService: ObservableObject {
             )
         }
         return results
+    }
+
+    private static func coursesHTMLScope(in html: String) -> String {
+        guard let start = html.range(of: #"<div\s+id="frontpage-course-list""#, options: .regularExpression) else {
+            return html
+        }
+
+        let searchRange = start.lowerBound..<html.endIndex
+        let end = html.range(of: #"<span\s+class="skip-block-to"\s+id="skipmycourses""#, options: .regularExpression, range: searchRange)
+        return String(html[start.lowerBound..<(end?.lowerBound ?? html.endIndex)])
+    }
+
+    private static func cleanHTMLText(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression, range: nil)
+            .decodingHTMLEntities()
+            .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     func fetchCourseDetail(id: Int) async throws -> LMSCourseDetail {
