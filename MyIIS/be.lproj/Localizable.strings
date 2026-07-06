@@ -244,6 +244,8 @@
 "rating_average_grade" = "Сярэдні бал";
 "rating_missed_hours" = "Прапушчана гадзін";
 "rating_loading_subjects" = "Загружаем прадметы і КТ...";
+"rating_semester_completed_title" = "Семестр завяршыўся";
+"rating_semester_completed_desc" = "Рэйтынгу за новы семестр пакуль няма. Мы паведамім, калі з'явяцца першыя адзнакі.";
 "rating_disciplines_unavailable_title" = "Прадметы часова недаступныя";
 "rating_disciplines_unavailable_desc" = "Рэйтынг загружаны, але API прадметаў зараз не адказвае.";
 "rating_disciplines_not_found_title" = "Прадметы пакуль не знойдзены";

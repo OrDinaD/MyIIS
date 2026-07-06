@@ -8,6 +8,7 @@ final class RatingViewModel: ObservableObject {
     @Published private(set) var errorMessage: String?
     @Published private(set) var isLoadingSubjects: Bool = false
     @Published private(set) var isGradebookUnavailable: Bool = false
+    @Published private(set) var isRatingPendingForNewSemester: Bool = false
     @Published private(set) var isUsingScheduleFallback: Bool = false
     @Published private(set) var isShowingStaleDataWarning: Bool = false
     @Published private(set) var lastUpdateTime: Date?
@@ -153,6 +154,7 @@ extension RatingViewModel {
         isLoadingSubjects = true
         errorMessage = nil
         isGradebookUnavailable = false
+        isRatingPendingForNewSemester = false
         isUsingScheduleFallback = false
         isShowingStaleDataWarning = false
 
@@ -192,6 +194,7 @@ extension RatingViewModel {
         userCheckpoints = cached.userCheckpoints
         gradebookAverage = cached.gradebookAverage
         isGradebookUnavailable = cached.isGradebookUnavailable
+        isRatingPendingForNewSemester = false
         isUsingScheduleFallback = false
         resolvedRecordBookNumber = cached.resolvedRecordBookNumber
         currentGroup = cached.currentGroup
@@ -240,11 +243,14 @@ extension RatingViewModel {
                 checkpointNumbers = []
                 summary = nil
                 gradebookAverage = nil
-                isGradebookUnavailable = true
-                errorMessage = "В ответе grade-book нет данных по предметам."
+                isGradebookUnavailable = false
+                isRatingPendingForNewSemester = true
+                errorMessage = nil
+                logService.log("ℹ️ grade-book returned an empty lessons list; rating is pending for the new semester.")
                 return
             }
 
+            isRatingPendingForNewSemester = false
             applyPortalGradeBookLessons(lessons)
             buildPersonalRating(from: lessons, targetRecordBookNumber: targetRecordBookNumber)
             isGradebookUnavailable = disciplines.isEmpty
@@ -260,6 +266,7 @@ extension RatingViewModel {
             summary = nil
             gradebookAverage = nil
             isGradebookUnavailable = true
+            isRatingPendingForNewSemester = false
             errorMessage = error.localizedDescription
         } catch {
             logService.log("❌ Unexpected grade-book error: \(error.localizedDescription)")
@@ -271,6 +278,7 @@ extension RatingViewModel {
             summary = nil
             gradebookAverage = nil
             isGradebookUnavailable = true
+            isRatingPendingForNewSemester = false
             errorMessage = error.localizedDescription
         }
     }

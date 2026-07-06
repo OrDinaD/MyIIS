@@ -244,6 +244,8 @@
 "rating_average_grade" = "Середній бал";
 "rating_missed_hours" = "Пропущено годин";
 "rating_loading_subjects" = "Завантажуємо предмети та КТ...";
+"rating_semester_completed_title" = "Семестр завершився";
+"rating_semester_completed_desc" = "Рейтингу за новий семестр поки немає. Ми повідомимо, коли з'являться перші оцінки.";
 "rating_disciplines_unavailable_title" = "Предмети тимчасово недоступні";
 "rating_disciplines_unavailable_desc" = "Рейтинг завантажений, але API предметів зараз не відповідає.";
 "rating_disciplines_not_found_title" = "Предмети поки не знайдені";

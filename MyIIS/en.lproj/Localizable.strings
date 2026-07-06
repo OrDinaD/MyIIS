@@ -249,6 +249,8 @@
 "rating_average_grade" = "GPA";
 "rating_missed_hours" = "Missed Hours";
 "rating_loading_subjects" = "Loading subjects and checkpoints...";
+"rating_semester_completed_title" = "Semester completed";
+"rating_semester_completed_desc" = "There is no rating for the new semester yet. We will notify you when the first grades appear.";
 "rating_disciplines_unavailable_title" = "Subjects temporarily unavailable";
 "rating_disciplines_unavailable_desc" = "Rating loaded, but the subjects API is currently not responding.";
 "rating_disciplines_not_found_title" = "Subjects not found yet";

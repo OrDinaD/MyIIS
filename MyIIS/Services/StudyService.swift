@@ -101,6 +101,7 @@ final class StudyService: StudyServiceProtocol {
         var request = makeRequest(path: path)
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("https://iis.bsuir.by", forHTTPHeaderField: "Origin")
         request.httpBody = try JSONEncoder().encode(body)
         return request
     }

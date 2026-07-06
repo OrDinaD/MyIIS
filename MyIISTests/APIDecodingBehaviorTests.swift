@@ -331,4 +331,44 @@ final class APIDecodingBehaviorTests: XCTestCase {
         XCTAssertEqual(decoded.subjectCount, 1)
         XCTAssertEqual(decoded.averageMark, 9)
     }
+
+    func testPortalGradeBookDecodesCompletedSemesterWithoutLessons() throws {
+        let json = #"""
+        [
+          {
+            "students": [],
+            "student": {
+              "id": null,
+              "fio": "Василевский Владислав Валерьевич",
+              "subGroup": 0,
+              "subGroupStudent": 2,
+              "lessons": []
+            }
+          }
+        ]
+        """#
+
+        let decoded = try JSONDecoder().decode([PortalGradeBookEntry].self, from: Data(json.utf8))
+        let lessons = decoded.compactMap(\.student).flatMap(\.lessons)
+
+        XCTAssertTrue(lessons.isEmpty)
+    }
+
+    func testCertificateRegisterRequestEncodesHarPayloadShape() throws {
+        let request = CertificateRegisterRequest(
+            certificateRequestDto: CertificateRequestPayload(
+                certificateType: "обычная",
+                provisionPlace: "по месту работы родителей (ТЦСОН Островца)"
+            ),
+            certificateCount: 1
+        )
+
+        let data = try JSONEncoder().encode(request)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let dto = try XCTUnwrap(object["certificateRequestDto"] as? [String: Any])
+
+        XCTAssertEqual(object["certificateCount"] as? Int, 1)
+        XCTAssertEqual(dto["certificateType"] as? String, "обычная")
+        XCTAssertEqual(dto["provisionPlace"] as? String, "по месту работы родителей (ТЦСОН Островца)")
+    }
 }

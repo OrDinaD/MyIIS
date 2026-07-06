@@ -201,7 +201,13 @@ struct RatingView: View {
     @ViewBuilder
     private var emptyDisciplinesRatingView: some View {
         Section {
-            if viewModel.isGradebookUnavailable {
+            if viewModel.isRatingPendingForNewSemester {
+                ContentUnavailableView(
+                    NSLocalizedString("rating_semester_completed_title", comment: ""),
+                    systemImage: "hourglass",
+                    description: Text(NSLocalizedString("rating_semester_completed_desc", comment: ""))
+                )
+            } else if viewModel.isGradebookUnavailable {
                 ContentUnavailableView(
                     NSLocalizedString("rating_disciplines_unavailable_title", comment: ""),
                     systemImage: "book.closed",
