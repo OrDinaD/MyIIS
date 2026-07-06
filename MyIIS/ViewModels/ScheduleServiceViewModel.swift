@@ -1153,13 +1153,14 @@ extension ScheduleServiceViewModel {
     }
 
     var weekFilters: [StudyWeekFilter] {
+        if isSchedulePublicationPending { return [] }
         let weeks = schedule?.availableWeekNumbers ?? []
         guard !weeks.isEmpty else { return [] }
         return [.all] + weeks.map { .week($0) }
     }
 
     var filteredDays: [StudyDaySchedule] {
-        guard let schedule else { return [] }
+        guard let schedule, !isSchedulePublicationPending else { return [] }
         let dayItems = schedule.orderedDays
         switch weekFilter {
         case .all:
@@ -1239,7 +1240,7 @@ extension ScheduleServiceViewModel {
     }
 
     var subgroupFilters: [ScheduleSubgroupFilter] {
-        guard let schedule else { return [.all] }
+        guard let schedule, !isSchedulePublicationPending else { return [.all] }
         let lessonSubgroups = schedule.orderedDays
             .flatMap(\.lessons)
             .map(\.subgroup)
@@ -1270,10 +1271,17 @@ extension ScheduleServiceViewModel {
     }
 
     var currentModeEmptyText: String {
+        if isSchedulePublicationPending {
+            return NSLocalizedString("services_schedule_publication_pending", comment: "")
+        }
         if displayMode == .continuous, isSchedulePastEnd {
             return NSLocalizedString("services_schedule_no_future_lessons", comment: "")
         }
         return NSLocalizedString("services_schedule_empty_week", comment: "")
+    }
+
+    var isSchedulePublicationPending: Bool {
+        schedule?.isSchedulePublicationPending() == true
     }
 
     private var isSchedulePastEnd: Bool {

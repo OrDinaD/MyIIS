@@ -100,6 +100,7 @@
 "services_schedule_exams" = "Экзамены і кансультацыі";
 "services_schedule_empty_week" = "На выбраным тыдні заняткаў няма";
 "services_schedule_no_future_lessons" = "Заняткаў больш няма";
+"services_schedule_publication_pending" = "Раскладу пакуль няма. Звычайна яго публікуюць пасля 15 жніўня.";
 "services_schedule_empty_title" = "Расклад";
 "services_schedule_empty_subtitle" = "Абярыце групу або выкладчыка";
 "services_schedule_empty_hint" = "Увядзіце запыт і націсніце «Загрузіць расклад»";

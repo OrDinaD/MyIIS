@@ -107,6 +107,25 @@ struct PublicScheduleResponse: Decodable {
         return Array(result).sorted()
     }
 
+    func isSchedulePublicationPending(referenceDate: Date = Date()) -> Bool {
+        if scheduleByWeekday.isEmpty, nextScheduleByWeekday.isEmpty, exams.isEmpty {
+            return true
+        }
+
+        guard !scheduleByWeekday.isEmpty, nextScheduleByWeekday.isEmpty, exams.isEmpty,
+              let endDate else {
+            return false
+        }
+
+        let calendar = Calendar.current
+        let endExclusive = calendar.date(
+            byAdding: .day,
+            value: 1,
+            to: calendar.startOfDay(for: endDate)
+        ) ?? endDate
+        return referenceDate >= endExclusive
+    }
+
     private var actualScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]] {
         if !scheduleByWeekday.isEmpty {
             return scheduleByWeekday
@@ -114,7 +133,7 @@ struct PublicScheduleResponse: Decodable {
         if !nextScheduleByWeekday.isEmpty {
             return nextScheduleByWeekday
         }
-        return previousScheduleByWeekday
+        return [:]
     }
 
     private static func mapSchedule(_ rawValue: [String: [DisciplineSchedule]]) -> [StudyWeekday: [DisciplineSchedule]] {

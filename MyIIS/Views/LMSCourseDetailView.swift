@@ -33,6 +33,8 @@ struct LMSCourseDetailView: View {
     @StateObject private var viewModel: LMSCourseDetailViewModel
     @State private var presentedLink: LMSPresentedLink?
     @State private var presentedQuiz: LMSPresentedQuiz?
+    @State private var presentedPage: LMSPresentedActivity?
+    @State private var presentedFeedback: LMSPresentedActivity?
     @State private var previewFile: LMSPreviewFile?
     @State private var isPreparingResource = false
     @State private var resourceErrorMessage: String?
@@ -160,6 +162,17 @@ struct LMSCourseDetailView: View {
             }
             .interactiveDismissDisabled(true)
         }
+        .sheet(item: $presentedPage) { activity in
+            NavigationStack {
+                LMSPageContentView(url: activity.url, fallbackTitle: activity.title)
+            }
+        }
+        .fullScreenCover(item: $presentedFeedback) { activity in
+            NavigationStack {
+                LMSFeedbackView(url: activity.url, fallbackTitle: activity.title)
+            }
+            .interactiveDismissDisabled(true)
+        }
         .sheet(item: $previewFile) { file in
             NavigationStack {
                 LMSQuickLookPreview(url: file.url)
@@ -196,6 +209,16 @@ struct LMSCourseDetailView: View {
 
         if module.type == .quiz {
             presentedQuiz = LMSPresentedQuiz(url: url)
+            return
+        }
+
+        if module.type == .page || url.path.contains("/mod/page/") {
+            presentedPage = LMSPresentedActivity(url: url, title: module.name)
+            return
+        }
+
+        if module.type == .feedback || module.type == .survey || module.type == .choice || url.path.contains("/mod/feedback/") {
+            presentedFeedback = LMSPresentedActivity(url: url, title: module.name)
             return
         }
 
@@ -307,6 +330,12 @@ private struct LMSPresentedLink: Identifiable {
 private struct LMSPresentedQuiz: Identifiable {
     let id = UUID()
     let url: URL
+}
+
+private struct LMSPresentedActivity: Identifiable {
+    let id = UUID()
+    let url: URL
+    let title: String
 }
 
 private struct LMSPreviewFile: Identifiable {
@@ -442,7 +471,14 @@ private struct LMSMaterialWebView: UIViewRepresentable {
         // Hide Moodle's web UI elements to make it feel like a native app page
         let cssString = """
         header, footer, nav, #page-header, .navbar, .block, #region-pre, #region-post, .activity-navigation { display: none !important; }
-        #region-main { padding: 16px !important; width: 100% !important; margin: 0 !important; border: none !important; box-shadow: none !important; background: transparent !important; }
+        #region-main {
+            padding: 16px !important;
+            width: 100% !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+        }
         body, #page, #page-content { background-color: transparent !important; padding: 0 !important; margin: 0 !important; }
         """
         let jsString = "var style = document.createElement('style'); style.innerHTML = '\(cssString)'; document.head.appendChild(style);"
