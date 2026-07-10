@@ -212,9 +212,10 @@ struct DormitoryAnnouncement: Equatable {
 }
 
 struct DormitoryAnnouncementDocument: Equatable, Identifiable {
-    let id = UUID()
     let title: String
     let details: String?
+
+    var id: String { title }
 }
 
 enum DormitoryDateParser {

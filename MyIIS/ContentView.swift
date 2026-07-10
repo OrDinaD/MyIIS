@@ -14,8 +14,17 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            // Динамически показываем нужный экран в зависимости от состояния авторизации
-            if authService.currentUser != nil {
+            // Не запускаем защищённые экраны, пока silent login не подтвердил SESSION.
+            if authService.isRestoringSession {
+                VStack(spacing: 12) {
+                    ProgressView()
+                    Text("Восстанавливаем защищённую сессию…")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+            } else if authService.currentUser != nil, authService.isSessionReady {
                 MainTabView()
             } else {
                 UnauthorizedTabView()

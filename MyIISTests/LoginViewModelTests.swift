@@ -25,6 +25,8 @@ final class LoginViewModelTests: XCTestCase {
         await viewModel.login()
 
         XCTAssertNotNil(authService.currentUser)
+        XCTAssertTrue(authService.isSessionReady)
+        XCTAssertFalse(authService.isRestoringSession)
         XCTAssertTrue(APIService.isDemoMode)
     }
 

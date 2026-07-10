@@ -6,7 +6,7 @@ import UIKit
 struct StaleDataBanner: View {
     let lastUpdateTime: Date?
     var errorMessage: String?
-    let action: () -> Void
+    let action: () async -> Void
 
     @State private var showingErrorDetails = false
 
@@ -18,7 +18,7 @@ struct StaleDataBanner: View {
                 Image(systemName: "exclamationmark.arrow.triangle.2.circlepath")
                     .foregroundStyle(.orange)
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(NSLocalizedString("error_server_unavailable", value: "Сервер недоступен", comment: ""))
+                    Text("Не удалось обновить данные")
                         .font(.subheadline.weight(.semibold))
 
                     if let lastUpdateTime = lastUpdateTime {
@@ -71,20 +71,82 @@ private struct BSUIRServerStatus: Identifiable {
     let tint: Color
 }
 
+private struct MonitoredServer {
+    let name: String
+    let url: String
+    let method: String
+}
+
+private func makeServerStatus(
+    for statusCode: Int,
+    server: MonitoredServer,
+    elapsedMs: Int
+) -> BSUIRServerStatus {
+    let responseDetail = "HTTP \(statusCode), \(elapsedMs) мс"
+
+    switch statusCode {
+    case 200 ... 399:
+        return BSUIRServerStatus(
+            name: server.name,
+            url: server.url,
+            summary: "Доступен",
+            detail: responseDetail,
+            tint: .green
+        )
+    case 401, 403:
+        return BSUIRServerStatus(
+            name: server.name,
+            url: server.url,
+            summary: "Доступен",
+            detail: "\(responseDetail) — требуется авторизация",
+            tint: .orange
+        )
+    case 405 where server.method == "HEAD":
+        return BSUIRServerStatus(
+            name: server.name,
+            url: server.url,
+            summary: "Доступен",
+            detail: "\(responseDetail) — сервер не поддерживает HEAD",
+            tint: .orange
+        )
+    case 400 ... 499:
+        return BSUIRServerStatus(
+            name: server.name,
+            url: server.url,
+            summary: "Ошибка API",
+            detail: "\(responseDetail) — endpoint вернул ошибку",
+            tint: .orange
+        )
+    default:
+        return BSUIRServerStatus(
+            name: server.name,
+            url: server.url,
+            summary: "Недоступен",
+            detail: "\(responseDetail) — ошибка сервера",
+            tint: .red
+        )
+    }
+}
+
 struct ErrorDetailsView: View {
     let errorMessage: String
     let lastUpdateTime: Date?
-    let retryAction: () -> Void
+    let retryAction: () async -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var serverStatuses: [BSUIRServerStatus] = []
     @State private var isLoadingDiagnostics = false
+    @State private var isRetrying = false
     @State private var copyLabel = "Скопировать"
 
-    private static let monitoredServers: [(name: String, url: String)] = [
-        ("ИИС", "https://iis.bsuir.by/api/v1"),
-        ("LMS", "https://lms.bsuir.by"),
-        ("Портал БГУИР", "https://www.bsuir.by")
+    private static let monitoredServers: [MonitoredServer] = [
+        MonitoredServer(
+            name: "ИИС API",
+            url: "https://iis.bsuir.by/api/v1/faculties",
+            method: "GET"
+        ),
+        MonitoredServer(name: "LMS", url: "https://lms.bsuir.by", method: "HEAD"),
+        MonitoredServer(name: "Портал БГУИР", url: "https://www.bsuir.by", method: "HEAD")
     ]
 
     var body: some View {
@@ -175,10 +237,23 @@ struct ErrorDetailsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItemGroup(placement: .topBarLeading) {
-                    Button("Обновить") {
-                        retryAction()
-                        Task { await reloadDiagnostics() }
+                    Button {
+                        guard !isRetrying else { return }
+                        Task {
+                            isRetrying = true
+                            await retryAction()
+                            await reloadDiagnostics()
+                            isRetrying = false
+                        }
+                    } label: {
+                        if isRetrying {
+                            ProgressView()
+                                .accessibilityLabel("Обновление данных")
+                        } else {
+                            Text("Обновить")
+                        }
                     }
+                    .disabled(isRetrying)
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(copyLabel) {
@@ -197,8 +272,14 @@ struct ErrorDetailsView: View {
     }
 
     private func reloadDiagnostics() async {
+        guard !isLoadingDiagnostics else { return }
+
         isLoadingDiagnostics = true
         let statuses = await collectServerStatuses()
+        guard !Task.isCancelled else {
+            isLoadingDiagnostics = false
+            return
+        }
         serverStatuses = statuses
         isLoadingDiagnostics = false
     }
@@ -207,7 +288,7 @@ struct ErrorDetailsView: View {
         await withTaskGroup(of: BSUIRServerStatus.self) { group in
             for server in Self.monitoredServers {
                 group.addTask {
-                    await probeServer(name: server.name, rawURL: server.url)
+                    await probeServer(server)
                 }
             }
 
@@ -224,43 +305,56 @@ struct ErrorDetailsView: View {
         }
     }
 
-    private func probeServer(name: String, rawURL: String) async -> BSUIRServerStatus {
-        guard let url = URL(string: rawURL) else {
-            return makeInvalidURLStatus(name: name, rawURL: rawURL)
+    private func probeServer(_ server: MonitoredServer) async -> BSUIRServerStatus {
+        guard let url = URL(string: server.url) else {
+            return makeInvalidURLStatus(name: server.name, rawURL: server.url)
         }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "HEAD"
-        request.timeoutInterval = 8
+        var request = URLRequest(
+            url: url,
+            cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: 8
+        )
+        request.httpMethod = server.method
+        if server.method == "GET" {
+            request.setValue("application/json", forHTTPHeaderField: "Accept")
+        }
         let startedAt = Date()
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else {
-                return makeNonHTTPStatus(name: name, rawURL: rawURL)
+                return makeNonHTTPStatus(name: server.name, rawURL: server.url)
             }
 
-            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1000)
-            let isAvailable = (200 ... 399).contains(http.statusCode)
-            let summary = isAvailable ? "Доступен" : "Недоступен"
-            let detail = isAvailable
-                ? "HTTP \(http.statusCode), \(elapsedMs) мс"
-                : "HTTP \(http.statusCode), \(elapsedMs) мс — сервер вернул ошибку"
-
-            return BSUIRServerStatus(
-                name: name,
-                url: rawURL,
-                summary: summary,
-                detail: detail,
-                tint: isAvailable ? .green : .red
+            let elapsedMs = Int(Date().timeIntervalSince(startedAt) * 1_000)
+            return makeServerStatus(
+                for: http.statusCode,
+                server: server,
+                elapsedMs: elapsedMs
             )
         } catch {
+            if error is CancellationError {
+                return makeAccessErrorStatus(
+                    name: server.name,
+                    rawURL: server.url,
+                    detail: "Проверка отменена"
+                )
+            }
             if let urlError = error as? URLError {
-                return makeAccessErrorStatus(name: name, rawURL: rawURL, detail: "URLError \(urlError.code.rawValue) (\(urlError.code))")
+                return makeAccessErrorStatus(
+                    name: server.name,
+                    rawURL: server.url,
+                    detail: "URLError \(urlError.code.rawValue) (\(urlError.code))"
+                )
             }
 
             let nsError = error as NSError
-            return makeAccessErrorStatus(name: name, rawURL: rawURL, detail: "\(nsError.domain) / \(nsError.code)")
+            return makeAccessErrorStatus(
+                name: server.name,
+                rawURL: server.url,
+                detail: "\(nsError.domain) / \(nsError.code)"
+            )
         }
     }
 
@@ -281,7 +375,7 @@ struct ErrorDetailsView: View {
             "Ошибка:",
             errorMessage,
             "",
-            "Проверка серверов выполняется запросом HEAD с timeout 8 секунд.",
+            "ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD-запросом с timeout 8 секунд.",
             "Если ошибка повторяется: отключите VPN и попробуйте сеть eduroam."
         ]
 

@@ -66,7 +66,7 @@ struct DormitoryView: View {
         VStack(spacing: 16) {
             if viewModel.isShowingStaleDataWarning {
                 StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                    Task { await viewModel.reload() }
+                    await viewModel.reload()
                 }
             }
 

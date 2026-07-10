@@ -16,7 +16,9 @@ final class DormitoryViewModel: ObservableObject {
 
     private let dormitoryService: DormitoryServicing
     private let userDefaults: UserDefaults
-    private var hasLoadedOnce: Bool
+    private let automaticRefreshInterval: TimeInterval
+    private var hasRequestedInitialRefresh = false
+    private var activeLoadTask: Task<LoadPayload, Error>?
     private static let cachePrefix = "DormitoryViewModel.snapshot."
 
     private struct Snapshot: Codable {
@@ -25,12 +27,18 @@ final class DormitoryViewModel: ObservableObject {
         let lastUpdateTime: Date?
     }
 
+    private struct LoadPayload {
+        let applications: [DormitoryQueueApplication]
+        let privilegeRecords: [DormitoryPrivilegeRecord]
+    }
+
     init(
         dormitoryService: DormitoryServicing? = nil,
         initialApplications: [DormitoryQueueApplication] = [],
         initialPrivilegeRecords: [DormitoryPrivilegeRecord] = [],
         announcementDate: Date = .now,
-        userDefaults: UserDefaults = .standard
+        userDefaults: UserDefaults = .standard,
+        automaticRefreshInterval: TimeInterval = 60
     ) {
         #if DEBUG
         self.dormitoryService = dormitoryService ?? (APIService.isDemoMode ? DormitoryPreviewService() : DormitoryService())
@@ -38,6 +46,7 @@ final class DormitoryViewModel: ObservableObject {
         self.dormitoryService = dormitoryService ?? DormitoryService()
         #endif
         self.userDefaults = userDefaults
+        self.automaticRefreshInterval = automaticRefreshInterval
         let resolvedApplications: [DormitoryQueueApplication]
         let resolvedPrivilegeRecords: [DormitoryPrivilegeRecord]
         let resolvedLastUpdateTime: Date?
@@ -61,7 +70,6 @@ final class DormitoryViewModel: ObservableObject {
         self.errorMessage = nil
         self.actionErrorMessage = nil
         self.lastUpdateTime = resolvedLastUpdateTime
-        self.hasLoadedOnce = !resolvedApplications.isEmpty || !resolvedPrivilegeRecords.isEmpty
     }
 
     var canCreateApplication: Bool {
@@ -89,20 +97,24 @@ final class DormitoryViewModel: ObservableObject {
     }
 
     func loadIfNeeded() async {
-        guard !hasLoadedOnce else { return }
+        guard !hasRequestedInitialRefresh else {
+            if let activeLoadTask {
+                _ = await activeLoadTask.result
+            }
+            return
+        }
+
+        hasRequestedInitialRefresh = true
+        guard shouldRefreshAutomatically else { return }
         await loadData()
     }
 
     func reload() async {
-        // A short delay prevents SwiftUI from cancelling the refreshable task 
-        // due to synchronous view invalidation.
-        try? await Task.sleep(nanoseconds: 50_000_000)
-        
-        let newAnnouncement = DormitoryAnnouncement.current()
-        if announcement != newAnnouncement {
-            announcement = newAnnouncement
+        let currentAnnouncement = DormitoryAnnouncement.current()
+        if announcement != currentAnnouncement {
+            announcement = currentAnnouncement
         }
-        await loadData(force: true)
+        await loadData()
     }
 
     func createApplication(documentURL: URL?) async -> Bool {
@@ -174,36 +186,45 @@ final class DormitoryViewModel: ObservableObject {
         }
     }
 
-    private func loadData(force: Bool = false) async {
-        if !force && isLoading { return }
+    private func loadData() async {
+        if let activeLoadTask {
+            _ = await activeLoadTask.result
+            return
+        }
 
         isLoading = true
-        errorMessage = nil
+        let service = dormitoryService
+        let task = Task { @MainActor in
+            let applications = try await service.fetchApplications()
+            let privilegeRecords = try await service.fetchPrivilegeRecords()
+            return LoadPayload(
+                applications: applications,
+                privilegeRecords: privilegeRecords
+            )
+        }
+        activeLoadTask = task
 
-        do {
-            let applications = try await dormitoryService.fetchApplications()
-            let privilegeRecords = try await dormitoryService.fetchPrivilegeRecords()
+        let result = await task.result
+        activeLoadTask = nil
+        isLoading = false
 
-            self.applications = sorted(applications)
-            self.privilegeRecords = privilegeRecords.sorted {
+        switch result {
+        case .success(let payload):
+            applications = sorted(payload.applications)
+            privilegeRecords = payload.privilegeRecords.sorted {
                 if $0.year != $1.year { return $0.year > $1.year }
                 return $0.dormitoryPrivilegeCategoryName < $1.dormitoryPrivilegeCategoryName
             }
-
-            hasLoadedOnce = true
             lastUpdateTime = Date()
+            errorMessage = nil
             isShowingStaleDataWarning = false
             saveSnapshot()
-        } catch {
-            if let error = error as? LocalizedError, let message = error.errorDescription {
-                errorMessage = message
-            } else {
-                errorMessage = error.localizedDescription
-            }
-            isShowingStaleDataWarning = hasLoadedOnce
-        }
 
-        isLoading = false
+        case .failure(let error):
+            guard !isCancellation(error) else { return }
+            errorMessage = displayMessage(for: error)
+            isShowingStaleDataWarning = hasVisibleData
+        }
     }
 
     private func upsert(_ application: DormitoryQueueApplication) {
@@ -215,7 +236,25 @@ final class DormitoryViewModel: ObservableObject {
         }
         applications = sorted(updated)
         lastUpdateTime = Date()
+        errorMessage = nil
+        isShowingStaleDataWarning = false
         saveSnapshot()
+    }
+
+    private var shouldRefreshAutomatically: Bool {
+        guard hasVisibleData else { return true }
+        guard let lastUpdateTime else { return true }
+        return Date().timeIntervalSince(lastUpdateTime) >= automaticRefreshInterval
+    }
+
+    private var hasVisibleData: Bool {
+        lastUpdateTime != nil || !applications.isEmpty || !privilegeRecords.isEmpty
+    }
+
+    private func isCancellation(_ error: Error) -> Bool {
+        if error is CancellationError { return true }
+        if let urlError = error as? URLError, urlError.code == .cancelled { return true }
+        return false
     }
 
     private func sorted(_ applications: [DormitoryQueueApplication]) -> [DormitoryQueueApplication] {

@@ -11,6 +11,8 @@ class AuthenticationService: ObservableObject {
     @Published var currentUser: User?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published private(set) var isRestoringSession = false
+    @Published private(set) var isSessionReady = false
 
     static let shared = AuthenticationService()
 
@@ -52,6 +54,7 @@ class AuthenticationService: ObservableObject {
             return
         }
 
+        self.isRestoringSession = true
         Task { [weak self] in
             await self?.restoreSessionIfPossible()
         }
@@ -78,6 +81,7 @@ class AuthenticationService: ObservableObject {
     ) async {
         logService.log("Attempting to log in user: \(username)")
         isLoading = true
+        isSessionReady = false
         errorMessage = nil
 
         do {
@@ -96,6 +100,7 @@ class AuthenticationService: ObservableObject {
                 personalProfile: personalProfile
             )
             self.currentUser = user
+            self.isSessionReady = true
             if !isSilent {
                 AppRouter.shared.selectedTab = AppRouter.isSectionOrTabEnabled("home") ? .home : .profile
             }
@@ -115,6 +120,7 @@ class AuthenticationService: ObservableObject {
             AcademicChangeNotificationService.shared.checkWhenAppBecomesActive()
 
         } catch let error as APIError {
+            self.isSessionReady = false
             self.errorMessage = error.localizedDescription
             logService.log("❌ API Error: \(error.localizedDescription)")
 
@@ -127,19 +133,26 @@ class AuthenticationService: ObservableObject {
                 clearCachedUser()
             }
         } catch {
+            self.isSessionReady = false
             self.errorMessage = NSLocalizedString("common_unexpected_error", comment: "")
             logService.log("❌ Unexpected Error: \(error.localizedDescription)")
         }
 
         isLoading = false
+        isRestoringSession = false
     }
 
     func restoreSessionIfPossible() async {
-        guard !isLoading else { return }
+        guard !isLoading, !isSessionReady else {
+            isRestoringSession = false
+            return
+        }
 
         do {
             guard let credentials = try credentialStore.retrieve() else {
                 logService.log("ℹ️ No stored credentials found for auto-login.")
+                currentUser = nil
+                isRestoringSession = false
                 return
             }
 
@@ -151,6 +164,9 @@ class AuthenticationService: ObservableObject {
                 isSilent: true
             )
         } catch {
+            currentUser = nil
+            isSessionReady = false
+            isRestoringSession = false
             logService.log("⚠️ Failed to access stored credentials: \(error.localizedDescription)")
         }
     }
@@ -225,6 +241,8 @@ class AuthenticationService: ObservableObject {
     func logout() {
         self.currentUser = nil
         self.token = nil
+        self.isSessionReady = false
+        self.isRestoringSession = false
         APIService.resetDemoMode()
         APIService.clearResponseCache()
         AppRouter.shared.resetForLogout()

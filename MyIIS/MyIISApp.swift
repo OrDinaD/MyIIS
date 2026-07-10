@@ -36,6 +36,7 @@ struct MyIISApp: App {
     private func handleScenePhaseChange(_ phase: ScenePhase) {
         switch phase {
         case .active:
+            guard authService.isSessionReady, !authService.isLoading else { return }
             AcademicChangeNotificationService.shared.checkWhenAppBecomesActive()
         case .background:
             AcademicChangeNotificationService.shared.scheduleBackgroundRefresh()
