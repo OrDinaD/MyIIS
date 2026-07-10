@@ -94,7 +94,14 @@ final class DormitoryViewModel: ObservableObject {
     }
 
     func reload() async {
-        announcement = DormitoryAnnouncement.current()
+        // A short delay prevents SwiftUI from cancelling the refreshable task 
+        // due to synchronous view invalidation.
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        
+        let newAnnouncement = DormitoryAnnouncement.current()
+        if announcement != newAnnouncement {
+            announcement = newAnnouncement
+        }
         await loadData(force: true)
     }
 
