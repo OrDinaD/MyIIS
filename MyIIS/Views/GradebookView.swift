@@ -32,7 +32,7 @@ struct GradebookView: View {
             if viewModel.isShowingStaleDataWarning {
                 Section {
                     StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                        Task { await viewModel.refresh() }
+                        await viewModel.refresh()
                     }
                 }
                 .listRowInsets(EdgeInsets())

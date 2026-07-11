@@ -25,7 +25,7 @@ struct AttendanceView: View {
         VStack(spacing: 20) {
             if viewModel.isShowingStaleDataWarning {
                 StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                    Task { await viewModel.reload() }
+                    await viewModel.reload()
                 }
             } else if let message = viewModel.errorMessage {
                 InlineErrorBanner(message: message) {

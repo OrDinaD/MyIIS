@@ -66,16 +66,19 @@ final class StudyViewModel: ObservableObject {
 
     func load(force: Bool = false) async {
         if isLoading { return }
-        if !force, hasLoadedContent { return }
 
         isLoading = true
         errorMessage = nil
         isShowingStaleDataWarning = false
+        defer { isLoading = false }
+
         do {
             let fetchedDashboard = try await service.fetchDashboard()
             dashboard = mergedDashboardPreservingVisibleData(fetchedDashboard)
             lastUpdateTime = Date()
             saveSnapshot()
+        } catch is CancellationError {
+            return
         } catch let apiError as APIError {
             if hasLoadedContent {
                 isShowingStaleDataWarning = true
@@ -92,7 +95,6 @@ final class StudyViewModel: ObservableObject {
                 errorMessage = fallbackMessage
             }
         }
-        isLoading = false
     }
 
     func refresh() async {

@@ -9,7 +9,7 @@ struct ActivitiesServiceView: View {
             VStack(spacing: 14) {
                 if viewModel.isShowingStaleDataWarning {
                     StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.staleErrorMessage) {
-                        Task { await viewModel.reload() }
+                        await viewModel.reload()
                     }
                 }
 

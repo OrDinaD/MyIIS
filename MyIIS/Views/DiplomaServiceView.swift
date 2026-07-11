@@ -11,7 +11,7 @@ struct DiplomaServiceView: View {
             VStack(spacing: 16) {
                 if viewModel.isShowingStaleDataWarning {
                     StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.staleErrorMessage) {
-                        Task { await viewModel.reload() }
+                        await viewModel.reload()
                     }
                 }
 

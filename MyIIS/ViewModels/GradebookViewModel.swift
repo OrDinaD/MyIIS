@@ -16,7 +16,6 @@ final class GradebookViewModel: ObservableObject {
 
     private let apiService: APIService
     private var hasLoadedOnce = false
-    private var backgroundRefreshTask: Task<Void, Never>?
     private let staleWarningInterval: TimeInterval = 5 * 60
 
     init(apiService: APIService? = nil) {
@@ -77,19 +76,10 @@ final class GradebookViewModel: ObservableObject {
         selectedSemester?.marks ?? []
     }
 
-    deinit {
-        backgroundRefreshTask?.cancel()
-    }
-
     func loadIfNeeded() async {
         guard !hasLoadedOnce else { return }
         hasLoadedOnce = true
-
-        if markbook == nil {
-            await load(showLoading: true)
-        } else {
-            refreshInBackground()
-        }
+        await load(showLoading: markbook == nil)
     }
 
     func load() async {
@@ -98,13 +88,6 @@ final class GradebookViewModel: ObservableObject {
 
     func refresh() async {
         await load(showLoading: true)
-    }
-
-    private func refreshInBackground() {
-        backgroundRefreshTask?.cancel()
-        backgroundRefreshTask = Task { [weak self] in
-            await self?.load(showLoading: false)
-        }
     }
 
     private func load(showLoading: Bool) async {
@@ -132,6 +115,8 @@ final class GradebookViewModel: ObservableObject {
             apply(markbook: markbook, personalProfile: personal)
             lastUpdateTime = now
             saveCache(markbook: markbook, currentCourse: personal.course, updatedAt: now)
+        } catch is CancellationError {
+            return
         } catch let apiError as APIError {
             applyErrorMessage(apiError.localizedDescription)
         } catch {

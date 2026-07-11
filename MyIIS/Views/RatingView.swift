@@ -45,7 +45,7 @@ struct RatingView: View {
                 if viewModel.isShowingStaleDataWarning {
                     Section {
                         StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                            Task { await viewModel.refresh(for: user) }
+                            await viewModel.refresh(for: user)
                         }
                     }
                     .listRowInsets(EdgeInsets())

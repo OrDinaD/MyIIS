@@ -143,6 +143,8 @@ final class HeadmanViewModel: ObservableObject {
             }
             lastUpdateTime = Date()
             saveSnapshot()
+        } catch is CancellationError {
+            return
         } catch let apiError as APIError {
             handleLoadInitialError(apiError.localizedDescription)
         } catch {

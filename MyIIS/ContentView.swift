@@ -16,14 +16,10 @@ struct ContentView: View {
         Group {
             // Не запускаем защищённые экраны, пока silent login не подтвердил SESSION.
             if authService.isRestoringSession {
-                VStack(spacing: 12) {
-                    ProgressView()
-                    Text("Восстанавливаем защищённую сессию…")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(.systemBackground))
+                ProgressView()
+                    .controlSize(.large)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color(.systemBackground))
             } else if authService.currentUser != nil, authService.isSessionReady {
                 MainTabView()
             } else {

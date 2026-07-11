@@ -38,7 +38,7 @@ struct LibraryServiceView: View {
             VStack(spacing: 14) {
                 if viewModel.isShowingStaleDataWarning {
                     StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.staleErrorMessage) {
-                        Task { await viewModel.reload() }
+                        await viewModel.reload()
                     }
                 }
 
@@ -266,7 +266,7 @@ struct AnnouncementsServiceView: View {
             VStack(spacing: 14) {
                 if viewModel.isShowingStaleDataWarning {
                     StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.staleErrorMessage) {
-                        Task { await viewModel.reload() }
+                        await viewModel.reload()
                     }
                 }
 
@@ -329,9 +329,7 @@ private final class AnnouncementsServiceViewModel: ObservableObject {
     private static let cacheKey = "AnnouncementsServiceViewModel.snapshot"
 
     init() {
-        if restoreSnapshot(markStale: false, message: nil) {
-            hasLoadedOnce = !items.isEmpty
-        }
+        _ = restoreSnapshot(markStale: false, message: nil)
     }
 
     func loadIfNeeded() async {
@@ -396,7 +394,7 @@ struct PenaltiesServiceView: View {
             VStack(spacing: 14) {
                 if viewModel.isShowingStaleDataWarning {
                     StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.staleErrorMessage) {
-                        Task { await viewModel.reload() }
+                        await viewModel.reload()
                     }
                 }
 

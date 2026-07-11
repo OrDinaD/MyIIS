@@ -39,9 +39,7 @@ final class DiplomaApplicationViewModel: ObservableObject {
     init(service: DiplomaApplicationServicing? = nil, userDefaults: UserDefaults = .standard) {
         self.service = service ?? DiplomaApplicationService()
         self.userDefaults = userDefaults
-        if applyCachedSnapshotIfAvailable(markStale: false, message: nil) {
-            hasLoadedOnce = hasContent
-        }
+        _ = applyCachedSnapshotIfAvailable(markStale: false, message: nil)
     }
 
     var screenTitle: String {
@@ -121,6 +119,8 @@ final class DiplomaApplicationViewModel: ObservableObject {
             isShowingStaleDataWarning = false
             staleErrorMessage = nil
             errorMessage = nil
+        } catch is CancellationError {
+            return
         } catch {
             let message = displayMessage(for: error)
             if applyCachedSnapshotIfAvailable(markStale: true, message: message) {

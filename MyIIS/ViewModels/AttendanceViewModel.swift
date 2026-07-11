@@ -76,7 +76,6 @@ class AttendanceViewModel: ObservableObject {
 
     private func loadData(force: Bool) async {
         if isLoading { return }
-        if hasLoadedOnce && !force { return }
 
         isLoading = true
         errorMessage = nil
@@ -89,6 +88,13 @@ class AttendanceViewModel: ObservableObject {
         let applicationsResult = await applicationsTask
         let countsResult = await countsTask
         let certificatesResult = await certificatesTask
+
+        if isCancellation(applicationsResult)
+            || isCancellation(countsResult)
+            || isCancellation(certificatesResult) {
+            isLoading = false
+            return
+        }
 
         var errors: [String] = []
         var nextSectionErrors: [Section: String] = [:]
@@ -225,6 +231,11 @@ class AttendanceViewModel: ObservableObject {
         } catch {
             return .failure(error)
         }
+    }
+
+    private func isCancellation<T>(_ result: Result<T, Error>) -> Bool {
+        guard case .failure(let error) = result else { return false }
+        return error is CancellationError
     }
 
     private func isNotFoundError(_ error: Error) -> Bool {

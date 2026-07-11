@@ -27,8 +27,6 @@ final class RatingViewModel: ObservableObject {
     private var currentStudentId: String?
     private var resolvedRecordBookNumber: String?
     private let isPreview: Bool
-    private var backgroundRefreshTask: Task<Void, Never>?
-
     private struct RatingCacheSnapshot: Codable {
         let students: [StudentRating]
         let checkpointNumbers: [Int]
@@ -65,10 +63,6 @@ final class RatingViewModel: ObservableObject {
             isUsingScheduleFallback = false
             isLoadingSubjects = false
         }
-    }
-
-    deinit {
-        backgroundRefreshTask?.cancel()
     }
 
     func loadRating(for user: User) async {
@@ -114,19 +108,11 @@ extension RatingViewModel {
             return
         }
 
-        if !force,
-           currentGroup == group,
-           currentStudentId == studentId,
-           !students.isEmpty || !disciplines.isEmpty {
-            return
+        if !force {
+            _ = applyCachedSnapshotIfAvailable(group: group, studentId: studentId)
         }
 
-        if !force, applyCachedSnapshotIfAvailable(group: group, studentId: studentId) {
-            scheduleBackgroundRefresh(for: user)
-            return
-        }
-
-        await loadByGroup(group, targetRecordBookNumber: studentId, force: force)
+        await loadByGroup(group, targetRecordBookNumber: studentId, force: true)
 
         currentStudentId = studentId
         saveCurrentStateToCache(group: group, studentId: studentId)
@@ -139,6 +125,7 @@ extension RatingViewModel {
             errorMessage = "Не удалось определить номер группы"
             return
         }
+        guard !isLoading else { return }
 
         let resolvedStudentId = normalizeRecordBookNumber(targetRecordBookNumber)
         let cacheStudentId = resolvedStudentId.isEmpty ? "_portal" : resolvedStudentId
@@ -159,6 +146,12 @@ extension RatingViewModel {
         isShowingStaleDataWarning = false
 
         await loadFromPortalGradeBook(targetRecordBookNumber: targetRecordBookNumber)
+
+        guard !Task.isCancelled else {
+            isLoadingSubjects = false
+            isLoading = false
+            return
+        }
 
         isLoadingSubjects = false
         isLoading = false
@@ -223,14 +216,6 @@ extension RatingViewModel {
         _ = UserDefaultsPayloadStore.save(payload, forKey: cacheKey(group: group, studentId: studentId), in: userDefaults)
     }
 
-    private func scheduleBackgroundRefresh(for user: User) {
-        backgroundRefreshTask?.cancel()
-        backgroundRefreshTask = Task { [weak self] in
-            guard let self else { return }
-            await self.loadCombined(for: user, force: true)
-        }
-    }
-
     private func loadFromPortalGradeBook(targetRecordBookNumber: String?) async {
         do {
             let lessons = try await apiService.getPortalGradeBookLessons()
@@ -256,6 +241,8 @@ extension RatingViewModel {
             isGradebookUnavailable = disciplines.isEmpty
             errorMessage = nil
             logService.log("✅ Rating loaded from grade-book only. Lessons: \(lessons.count), disciplines: \(disciplines.count)")
+        } catch is CancellationError {
+            return
         } catch let error as APIError {
             logService.log("❌ grade-book API error: \(error.localizedDescription)")
             disciplines = []

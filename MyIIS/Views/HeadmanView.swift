@@ -24,7 +24,7 @@ struct HeadmanView: View {
             if viewModel.isShowingStaleDataWarning {
                 Section {
                     StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                        Task { await viewModel.refresh() }
+                        await viewModel.refresh()
                     }
                 }
                 .listRowInsets(EdgeInsets())
@@ -55,9 +55,7 @@ struct HeadmanView: View {
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
         .task {
-            if viewModel.students.isEmpty {
-                await viewModel.loadInitialData()
-            }
+            await viewModel.loadInitialData()
         }
         .refreshable {
             await viewModel.refresh()

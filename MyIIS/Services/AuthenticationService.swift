@@ -83,11 +83,18 @@ class AuthenticationService: ObservableObject {
         isLoading = true
         isSessionReady = false
         errorMessage = nil
+        var exposedCachedSession = false
 
         do {
             logService.log("Sending login request to API...")
             let loginResponse = try await apiService.login(username: username, password: password)
             logService.log("✅ Successfully logged in!")
+
+            if isSilent, currentUser != nil {
+                isSessionReady = true
+                isRestoringSession = false
+                exposedCachedSession = true
+            }
 
             // Получаем профиль только через профильный endpoint
             logService.log("Fetching profile data...")
@@ -120,21 +127,34 @@ class AuthenticationService: ObservableObject {
             AcademicChangeNotificationService.shared.checkWhenAppBecomesActive()
 
         } catch let error as APIError {
-            self.isSessionReady = false
-            self.errorMessage = error.localizedDescription
             logService.log("❌ API Error: \(error.localizedDescription)")
 
             if case .unauthorized = error {
+                isSessionReady = false
+                errorMessage = error.localizedDescription
                 currentUser = nil
-            }
 
-            if isSilent, case .unauthorized = error {
-                try? credentialStore.clear()
-                clearCachedUser()
+                if isSilent {
+                    try? credentialStore.clear()
+                    clearCachedUser()
+                }
+            } else if exposedCachedSession {
+                isSessionReady = true
+                errorMessage = nil
+                logService.log("⚠️ SESSION restored; keeping cached profile after profile refresh failed.")
+            } else {
+                isSessionReady = false
+                errorMessage = error.localizedDescription
             }
         } catch {
-            self.isSessionReady = false
-            self.errorMessage = NSLocalizedString("common_unexpected_error", comment: "")
+            if exposedCachedSession {
+                isSessionReady = true
+                errorMessage = nil
+                logService.log("⚠️ SESSION restored; keeping cached profile after profile refresh failed.")
+            } else {
+                isSessionReady = false
+                errorMessage = NSLocalizedString("common_unexpected_error", comment: "")
+            }
             logService.log("❌ Unexpected Error: \(error.localizedDescription)")
         }
 
@@ -160,7 +180,7 @@ class AuthenticationService: ObservableObject {
             await login(
                 username: credentials.username,
                 password: credentials.password,
-                persistCredentials: true,
+                persistCredentials: false,
                 isSilent: true
             )
         } catch {
