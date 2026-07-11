@@ -79,6 +79,13 @@ struct LMSLoginView: View {
                 }
             }
 
+            if let message = lmsService.errorMessage {
+                Section {
+                    Label(message, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+            }
+
             if lmsService.isLoggedIn && !lmsService.courses.isEmpty {
                 Section {
                     ForEach(lmsService.courses) { course in
@@ -107,10 +114,11 @@ struct LMSLoginView: View {
         } message: {
             Text(errorMessage)
         }
-        .onAppear {
-            Task {
-                await lmsService.checkSession()
-            }
+        .task {
+            await lmsService.checkSession()
+        }
+        .refreshable {
+            await lmsService.refreshCourses(force: true)
         }
     }
 }

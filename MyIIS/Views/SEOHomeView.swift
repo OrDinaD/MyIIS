@@ -11,6 +11,10 @@ struct SEOHomeView: View {
                 VStack(spacing: 16) {
                     headerCard
 
+                    if let message = lmsService.errorMessage {
+                        refreshStatusCard(message)
+                    }
+
                     if lmsService.isLoggedIn {
                         if lmsService.courses.isEmpty {
                             if lmsService.isLoading {
@@ -36,16 +40,45 @@ struct SEOHomeView: View {
             .navigationBarTitleDisplayMode(.large)
             .glassNavigationBar()
             .hiddenNavigationBarBackground()
+            .task {
+                await lmsService.checkSession()
+            }
+            .refreshable {
+                await lmsService.refreshCourses(force: true)
+            }
             .alert("Ошибка", isPresented: $showingError) {
                 Button("ОК", role: .cancel) { }
             } message: {
                 Text(errorMessage)
             }
-            .onAppear {
-                Task {
-                    await lmsService.checkSession()
+        }
+    }
+
+    private func refreshStatusCard(_ message: String) -> some View {
+        GlassCard {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: "exclamationmark.arrow.trianglehead.2.clockwise.rotate.90")
+                    .font(.title3)
+                    .foregroundStyle(.orange)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Button("Повторить") {
+                        Task {
+                            await lmsService.refreshCourses(force: true)
+                        }
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .disabled(lmsService.isLoading)
                 }
+
+                Spacer(minLength: 0)
             }
+            .padding(14)
         }
     }
 
@@ -148,7 +181,10 @@ struct SEOHomeView: View {
                     GlassCard {
                         HStack(spacing: 16) {
                             if let bgUrl = course.backgroundUrl {
-                                AsyncImage(url: bgUrl) { image in
+                                CachedAsyncImage(
+                                    url: bgUrl,
+                                    maxPixelSize: 240
+                                ) { image in
                                     image
                                         .resizable()
                                         .aspectRatio(contentMode: .fill)

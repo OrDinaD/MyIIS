@@ -2,11 +2,30 @@ import Combine
 import Foundation
 import SwiftUI
 
-enum LMSError: Error {
+enum LMSError: LocalizedError {
     case invalidResponse
     case noCredentials
     case invalidCredentials
     case loginFailed
+    case sessionExpired
+    case networkUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidResponse:
+            return "СЭО вернула некорректный ответ."
+        case .noCredentials:
+            return "Не найдены сохранённые данные для входа."
+        case .invalidCredentials:
+            return "СЭО отклонила логин или пароль."
+        case .loginFailed:
+            return "Не удалось войти в СЭО."
+        case .sessionExpired:
+            return "Сессия СЭО истекла. Войдите ещё раз."
+        case .networkUnavailable:
+            return "Не удалось обновить данные СЭО."
+        }
+    }
 }
 
 class LMSService: ObservableObject {
@@ -18,15 +37,28 @@ class LMSService: ObservableObject {
     private let userDefaults = UserDefaults.standard
 
     private static let cachePrefix = "LMSService.cache."
+    private static let automaticRefreshInterval: TimeInterval = 5 * 60
+    private static let courseURLs = [
+        URL(string: "https://lms.bsuir.by/")!,
+        URL(string: "https://lms.bsuir.by/my/")!
+    ]
 
     private struct CachedEnvelope: Codable {
         let data: Data
         let cachedAt: Date
     }
 
+    private struct CourseLoadResult {
+        let courses: [LMSCourse]
+        let updatedAt: Date
+        let isFromCache: Bool
+    }
+
     @Published var isLoggedIn = false
     @Published var isLoading = false
     @Published var courses: [LMSCourse] = []
+    @Published private(set) var errorMessage: String?
+    @Published private(set) var lastUpdatedAt: Date?
 
     private init() {
         let configuration = URLSessionConfiguration.default
@@ -34,63 +66,127 @@ class LMSService: ObservableObject {
         configuration.httpShouldSetCookies = true
         configuration.httpCookieAcceptPolicy = .always
         self.session = URLSession(configuration: configuration)
+        self.isLoggedIn = hasSessionCookie
 
-        Task {
-            await checkSession()
+        if isLoggedIn, let cached = cachedCourseResult() {
+            self.courses = cached.courses
+            self.lastUpdatedAt = cached.updatedAt
+        }
+    }
+}
+
+extension LMSService {
+    @MainActor
+    func refreshCourses(force: Bool = false) async {
+        guard !isLoading else {
+            logService.log("ℹ️ LMS: Reusing the active courses refresh.")
+            return
+        }
+
+        isLoggedIn = hasSessionCookie
+        guard isLoggedIn else {
+            errorMessage = nil
+            return
+        }
+
+        if !force,
+           let lastUpdatedAt,
+           Date().timeIntervalSince(lastUpdatedAt) < Self.automaticRefreshInterval {
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let result = try await loadCourses()
+            guard !Task.isCancelled else { return }
+
+            courses = result.courses
+            lastUpdatedAt = result.updatedAt
+            errorMessage = result.isFromCache
+                ? "СЭО сейчас недоступна. Показаны сохранённые курсы."
+                : nil
+            logService.log(
+                result.isFromCache
+                    ? "⚠️ LMS: Refresh completed from cache."
+                    : "✅ LMS: Refresh completed with \(result.courses.count) courses."
+            )
+        } catch is CancellationError {
+            logService.log("ℹ️ LMS: Courses refresh cancelled.")
+        } catch LMSError.sessionExpired {
+            isLoggedIn = false
+            errorMessage = LMSError.sessionExpired.localizedDescription
+            logService.log("⚠️ LMS: Session is no longer valid.")
+        } catch {
+            errorMessage = error.localizedDescription
+            logService.log("⚠️ LMS: Courses refresh failed: \(error.localizedDescription)")
         }
     }
 
-    func fetchCourses() async throws {
-        await MainActor.run { isLoading = true }
-        defer { Task { @MainActor in isLoading = false } }
+    private func loadCourses() async throws -> CourseLoadResult {
+        logService.log("📡 LMS: Starting courses refresh.")
+        var receivedValidPage = false
+        var latestError: Error?
 
-        logService.log("📡 LMS: Starting courses fetch")
-        let urls = [
-            "https://lms.bsuir.by/",
-            "https://lms.bsuir.by/my/"
-        ]
-
-        var allCourses: [LMSCourse] = []
-
-        for urlString in urls {
-            guard let url = URL(string: urlString) else { continue }
+        for url in Self.courseURLs {
             var request = URLRequest(url: url)
             request.httpMethod = "GET"
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.timeoutInterval = 20
 
             do {
                 let (data, response) = try await session.data(for: request)
-                guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                    logService.log("📡 LMS: Page \(urlString) returned \(String(describing: (response as? HTTPURLResponse)?.statusCode))")
-                    continue
-                }
+                let html = try Self.validatedHTML(data: data, response: response)
 
+                receivedValidPage = true
                 persistCache(data: data, for: request)
-
-                if let html = String(data: data, encoding: .utf8) {
-                    logService.log("📡 LMS: Received HTML (\(html.count) chars) from \(urlString)")
-                    let parsed = Self.parseCourses(from: html)
-                    if !parsed.isEmpty {
-                        logService.log("📡 LMS: Successfully parsed \(parsed.count) courses")
-                        allCourses = parsed
-                        break
-                    }
+                let parsed = Self.parseCourses(from: html)
+                if !parsed.isEmpty {
+                    return CourseLoadResult(courses: parsed, updatedAt: Date(), isFromCache: false)
                 }
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch LMSError.sessionExpired {
+                throw LMSError.sessionExpired
             } catch {
-                if let cachedData = cachedData(for: request),
-                   let html = String(data: cachedData, encoding: .utf8) {
-                    let parsed = Self.parseCourses(from: html)
-                    if !parsed.isEmpty {
-                        logService.log("⚠️ LMS: Loaded courses from offline cache for \(urlString).")
-                        allCourses = parsed
-                        break
-                    }
-                }
+                latestError = error
+                logService.log("⚠️ LMS: \(url.absoluteString) failed: \(error.localizedDescription)")
             }
         }
 
-        await MainActor.run {
-            self.courses = allCourses
+        if latestError != nil, let cached = cachedCourseResult() {
+            return cached
         }
+        if receivedValidPage {
+            return CourseLoadResult(courses: [], updatedAt: Date(), isFromCache: false)
+        }
+        throw latestError ?? LMSError.networkUnavailable
+    }
+
+    private static func validatedHTML(data: Data, response: URLResponse) throws -> String {
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw LMSError.invalidResponse
+        }
+        if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+            throw LMSError.sessionExpired
+        }
+        guard httpResponse.statusCode == 200,
+              let html = String(data: data, encoding: .utf8) else {
+            throw LMSError.invalidResponse
+        }
+        guard !isLoginPage(html: html, responseURL: httpResponse.url) else {
+            throw LMSError.sessionExpired
+        }
+        return html
+    }
+
+    private static func isLoginPage(html: String, responseURL: URL?) -> Bool {
+        if responseURL?.path.localizedCaseInsensitiveContains("/login/") == true {
+            return true
+        }
+        return html.localizedCaseInsensitiveContains("id=\"loginform\"")
+            || html.localizedCaseInsensitiveContains("name=\"logintoken\"")
     }
 
     static func parseCourses(from html: String) -> [LMSCourse] {
@@ -152,6 +248,9 @@ class LMSService: ObservableObject {
             .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+}
+
+extension LMSService {
     func fetchCourseDetail(id: Int) async throws -> LMSCourseDetail {
         logService.log("🔍 LMS: Fetching detail for ID \(id)")
         let url = URL(string: "https://lms.bsuir.by/course/view.php?id=\(id)")!
@@ -209,12 +308,43 @@ class LMSService: ObservableObject {
     }
 
     private func cachedData(for request: URLRequest) -> Data? {
+        cachedEnvelope(for: request)?.data
+    }
+
+    private func cachedEnvelope(for request: URLRequest) -> CachedEnvelope? {
         guard let key = cacheKey(for: request),
-              let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults),
-              let envelope = try? JSONDecoder().decode(CachedEnvelope.self, from: payload) else {
+              let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults) else {
             return nil
         }
-        return envelope.data
+        return try? JSONDecoder().decode(CachedEnvelope.self, from: payload)
+    }
+
+    private func cachedCourseResult() -> CourseLoadResult? {
+        for url in Self.courseURLs {
+            let request = URLRequest(url: url)
+            guard let envelope = cachedEnvelope(for: request),
+                  let html = String(data: envelope.data, encoding: .utf8) else {
+                continue
+            }
+
+            let parsed = Self.parseCourses(from: html)
+            if !parsed.isEmpty {
+                return CourseLoadResult(
+                    courses: parsed,
+                    updatedAt: envelope.cachedAt,
+                    isFromCache: true
+                )
+            }
+        }
+        return nil
+    }
+
+    private var hasSessionCookie: Bool {
+        let lmsURL = URL(string: "https://lms.bsuir.by")!
+        let cookies = HTTPCookieStorage.shared.cookies(for: lmsURL) ?? []
+        return cookies.contains { cookie in
+            cookie.name == "MoodleSession" && (cookie.expiresDate == nil || cookie.expiresDate! > Date())
+        }
     }
 
     private func cacheKey(for request: URLRequest) -> String? {
@@ -224,55 +354,63 @@ class LMSService: ObservableObject {
         return Self.cachePrefix + Data(composite.utf8).base64EncodedString()
     }
 
+    @MainActor
     func login() async throws {
+        guard !isLoading else { return }
         guard let credentials = try credentialStore.retrieve() else {
             throw LMSError.noCredentials
         }
 
-        await MainActor.run { isLoading = true }
-        defer { Task { @MainActor in isLoading = false } }
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
 
         logService.log("🔐 LMS: Logging in as \(credentials.username)")
         let url = URL(string: "https://lms.bsuir.by/login/index.php")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        request.timeoutInterval = 20
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         let bodyComponents = [
             "username": credentials.username,
             "password": credentials.password
         ]
-
         let bodyString = bodyComponents
-            .compactMap { (key, value) -> String? in
-                guard let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed) else { return nil }
+            .compactMap { key, value -> String? in
+                guard let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed) else {
+                    return nil
+                }
                 return "\(key)=\(encodedValue)"
             }
             .joined(separator: "&")
 
         request.httpBody = bodyString.data(using: .utf8)
-        let (data, _) = try await session.data(for: request)
+        let (data, response) = try await session.data(for: request)
+        let html = String(data: data, encoding: .utf8) ?? ""
 
-        let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://lms.bsuir.by")!) ?? []
-        let hasSession = cookies.contains(where: { $0.name == "MoodleSession" })
-
-        await MainActor.run {
-            self.isLoggedIn = hasSession
-        }
-
-        if hasSession {
-            logService.log("✅ LMS: Login success (Session found)")
-            try? await fetchCourses()
-        } else {
-            if let html = String(data: data, encoding: .utf8), html.contains("loginerrormessage") {
-                logService.log("❌ LMS: Invalid credentials")
+        guard hasSessionCookie,
+              !Self.isLoginPage(html: html, responseURL: response.url) else {
+            isLoggedIn = false
+            if html.localizedCaseInsensitiveContains("loginerrormessage") {
+                logService.log("❌ LMS: Invalid credentials.")
                 throw LMSError.invalidCredentials
             }
-            logService.log("❌ LMS: Login failed")
+            logService.log("❌ LMS: Login failed.")
             throw LMSError.loginFailed
         }
+
+        isLoggedIn = true
+        let result = try await loadCourses()
+        courses = result.courses
+        lastUpdatedAt = result.updatedAt
+        errorMessage = result.isFromCache
+            ? "Вход выполнен. Пока показаны сохранённые курсы."
+            : nil
+        logService.log("✅ LMS: Login and session validation succeeded.")
     }
 
+    @MainActor
     func logout() {
         let storage = HTTPCookieStorage.shared
         if let cookies = storage.cookies(for: URL(string: "https://lms.bsuir.by")!) {
@@ -282,240 +420,12 @@ class LMSService: ObservableObject {
         }
         isLoggedIn = false
         courses = []
+        errorMessage = nil
+        lastUpdatedAt = nil
     }
 
+    @MainActor
     func checkSession() async {
-        let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://lms.bsuir.by")!) ?? []
-        let hasSession = cookies.contains(where: { $0.name == "MoodleSession" })
-        await MainActor.run {
-            self.isLoggedIn = hasSession
-        }
-        if hasSession {
-            try? await fetchCourses()
-        }
-    }
-}
-
-// RESTORING MISSING EXTENSIONS
-extension CharacterSet {
-    static let urlQueryValueAllowed: CharacterSet = {
-        let generalDelimitersToEncode = ":#[]@"
-        let subDelimitersToEncode = "!$&'()*+,;="
-
-        var allowed = CharacterSet.urlQueryAllowed
-        allowed.remove(charactersIn: "\(generalDelimitersToEncode)\(subDelimitersToEncode)")
-        return allowed
-    }()
-}
-
-extension String {
-    struct RegexMatch {
-        let fullText: String
-        let fullRange: Range<String.Index>
-        let groups: [String]
-    }
-
-    func matches(pattern: String) -> [RegexMatch] {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) else { return [] }
-        let nsRange = NSRange(self.startIndex..<self.endIndex, in: self)
-        return regex.matches(in: self, range: nsRange).compactMap { match in
-            guard let fullRange = Range(match.range(at: 0), in: self) else { return nil }
-            var groups: [String] = []
-            if match.numberOfRanges > 1 {
-                for idx in 1..<match.numberOfRanges {
-                    let groupRange = match.range(at: idx)
-                    if groupRange.location != NSNotFound, let captureRange = Range(groupRange, in: self) {
-                        groups.append(String(self[captureRange]))
-                    } else {
-                        groups.append("")
-                    }
-                }
-            }
-            return RegexMatch(
-                fullText: String(self[fullRange]),
-                fullRange: fullRange,
-                groups: groups
-            )
-        }
-    }
-
-    func captureGroup(at index: Int, pattern: String) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) else { return nil }
-        let nsRange = NSRange(self.startIndex..<self.endIndex, in: self)
-        if let match = regex.firstMatch(in: self, range: nsRange) {
-            if match.numberOfRanges > index {
-                let range = match.range(at: index)
-                if let captureRange = Range(range, in: self) {
-                    return String(self[captureRange])
-                }
-            }
-        }
-        return nil
-    }
-
-    func captureGroups(at index: Int, pattern: String) -> [String] {
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) else { return [] }
-        let nsRange = NSRange(self.startIndex..<self.endIndex, in: self)
-        let matches = regex.matches(in: self, range: nsRange)
-        return matches.compactMap { match in
-            if match.numberOfRanges > index {
-                let range = match.range(at: index)
-                if let captureRange = Range(range, in: self) {
-                    return String(self[captureRange])
-                }
-            }
-            return nil
-        }
-    }
-
-    func decodingHTMLEntities() -> String {
-        var decoded = self
-        let replacements: [(String, String)] = [
-            ("&quot;", "\""),
-            ("&amp;", "&"),
-            ("&lt;", "<"),
-            ("&gt;", ">"),
-            ("&apos;", "'"),
-            ("&#039;", "'"),
-            ("&nbsp;", " ")
-        ]
-
-        for (entity, value) in replacements where decoded.contains(entity) {
-            decoded = decoded.replacingOccurrences(of: entity, with: value)
-        }
-
-        return decoded
-    }
-}
-
-extension Collection {
-    subscript(safe index: Index) -> Element? {
-        indices.contains(index) ? self[index] : nil
-    }
-}
-
-private extension LMSService {
-    private static func parseSections(from html: String) -> [LMSSection] {
-        var sections: [LMSSection] = []
-        let sectionPattern = #"<li[^>]*data-for="section"[^>]*data-sectionname="([^"]+)"[^>]*>"#
-        let sectionMatches = html.matches(pattern: sectionPattern)
-
-        for (idx, sectionMatch) in sectionMatches.enumerated() {
-            guard let sectionNameRaw = sectionMatch.groups[safe: 0] else { continue }
-            let sectionName = sectionNameRaw.decodingHTMLEntities()
-
-            let blockStart = sectionMatch.fullRange.lowerBound
-            let blockEnd = idx + 1 < sectionMatches.count ? sectionMatches[idx + 1].fullRange.lowerBound : html.endIndex
-            let sectionBlock = String(html[blockStart..<blockEnd])
-
-            let modules = parseModules(from: sectionBlock, sectionIndex: idx)
-            if !modules.isEmpty {
-                sections.append(LMSSection(name: sectionName, modules: modules))
-            }
-        }
-
-        if sections.isEmpty {
-            let fallbackModules = parseModules(from: html, sectionIndex: 0)
-            if !fallbackModules.isEmpty {
-                sections.append(LMSSection(name: "Материалы курса", modules: fallbackModules))
-            }
-        }
-
-        return sections
-    }
-
-    // swiftlint:disable:next function_body_length
-    private static func parseModules(from source: String, sectionIndex: Int) -> [LMSModule] {
-        let activityPattern =
-            #"<li[^>]*class="[^"]*activity[^"]*activity-wrapper[^"]*"[^>]*id="module-(\d+)"[^>]*>([\s\S]*?)"#
-            + #"(?=<li[^>]*class="[^"]*activity[^"]*activity-wrapper[^"]*"|<\/ul>|$)"#
-        let matches = source.matches(pattern: activityPattern)
-        var modules: [LMSModule] = []
-        var fallbackIndex = 0
-
-        for match in matches {
-            let moduleId = Int(match.groups[safe: 0] ?? "") ?? ((sectionIndex + 1) * 10_000 + fallbackIndex + 1)
-            fallbackIndex += 1
-            let moduleFull = match.fullText
-
-            let modName = moduleFull.captureGroup(at: 1, pattern: #"data-activityname="([^"]+)""#)?
-                .decodingHTMLEntities()
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                ?? "Элемент \(moduleId)"
-
-            let modTypeStr = moduleFull.captureGroup(at: 1, pattern: #"modtype_([^"\s]+)"#) ?? "unknown"
-            let type = LMSModule.LMSModuleType(rawValue: modTypeStr) ?? .unknown
-
-            let modHref =
-                moduleFull.captureGroup(at: 1, pattern: #"<a[^>]*class="[^"]*aalink[^"]*"[^>]*href="([^"]+)""#)
-                ?? moduleFull.captureGroup(at: 1, pattern: #"href="([^"]+)""#)
-            let modUrl = modHref
-                .map { $0.decodingHTMLEntities() }
-                .flatMap { URL(string: $0, relativeTo: URL(string: "https://lms.bsuir.by"))?.absoluteURL }
-
-            let descriptionRaw = moduleFull.captureGroup(
-                at: 1,
-                pattern: #"<div[^>]*class="[^"]*contentafterlink[^"]*"[^>]*>([\s\S]*?)<\/div>"#
-            )
-            let description = descriptionRaw?
-                .replacingOccurrences(of: "<[^>]+>", with: " ", options: .regularExpression, range: nil)
-                .decodingHTMLEntities()
-                .replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-            let indentText = moduleFull.captureGroup(at: 1, pattern: #"mod-indent-(\d+)"#)
-            let indent = Int(indentText ?? "0") ?? 0
-
-            modules.append(
-                LMSModule(
-                    id: moduleId,
-                    name: modName,
-                    description: description?.isEmpty == true ? nil : description,
-                    type: type,
-                    url: modUrl,
-                    indent: indent
-                )
-            )
-        }
-
-        if modules.isEmpty {
-            let cardPattern = #"<div[^>]*class="[^"]*activity-item[^"]*"[^>]*data-activityname="([^"]+)"[^>]*>"#
-            let cardMatches = source.matches(pattern: cardPattern)
-
-            for (cardIndex, cardMatch) in cardMatches.enumerated() {
-                let moduleId = (sectionIndex + 1) * 10_000 + cardIndex + 1
-                let start = cardMatch.fullRange.lowerBound
-                let end = cardIndex + 1 < cardMatches.count ? cardMatches[cardIndex + 1].fullRange.lowerBound : source.endIndex
-                let moduleBlock = String(source[start..<end])
-
-                let modName = cardMatch.groups[safe: 0]?
-                    .decodingHTMLEntities()
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                    ?? "Элемент \(moduleId)"
-
-                let modTypeStr = moduleBlock.captureGroup(at: 1, pattern: #"modtype_([^"\s]+)"#) ?? "unknown"
-                let type = LMSModule.LMSModuleType(rawValue: modTypeStr) ?? .unknown
-
-                let modHref =
-                    moduleBlock.captureGroup(at: 1, pattern: #"<a[^>]*class="[^"]*aalink[^"]*"[^>]*href="([^"]+)""#)
-                    ?? moduleBlock.captureGroup(at: 1, pattern: #"href="([^"]+)""#)
-                let modUrl = modHref
-                    .map { $0.decodingHTMLEntities() }
-                    .flatMap { URL(string: $0, relativeTo: URL(string: "https://lms.bsuir.by"))?.absoluteURL }
-
-                modules.append(
-                    LMSModule(
-                        id: moduleId,
-                        name: modName,
-                        description: nil,
-                        type: type,
-                        url: modUrl,
-                        indent: 0
-                    )
-                )
-            }
-        }
-
-        return modules
+        await refreshCourses()
     }
 }
