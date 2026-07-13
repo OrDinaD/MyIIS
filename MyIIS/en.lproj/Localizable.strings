@@ -401,3 +401,17 @@
 "services_schedule_past_lessons" = "Past lessons";
 "services_schedule_no_more_today" = "No more classes today 🎉";
 "about_rate_app" = "Rate App";
+
+/* Personal account notifications */
+"notifications_title" = "Notifications";
+"notifications_empty_title" = "No notifications";
+"notifications_empty_message" = "Messages from your IIS personal account will appear here.";
+"notifications_error_title" = "Notifications couldn't be loaded";
+"notifications_retry" = "Try Again";
+"notifications_marking_read" = "Marking notifications as read";
+"notifications_mark_all_read" = "Mark All as Read";
+"notifications_read" = "Read";
+"notifications_unread" = "Unread";
+"notifications_mark_read_hint" = "Mark as read";
+"notifications_no_unread" = "No unread notifications";
+"notifications_unread_count_format" = "Unread: %d";

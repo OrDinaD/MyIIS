@@ -405,3 +405,17 @@
 "services_schedule_past_lessons" = "Прошедшие занятия";
 "services_schedule_no_more_today" = "На сегодня занятий больше нет 🎉";
 "about_rate_app" = "Оценить приложение";
+
+/* Уведомления личного кабинета */
+"notifications_title" = "Уведомления";
+"notifications_empty_title" = "Уведомлений нет";
+"notifications_empty_message" = "Здесь появятся сообщения из личного кабинета ИИС.";
+"notifications_error_title" = "Не удалось загрузить уведомления";
+"notifications_retry" = "Повторить";
+"notifications_marking_read" = "Отмечаем уведомления прочитанными";
+"notifications_mark_all_read" = "Прочитать все";
+"notifications_read" = "Прочитано";
+"notifications_unread" = "Не прочитано";
+"notifications_mark_read_hint" = "Отметить как прочитанное";
+"notifications_no_unread" = "Нет непрочитанных уведомлений";
+"notifications_unread_count_format" = "Непрочитанных: %d";

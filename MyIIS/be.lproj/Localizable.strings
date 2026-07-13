@@ -393,3 +393,17 @@
 "unauthorized_all_features_subtitle" = "Для доступу да ўсіх функцый";
 "unauthorized_services_locked_section" = "Сэрвісы (патрабуецца аўтарызацыя)";
 "about_rate_app" = "Ацаніць дадатак";
+
+/* Апавяшчэнні асабістага кабінета */
+"notifications_title" = "Апавяшчэнні";
+"notifications_empty_title" = "Апавяшчэнняў няма";
+"notifications_empty_message" = "Тут з'явяцца паведамленні з асабістага кабінета ІІС.";
+"notifications_error_title" = "Не ўдалося загрузіць апавяшчэнні";
+"notifications_retry" = "Паўтарыць";
+"notifications_marking_read" = "Пазначаем апавяшчэнні прачытанымі";
+"notifications_mark_all_read" = "Прачытаць усе";
+"notifications_read" = "Прачытана";
+"notifications_unread" = "Не прачытана";
+"notifications_mark_read_hint" = "Пазначыць як прачытанае";
+"notifications_no_unread" = "Няма непрачытаных апавяшчэнняў";
+"notifications_unread_count_format" = "Непрачытаных: %d";

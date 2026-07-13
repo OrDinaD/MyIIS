@@ -393,3 +393,17 @@
 "unauthorized_all_features_subtitle" = "Для доступу до всіх функцій";
 "unauthorized_services_locked_section" = "Сервіси (потрібна авторизація)";
 "about_rate_app" = "Оцінити додаток";
+
+/* Сповіщення особистого кабінету */
+"notifications_title" = "Сповіщення";
+"notifications_empty_title" = "Сповіщень немає";
+"notifications_empty_message" = "Тут з'являться повідомлення з особистого кабінету ІІС.";
+"notifications_error_title" = "Не вдалося завантажити сповіщення";
+"notifications_retry" = "Повторити";
+"notifications_marking_read" = "Позначаємо сповіщення прочитаними";
+"notifications_mark_all_read" = "Прочитати всі";
+"notifications_read" = "Прочитано";
+"notifications_unread" = "Не прочитано";
+"notifications_mark_read_hint" = "Позначити як прочитане";
+"notifications_no_unread" = "Немає непрочитаних сповіщень";
+"notifications_unread_count_format" = "Непрочитаних: %d";
