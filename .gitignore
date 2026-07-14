@@ -139,3 +139,7 @@ agents.md
 .antigravity.md
 archive_fail_log*.txt
 task.md
+
+# Local Antigravity CLI context, skills and agents
+GEMINI.md
+.agents/
