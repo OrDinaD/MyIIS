@@ -407,3 +407,32 @@
 "notifications_mark_read_hint" = "Позначити як прочитане";
 "notifications_no_unread" = "Немає непрочитаних сповіщень";
 "notifications_unread_count_format" = "Непрочитаних: %d";
+
+/* App Intents */
+"intent_section_type" = "Розділ MyIIS";
+"intent_section_profile" = "Профіль";
+"intent_section_attendance" = "Пропуски";
+"intent_section_rating" = "Рейтинг";
+"intent_section_services" = "Сервіси";
+"intent_section_gradebook" = "Залікова книжка";
+"intent_section_study" = "Навчання";
+"intent_section_diploma" = "Диплом";
+"intent_section_group" = "Група";
+"intent_section_headman" = "Староста";
+"intent_section_dormitory" = "Гуртожиток";
+"intent_section_library" = "Бібліотека";
+"intent_section_schedule" = "Розклад";
+"intent_open_section_title" = "Відкрити розділ у MyIIS";
+"intent_section_parameter" = "Розділ";
+"intent_average_title" = "Показати середній бал";
+"intent_average_unavailable_short" = "Не вдалося отримати середній бал.";
+"intent_average_unavailable_dialog" = "Не вдалося отримати середній бал. Спочатку відкрийте MyIIS та оновіть дані.";
+"intent_average_response_format" = "Середній бал — %@";
+"intent_absences_title" = "Показати пропуски";
+"intent_absences_unavailable_short" = "Не вдалося отримати дані про пропуски.";
+"intent_absences_unavailable_dialog" = "Не вдалося отримати дані про пропуски. Спочатку відкрийте MyIIS та оновіть дані.";
+"intent_absences_response_format" = "Пропуски без поважної причини — %d год.";
+"intent_group_title" = "Показати мою групу";
+"intent_group_unavailable_short" = "Номер групи не знайдено.";
+"intent_group_unavailable_dialog" = "Номер групи не знайдено. Будь ласка, авторизуйтеся в застосунку.";
+"intent_group_response_format" = "Ваша група — %@";

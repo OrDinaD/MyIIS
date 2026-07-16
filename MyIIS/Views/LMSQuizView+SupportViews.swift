@@ -71,22 +71,15 @@ struct QuizRemoteImage: View {
         Button {
             onTap?()
         } label: {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case let .success(image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 240)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                case .failure:
-                    EmptyView()
-                case .empty:
-                    ProgressView()
-                        .frame(maxWidth: .infinity, minHeight: 80)
-                @unknown default:
-                    EmptyView()
-                }
+            CachedAsyncImage(url: url, maxPixelSize: 1_024) { image in
+                image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 240)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } placeholder: {
+                ProgressView()
+                    .frame(maxWidth: .infinity, minHeight: 80)
             }
         }
         .buttonStyle(.plain)

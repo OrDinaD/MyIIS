@@ -24,6 +24,7 @@ struct MyIISApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authService) // Внедряем его в окружение
+                .onAppear(perform: handlePendingAppIntentNavigation)
                 .onChange(of: scenePhase) { _, phase in
                     handleScenePhaseChange(phase)
                 }
@@ -33,9 +34,17 @@ struct MyIISApp: App {
         }
     }
 
+    private func handlePendingAppIntentNavigation() {
+        guard let section = AppIntentNavigationStore.takePendingSection() else {
+            return
+        }
+        AppRouter.shared.navigate(to: section)
+    }
+
     private func handleScenePhaseChange(_ phase: ScenePhase) {
         switch phase {
         case .active:
+            handlePendingAppIntentNavigation()
             guard authService.isSessionReady, !authService.isLoading else { return }
             AcademicChangeNotificationService.shared.checkWhenAppBecomesActive()
         case .background:

@@ -419,3 +419,32 @@
 "notifications_mark_read_hint" = "Отметить как прочитанное";
 "notifications_no_unread" = "Нет непрочитанных уведомлений";
 "notifications_unread_count_format" = "Непрочитанных: %d";
+
+/* App Intents */
+"intent_section_type" = "Раздел MyIIS";
+"intent_section_profile" = "Профиль";
+"intent_section_attendance" = "Пропуски";
+"intent_section_rating" = "Рейтинг";
+"intent_section_services" = "Сервисы";
+"intent_section_gradebook" = "Зачётка";
+"intent_section_study" = "Учёба";
+"intent_section_diploma" = "Диплом";
+"intent_section_group" = "Группа";
+"intent_section_headman" = "Староста";
+"intent_section_dormitory" = "Общежитие";
+"intent_section_library" = "Библиотека";
+"intent_section_schedule" = "Расписание";
+"intent_open_section_title" = "Открыть раздел в MyIIS";
+"intent_section_parameter" = "Раздел";
+"intent_average_title" = "Показать средний балл";
+"intent_average_unavailable_short" = "Не удалось получить средний балл.";
+"intent_average_unavailable_dialog" = "Не удалось получить средний балл. Сначала откройте MyIIS и обновите данные.";
+"intent_average_response_format" = "Средний балл — %@";
+"intent_absences_title" = "Показать пропуски";
+"intent_absences_unavailable_short" = "Не удалось получить данные о пропусках.";
+"intent_absences_unavailable_dialog" = "Не удалось получить данные о пропусках. Сначала откройте MyIIS и обновите данные.";
+"intent_absences_response_format" = "Пропуски по неуважительной причине — %d ч.";
+"intent_group_title" = "Показать мою группу";
+"intent_group_unavailable_short" = "Номер группы не найден.";
+"intent_group_unavailable_dialog" = "Номер группы не найден. Пожалуйста, авторизуйтесь в приложении.";
+"intent_group_response_format" = "Ваша группа — %@";

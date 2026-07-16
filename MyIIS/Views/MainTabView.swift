@@ -3,7 +3,6 @@
 //  MyIIS
 //
 import SwiftUI
-import UIKit
 
 struct MainTabView: View {
     @ObservedObject private var router = AppRouter.shared
@@ -14,25 +13,19 @@ struct MainTabView: View {
 
     var body: some View {
         configuredTabView
-            .toolbarBackground(.regularMaterial, for: .tabBar)
-            .toolbarBackground(.visible, for: .tabBar)
+            .automaticTabBarAppearance()
             .appBackground()
             .reduceMotionSensitive()
     }
 
     @ViewBuilder
     private var configuredTabView: some View {
-        if #available(iOS 18.0, *), shouldUseSidebarAdaptableStyle {
+        if #available(iOS 18.0, *) {
             baseTabView
                 .tabViewStyle(.sidebarAdaptable)
         } else {
             baseTabView
         }
-    }
-
-    private var shouldUseSidebarAdaptableStyle: Bool {
-        let idiom = UIDevice.current.userInterfaceIdiom
-        return idiom == .pad || idiom == .mac || ProcessInfo.processInfo.isiOSAppOnMac
     }
 
     private var baseTabView: some View {

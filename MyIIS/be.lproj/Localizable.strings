@@ -407,3 +407,32 @@
 "notifications_mark_read_hint" = "Пазначыць як прачытанае";
 "notifications_no_unread" = "Няма непрачытаных апавяшчэнняў";
 "notifications_unread_count_format" = "Непрачытаных: %d";
+
+/* App Intents */
+"intent_section_type" = "Раздзел MyIIS";
+"intent_section_profile" = "Профіль";
+"intent_section_attendance" = "Пропускі";
+"intent_section_rating" = "Рэйтынг";
+"intent_section_services" = "Сэрвісы";
+"intent_section_gradebook" = "Залікоўка";
+"intent_section_study" = "Вучоба";
+"intent_section_diploma" = "Дыплом";
+"intent_section_group" = "Група";
+"intent_section_headman" = "Стараста";
+"intent_section_dormitory" = "Інтэрнат";
+"intent_section_library" = "Бібліятэка";
+"intent_section_schedule" = "Расклад";
+"intent_open_section_title" = "Адкрыць раздзел у MyIIS";
+"intent_section_parameter" = "Раздзел";
+"intent_average_title" = "Паказаць сярэдні бал";
+"intent_average_unavailable_short" = "Не ўдалося атрымаць сярэдні бал.";
+"intent_average_unavailable_dialog" = "Не ўдалося атрымаць сярэдні бал. Спачатку адкрыйце MyIIS і абнавіце даныя.";
+"intent_average_response_format" = "Сярэдні бал — %@";
+"intent_absences_title" = "Паказаць пропускі";
+"intent_absences_unavailable_short" = "Не ўдалося атрымаць даныя пра пропускі.";
+"intent_absences_unavailable_dialog" = "Не ўдалося атрымаць даныя пра пропускі. Спачатку адкрыйце MyIIS і абнавіце даныя.";
+"intent_absences_response_format" = "Пропускі без уважлівай прычыны — %d гадз.";
+"intent_group_title" = "Паказаць маю групу";
+"intent_group_unavailable_short" = "Нумар групы не знойдзены.";
+"intent_group_unavailable_dialog" = "Нумар групы не знойдзены. Калі ласка, аўтарызуйцеся ў праграме.";
+"intent_group_response_format" = "Ваша група — %@";

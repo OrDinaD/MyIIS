@@ -38,7 +38,7 @@ struct ActivitiesServiceView: View {
                         ServiceEmptyState(text: NSLocalizedString("activities_empty", comment: ""))
                     } else {
                         VStack(spacing: 10) {
-                            ForEach(Array(viewModel.socialWork.enumerated()), id: \.offset) { _, item in
+                            ForEach(viewModel.socialWork, id: \.stableID) { item in
                                 ServiceJSONItemCard(item: item)
                             }
                         }
@@ -54,7 +54,7 @@ struct ActivitiesServiceView: View {
                         ServiceEmptyState(text: NSLocalizedString("activities_empty", comment: ""))
                     } else {
                         VStack(spacing: 10) {
-                            ForEach(Array(viewModel.researchWork.enumerated()), id: \.offset) { _, item in
+                            ForEach(viewModel.researchWork, id: \.stableID) { item in
                                 ServiceJSONItemCard(item: item)
                             }
                         }

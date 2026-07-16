@@ -15,6 +15,11 @@ enum AppTheme {
 
 #if os(iOS)
     private static func configureNavigationBars() {
+        // Starting with iOS 26, SwiftUI and UIKit provide the system Liquid Glass
+        // appearance. Avoid overriding it globally so future system refinements,
+        // including iOS 27, apply automatically.
+        guard #unavailable(iOS 26.0) else { return }
+
         let appearance = UINavigationBarAppearance()
         appearance.configureWithTransparentBackground()
         appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)

@@ -107,14 +107,11 @@ struct DepartmentDetailView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack(alignment: .top, spacing: 12) {
                                     if let photo = emp.photoLink, let url = URL(string: photo.replacingOccurrences(of: "http://", with: "https://").replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")) {
-                                        AsyncImage(url: url) { phase in
-                                            if let image = phase.image {
-                                                image.resizable().scaledToFill()
-                                            } else if phase.error != nil {
-                                                Image(systemName: "person.circle.fill").foregroundStyle(.gray)
-                                            } else {
-                                                ProgressView()
-                                            }
+                                        CachedAsyncImage(url: url, maxPixelSize: 160) { image in
+                                            image.resizable().scaledToFill()
+                                        } placeholder: {
+                                            Image(systemName: "person.circle.fill")
+                                                .foregroundStyle(.gray)
                                         }
                                         .frame(width: 48, height: 48)
                                         .clipShape(Circle())

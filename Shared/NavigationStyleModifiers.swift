@@ -7,14 +7,33 @@ import SwiftUI
 /// Adds a glass-like background to the navigation bar and a subtle top fade
 /// to soften the transition when content scrolls underneath.
 private struct GlassNavigationBarModifier: ViewModifier {
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
-            .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .overlay(alignment: .top) {
-                NavigationTopFade()
-                    .allowsHitTesting(false)
-            }
+        if #available(iOS 26.0, *) {
+            // Let the system render and evolve Liquid Glass navigation chrome.
+            content
+        } else {
+            content
+                .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+                .toolbarBackground(.visible, for: .navigationBar)
+                .overlay(alignment: .top) {
+                    NavigationTopFade()
+                        .allowsHitTesting(false)
+                }
+        }
+    }
+}
+
+private struct AutomaticTabBarAppearanceModifier: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content
+        } else {
+            content
+                .toolbarBackground(.regularMaterial, for: .tabBar)
+                .toolbarBackground(.visible, for: .tabBar)
+        }
     }
 }
 
@@ -73,6 +92,10 @@ extension View {
 
     func glassScrollPadding(top: CGFloat = 28) -> some View {
         modifier(GlassScrollPaddingModifier(top: top))
+    }
+
+    func automaticTabBarAppearance() -> some View {
+        modifier(AutomaticTabBarAppearanceModifier())
     }
 
     func transparentInlineNavigationBar() -> some View {

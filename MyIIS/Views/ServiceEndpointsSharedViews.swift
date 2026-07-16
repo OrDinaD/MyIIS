@@ -61,7 +61,7 @@ struct ServiceJSONItemCard: View {
             }
 
             VStack(spacing: 6) {
-                ForEach(Array(item.detailPairs.prefix(5).enumerated()), id: \.offset) { _, pair in
+                ForEach(Array(item.detailPairs.prefix(5)), id: \.0) { pair in
                     HStack(alignment: .top, spacing: 8) {
                         Text(localizedJSONKey(pair.0))
                             .font(.caption.weight(.medium))
@@ -130,7 +130,7 @@ struct PenaltyItemCard: View {
             
             if !filteredPairs.isEmpty {
                 VStack(spacing: 6) {
-                    ForEach(Array(filteredPairs.enumerated()), id: \.offset) { _, pair in
+                    ForEach(filteredPairs, id: \.0) { pair in
                         HStack(alignment: .top, spacing: 8) {
                             Text(localizedJSONKey(pair.0))
                                 .font(.caption.weight(.medium))

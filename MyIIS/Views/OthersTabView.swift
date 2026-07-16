@@ -105,13 +105,7 @@ struct OthersTabView: View {
     }
 
     private var shouldUseDesktopSplitView: Bool {
-        if ProcessInfo.processInfo.isiOSAppOnMac {
-            return true
-        }
-        guard UIDevice.current.userInterfaceIdiom == .pad else {
-            return false
-        }
-        return horizontalSizeClass == .regular
+        horizontalSizeClass == .regular
     }
 
     var body: some View {
@@ -137,7 +131,6 @@ private extension OthersTabView {
             .listStyle(.insetGrouped)
             .navigationTitle(NSLocalizedString("tab_services", comment: ""))
             .navigationBarTitleDisplayMode(.large)
-            .hiddenNavigationBarBackground()
             .navigationDestination(for: AppSection.self) { section in
                 switch section {
                 case .gradebook: GradebookView()

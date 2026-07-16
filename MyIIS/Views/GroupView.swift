@@ -179,7 +179,7 @@ struct GroupView: View {
                         .padding(.vertical, 14)
                 } else {
                     LazyVStack(spacing: 8) {
-                        ForEach(Array(viewModel.students.enumerated()), id: \.offset) { index, student in
+                        ForEach(Array(viewModel.students.enumerated()), id: \.element.id) { index, student in
                             studentRow(index: index + 1, student: student)
                         }
                     }

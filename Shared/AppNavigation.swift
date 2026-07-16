@@ -28,6 +28,29 @@ enum AppSection: String, CaseIterable, Hashable {
     case directory
 }
 
+/// Transfers navigation requests from the App Intents extension to the app
+/// without relying on shared in-process state.
+enum AppIntentNavigationStore {
+    private static let pendingSectionKey = "app_intent_pending_section"
+
+    private static var defaults: UserDefaults? {
+        UserDefaults(suiteName: AppGroup.identifier)
+    }
+
+    static func stage(_ section: AppSection) {
+        defaults?.set(section.rawValue, forKey: pendingSectionKey)
+    }
+
+    static func takePendingSection() -> AppSection? {
+        guard let rawValue = defaults?.string(forKey: pendingSectionKey) else {
+            return nil
+        }
+
+        defaults?.removeObject(forKey: pendingSectionKey)
+        return AppSection(rawValue: rawValue)
+    }
+}
+
 @MainActor
 class AppRouter: ObservableObject {
     @Published var selectedTab: AppTab

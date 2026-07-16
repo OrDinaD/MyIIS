@@ -51,7 +51,7 @@ struct LibraryServiceView: View {
                         ServiceEmptyState(text: NSLocalizedString("services_library_books_empty", comment: ""))
                     } else {
                         VStack(spacing: 10) {
-                            ForEach(Array(viewModel.books.enumerated()), id: \.offset) { _, item in
+                            ForEach(viewModel.books, id: \.stableID) { item in
                                 ServiceJSONItemCard(item: item)
                             }
                         }
@@ -279,7 +279,7 @@ struct AnnouncementsServiceView: View {
                         ServiceEmptyState(text: NSLocalizedString("services_announcements_empty", comment: ""))
                     } else {
                         VStack(spacing: 10) {
-                            ForEach(Array(viewModel.items.enumerated()), id: \.offset) { _, item in
+                            ForEach(viewModel.items, id: \.stableID) { item in
                                 ServiceJSONItemCard(item: item)
                             }
                         }
@@ -407,7 +407,7 @@ struct PenaltiesServiceView: View {
                         ServiceEmptyState(text: NSLocalizedString("services_penalties_empty", comment: ""))
                     } else {
                         VStack(spacing: 10) {
-                            ForEach(Array(viewModel.items.enumerated()), id: \.offset) { _, item in
+                            ForEach(viewModel.items, id: \.stableID) { item in
                                 PenaltyItemCard(item: item)
                             }
                         }

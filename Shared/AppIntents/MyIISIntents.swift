@@ -21,21 +21,21 @@ enum SectionAppEnum: String, AppEnum {
     case library
     case schedule
 
-    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Раздел MyIIS"
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "intent_section_type"
 
     static let caseDisplayRepresentations: [SectionAppEnum: DisplayRepresentation] = [
-        .profile: "Профиль",
-        .attendance: "Пропуски",
-        .rating: "Рейтинг",
-        .services: "Сервисы",
-        .gradebook: "Зачётка",
-        .study: "Учёба",
-        .diploma: "Диплом",
-        .group: "Группа",
-        .headman: "Староста",
-        .dormitory: "Общежитие",
-        .library: "Библиотека",
-        .schedule: "Расписание"
+        .profile: "intent_section_profile",
+        .attendance: "intent_section_attendance",
+        .rating: "intent_section_rating",
+        .services: "intent_section_services",
+        .gradebook: "intent_section_gradebook",
+        .study: "intent_section_study",
+        .diploma: "intent_section_diploma",
+        .group: "intent_section_group",
+        .headman: "intent_section_headman",
+        .dormitory: "intent_section_dormitory",
+        .library: "intent_section_library",
+        .schedule: "intent_section_schedule"
     ]
 
     var appSection: AppSection {
@@ -59,22 +59,22 @@ enum SectionAppEnum: String, AppEnum {
 // MARK: - Intents
 
 struct OpenMyIISSectionIntent: AppIntent {
-    static let title: LocalizedStringResource = "Открыть раздел в MyIIS"
+    static let title: LocalizedStringResource = "intent_open_section_title"
     static let openAppWhenRun = true
 
-    @Parameter(title: "Раздел")
+    @Parameter(title: "intent_section_parameter")
     var section: SectionAppEnum
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        // This will be handled in the app target
-        AppRouter.shared.navigate(to: section.appSection)
+        AppIntentNavigationStore.stage(section.appSection)
         return .result()
     }
 }
 
 struct ShowAverageScoreIntent: AppIntent {
-    static let title: LocalizedStringResource = "Показать средний балл"
+    static let title: LocalizedStringResource = "intent_average_title"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
@@ -82,20 +82,24 @@ struct ShowAverageScoreIntent: AppIntent {
 
         guard let score = data?.averageScore else {
             return .result(
-                value: "Не удалось получить средний балл.",
-                dialog: "Не удалось получить средний балл. Сначала откройте MyIIS и обновите данные."
+                value: NSLocalizedString("intent_average_unavailable_short", comment: ""),
+                dialog: IntentDialog(stringLiteral: NSLocalizedString("intent_average_unavailable_dialog", comment: ""))
             )
         }
 
         let formattedScore = String(format: "%.2f", score).replacingOccurrences(of: ".", with: ",")
-        let response = "Средний балл — \(formattedScore)"
+        let response = String(
+            format: NSLocalizedString("intent_average_response_format", comment: ""),
+            formattedScore
+        )
 
         return .result(value: response, dialog: IntentDialog(stringLiteral: response))
     }
 }
 
 struct ShowAbsencesIntent: AppIntent {
-    static let title: LocalizedStringResource = "Показать пропуски"
+    static let title: LocalizedStringResource = "intent_absences_title"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
@@ -103,18 +107,22 @@ struct ShowAbsencesIntent: AppIntent {
 
         guard let hours = data?.unexcusedAbsences else {
             return .result(
-                value: "Не удалось получить данные о пропусках.",
-                dialog: "Не удалось получить данные о пропусках. Сначала откройте MyIIS и обновите данные."
+                value: NSLocalizedString("intent_absences_unavailable_short", comment: ""),
+                dialog: IntentDialog(stringLiteral: NSLocalizedString("intent_absences_unavailable_dialog", comment: ""))
             )
         }
 
-        let response = "Пропуски по неуважительной причине — \(hours) ч."
+        let response = String(
+            format: NSLocalizedString("intent_absences_response_format", comment: ""),
+            hours
+        )
         return .result(value: response, dialog: IntentDialog(stringLiteral: response))
     }
 }
 
 struct ShowGroupIntent: AppIntent {
-    static let title: LocalizedStringResource = "Показать мою группу"
+    static let title: LocalizedStringResource = "intent_group_title"
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
     @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
@@ -122,12 +130,15 @@ struct ShowGroupIntent: AppIntent {
 
         guard let group = data?.userGroup else {
             return .result(
-                value: "Номер группы не найден.",
-                dialog: "Номер группы не найден. Пожалуйста, авторизуйтесь в приложении."
+                value: NSLocalizedString("intent_group_unavailable_short", comment: ""),
+                dialog: IntentDialog(stringLiteral: NSLocalizedString("intent_group_unavailable_dialog", comment: ""))
             )
         }
 
-        let response = "Ваша группа — \(group)"
+        let response = String(
+            format: NSLocalizedString("intent_group_response_format", comment: ""),
+            group
+        )
         return .result(value: response, dialog: IntentDialog(stringLiteral: response))
     }
 }

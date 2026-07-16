@@ -15,16 +15,12 @@ struct EmployeeProfileView: View {
             Section {
                 HStack(alignment: .top, spacing: 16) {
                     if let photo = employee.photoLink, let url = URL(string: photo.replacingOccurrences(of: "http://", with: "https://").replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")) {
-                        AsyncImage(url: url) { phase in
-                            if let image = phase.image {
-                                image.resizable().scaledToFill()
-                            } else if phase.error != nil {
-                                Image(systemName: "person.circle.fill")
-                                    .resizable()
-                                    .foregroundStyle(.gray)
-                            } else {
-                                ProgressView()
-                            }
+                        CachedAsyncImage(url: url, maxPixelSize: 240) { image in
+                            image.resizable().scaledToFill()
+                        } placeholder: {
+                            Image(systemName: "person.circle.fill")
+                                .resizable()
+                                .foregroundStyle(.gray)
                         }
                         .frame(width: 80, height: 80)
                         .clipShape(Circle())

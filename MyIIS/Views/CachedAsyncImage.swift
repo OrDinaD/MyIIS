@@ -11,8 +11,20 @@ private final class CachedAsyncImageMemoryCache {
     }()
 }
 
+private struct SendableImage: @unchecked Sendable {
+    let value: UIImage
+}
+
+nonisolated private func downsampleImage(from data: Data, maxPixelSize: CGFloat) async -> UIImage? {
+    let box = await Task.detached(priority: .userInitiated) {
+        ImageDownsampler.image(from: data, maxPixelSize: maxPixelSize)
+            .map(SendableImage.init(value:))
+    }.value
+    return box?.value
+}
+
 enum ImageDownsampler {
-    static func image(from data: Data, maxPixelSize: CGFloat) -> UIImage? {
+    nonisolated static func image(from data: Data, maxPixelSize: CGFloat) -> UIImage? {
         let sourceOptions = [kCGImageSourceShouldCache: false] as CFDictionary
         guard let source = CGImageSourceCreateWithData(data as CFData, sourceOptions) else {
             return nil
@@ -82,7 +94,8 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
         let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
 
         if let cached = URLCache.shared.cachedResponse(for: request),
-           let image = ImageDownsampler.image(from: cached.data, maxPixelSize: maxPixelSize) {
+           let image = await downsampleImage(from: cached.data, maxPixelSize: maxPixelSize) {
+            guard !Task.isCancelled else { return }
             CachedAsyncImageMemoryCache.shared.setObject(image, forKey: cacheKey, cost: image.estimatedMemoryCost)
             withTransaction(transaction) {
                 uiImage = image
@@ -93,7 +106,8 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard !Task.isCancelled,
-                  let image = ImageDownsampler.image(from: data, maxPixelSize: maxPixelSize) else { return }
+                  let image = await downsampleImage(from: data, maxPixelSize: maxPixelSize),
+                  !Task.isCancelled else { return }
             CachedAsyncImageMemoryCache.shared.setObject(image, forKey: cacheKey, cost: image.estimatedMemoryCost)
             URLCache.shared.storeCachedResponse(CachedURLResponse(response: response, data: data), for: request)
             withTransaction(transaction) {

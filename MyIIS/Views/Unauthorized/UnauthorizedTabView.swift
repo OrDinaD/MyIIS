@@ -28,17 +28,12 @@ struct UnauthorizedTabView: View {
     @State private var selectedTab: UnauthorizedAppTab = .home
 
     var body: some View {
-        if #available(iOS 18.0, *), shouldUseSidebarAdaptableStyle {
+        if #available(iOS 18.0, *) {
             baseTabView
                 .tabViewStyle(.sidebarAdaptable)
         } else {
             baseTabView
         }
-    }
-
-    private var shouldUseSidebarAdaptableStyle: Bool {
-        let idiom = UIDevice.current.userInterfaceIdiom
-        return idiom == .pad || idiom == .mac || ProcessInfo.processInfo.isiOSAppOnMac
     }
 
     private var baseTabView: some View {
@@ -55,8 +50,7 @@ struct UnauthorizedTabView: View {
                 .tag(UnauthorizedAppTab.services)
                 .tabItem { Label(UnauthorizedAppTab.services.title, systemImage: UnauthorizedAppTab.services.icon) }
         }
-        .toolbarBackground(.regularMaterial, for: .tabBar)
-        .toolbarBackground(.visible, for: .tabBar)
+        .automaticTabBarAppearance()
         .appBackground()
         .reduceMotionSensitive()
     }

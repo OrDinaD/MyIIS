@@ -415,3 +415,32 @@
 "notifications_mark_read_hint" = "Mark as read";
 "notifications_no_unread" = "No unread notifications";
 "notifications_unread_count_format" = "Unread: %d";
+
+/* App Intents */
+"intent_section_type" = "MyIIS Section";
+"intent_section_profile" = "Profile";
+"intent_section_attendance" = "Absences";
+"intent_section_rating" = "Rating";
+"intent_section_services" = "Services";
+"intent_section_gradebook" = "Gradebook";
+"intent_section_study" = "Study";
+"intent_section_diploma" = "Diploma";
+"intent_section_group" = "Group";
+"intent_section_headman" = "Group Representative";
+"intent_section_dormitory" = "Dormitory";
+"intent_section_library" = "Library";
+"intent_section_schedule" = "Schedule";
+"intent_open_section_title" = "Open a MyIIS Section";
+"intent_section_parameter" = "Section";
+"intent_average_title" = "Show Average Score";
+"intent_average_unavailable_short" = "The average score isn't available.";
+"intent_average_unavailable_dialog" = "The average score isn't available. Open MyIIS and refresh your data first.";
+"intent_average_response_format" = "Your average score is %@";
+"intent_absences_title" = "Show Absences";
+"intent_absences_unavailable_short" = "Absence data isn't available.";
+"intent_absences_unavailable_dialog" = "Absence data isn't available. Open MyIIS and refresh your data first.";
+"intent_absences_response_format" = "Unexcused absences: %d hours";
+"intent_group_title" = "Show My Group";
+"intent_group_unavailable_short" = "Your group wasn't found.";
+"intent_group_unavailable_dialog" = "Your group wasn't found. Sign in to MyIIS first.";
+"intent_group_response_format" = "Your group is %@";
