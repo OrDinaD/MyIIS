@@ -313,10 +313,34 @@ private struct DormitoryProgressCard: View {
         }
     }
 
+    private var statusIcon: String {
+        switch application.presentationState {
+        case .waiting:
+            return "doc.text.fill"
+        case .documentsAccepted:
+            return "checkmark.seal.fill"
+        case .readyToSettle:
+            return "key.horizontal.fill"
+        case .settled:
+            return "house.fill"
+        case .rejected:
+            return "exclamationmark.triangle.fill"
+        case .evicted:
+            return "door.left.hand.open"
+        case .unknown:
+            return "clock.fill"
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: statusIcon)
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.blue)
+                    .frame(width: 32)
+
+                VStack(alignment: .leading, spacing: 3) {
                     Text(dormitoryLocalized("dormitory_current_application"))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -325,10 +349,6 @@ private struct DormitoryProgressCard: View {
                         .font(.title2.weight(.bold))
                         .foregroundStyle(.primary)
                 }
-
-                Spacer(minLength: 8)
-
-                DormitoryStatusTag(status: application.status)
             }
 
             Text(description)
@@ -336,20 +356,19 @@ private struct DormitoryProgressCard: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
+            DormitoryApplicationProgress(state: application.presentationState)
+
             if let queueNumber = application.numberInQueue {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("№\(queueNumber)")
-                        .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    Text(dormitoryLocalized("dormitory_queue_position"))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityElement(children: .combine)
+                Label(
+                    String(
+                        format: dormitoryLocalized("dormitory_queue_compact"),
+                        queueNumber
+                    ),
+                    systemImage: "person.line.dotted.person.fill"
+                )
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(.blue)
             }
-
-            DormitoryApplicationTimeline(currentStep: application.presentationState.progressStep)
-
-            DormitoryApplicationDates(application: application)
 
             DormitoryApplicationActions(
                 application: application,
@@ -359,9 +378,9 @@ private struct DormitoryProgressCard: View {
                 onDownloadApplicationForm: onDownloadApplicationForm
             )
 
-            DormitoryTechnicalApplicationLabel(application: application)
+            DormitoryApplicationMetadata(application: application)
         }
-        .padding(18)
+        .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
@@ -374,97 +393,105 @@ private struct DormitoryProgressCard: View {
     }
 }
 
-private struct DormitoryApplicationTimeline: View {
-    let currentStep: Int
+private struct DormitoryApplicationProgress: View {
+    let state: DormitoryPresentationState
 
-    private let stages = [
-        ("doc.text.fill", "dormitory_stage_submitted"),
-        ("checkmark.seal.fill", "dormitory_stage_documents"),
-        ("key.horizontal.fill", "dormitory_stage_place"),
-        ("house.fill", "dormitory_stage_settled")
+    private let stageKeys = [
+        "dormitory_stage_submitted",
+        "dormitory_stage_documents",
+        "dormitory_stage_place",
+        "dormitory_stage_settled"
     ]
 
+    private var step: Int {
+        state.progressStep
+    }
+
     var body: some View {
-        ZStack(alignment: .top) {
-            Capsule()
-                .fill(Color.secondary.opacity(0.18))
-                .frame(height: 3)
-                .padding(.horizontal, 32)
-                .padding(.top, 17)
+        VStack(spacing: 8) {
+            ProgressView(value: Double(step + 1), total: Double(stageKeys.count))
+                .tint(.blue)
 
-            HStack(alignment: .top, spacing: 0) {
-                ForEach(Array(stages.enumerated()), id: \.offset) { index, stage in
-                    VStack(spacing: 8) {
-                        Image(systemName: stage.0)
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(index <= currentStep ? Color.white : Color.secondary)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                index <= currentStep ? Color.blue : Color.secondary.opacity(0.14),
-                                in: Circle()
-                            )
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(
+                    String(
+                        format: dormitoryLocalized("dormitory_progress_step"),
+                        step + 1,
+                        stageKeys.count
+                    )
+                )
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
 
-                        Text(dormitoryLocalized(stage.1))
-                            .font(.caption2)
-                            .foregroundStyle(index <= currentStep ? .primary : .secondary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.75)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .accessibilityElement(children: .combine)
+                Spacer(minLength: 8)
+
+                if step + 1 < stageKeys.count {
+                    Text(
+                        String(
+                            format: dormitoryLocalized("dormitory_next_step"),
+                            dormitoryLocalized(stageKeys[step + 1])
+                        )
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
                 }
             }
         }
+        .accessibilityElement(children: .combine)
     }
 }
 
-private struct DormitoryApplicationDates: View {
+private struct DormitoryApplicationMetadata: View {
     let application: DormitoryQueueApplication
 
-    var body: some View {
-        VStack(spacing: 10) {
-            if let applicationDate = application.applicationDate {
-                DormitoryInfoRow(
-                    title: dormitoryLocalized("dormitory_label_app_date"),
-                    value: dormitoryDateFormatter.string(from: applicationDate)
-                )
-            }
-
-            if let acceptedDate = application.acceptedDate {
-                DormitoryInfoRow(
-                    title: dormitoryLocalized("dormitory_label_accepted_date"),
-                    value: dormitoryDateFormatter.string(from: acceptedDate)
-                )
-            }
-
-            if let settledDate = application.settledDate {
-                DormitoryInfoRow(
-                    title: dormitoryLocalized("dormitory_label_settle_date"),
-                    value: dormitoryDateFormatter.string(from: settledDate)
-                )
-            }
+    private var relevantDate: Date? {
+        switch application.presentationState {
+        case .waiting:
+            return application.applicationDate
+        case .documentsAccepted, .readyToSettle:
+            return application.acceptedDate ?? application.applicationDate
+        case .settled:
+            return application.settledDate ?? application.acceptedDate
+        case .rejected, .evicted, .unknown:
+            return application.presentationDate
         }
     }
-}
 
-private struct DormitoryInfoRow: View {
-    let title: String
-    let value: String
+    private var dateFormatKey: String {
+        switch application.presentationState {
+        case .waiting:
+            return "dormitory_compact_submitted"
+        case .documentsAccepted:
+            return "dormitory_compact_accepted"
+        case .readyToSettle:
+            return "dormitory_compact_ready"
+        case .settled:
+            return "dormitory_compact_settled"
+        case .rejected, .evicted, .unknown:
+            return "dormitory_compact_updated"
+        }
+    }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if let relevantDate {
+                Label(
+                    String(
+                        format: dormitoryLocalized(dateFormatKey),
+                        dormitoryDateFormatter.string(from: relevantDate)
+                    ),
+                    systemImage: "calendar"
+                )
+                .lineLimit(1)
+            }
 
-            Spacer(minLength: 12)
+            Spacer(minLength: 8)
 
-            Text(value)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.trailing)
+            DormitoryTechnicalApplicationLabel(application: application)
         }
+        .font(.caption)
+        .foregroundStyle(.tertiary)
         .accessibilityElement(children: .combine)
     }
 }

@@ -283,15 +283,29 @@ private struct PrivilegesSection: View {
     let records: [DormitoryPrivilegeRecord]
     @State private var isExpanded = false
 
+    private var displayedRecords: [DormitoryPrivilegeRecord] {
+        Dictionary(grouping: records, by: \.year)
+            .compactMap { _, recordsForYear in
+                recordsForYear.min {
+                    if $0.displayPriority != $1.displayPriority {
+                        return $0.displayPriority < $1.displayPriority
+                    }
+                    return $0.dormitoryPrivilegeCategoryName < $1.dormitoryPrivilegeCategoryName
+                }
+            }
+            .sorted { $0.year > $1.year }
+    }
+
     @ViewBuilder
     var body: some View {
-        if let currentRecord = records.first {
+        if let currentRecord = displayedRecords.first {
             DisclosureGroup(isExpanded: $isExpanded) {
                 VStack(spacing: 0) {
-                    ForEach(Array(records.enumerated()), id: \.element.id) { index, record in
+                    ForEach(Array(displayedRecords.enumerated()), id: \.element.id) { index, record in
                         HStack(spacing: 12) {
-                            Text(String(record.year))
+                            Text(verbatim: String(record.year))
                                 .font(.subheadline.weight(.semibold))
+                                .monospacedDigit()
                                 .foregroundStyle(.secondary)
                                 .frame(width: 48, alignment: .leading)
 
@@ -302,14 +316,14 @@ private struct PrivilegesSection: View {
                         }
                         .padding(.vertical, 10)
 
-                        if index < records.count - 1 {
+                        if index < displayedRecords.count - 1 {
                             Divider()
                         }
                     }
                 }
                 .padding(.top, 8)
             } label: {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Label(
                         NSLocalizedString("dormitory_section_privileges", comment: ""),
                         systemImage: "star.circle.fill"
@@ -317,9 +331,14 @@ private struct PrivilegesSection: View {
                     .font(.headline)
                     .foregroundStyle(.primary)
 
-                    Text("\(currentRecord.year) · \(currentRecord.dormitoryPrivilegeCategoryName)")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 5) {
+                        Text(verbatim: String(currentRecord.year))
+                            .monospacedDigit()
+                        Text("·")
+                        Text(currentRecord.dormitoryPrivilegeCategoryName)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
                 }
             }
             .tint(.secondary)
@@ -329,6 +348,25 @@ private struct PrivilegesSection: View {
                     .fill(Color(.secondarySystemGroupedBackground))
             )
         }
+    }
+}
+
+private extension DormitoryPrivilegeRecord {
+    var displayPriority: Int {
+        let normalized = dormitoryPrivilegeCategoryName
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        if normalized.contains("внеочеред") {
+            return 0
+        }
+        if normalized.contains("первоочеред") {
+            return 1
+        }
+        if normalized.contains("общ") {
+            return 2
+        }
+        return 3
     }
 }
 
@@ -370,5 +408,35 @@ extension DormitoryViewModel {
     static var previewVM: DormitoryViewModel {
         DormitoryViewModel.preview
     }
+}
+
+#Preview("Приоритетная льгота") {
+    VStack {
+        PrivilegesSection(
+            records: [
+                DormitoryPrivilegeRecord(
+                    id: 1,
+                    year: 2026,
+                    dormitoryPrivilegeCategoryId: 6,
+                    dormitoryPrivilegeCategoryName: "Общая очередь"
+                ),
+                DormitoryPrivilegeRecord(
+                    id: 2,
+                    year: 2026,
+                    dormitoryPrivilegeCategoryId: 2,
+                    dormitoryPrivilegeCategoryName: "Первоочередное право"
+                ),
+                DormitoryPrivilegeRecord(
+                    id: 3,
+                    year: 2025,
+                    dormitoryPrivilegeCategoryId: 6,
+                    dormitoryPrivilegeCategoryName: "Общая очередь"
+                )
+            ]
+        )
+        Spacer()
+    }
+    .padding()
+    .background(Color(.systemGroupedBackground))
 }
 #endif

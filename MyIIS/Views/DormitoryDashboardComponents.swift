@@ -320,12 +320,12 @@ extension View {
     }
 }
 
-#Preview("Заявка обрабатывается") {
+#Preview("Документы приняты") {
     NavigationStack {
         ScrollView {
             DormitoryApplicationsDashboard(
                 announcement: nil,
-                applications: Array(DormitoryQueueApplication.preview.prefix(1)),
+                applications: [.documentsAcceptedPreview],
                 canCreateApplication: false,
                 isSubmittingApplication: false,
                 isDownloadingFile: false,
@@ -339,5 +339,56 @@ extension View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Общежитие")
     }
+}
+
+#Preview("Место выделено") {
+    NavigationStack {
+        ScrollView {
+            DormitoryApplicationsDashboard(
+                announcement: nil,
+                applications: [.readyToSettlePreview],
+                canCreateApplication: false,
+                isSubmittingApplication: false,
+                isDownloadingFile: false,
+                onCreateApplication: {},
+                onOpenDocument: { _ in },
+                onEditApplication: { _ in },
+                onDownloadApplicationForm: { _ in }
+            )
+            .padding()
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("Общежитие")
+    }
+}
+
+private extension DormitoryQueueApplication {
+    static let documentsAcceptedPreview = DormitoryQueueApplication(
+        id: 40_001,
+        acceptedDate: DormitoryDateParser.parse("2026-07-16T10:00:00"),
+        applicationDate: DormitoryDateParser.parse("2026-07-16T09:00:00"),
+        settledDate: nil,
+        status: DormitoryApplicationStatus.documentsAccepted.rawValue,
+        number: 1,
+        numberInQueue: nil,
+        docReference: nil,
+        docContent: nil,
+        rejectionReason: nil,
+        roomInfo: nil
+    )
+
+    static let readyToSettlePreview = DormitoryQueueApplication(
+        id: 40_002,
+        acceptedDate: DormitoryDateParser.parse("2026-07-16T10:00:00"),
+        applicationDate: DormitoryDateParser.parse("2026-07-16T09:00:00"),
+        settledDate: nil,
+        status: DormitoryApplicationStatus.readyToSettle.rawValue,
+        number: 1,
+        numberInQueue: nil,
+        docReference: nil,
+        docContent: nil,
+        rejectionReason: nil,
+        roomInfo: "1302-а, Общ.4"
+    )
 }
 #endif
