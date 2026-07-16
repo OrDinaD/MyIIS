@@ -10,7 +10,7 @@ final class DormitorySupportViewsTests: XCTestCase {
         XCTAssertEqual(tag1.tint, .green)
 
         let tag2 = DormitoryStatusTag(status: " выселен ")
-        XCTAssertEqual(tag2.tint, .orange)
+        XCTAssertEqual(tag2.tint, .gray)
 
         let tag3 = DormitoryStatusTag(status: "Отказано")
         XCTAssertEqual(tag3.tint, .red)
@@ -20,6 +20,40 @@ final class DormitorySupportViewsTests: XCTestCase {
 
         let tag5 = DormitoryStatusTag(status: "В обработке")
         XCTAssertEqual(tag5.tint, .blue)
+    }
+
+    func testDormitoryPlacementParsesRoomAndDormitory() {
+        XCTAssertEqual(
+            DormitoryPlacement.parse("1302-а, Общ.4"),
+            DormitoryPlacement(room: "1302-а", dormitory: "4")
+        )
+        XCTAssertEqual(
+            DormitoryPlacement.parse("1211-а, Общежитие №5"),
+            DormitoryPlacement(room: "1211-а", dormitory: "5")
+        )
+    }
+
+    func testDormitoryPlacementPreservesUnknownFormat() {
+        XCTAssertEqual(
+            DormitoryPlacement.parse("Блок 12, корпус А"),
+            DormitoryPlacement(room: "Блок 12, корпус А", dormitory: nil)
+        )
+        XCTAssertEqual(
+            DormitoryPlacement.parse("Комната уточняется"),
+            DormitoryPlacement(room: "Комната уточняется", dormitory: nil)
+        )
+        XCTAssertNil(DormitoryPlacement.parse("  "))
+    }
+
+    func testReadyToSettleIsNotTreatedAsSettled() {
+        XCTAssertEqual(
+            DormitoryPresentationState(status: "К заселению"),
+            .readyToSettle
+        )
+        XCTAssertEqual(
+            DormitoryPresentationState(status: "Заселён"),
+            .settled
+        )
     }
 
     func testDormitoryAnnouncementHasStableIdentity() {
