@@ -15,6 +15,10 @@
 		F51DCE342FB0E1D900EA90E3 /* bright.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2E2FB0E1D900EA90E3 /* bright.icon */; };
 		F51DCE352FB0E1D900EA90E3 /* KSIS.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */; };
 		F51DCE362FB0E1D900EA90E3 /* Default.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE302FB0E1D900EA90E3 /* Default.icon */; };
+		F52AB8C93008EF7A002D379E /* MyIIS Watch App Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = F52AB8BF3008EF79002D379E /* MyIIS Watch App Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F52AB8D43008F115002D379E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F52AB8D33008F114002D379E /* WidgetKit.framework */; };
+		F52AB8D63008F115002D379E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F52AB8D53008F115002D379E /* SwiftUI.framework */; };
+		F52AB91E300917E1002D379E /* MyIIS Watch WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F58E2F0D2FD00E66002BCF03 /* Messages.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F58E2F0C2FD00E66002BCF03 /* Messages.framework */; };
 		F58E2F192FD00E68002BCF03 /* MyIISMessages.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F5A5EE102F1C801900D2B7A1 /* MyIISWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -27,6 +31,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = F51DCBA72FB09EC400EA90E3;
 			remoteInfo = MyIISIntents;
+		};
+		F52AB8C73008EF7A002D379E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F52AB8BE3008EF79002D379E;
+			remoteInfo = "MyIIS Watch App Watch App";
+		};
+		F52AB91F300917E1002D379E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F59436C72E9CF9DA00A3E835 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F52AB8D13008F114002D379E;
+			remoteInfo = "MyIIS Watch WidgetExtension";
 		};
 		F58E2F172FD00E68002BCF03 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -70,6 +88,28 @@
 			name = "Embed ExtensionKit Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F52AB8CA3008EF7A002D379E /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				F52AB8C93008EF7A002D379E /* MyIIS Watch App Watch App.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F52AB921300917E1002D379E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F52AB91E300917E1002D379E /* MyIIS Watch WidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F5A5EE112F1C801900D2B7A1 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -93,6 +133,11 @@
 		F51DCE2E2FB0E1D900EA90E3 /* bright.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = bright.icon; sourceTree = "<group>"; };
 		F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = KSIS.icon; sourceTree = "<group>"; };
 		F51DCE302FB0E1D900EA90E3 /* Default.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = Default.icon; sourceTree = "<group>"; };
+		F52AB8BF3008EF79002D379E /* MyIIS Watch App Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MyIIS Watch App Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "MyIIS Watch WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F52AB8D33008F114002D379E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		F52AB8D53008F115002D379E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		F52AB91D300916B2002D379E /* MyIIS Watch WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "MyIIS Watch WidgetExtension.entitlements"; sourceTree = "<group>"; };
 		F56FE4ED2FD2DD45004E8300 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F58E2F0C2FD00E66002BCF03 /* Messages.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Messages.framework; path = System/Library/Frameworks/Messages.framework; sourceTree = SDKROOT; };
@@ -110,6 +155,13 @@
 			);
 			target = F51DCBA72FB09EC400EA90E3 /* MyIISIntents */;
 		};
+		F52AB8DF3008F115002D379E /* Exceptions for "MyIIS Watch Widget" folder in "MyIIS Watch WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = F52AB8D13008F114002D379E /* MyIIS Watch WidgetExtension */;
+		};
 		F58E2F1C2FD00E68002BCF03 /* Exceptions for "MyIISMessages" folder in "MyIISMessages" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -126,6 +178,19 @@
 				F51DCBB22FB09EC400EA90E3 /* Exceptions for "MyIISIntents" folder in "MyIISIntents" target */,
 			);
 			path = MyIISIntents;
+			sourceTree = "<group>";
+		};
+		F52AB8C03008EF79002D379E /* MyIIS Watch App Watch App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "MyIIS Watch App Watch App";
+			sourceTree = "<group>";
+		};
+		F52AB8D73008F115002D379E /* MyIIS Watch Widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				F52AB8DF3008F115002D379E /* Exceptions for "MyIIS Watch Widget" folder in "MyIIS Watch WidgetExtension" target */,
+			);
+			path = "MyIIS Watch Widget";
 			sourceTree = "<group>";
 		};
 		F58E2F0E2FD00E66002BCF03 /* MyIISMessages */ = {
@@ -168,6 +233,22 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F52AB8BC3008EF79002D379E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F52AB8CF3008F114002D379E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F52AB8D63008F115002D379E /* SwiftUI.framework in Frameworks */,
+				F52AB8D43008F115002D379E /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -227,6 +308,8 @@
 			isa = PBXGroup;
 			children = (
 				F58E2F0C2FD00E66002BCF03 /* Messages.framework */,
+				F52AB8D33008F114002D379E /* WidgetKit.framework */,
+				F52AB8D53008F115002D379E /* SwiftUI.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -234,6 +317,7 @@
 		F59436C62E9CF9DA00A3E835 = {
 			isa = PBXGroup;
 			children = (
+				F52AB91D300916B2002D379E /* MyIIS Watch WidgetExtension.entitlements */,
 				F59436D12E9CF9DA00A3E835 /* MyIIS */,
 				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
 				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
@@ -241,6 +325,8 @@
 				F5B1AA102FC70D9D00A56D01 /* MyIISTests */,
 				F5EE36312FB1ED94004B7BD8 /* MyIISUITests */,
 				F58E2F0E2FD00E66002BCF03 /* MyIISMessages */,
+				F52AB8C03008EF79002D379E /* MyIIS Watch App Watch App */,
+				F52AB8D73008F115002D379E /* MyIIS Watch Widget */,
 				F58E2F0B2FD00E66002BCF03 /* Frameworks */,
 				F59436D02E9CF9DA00A3E835 /* Products */,
 				F51DCE2A2FB0D4BB00EA90E3 /* logos */,
@@ -258,6 +344,8 @@
 				F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */,
 				F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */,
 				F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */,
+				F52AB8BF3008EF79002D379E /* MyIIS Watch App Watch App.app */,
+				F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -287,6 +375,52 @@
 			productName = MyIISIntents;
 			productReference = F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */;
 			productType = "com.apple.product-type.extensionkit-extension";
+		};
+		F52AB8BE3008EF79002D379E /* MyIIS Watch App Watch App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F52AB8CD3008EF7A002D379E /* Build configuration list for PBXNativeTarget "MyIIS Watch App Watch App" */;
+			buildPhases = (
+				F52AB8BB3008EF79002D379E /* Sources */,
+				F52AB8BC3008EF79002D379E /* Frameworks */,
+				F52AB8BD3008EF79002D379E /* Resources */,
+				F52AB921300917E1002D379E /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F52AB920300917E1002D379E /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F52AB8C03008EF79002D379E /* MyIIS Watch App Watch App */,
+			);
+			name = "MyIIS Watch App Watch App";
+			packageProductDependencies = (
+			);
+			productName = "MyIIS Watch App Watch App";
+			productReference = F52AB8BF3008EF79002D379E /* MyIIS Watch App Watch App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F52AB8D13008F114002D379E /* MyIIS Watch WidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F52AB8E03008F115002D379E /* Build configuration list for PBXNativeTarget "MyIIS Watch WidgetExtension" */;
+			buildPhases = (
+				F52AB8CE3008F114002D379E /* Sources */,
+				F52AB8CF3008F114002D379E /* Frameworks */,
+				F52AB8D03008F114002D379E /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				F52AB8D73008F115002D379E /* MyIIS Watch Widget */,
+			);
+			name = "MyIIS Watch WidgetExtension";
+			packageProductDependencies = (
+			);
+			productName = "MyIIS Watch WidgetExtension";
+			productReference = F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		F58E2F092FD00E66002BCF03 /* MyIISMessages */ = {
 			isa = PBXNativeTarget;
@@ -319,6 +453,7 @@
 				F5A5EE112F1C801900D2B7A1 /* Embed Foundation Extensions */,
 				F59436CD2E9CF9DA00A3E835 /* Resources */,
 				F51DCBB62FB09EC400EA90E3 /* Embed ExtensionKit Extensions */,
+				F52AB8CA3008EF7A002D379E /* Embed Watch Content */,
 			);
 			buildRules = (
 			);
@@ -326,6 +461,7 @@
 				F5A5EE122F1C801900D2B7A1 /* PBXTargetDependency */,
 				F51DCBB02FB09EC400EA90E3 /* PBXTargetDependency */,
 				F58E2F182FD00E68002BCF03 /* PBXTargetDependency */,
+				F52AB8C83008EF7A002D379E /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				F59436D12E9CF9DA00A3E835 /* MyIIS */,
@@ -414,11 +550,17 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2650;
+				LastSwiftUpdateCheck = 2660;
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					F51DCBA72FB09EC400EA90E3 = {
 						CreatedOnToolsVersion = 26.4.1;
+					};
+					F52AB8BE3008EF79002D379E = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					F52AB8D13008F114002D379E = {
+						CreatedOnToolsVersion = 26.6;
 					};
 					F58E2F092FD00E66002BCF03 = {
 						CreatedOnToolsVersion = 26.5;
@@ -468,12 +610,28 @@
 				F51DCBA72FB09EC400EA90E3 /* MyIISIntents */,
 				F5EE362F2FB1ED94004B7BD8 /* MyIISUITests */,
 				F58E2F092FD00E66002BCF03 /* MyIISMessages */,
+				F52AB8BE3008EF79002D379E /* MyIIS Watch App Watch App */,
+				F52AB8D13008F114002D379E /* MyIIS Watch WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F51DCBA62FB09EC400EA90E3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F52AB8BD3008EF79002D379E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F52AB8D03008F114002D379E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -532,6 +690,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F52AB8BB3008EF79002D379E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F52AB8CE3008F114002D379E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F58E2F062FD00E66002BCF03 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -574,6 +746,16 @@
 			isa = PBXTargetDependency;
 			target = F51DCBA72FB09EC400EA90E3 /* MyIISIntents */;
 			targetProxy = F51DCBAF2FB09EC400EA90E3 /* PBXContainerItemProxy */;
+		};
+		F52AB8C83008EF7A002D379E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F52AB8BE3008EF79002D379E /* MyIIS Watch App Watch App */;
+			targetProxy = F52AB8C73008EF7A002D379E /* PBXContainerItemProxy */;
+		};
+		F52AB920300917E1002D379E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F52AB8D13008F114002D379E /* MyIIS Watch WidgetExtension */;
+			targetProxy = F52AB91F300917E1002D379E /* PBXContainerItemProxy */;
 		};
 		F58E2F182FD00E68002BCF03 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -657,6 +839,144 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2,6";
+			};
+			name = Release;
+		};
+		F52AB8CB3008EF7A002D379E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "MyIIS Watch App";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.OrDinaD.MyIIS;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		F52AB8CC3008EF7A002D379E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "MyIIS Watch App";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.OrDinaD.MyIIS;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Release;
+		};
+		F52AB8E13008F115002D379E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "MyIIS Watch WidgetExtension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "MyIIS Watch Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "MyIIS Watch Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.watchkitapp.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.5;
+			};
+			name = Debug;
+		};
+		F52AB8E23008F115002D379E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "MyIIS Watch WidgetExtension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y85TSUMM4F;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "MyIIS Watch Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "MyIIS Watch Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.OrDinaD.MyIIS.watchkitapp.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 26.5;
 			};
 			name = Release;
 		};
@@ -1079,6 +1399,24 @@
 			buildConfigurations = (
 				F51DCBB42FB09EC400EA90E3 /* Debug */,
 				F51DCBB52FB09EC400EA90E3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F52AB8CD3008EF7A002D379E /* Build configuration list for PBXNativeTarget "MyIIS Watch App Watch App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F52AB8CB3008EF7A002D379E /* Debug */,
+				F52AB8CC3008EF7A002D379E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F52AB8E03008F115002D379E /* Build configuration list for PBXNativeTarget "MyIIS Watch WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F52AB8E13008F115002D379E /* Debug */,
+				F52AB8E23008F115002D379E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

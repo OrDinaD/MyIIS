@@ -1,0 +1,15 @@
+"watch_schedule_title" = "Розклад";
+"watch_schedule_next" = "Далі";
+"watch_schedule_source" = "Джерело";
+"watch_schedule_updated" = "Оновлено";
+"watch_schedule_now" = "Зараз";
+"watch_schedule_upcoming" = "Наступне заняття";
+"watch_schedule_ends_in" = "До завершення";
+"watch_schedule_starts_in" = "До початку";
+"watch_schedule_no_data" = "Розклад ще не передано";
+"watch_schedule_open_iphone" = "Відкрийте MyIIS на iPhone та оновіть розклад.";
+"watch_widget_name" = "Наступне заняття";
+"watch_widget_description" = "Показує поточне або наступне заняття, час та аудиторію.";
+"watch_widget_no_events" = "Занять більше немає";
+"watch_widget_until" = "до";
+"watch_widget_in" = "через";

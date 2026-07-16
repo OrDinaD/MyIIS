@@ -9,6 +9,7 @@ enum ScheduleLookupMode: String, CaseIterable {
 
 enum ScheduleDataSource: String, CaseIterable, Identifiable {
     case api
+    case localJSON
     case localExcel
 
     var id: String { rawValue }
@@ -16,9 +17,11 @@ enum ScheduleDataSource: String, CaseIterable, Identifiable {
     var localizedTitle: String {
         switch self {
         case .api:
-            return "Через API"
+            return NSLocalizedString("local_schedule_source_api", comment: "")
+        case .localJSON:
+            return NSLocalizedString("local_schedule_source_json", comment: "")
         case .localExcel:
-            return "Из Excel (Локально)"
+            return NSLocalizedString("local_schedule_source_excel", comment: "")
         }
     }
 
@@ -26,6 +29,8 @@ enum ScheduleDataSource: String, CaseIterable, Identifiable {
         switch self {
         case .api:
             return "network"
+        case .localJSON:
+            return "curlybraces.square"
         case .localExcel:
             return "doc.text.image"
         }
@@ -737,6 +742,8 @@ final class ScheduleServiceViewModel: ObservableObject {
             updatedAt: Date()
         )
         ClassScheduleWidgetDataStore.save(snapshot)
+        WatchScheduleConnectivityService.shared.activate()
+        WatchScheduleConnectivityService.shared.send(snapshot)
     }
 
     private func updateSessionScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {

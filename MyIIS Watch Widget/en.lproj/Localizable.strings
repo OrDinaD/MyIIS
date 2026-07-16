@@ -1,0 +1,15 @@
+"watch_schedule_title" = "Schedule";
+"watch_schedule_next" = "Up Next";
+"watch_schedule_source" = "Source";
+"watch_schedule_updated" = "Updated";
+"watch_schedule_now" = "Now";
+"watch_schedule_upcoming" = "Next Class";
+"watch_schedule_ends_in" = "Ends in";
+"watch_schedule_starts_in" = "Starts in";
+"watch_schedule_no_data" = "Schedule hasn't arrived yet";
+"watch_schedule_open_iphone" = "Open MyIIS on iPhone and refresh the schedule.";
+"watch_widget_name" = "Next Class";
+"watch_widget_description" = "Shows the current or next class, time, and room.";
+"watch_widget_no_events" = "No more classes";
+"watch_widget_until" = "until";
+"watch_widget_in" = "in";

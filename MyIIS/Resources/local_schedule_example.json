@@ -1,0 +1,76 @@
+{
+  "events" : [
+    {
+      "date" : "2026-07-20",
+      "endTime" : "10:30",
+      "id" : "2026-07-20-0900-swiftui",
+      "isCancelled" : false,
+      "location" : "Аудитория 301",
+      "note" : "Взять MacBook",
+      "shortTitle" : "SwiftUI",
+      "startTime" : "09:00",
+      "teacher" : "Иван Иванов",
+      "title" : "Разработка приложений на SwiftUI",
+      "type" : "lecture"
+    },
+    {
+      "date" : "2026-07-20",
+      "endTime" : "12:15",
+      "id" : "2026-07-20-1045-swift-practice",
+      "isCancelled" : false,
+      "location" : "Аудитория 305",
+      "note" : null,
+      "shortTitle" : "Swift",
+      "startTime" : "10:45",
+      "teacher" : "Анна Петрова",
+      "title" : "Практическая работа по Swift",
+      "type" : "practice"
+    },
+    {
+      "date" : "2026-07-21",
+      "endTime" : "12:30",
+      "id" : "2026-07-21-1100-project",
+      "isCancelled" : false,
+      "location" : "Коворкинг, 2 этаж",
+      "note" : "Работа по командам",
+      "shortTitle" : "Проект",
+      "startTime" : "11:00",
+      "teacher" : null,
+      "title" : "Проектная работа",
+      "type" : "practice"
+    },
+    {
+      "date" : "2026-07-22",
+      "endTime" : "11:00",
+      "id" : "2026-07-22-1000-consultation",
+      "isCancelled" : false,
+      "location" : "Онлайн",
+      "note" : "Ссылка будет в чате",
+      "shortTitle" : "Консультация",
+      "startTime" : "10:00",
+      "teacher" : "Иван Иванов",
+      "title" : "Консультация",
+      "type" : "consultation"
+    },
+    {
+      "date" : "2026-07-24",
+      "endTime" : "11:00",
+      "id" : "2026-07-24-0900-exam",
+      "isCancelled" : false,
+      "location" : "Актовый зал",
+      "note" : "Прибыть за 15 минут",
+      "shortTitle" : "Защита",
+      "startTime" : "09:00",
+      "teacher" : null,
+      "title" : "Защита итогового проекта",
+      "type" : "exam"
+    }
+  ],
+  "id" : "summer-school-2026",
+  "schemaVersion" : 1,
+  "timeZone" : "Europe/Minsk",
+  "title" : "Летняя школа 2026",
+  "updatedAt" : "2026-07-16T14:00:00+03:00",
+  "validFrom" : "2026-07-20",
+  "validThrough" : "2026-08-02"
+}

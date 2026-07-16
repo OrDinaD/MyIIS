@@ -21,14 +21,16 @@ struct ScheduleServiceView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 14) {
-                if viewModel.dataSource == .localExcel {
+                if viewModel.dataSource == .localJSON {
+                    LocalScheduleView()
+                } else if viewModel.dataSource == .localExcel {
                     localExcelBlock()
                 } else {
                     if viewModel.schedule == nil, !viewModel.isLoading {
                         searchBlock()
                     }
 
-                    if viewModel.schedule != nil {
+                    if viewModel.dataSource == .api, viewModel.schedule != nil {
                         LazyVStack(alignment: .leading, spacing: 14) {
                         ServiceEndpointSection(
                             title: viewModel.scheduleHeaderTitle,
@@ -244,8 +246,8 @@ struct ScheduleServiceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .hiddenNavigationBarBackground()
         .toolbar {
-            if viewModel.schedule != nil || viewModel.dataSource == .localExcel {
-                if viewModel.schedule != nil {
+            if viewModel.schedule != nil || viewModel.dataSource != .api {
+                if viewModel.dataSource == .api, viewModel.schedule != nil {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             isSearchSheetPresented = true
@@ -266,7 +268,7 @@ struct ScheduleServiceView: View {
                             }
                         }
 
-                        if viewModel.schedule != nil {
+                        if viewModel.dataSource == .api, viewModel.schedule != nil {
                             Divider()
 
                             Picker(

@@ -24,13 +24,23 @@ struct MyIISApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authService) // Внедряем его в окружение
-                .onAppear(perform: handlePendingAppIntentNavigation)
+                .onAppear {
+                    handlePendingAppIntentNavigation()
+                    activateWatchScheduleSync()
+                }
                 .onChange(of: scenePhase) { _, phase in
                     handleScenePhaseChange(phase)
                 }
         }
         .commands {
             AppSceneCommands()
+        }
+    }
+
+    private func activateWatchScheduleSync() {
+        WatchScheduleConnectivityService.shared.activate()
+        if let snapshot = ClassScheduleWidgetDataStore.loadSnapshot() {
+            WatchScheduleConnectivityService.shared.send(snapshot)
         }
     }
 
