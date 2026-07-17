@@ -7,6 +7,7 @@ import SwiftUI
 @MainActor
 struct ScheduleServiceView: View {
     @StateObject private var viewModel = ScheduleServiceViewModel()
+    @StateObject private var localScheduleViewModel = LocalScheduleViewModel()
     @State private var scheduleReportURL: URL?
     @State private var selectedExamLesson: DisciplineSchedule?
 
@@ -22,7 +23,7 @@ struct ScheduleServiceView: View {
         ScrollView {
             LazyVStack(spacing: 14) {
                 if viewModel.dataSource == .localJSON {
-                    LocalScheduleView()
+                    LocalScheduleView(viewModel: localScheduleViewModel)
                 } else if viewModel.dataSource == .localExcel {
                     localExcelBlock()
                 } else {
@@ -339,11 +340,7 @@ struct ScheduleServiceView: View {
         }
         .alert(NSLocalizedString("services_schedule_reminders_title", comment: ""), isPresented: Binding(
             get: { viewModel.noticeMessage != nil },
-            set: { shouldShow in
-                if !shouldShow {
-                    viewModel.noticeMessage = nil
-                }
-            }
+            set: { _ in }
         ), actions: {
             Button(NSLocalizedString("common_ok", comment: "")) { viewModel.noticeMessage = nil }
         }, message: {
@@ -351,11 +348,7 @@ struct ScheduleServiceView: View {
         })
         .alert(NSLocalizedString("common_error", comment: ""), isPresented: Binding(
             get: { viewModel.errorMessage != nil },
-            set: { shouldShow in
-                if !shouldShow {
-                    viewModel.errorMessage = nil
-                }
-            }
+            set: { _ in }
         ), actions: {
             Button(NSLocalizedString("common_ok", comment: "")) { viewModel.errorMessage = nil }
         }, message: {
@@ -419,7 +412,10 @@ struct ScheduleServiceView: View {
             .pickerStyle(.segmented)
 
             if viewModel.mode == .group {
-                MilitaryScheduleImportButton(viewModel: viewModel)
+                MilitaryScheduleImportButton(
+                    viewModel: viewModel,
+                    localScheduleViewModel: localScheduleViewModel
+                )
             }
 
             if showTextField {

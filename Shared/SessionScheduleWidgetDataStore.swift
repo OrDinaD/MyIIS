@@ -105,6 +105,20 @@ enum ClassScheduleWidgetDataStore {
 
     static func loadSnapshot() -> SessionScheduleWidgetSnapshot? {
         ScheduleWidgetSnapshotStore.load(key: Key.snapshot)
+            ?? LocalScheduleWidgetSnapshotLoader.load()
+    }
+
+    @discardableResult
+    static func refreshFromLocalSchedule() -> Bool {
+        guard let snapshot = LocalScheduleWidgetSnapshotLoader.load() else {
+#if canImport(WidgetKit)
+            WidgetCenter.shared.reloadTimelines(ofKind: ClassScheduleWidgetConstants.kind)
+#endif
+            return false
+        }
+
+        save(snapshot)
+        return true
     }
 
     static func clear() {
@@ -112,6 +126,126 @@ enum ClassScheduleWidgetDataStore {
             key: Key.snapshot,
             widgetKind: ClassScheduleWidgetConstants.kind
         )
+    }
+}
+
+private struct LocalScheduleWidgetDocument: Decodable {
+    let title: String
+    let timeZone: String
+    let validFrom: String?
+    let validThrough: String?
+    let updatedAt: String?
+    let events: [LocalScheduleWidgetEvent]
+}
+
+private struct LocalScheduleWidgetEvent: Decodable {
+    let id: String
+    let date: String
+    let startTime: String
+    let endTime: String
+    let title: String
+    let shortTitle: String?
+    let type: String
+    let location: String?
+    let teacher: String?
+    let isCancelled: Bool?
+}
+
+private enum LocalScheduleWidgetSnapshotLoader {
+    private static let directoryName = "LocalSchedules"
+    private static let fileName = "current.json"
+
+    static func load() -> SessionScheduleWidgetSnapshot? {
+        guard let containerURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: AppGroup.identifier
+        ) else {
+            return nil
+        }
+
+        let fileURL = containerURL
+            .appendingPathComponent(directoryName, isDirectory: true)
+            .appendingPathComponent(fileName, isDirectory: false)
+
+        guard let data = try? Data(contentsOf: fileURL),
+              let document = try? JSONDecoder().decode(LocalScheduleWidgetDocument.self, from: data) else {
+            return nil
+        }
+
+        let timeZone = TimeZone(identifier: document.timeZone) ?? .current
+        let events = document.events.compactMap { event -> SessionScheduleWidgetSnapshot.Event? in
+            guard event.isCancelled != true,
+                  let date = day(from: event.date, timeZone: timeZone) else {
+                return nil
+            }
+
+            let title = nonEmpty(event.shortTitle) ?? event.title
+            let subtitle = [nonEmpty(event.type), nonEmpty(event.teacher)]
+                .compactMap { $0 }
+                .joined(separator: " · ")
+
+            return SessionScheduleWidgetSnapshot.Event(
+                id: event.id,
+                date: date,
+                startTime: event.startTime,
+                endTime: event.endTime,
+                title: title,
+                subtitle: nonEmpty(subtitle),
+                location: nonEmpty(event.location),
+                lessonType: nonEmpty(event.type),
+                kind: kind(for: event.type)
+            )
+        }
+        .sorted {
+            guard $0.date != $1.date else {
+                return $0.startTime < $1.startTime
+            }
+            return ($0.date ?? .distantFuture) < ($1.date ?? .distantFuture)
+        }
+
+        return SessionScheduleWidgetSnapshot(
+            groupName: document.title,
+            startDate: document.validFrom.flatMap { day(from: $0, timeZone: timeZone) },
+            endDate: document.validThrough.flatMap { day(from: $0, timeZone: timeZone) },
+            events: events,
+            updatedAt: document.updatedAt.flatMap { ISO8601DateFormatter().date(from: $0) } ?? .now
+        )
+    }
+
+    private static func day(from value: String, timeZone: TimeZone) -> Date? {
+        let values = value.split(separator: "-").compactMap { Int($0) }
+        guard values.count == 3 else { return nil }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
+        return calendar.date(
+            from: DateComponents(
+                timeZone: timeZone,
+                year: values[0],
+                month: values[1],
+                day: values[2]
+            )
+        )
+    }
+
+    private static func nonEmpty(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !value.isEmpty else {
+            return nil
+        }
+        return value
+    }
+
+    private static func kind(for type: String) -> SessionScheduleWidgetEventKind {
+        switch type.lowercased() {
+        case "announcement":
+            return .announcement
+        case "exam":
+            return .exam
+        case "consultation":
+            return .consultation
+        default:
+            return .other
+        }
     }
 }
 

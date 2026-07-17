@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct LocalScheduleView: View {
-    @StateObject private var viewModel = LocalScheduleViewModel()
+    @ObservedObject var viewModel: LocalScheduleViewModel
     @State private var isImporterPresented = false
     @State private var editingEvent: LocalScheduleDocument.Event?
     @State private var isMetadataEditorPresented = false
@@ -22,6 +22,9 @@ struct LocalScheduleView: View {
                 }
             }
             .padding(.vertical, 4)
+        }
+        .onAppear {
+            viewModel.publishCurrentDocument()
         }
         .fileImporter(
             isPresented: $isImporterPresented,
@@ -63,7 +66,7 @@ struct LocalScheduleView: View {
             NSLocalizedString("common_error", comment: ""),
             isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
-                set: { if !$0 { viewModel.errorMessage = nil } }
+                set: { _ in }
             )
         ) {
             Button(NSLocalizedString("common_ok", comment: "")) {
@@ -76,7 +79,7 @@ struct LocalScheduleView: View {
             NSLocalizedString("local_schedule_ready", comment: ""),
             isPresented: Binding(
                 get: { viewModel.noticeMessage != nil },
-                set: { if !$0 { viewModel.noticeMessage = nil } }
+                set: { _ in }
             )
         ) {
             Button(NSLocalizedString("common_ok", comment: "")) {

@@ -25,9 +25,6 @@ final class LocalScheduleViewModel: ObservableObject {
     func reload() {
         do {
             document = try LocalScheduleStore.load()
-            if let document {
-                publish(document)
-            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -43,12 +40,31 @@ final class LocalScheduleViewModel: ObservableObject {
 
         do {
             let data = try Data(contentsOf: url)
-            let imported = try LocalScheduleStore.decode(data)
-            try save(imported)
-            noticeMessage = NSLocalizedString("local_schedule_import_success", comment: "")
+            _ = importData(data)
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    @discardableResult
+    func importData(_ data: Data) -> Bool {
+        errorMessage = nil
+        noticeMessage = nil
+
+        do {
+            let imported = try LocalScheduleStore.decode(data)
+            try save(imported)
+            noticeMessage = NSLocalizedString("local_schedule_import_success", comment: "")
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func publishCurrentDocument() {
+        guard let document else { return }
+        publish(document)
     }
 
     func createEmpty() {

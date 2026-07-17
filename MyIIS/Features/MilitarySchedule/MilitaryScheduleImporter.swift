@@ -5,6 +5,7 @@ import JavaScriptCore
 @MainActor
 struct MilitaryScheduleImportButton: View {
     @ObservedObject var viewModel: ScheduleServiceViewModel
+    @ObservedObject var localScheduleViewModel: LocalScheduleViewModel
     @State private var isImporterPresented = false
     @State private var isParsing = false
     
@@ -62,16 +63,12 @@ struct MilitaryScheduleImportButton: View {
                 let data = try Data(contentsOf: url)
 
                 if url.pathExtension.lowercased() == "json" {
-                    let document = try LocalScheduleStore.decode(data).updatingTimestamp()
-                    try LocalScheduleStore.save(document)
-
-                    let snapshot = document.widgetSnapshot()
-                    ClassScheduleWidgetDataStore.save(snapshot)
-                    WatchScheduleConnectivityService.shared.activate()
-                    WatchScheduleConnectivityService.shared.send(snapshot)
+                    guard localScheduleViewModel.importData(data) else {
+                        viewModel.errorMessage = localScheduleViewModel.errorMessage
+                        return
+                    }
 
                     viewModel.dataSource = .localJSON
-                    viewModel.noticeMessage = NSLocalizedString("local_schedule_import_success", comment: "")
                     return
                 }
 

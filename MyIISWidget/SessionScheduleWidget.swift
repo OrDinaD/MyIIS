@@ -3,6 +3,7 @@
 //  MyIISWidgetExtension
 //
 // swiftlint:disable file_length
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -58,6 +59,17 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
         ],
         updatedAt: Date()
     )
+}
+
+struct RefreshClassScheduleWidgetIntent: AppIntent {
+    static let title: LocalizedStringResource = "Обновить расписание"
+    static let description = IntentDescription("Перечитать локальное расписание и обновить виджет «Пары».")
+    static let openAppWhenRun = false
+
+    func perform() async throws -> some IntentResult {
+        _ = ClassScheduleWidgetDataStore.refreshFromLocalSchedule()
+        return .result()
+    }
 }
 
 struct SessionScheduleWidgetProvider: TimelineProvider {
@@ -216,6 +228,21 @@ struct SessionScheduleWidgetView: View {
         }
         .dynamicTypeSize(.medium ... .large)
         .applySessionWidgetBackground(isFilled: style == .session)
+        .overlay(alignment: .topTrailing) {
+            if style == .classes, family != .accessoryRectangular {
+                Button(intent: RefreshClassScheduleWidgetIntent()) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.caption.weight(.bold))
+                        .frame(width: 30, height: 30)
+                        .background(Color.black.opacity(0.22), in: Circle())
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .contentShape(Circle())
+                .accessibilityLabel("Обновить расписание")
+                .padding(10)
+            }
+        }
         .widgetURL(URL(string: "myiis://section/schedule"))
     }
 
@@ -253,6 +280,7 @@ struct SessionScheduleWidgetView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
+                        .padding(.horizontal, 36)
 
                     Spacer(minLength: 0)
 
@@ -393,9 +421,11 @@ struct SessionScheduleWidgetView: View {
         let type = (event.lessonType ?? event.subtitle ?? "").lowercased()
         if event.kind == .exam || type.contains("экзам") { return "graduationcap.fill" }
         if event.kind == .consultation || type.contains("конс") { return "bubble.left.and.text.bubble.right.fill" }
-        if type.contains("лр") || type.contains("лаб") { return "flask.fill" }
-        if type.contains("пз") || type.contains("практ") { return "pencil.and.list.clipboard" }
-        if type.contains("лк") || type.contains("лек") { return "book.closed.fill" }
+        if type.contains("лр") || type.contains("лаб") || type.contains("lab") { return "flask.fill" }
+        if type.contains("пз") || type.contains("практ") || type.contains("practice") {
+            return "pencil.and.list.clipboard"
+        }
+        if type.contains("лк") || type.contains("лек") || type.contains("lecture") { return "book.closed.fill" }
         if event.kind == .announcement { return "megaphone.fill" }
         return "calendar"
     }
@@ -404,9 +434,15 @@ struct SessionScheduleWidgetView: View {
         let type = (event.lessonType ?? event.subtitle ?? "").lowercased()
         if event.kind == .exam || type.contains("экзам") { return Color(red: 1.0, green: 0.34, blue: 0.24) }
         if event.kind == .consultation || type.contains("конс") { return Color(red: 0.56, green: 0.32, blue: 0.92) }
-        if type.contains("лр") || type.contains("лаб") { return Color(red: 0.10, green: 0.72, blue: 0.44) }
-        if type.contains("пз") || type.contains("практ") { return Color(red: 0.98, green: 0.63, blue: 0.18) }
-        if type.contains("лк") || type.contains("лек") { return Color(red: 0.16, green: 0.48, blue: 0.96) }
+        if type.contains("лр") || type.contains("лаб") || type.contains("lab") {
+            return Color(red: 0.10, green: 0.72, blue: 0.44)
+        }
+        if type.contains("пз") || type.contains("практ") || type.contains("practice") {
+            return Color(red: 0.98, green: 0.63, blue: 0.18)
+        }
+        if type.contains("лк") || type.contains("лек") || type.contains("lecture") {
+            return Color(red: 0.16, green: 0.48, blue: 0.96)
+        }
         if event.kind == .announcement { return Color(red: 0.96, green: 0.72, blue: 0.22) }
         return Color(red: 0.24, green: 0.72, blue: 0.86)
     }
@@ -487,6 +523,7 @@ struct SessionScheduleWidgetView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
                     .allowsTightening(true)
+                    .padding(.trailing, style == .classes ? 34 : 0)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, family == .systemLarge ? 16 : 14)
@@ -538,8 +575,8 @@ struct SessionScheduleWidgetView: View {
     private var emptyContent: some View {
         widgetMessageContent(
             icon: "calendar.badge.exclamationmark",
-            title: "Открой расписание в приложении",
-            subtitle: "После первой загрузки виджет будет обновляться из кэша."
+            title: "Расписание не загружено",
+            subtitle: "Нажмите ↻ или откройте расписание в приложении."
         )
     }
 
@@ -551,23 +588,31 @@ struct SessionScheduleWidgetView: View {
         )
     }
 
+    private var messagePrimaryColor: Color {
+        style == .session ? .white : .primary
+    }
+
+    private var messageSecondaryColor: Color {
+        style == .session ? .white.opacity(0.68) : .secondary
+    }
+
     private func widgetMessageContent(icon: String, title: String, subtitle: String) -> some View {
         VStack(spacing: 0) {
             header
                 .layoutPriority(10)
-            
+
             VStack(alignment: .leading, spacing: 10) {
                 Spacer(minLength: 0)
                 Image(systemName: icon)
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(messageSecondaryColor)
                 Text(title)
                     .font(.headline.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(messagePrimaryColor)
                     .lineLimit(2)
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.65))
+                    .foregroundStyle(messageSecondaryColor)
                     .lineLimit(2)
                 Spacer(minLength: 0)
             }
@@ -750,6 +795,15 @@ struct SessionScheduleWidget: Widget {
     SessionScheduleWidget()
 } timeline: {
     SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
+}
+
+#Preview("Пары Medium", as: .systemMedium) {
+    ClassScheduleWidget()
+} timeline: {
+    SessionScheduleWidgetEntry(
+        date: SessionScheduleWidgetEntry.placeholderSnapshot.startDate ?? .now,
+        snapshot: SessionScheduleWidgetEntry.placeholderSnapshot
+    )
 }
 
 #Preview("Пары Lock Screen", as: .accessoryRectangular) {
