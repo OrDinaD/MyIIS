@@ -497,6 +497,7 @@
 "local_schedule_ready" = "Done";
 "local_schedule_empty_description" = "Import a JSON file or create a schedule manually. The file is copied into MyIIS storage.";
 "local_schedule_import" = "Import JSON";
+"services_schedule_import_file" = "Import JSON or Excel";
 "local_schedule_create_empty" = "Create Empty";
 "local_schedule_create_example" = "Create Example";
 "local_schedule_replace" = "Replace JSON";

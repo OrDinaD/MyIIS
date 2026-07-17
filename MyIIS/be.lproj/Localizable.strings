@@ -489,6 +489,7 @@
 "local_schedule_ready" = "Гатова";
 "local_schedule_empty_description" = "Імпартуйце JSON-файл або стварыце расклад уручную. Файл будзе скапіяваны ў сховішча MyIIS.";
 "local_schedule_import" = "Імпартаваць JSON";
+"services_schedule_import_file" = "Імпартаваць JSON або Excel";
 "local_schedule_create_empty" = "Стварыць пусты";
 "local_schedule_create_example" = "Стварыць прыклад";
 "local_schedule_replace" = "Замяніць JSON";

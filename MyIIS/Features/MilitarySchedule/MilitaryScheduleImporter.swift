@@ -19,7 +19,11 @@ struct MilitaryScheduleImportButton: View {
                 } else {
                     Image(systemName: "square.and.arrow.down")
                 }
-                Text(isParsing ? "Парсинг ВУЦ..." : "Импорт ВУЦ расписания (Excel)")
+                Text(
+                    isParsing
+                        ? NSLocalizedString("common_loading", comment: "")
+                        : NSLocalizedString("services_schedule_import_file", comment: "")
+                )
             }
             .font(.subheadline)
             .padding(12)
@@ -29,7 +33,10 @@ struct MilitaryScheduleImportButton: View {
             .cornerRadius(13)
         }
         .disabled(isParsing)
-        .fileImporter(isPresented: $isImporterPresented, allowedContentTypes: [.item]) { result in
+        .fileImporter(
+            isPresented: $isImporterPresented,
+            allowedContentTypes: [.json, .spreadsheet]
+        ) { result in
             switch result {
             case .success(let url):
                 parseAndApplySchedule(from: url)
@@ -40,32 +47,40 @@ struct MilitaryScheduleImportButton: View {
     }
     
     private func parseAndApplySchedule(from url: URL) {
-        guard url.startAccessingSecurityScopedResource() else {
-            viewModel.errorMessage = "Нет доступа к файлу"
-            return
-        }
-        
+        let gainedAccess = url.startAccessingSecurityScopedResource()
         isParsing = true
-        
+
         Task {
-            defer { 
-                url.stopAccessingSecurityScopedResource()
-                isParsing = false 
+            defer {
+                if gainedAccess {
+                    url.stopAccessingSecurityScopedResource()
+                }
+                isParsing = false
             }
+
             do {
                 let data = try Data(contentsOf: url)
+
+                if url.pathExtension.lowercased() == "json" {
+                    let document = try LocalScheduleStore.decode(data)
+                    try LocalScheduleStore.save(document)
+                    viewModel.dataSource = .localJSON
+                    viewModel.noticeMessage = NSLocalizedString("local_schedule_import_success", comment: "")
+                    return
+                }
+
                 let b64 = data.base64EncodedString()
                 let parsedJSON = try await parseXLS(b64: b64)
                 let jsonData = try buildPublicScheduleResponseJSON(from: parsedJSON)
                 let response = try JSONDecoder().decode(PublicScheduleResponse.self, from: jsonData)
-                
+
                 // Save to cache for offline support
                 try cacheSchedule(jsonData, group: "534104")
-                
+
                 viewModel.applyGroupSchedule(response, week: nil, groupNumber: "534104")
                 viewModel.noticeMessage = "Расписание ВУЦ успешно загружено"
             } catch {
-                viewModel.errorMessage = "Ошибка парсинга: \(error.localizedDescription)"
+                viewModel.errorMessage = "\(NSLocalizedString("common_error", comment: "")): \(error.localizedDescription)"
             }
         }
     }

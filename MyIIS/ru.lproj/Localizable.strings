@@ -501,6 +501,7 @@
 "local_schedule_ready" = "Готово";
 "local_schedule_empty_description" = "Импортируйте JSON-файл или создайте расписание вручную. Файл будет скопирован в хранилище MyIIS.";
 "local_schedule_import" = "Импортировать JSON";
+"services_schedule_import_file" = "Импортировать JSON или Excel";
 "local_schedule_create_empty" = "Создать пустое";
 "local_schedule_create_example" = "Создать пример";
 "local_schedule_replace" = "Заменить JSON";
