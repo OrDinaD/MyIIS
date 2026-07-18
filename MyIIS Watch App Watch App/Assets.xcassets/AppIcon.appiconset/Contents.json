@@ -1,8 +1,15 @@
 {
   "images" : [
     {
+      "filename" : "Default-watchOS-Default-1088@1x.png",
       "idiom" : "universal",
       "platform" : "watchos",
+      "size" : "1088x1088"
+    },
+    {
+      "filename" : "Default-watchOS-AppStore-1024@1x.png",
+      "idiom" : "watch-marketing",
+      "scale" : "1x",
       "size" : "1024x1024"
     }
   ],
