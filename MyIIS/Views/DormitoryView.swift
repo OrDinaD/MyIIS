@@ -281,81 +281,115 @@ private struct BulletRow: View {
 
 private struct PrivilegesSection: View {
     let records: [DormitoryPrivilegeRecord]
-    @State private var isExpanded = false
 
-    private var displayedRecords: [DormitoryPrivilegeRecord] {
-        Dictionary(grouping: records, by: \.year)
-            .compactMap { _, recordsForYear in
-                recordsForYear.min {
-                    if $0.displayPriority != $1.displayPriority {
-                        return $0.displayPriority < $1.displayPriority
-                    }
-                    return $0.dormitoryPrivilegeCategoryName < $1.dormitoryPrivilegeCategoryName
-                }
-            }
-            .sorted { $0.year > $1.year }
+    private var groups: [DormitoryPrivilegeYearGroup] {
+        records.dormitoryPrivilegeYearGroups
     }
 
     @ViewBuilder
     var body: some View {
-        if let currentRecord = displayedRecords.first {
-            DisclosureGroup(isExpanded: $isExpanded) {
-                VStack(spacing: 0) {
-                    ForEach(Array(displayedRecords.enumerated()), id: \.element.id) { index, record in
-                        HStack(spacing: 12) {
-                            Text(verbatim: String(record.year))
-                                .font(.subheadline.weight(.semibold))
-                                .monospacedDigit()
-                                .foregroundStyle(.secondary)
-                                .frame(width: 48, alignment: .leading)
+        if !groups.isEmpty {
+            VStack(alignment: .leading, spacing: 16) {
+                Label(
+                    NSLocalizedString("dormitory_section_privileges", comment: ""),
+                    systemImage: "star.circle.fill"
+                )
+                .font(.headline)
+                .foregroundStyle(.primary)
 
-                            Text(record.dormitoryPrivilegeCategoryName)
-                                .font(.subheadline)
-                                .foregroundStyle(.primary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(.vertical, 10)
-
-                        if index < displayedRecords.count - 1 {
-                            Divider()
-                        }
-                    }
-                }
-                .padding(.top, 8)
-            } label: {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label(
-                        NSLocalizedString("dormitory_section_privileges", comment: ""),
-                        systemImage: "star.circle.fill"
-                    )
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-
-                    HStack(spacing: 5) {
-                        Text(verbatim: String(currentRecord.year))
-                            .monospacedDigit()
-                        Text("·")
-                        Text(currentRecord.dormitoryPrivilegeCategoryName)
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                ForEach(groups) { group in
+                    DormitoryPrivilegeYearRow(group: group)
                 }
             }
-            .tint(.secondary)
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(Color(.secondarySystemGroupedBackground))
             )
         }
     }
 }
 
-private extension DormitoryPrivilegeRecord {
-    var displayPriority: Int {
-        let normalized = dormitoryPrivilegeCategoryName
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
+private struct DormitoryPrivilegeYearRow: View {
+    let group: DormitoryPrivilegeYearGroup
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(verbatim: String(group.year))
+                .font(.subheadline.weight(.bold))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+
+            VStack(spacing: 8) {
+                ForEach(group.records) { record in
+                    DormitoryPrivilegeBadge(record: record)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            Color(.tertiarySystemGroupedBackground),
+            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+        )
+    }
+}
+
+private struct DormitoryPrivilegeBadge: View {
+    let record: DormitoryPrivilegeRecord
+
+    var body: some View {
+        HStack(spacing: 9) {
+            Circle()
+                .fill(record.dormitoryTint)
+                .frame(width: 7, height: 7)
+
+            Text(record.dormitoryPrivilegeCategoryName)
+                .font(.subheadline.weight(.semibold))
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(record.dormitoryTint)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            record.dormitoryTint.opacity(0.13),
+            in: RoundedRectangle(cornerRadius: 13, style: .continuous)
+        )
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct DormitoryPrivilegeYearGroup: Identifiable, Equatable {
+    let year: Int
+    let records: [DormitoryPrivilegeRecord]
+
+    var id: Int { year }
+}
+
+extension Array where Element == DormitoryPrivilegeRecord {
+    var dormitoryPrivilegeYearGroups: [DormitoryPrivilegeYearGroup] {
+        Dictionary(grouping: self, by: \.year)
+            .map { year, records in
+                DormitoryPrivilegeYearGroup(
+                    year: year,
+                    records: records.sorted {
+                        if $0.dormitoryDisplayPriority != $1.dormitoryDisplayPriority {
+                            return $0.dormitoryDisplayPriority < $1.dormitoryDisplayPriority
+                        }
+                        return $0.dormitoryPrivilegeCategoryName < $1.dormitoryPrivilegeCategoryName
+                    }
+                )
+            }
+            .sorted { $0.year > $1.year }
+    }
+}
+
+extension DormitoryPrivilegeRecord {
+    var dormitoryDisplayPriority: Int {
+        let normalized = dormitoryNormalizedCategory
 
         if normalized.contains("внеочеред") {
             return 0
@@ -367,6 +401,30 @@ private extension DormitoryPrivilegeRecord {
             return 2
         }
         return 3
+    }
+
+    var dormitoryTint: Color {
+        let normalized = dormitoryNormalizedCategory
+
+        if normalized.contains("внеочеред") {
+            return .pink
+        }
+        if normalized.contains("первоочеред") {
+            return .purple
+        }
+        if normalized.contains("общ") {
+            return .blue
+        }
+        if normalized.contains("обыч") {
+            return .teal
+        }
+        return .orange
+    }
+
+    var dormitoryNormalizedCategory: String {
+        dormitoryPrivilegeCategoryName
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
     }
 }
 
@@ -428,6 +486,12 @@ extension DormitoryViewModel {
                 ),
                 DormitoryPrivilegeRecord(
                     id: 3,
+                    year: 2026,
+                    dormitoryPrivilegeCategoryId: 8,
+                    dormitoryPrivilegeCategoryName: "Обычная очередь"
+                ),
+                DormitoryPrivilegeRecord(
+                    id: 4,
                     year: 2025,
                     dormitoryPrivilegeCategoryId: 6,
                     dormitoryPrivilegeCategoryName: "Общая очередь"

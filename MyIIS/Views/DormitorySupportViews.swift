@@ -59,21 +59,6 @@ enum DormitoryPresentationState: Equatable {
             self = .unknown
         }
     }
-
-    var progressStep: Int {
-        switch self {
-        case .waiting:
-            return 0
-        case .documentsAccepted:
-            return 1
-        case .readyToSettle:
-            return 2
-        case .settled:
-            return 3
-        case .rejected, .evicted, .unknown:
-            return 0
-        }
-    }
 }
 
 struct DormitoryPlacement: Equatable {

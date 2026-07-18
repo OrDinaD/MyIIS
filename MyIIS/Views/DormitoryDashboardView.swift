@@ -1,3 +1,5 @@
+import Combine
+import CoreMotion
 import SwiftUI
 
 struct DormitoryApplicationsDashboard: View {
@@ -46,7 +48,6 @@ struct DormitoryApplicationsDashboard: View {
             DormitoryApplicationAvailability(
                 canCreateApplication: canCreateApplication,
                 isSubmittingApplication: isSubmittingApplication,
-                hasApplications: !applications.isEmpty,
                 onCreateApplication: onCreateApplication
             )
 
@@ -72,7 +73,7 @@ private struct DormitoryCurrentApplicationCard: View {
     @ViewBuilder
     var body: some View {
         switch application.presentationState {
-        case .settled, .readyToSettle:
+        case .settled:
             if application.placement != nil {
                 DormitoryPlaceHero(
                     application: application,
@@ -80,7 +81,7 @@ private struct DormitoryCurrentApplicationCard: View {
                     onOpenDocument: onOpenDocument
                 )
             } else {
-                DormitoryProgressCard(
+                DormitoryStatusCard(
                     application: application,
                     isDownloadingFile: isDownloadingFile,
                     onOpenDocument: onOpenDocument,
@@ -95,8 +96,8 @@ private struct DormitoryCurrentApplicationCard: View {
                 onOpenDocument: onOpenDocument,
                 onEditApplication: onEditApplication
             )
-        case .waiting, .documentsAccepted, .unknown:
-            DormitoryProgressCard(
+        case .waiting, .documentsAccepted, .readyToSettle, .unknown:
+            DormitoryStatusCard(
                 application: application,
                 isDownloadingFile: isDownloadingFile,
                 onOpenDocument: onOpenDocument,
@@ -121,10 +122,6 @@ private struct DormitoryPlaceHero: View {
         )
     }
 
-    private var isSettled: Bool {
-        application.presentationState == .settled
-    }
-
     var body: some View {
         ZStack(alignment: .topTrailing) {
             DormitoryFacadePattern()
@@ -132,13 +129,10 @@ private struct DormitoryPlaceHero: View {
             VStack(alignment: .leading, spacing: 18) {
                 HStack(alignment: .top, spacing: 12) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Label(
-                            isSettled ? dormitoryLocalized("dormitory_my_place") : dormitoryLocalized("dormitory_place_assigned"),
-                            systemImage: isSettled ? "house.fill" : "key.horizontal.fill"
-                        )
-                        .font(.title2.weight(.bold))
+                        Label(application.status, systemImage: "house.fill")
+                            .font(.title2.weight(.bold))
 
-                        if isSettled, let settledDate = application.settledDate {
+                        if let settledDate = application.settledDate {
                             Text(
                                 String(
                                     format: dormitoryLocalized("dormitory_settled_since"),
@@ -147,10 +141,6 @@ private struct DormitoryPlaceHero: View {
                             )
                             .font(.subheadline)
                             .foregroundStyle(.white.opacity(0.82))
-                        } else {
-                            Text(dormitoryLocalized("dormitory_ready_description"))
-                                .font(.subheadline)
-                                .foregroundStyle(.white.opacity(0.82))
                         }
                     }
 
@@ -169,7 +159,6 @@ private struct DormitoryPlaceHero: View {
                 if application.hasDocument {
                     Button(action: onOpenDocument) {
                         Label(dormitoryLocalized("dormitory_open_document"), systemImage: "doc.text.fill")
-                            .frame(maxWidth: .infinity)
                     }
                     .dormitoryHeroButtonStyle()
                     .disabled(isDownloadingFile)
@@ -190,9 +179,9 @@ private struct DormitoryPlaceHero: View {
         .background(
             LinearGradient(
                 colors: [
-                    Color(red: 0.75, green: 0.08, blue: 0.16),
-                    Color(red: 0.94, green: 0.25, blue: 0.13),
-                    Color(red: 0.98, green: 0.43, blue: 0.18)
+                    Color(red: 0.02, green: 0.45, blue: 0.36),
+                    Color(red: 0.02, green: 0.62, blue: 0.46),
+                    Color(red: 0.04, green: 0.72, blue: 0.61)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -203,7 +192,7 @@ private struct DormitoryPlaceHero: View {
             RoundedRectangle(cornerRadius: 28, style: .continuous)
                 .stroke(.white.opacity(0.16), lineWidth: 1)
         )
-        .shadow(color: Color.red.opacity(0.2), radius: 20, y: 10)
+        .shadow(color: Color.green.opacity(0.18), radius: 20, y: 10)
         .accessibilityElement(children: .contain)
     }
 }
@@ -289,29 +278,16 @@ private struct DormitoryPlaceTile: View {
     }
 }
 
-private struct DormitoryProgressCard: View {
+private struct DormitoryStatusCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var motion = DormitoryCardMotion()
+
     let application: DormitoryQueueApplication
     let isDownloadingFile: Bool
     let onOpenDocument: () -> Void
     let onEditApplication: () -> Void
     let onDownloadApplicationForm: () -> Void
-
-    private var description: String {
-        switch application.presentationState {
-        case .documentsAccepted:
-            return dormitoryLocalized("dormitory_documents_accepted_description")
-        case .readyToSettle:
-            return dormitoryLocalized("dormitory_ready_description")
-        case .settled:
-            return dormitoryLocalized("dormitory_settled_without_room_description")
-        case .waiting:
-            return dormitoryLocalized("dormitory_waiting_description")
-        case .unknown:
-            return dormitoryLocalized("dormitory_processing_description")
-        case .rejected, .evicted:
-            return ""
-        }
-    }
 
     private var statusIcon: String {
         switch application.presentationState {
@@ -331,119 +307,6 @@ private struct DormitoryProgressCard: View {
             return "clock.fill"
         }
     }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: statusIcon)
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(.blue)
-                    .frame(width: 32)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(dormitoryLocalized("dormitory_current_application"))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-
-                    Text(application.status)
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(.primary)
-                }
-            }
-
-            Text(description)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            DormitoryApplicationProgress(state: application.presentationState)
-
-            if let queueNumber = application.numberInQueue {
-                Label(
-                    String(
-                        format: dormitoryLocalized("dormitory_queue_compact"),
-                        queueNumber
-                    ),
-                    systemImage: "person.line.dotted.person.fill"
-                )
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(.blue)
-            }
-
-            DormitoryApplicationActions(
-                application: application,
-                isDownloadingFile: isDownloadingFile,
-                onOpenDocument: onOpenDocument,
-                onEditApplication: onEditApplication,
-                onDownloadApplicationForm: onDownloadApplicationForm
-            )
-
-            DormitoryApplicationMetadata(application: application)
-        }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color(.secondarySystemGroupedBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color.blue.opacity(0.12), lineWidth: 1)
-        )
-        .accessibilityElement(children: .contain)
-    }
-}
-
-private struct DormitoryApplicationProgress: View {
-    let state: DormitoryPresentationState
-
-    private let stageKeys = [
-        "dormitory_stage_submitted",
-        "dormitory_stage_documents",
-        "dormitory_stage_place",
-        "dormitory_stage_settled"
-    ]
-
-    private var step: Int {
-        state.progressStep
-    }
-
-    var body: some View {
-        VStack(spacing: 8) {
-            ProgressView(value: Double(step + 1), total: Double(stageKeys.count))
-                .tint(.blue)
-
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Text(
-                    String(
-                        format: dormitoryLocalized("dormitory_progress_step"),
-                        step + 1,
-                        stageKeys.count
-                    )
-                )
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-                Spacer(minLength: 8)
-
-                if step + 1 < stageKeys.count {
-                    Text(
-                        String(
-                            format: dormitoryLocalized("dormitory_next_step"),
-                            dormitoryLocalized(stageKeys[step + 1])
-                        )
-                    )
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-                }
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private struct DormitoryApplicationMetadata: View {
-    let application: DormitoryQueueApplication
 
     private var relevantDate: Date? {
         switch application.presentationState {
@@ -474,24 +337,220 @@ private struct DormitoryApplicationMetadata: View {
     }
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
-            if let relevantDate {
-                Label(
-                    String(
-                        format: dormitoryLocalized(dateFormatKey),
-                        dormitoryDateFormatter.string(from: relevantDate)
-                    ),
-                    systemImage: "calendar"
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.04, green: 0.29, blue: 0.88),
+                    Color(red: 0.04, green: 0.47, blue: 0.96),
+                    Color(red: 0.12, green: 0.64, blue: 0.98)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+
+            DormitoryMotionShimmer(
+                horizontal: motion.horizontal,
+                vertical: motion.vertical
+            )
+
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(alignment: .center, spacing: 12) {
+                    Image(systemName: statusIcon)
+                        .font(.title2.weight(.bold))
+                        .frame(width: 46, height: 46)
+                        .background(.white.opacity(0.16), in: Circle())
+
+                    Text(application.status)
+                        .font(.system(.title, design: .rounded, weight: .bold))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.72)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                VStack(spacing: 0) {
+                    if let relevantDate {
+                        DormitoryStatusFact(
+                            text: String(
+                                format: dormitoryLocalized(dateFormatKey),
+                                dormitoryDateFormatter.string(from: relevantDate)
+                            ),
+                            systemImage: "calendar"
+                        )
+
+                        DormitoryStatusFactDivider()
+                    }
+
+                    DormitoryStatusFact(
+                        text: String(
+                            format: dormitoryLocalized("dormitory_application_number"),
+                            application.number
+                        ),
+                        systemImage: "number"
+                    )
+
+                    if let queueNumber = application.numberInQueue {
+                        DormitoryStatusFactDivider()
+
+                        DormitoryStatusFact(
+                            text: String(
+                                format: dormitoryLocalized("dormitory_queue_compact"),
+                                queueNumber
+                            ),
+                            systemImage: "person.line.dotted.person.fill"
+                        )
+                    }
+
+                    if let roomInfo = application.roomInfo, !roomInfo.isEmpty {
+                        DormitoryStatusFactDivider()
+                        DormitoryStatusFact(text: roomInfo, systemImage: "building.2.fill")
+                    }
+                }
+                .background(
+                    .white.opacity(0.13),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                 )
-                .lineLimit(1)
+
+                DormitoryApplicationActions(
+                    application: application,
+                    isDownloadingFile: isDownloadingFile,
+                    onOpenDocument: onOpenDocument,
+                    onEditApplication: onEditApplication,
+                    onDownloadApplicationForm: onDownloadApplicationForm
+                )
+                .tint(.white)
+                .foregroundStyle(.white)
             }
-
-            Spacer(minLength: 8)
-
-            DormitoryTechnicalApplicationLabel(application: application)
+            .padding(20)
         }
-        .font(.caption)
-        .foregroundStyle(.tertiary)
-        .accessibilityElement(children: .combine)
+        .foregroundStyle(.white)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(.white.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: Color.blue.opacity(0.2), radius: 18, y: 9)
+        .rotation3DEffect(
+            .degrees(reduceMotion ? 0 : -motion.vertical * 4.5),
+            axis: (x: 1, y: 0, z: 0),
+            perspective: 0.28
+        )
+        .rotation3DEffect(
+            .degrees(reduceMotion ? 0 : motion.horizontal * 5.5),
+            axis: (x: 0, y: 1, z: 0),
+            perspective: 0.28
+        )
+        .animation(.linear(duration: 0.1), value: motion.horizontal)
+        .animation(.linear(duration: 0.1), value: motion.vertical)
+        .accessibilityElement(children: .contain)
+        .onAppear {
+            updateMotion()
+        }
+        .onDisappear {
+            motion.stop()
+        }
+        .onChange(of: scenePhase) {
+            updateMotion()
+        }
+        .onChange(of: reduceMotion) {
+            updateMotion()
+        }
+    }
+
+    private func updateMotion() {
+        if scenePhase == .active && !reduceMotion {
+            motion.start()
+        } else {
+            motion.stop()
+        }
+    }
+}
+
+private struct DormitoryStatusFact: View {
+    let text: String
+    let systemImage: String
+
+    var body: some View {
+        Label(text, systemImage: systemImage)
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(1)
+            .minimumScaleFactor(0.82)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+    }
+}
+
+private struct DormitoryStatusFactDivider: View {
+    var body: some View {
+        Divider()
+            .overlay(.white.opacity(0.16))
+            .padding(.leading, 43)
+    }
+}
+
+private struct DormitoryMotionShimmer: View {
+    let horizontal: Double
+    let vertical: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            RadialGradient(
+                colors: [
+                    .white.opacity(0.22),
+                    .white.opacity(0.06),
+                    .clear
+                ],
+                center: .center,
+                startRadius: 0,
+                endRadius: 90
+            )
+            .frame(width: 180, height: 180)
+            .position(
+                x: proxy.size.width * (0.5 + horizontal * 0.34),
+                y: proxy.size.height * (0.42 + vertical * 0.24)
+            )
+            .blur(radius: 7)
+            .blendMode(.screen)
+        }
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+@MainActor
+private final class DormitoryCardMotion: ObservableObject {
+    @Published private(set) var horizontal = 0.0
+    @Published private(set) var vertical = 0.0
+
+    private let motionManager = CMMotionManager()
+
+    func start() {
+        guard motionManager.isDeviceMotionAvailable, !motionManager.isDeviceMotionActive else {
+            return
+        }
+
+        motionManager.deviceMotionUpdateInterval = 1.0 / 30.0
+        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+            guard let motion else { return }
+
+            let horizontal = Self.clamped(motion.attitude.roll / 0.65)
+            let vertical = Self.clamped(motion.attitude.pitch / 0.65)
+
+            Task { @MainActor [weak self] in
+                self?.horizontal = horizontal
+                self?.vertical = vertical
+            }
+        }
+    }
+
+    func stop() {
+        motionManager.stopDeviceMotionUpdates()
+        horizontal = 0
+        vertical = 0
+    }
+
+    nonisolated private static func clamped(_ value: Double) -> Double {
+        min(max(value, -1), 1)
     }
 }

@@ -51,40 +51,43 @@ struct DormitoryApplicationActions: View {
     let onDownloadApplicationForm: () -> Void
 
     private var hasActions: Bool {
-        application.hasDocument || application.canEdit || application.canDownloadApplicationForm
+        application.hasDocument || application.canDownloadApplicationForm
     }
 
     @ViewBuilder
     var body: some View {
         if hasActions {
-            VStack(spacing: 10) {
-                if application.hasDocument {
-                    DormitoryLabeledActionButton(
-                        title: dormitoryLocalized("dormitory_open_attachment"),
-                        systemImage: "paperclip",
-                        isDisabled: isDownloadingFile,
-                        action: onOpenDocument
-                    )
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    actionButtons
                 }
 
-                if application.canEdit {
-                    DormitoryLabeledActionButton(
-                        title: dormitoryLocalized("dormitory_edit_application"),
-                        systemImage: "square.and.pencil",
-                        isDisabled: false,
-                        action: onEditApplication
-                    )
-                }
-
-                if application.canDownloadApplicationForm {
-                    DormitoryLabeledActionButton(
-                        title: dormitoryLocalized("dormitory_open_application_form"),
-                        systemImage: "arrow.down.doc",
-                        isDisabled: isDownloadingFile,
-                        action: onDownloadApplicationForm
-                    )
+                VStack(alignment: .leading, spacing: 10) {
+                    actionButtons
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        if application.hasDocument {
+            DormitoryLabeledActionButton(
+                title: dormitoryLocalized("dormitory_open_attachment"),
+                systemImage: "paperclip",
+                isDisabled: isDownloadingFile,
+                action: onOpenDocument
+            )
+        }
+
+        if application.canDownloadApplicationForm {
+            DormitoryLabeledActionButton(
+                title: dormitoryLocalized("dormitory_open_application_form"),
+                systemImage: "arrow.down.doc",
+                isDisabled: isDownloadingFile,
+                action: onDownloadApplicationForm
+            )
         }
     }
 }
@@ -98,7 +101,7 @@ private struct DormitoryLabeledActionButton: View {
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: systemImage)
-                .frame(maxWidth: .infinity)
+                .lineLimit(1)
         }
         .dormitoryActionButtonStyle()
         .disabled(isDisabled)
@@ -123,7 +126,6 @@ struct DormitoryTechnicalApplicationLabel: View {
 struct DormitoryApplicationAvailability: View {
     let canCreateApplication: Bool
     let isSubmittingApplication: Bool
-    let hasApplications: Bool
     let onCreateApplication: () -> Void
 
     var body: some View {
@@ -135,17 +137,6 @@ struct DormitoryApplicationAvailability: View {
             .dormitoryProminentButtonStyle()
             .controlSize(.large)
             .disabled(isSubmittingApplication)
-        } else if hasApplications {
-            Label(dormitoryLocalized("dormitory_new_application_unavailable"), systemImage: "lock.fill")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 11)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    Color(.secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                )
         }
     }
 }
@@ -156,16 +147,12 @@ struct DormitoryHistorySection: View {
 
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
-            VStack(spacing: 0) {
-                ForEach(Array(applications.enumerated()), id: \.element.id) { index, application in
+            VStack(spacing: 12) {
+                ForEach(applications) { application in
                     DormitoryHistoryRow(application: application)
-
-                    if index < applications.count - 1 {
-                        Divider()
-                    }
                 }
             }
-            .padding(.top, 10)
+            .padding(.top, 12)
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "clock.arrow.circlepath")
@@ -186,7 +173,7 @@ struct DormitoryHistorySection: View {
         .tint(.secondary)
         .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(Color(.secondarySystemGroupedBackground))
         )
     }
@@ -195,46 +182,131 @@ struct DormitoryHistorySection: View {
 private struct DormitoryHistoryRow: View {
     let application: DormitoryQueueApplication
 
-    private var year: String {
-        guard let date = application.presentationDate else { return "—" }
-        return String(Calendar.autoupdatingCurrent.component(.year, from: date))
-    }
-
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            Text(year)
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(.secondary)
-                .frame(width: 42, alignment: .leading)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 10) {
+                Text(
+                    String(
+                        format: dormitoryLocalized("dormitory_application_number"),
+                        application.number
+                    )
+                )
+                .font(.headline)
+                .foregroundStyle(.primary)
 
-            VStack(alignment: .leading, spacing: 3) {
-                if let roomInfo = application.roomInfo, !roomInfo.isEmpty {
-                    Text(roomInfo)
+                Spacer(minLength: 8)
+
+                DormitoryStatusTag(status: application.status)
+            }
+
+            if let placement = application.placement {
+                HStack(spacing: 10) {
+                    Label(placement.room, systemImage: "door.left.hand.closed")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
-                } else {
-                    Text(
-                        String(
-                            format: dormitoryLocalized("dormitory_application_number"),
-                            application.number
-                        )
-                    )
-                    .font(.subheadline.weight(.semibold))
-                }
 
-                if let date = application.presentationDate {
-                    Text(dormitoryDateFormatter.string(from: date))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if let dormitory = placement.dormitory {
+                        DormitoryNumberBadge(number: dormitory)
+                    }
                 }
             }
 
-            Spacer(minLength: 8)
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 132), spacing: 10)],
+                alignment: .leading,
+                spacing: 8
+            ) {
+                if let applicationDate = application.applicationDate {
+                    DormitoryHistoryFact(
+                        text: String(
+                            format: dormitoryLocalized("dormitory_compact_submitted"),
+                            dormitoryDateFormatter.string(from: applicationDate)
+                        ),
+                        systemImage: "calendar.badge.plus"
+                    )
+                }
 
-            DormitoryStatusTag(status: application.status)
+                if let acceptedDate = application.acceptedDate {
+                    DormitoryHistoryFact(
+                        text: String(
+                            format: dormitoryLocalized("dormitory_compact_accepted"),
+                            dormitoryDateFormatter.string(from: acceptedDate)
+                        ),
+                        systemImage: "checkmark.circle"
+                    )
+                }
+
+                if let settledDate = application.settledDate {
+                    DormitoryHistoryFact(
+                        text: String(
+                            format: dormitoryLocalized("dormitory_compact_settled"),
+                            dormitoryDateFormatter.string(from: settledDate)
+                        ),
+                        systemImage: "house"
+                    )
+                }
+
+                if let queueNumber = application.numberInQueue {
+                    DormitoryHistoryFact(
+                        text: String(
+                            format: dormitoryLocalized("dormitory_queue_compact"),
+                            queueNumber
+                        ),
+                        systemImage: "person.line.dotted.person"
+                    )
+                }
+            }
         }
-        .padding(.vertical, 12)
+        .padding(16)
+        .background(
+            Color(.tertiarySystemGroupedBackground),
+            in: RoundedRectangle(cornerRadius: 17, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 17, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+        )
         .accessibilityElement(children: .combine)
+    }
+}
+
+private struct DormitoryNumberBadge: View {
+    let number: String
+
+    private var tint: Color {
+        switch number.filter(\.isNumber) {
+        case "4":
+            return .indigo
+        case "5":
+            return .orange
+        case "6":
+            return .teal
+        default:
+            return .pink
+        }
+    }
+
+    var body: some View {
+        Text("\(dormitoryLocalized("dormitory_label_dormitory")) \(number)")
+            .font(.caption.weight(.bold))
+            .foregroundStyle(tint)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(tint.opacity(0.14), in: Capsule())
+            .accessibilityAddTraits(.isStaticText)
+    }
+}
+
+private struct DormitoryHistoryFact: View {
+    let text: String
+    let systemImage: String
+
+    var body: some View {
+        Label(text, systemImage: systemImage)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

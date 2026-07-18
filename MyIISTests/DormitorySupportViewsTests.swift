@@ -56,6 +56,41 @@ final class DormitorySupportViewsTests: XCTestCase {
         )
     }
 
+    func testPrivilegeGroupingKeepsEveryCategoryForTheSameYear() {
+        let records = [
+            DormitoryPrivilegeRecord(
+                id: 1,
+                year: 2026,
+                dormitoryPrivilegeCategoryId: 6,
+                dormitoryPrivilegeCategoryName: "Общая очередь"
+            ),
+            DormitoryPrivilegeRecord(
+                id: 2,
+                year: 2026,
+                dormitoryPrivilegeCategoryId: 2,
+                dormitoryPrivilegeCategoryName: "Первоочередное право"
+            ),
+            DormitoryPrivilegeRecord(
+                id: 3,
+                year: 2026,
+                dormitoryPrivilegeCategoryId: 8,
+                dormitoryPrivilegeCategoryName: "Обычная очередь"
+            ),
+            DormitoryPrivilegeRecord(
+                id: 4,
+                year: 2025,
+                dormitoryPrivilegeCategoryId: 6,
+                dormitoryPrivilegeCategoryName: "Общая очередь"
+            )
+        ]
+
+        let groups = records.dormitoryPrivilegeYearGroups
+
+        XCTAssertEqual(groups.map(\.year), [2026, 2025])
+        XCTAssertEqual(Set(groups[0].records.map(\.id)), Set([1, 2, 3]))
+        XCTAssertEqual(groups[0].records.first?.id, 2)
+    }
+
     func testDormitoryAnnouncementHasStableIdentity() {
         let date = DateComponents(
             calendar: .current,
