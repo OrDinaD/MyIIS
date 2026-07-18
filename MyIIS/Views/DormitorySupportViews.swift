@@ -21,11 +21,22 @@ struct DormitoryStatusTag: View {
 
     var body: some View {
         Text(status)
-            .font(.caption.weight(.semibold))
+            .font(.caption.weight(.bold))
             .foregroundStyle(tint)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(tint.opacity(0.14), in: Capsule())
+            .background(
+                LinearGradient(
+                    colors: [tint.opacity(0.2), tint.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                in: Capsule()
+            )
+            .overlay(
+                Capsule()
+                    .stroke(tint.opacity(0.24), lineWidth: 1)
+            )
     }
 }
 
@@ -78,6 +89,15 @@ struct DormitoryPlacement: Equatable {
 
         let room = String(components[0]).trimmingCharacters(in: .whitespacesAndNewlines)
         let rawDormitory = String(components[1]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedDormitory = rawDormitory.lowercased()
+
+        if normalizedDormitory.contains("аренд") || normalizedDormitory.contains("rental") {
+            return DormitoryPlacement(
+                room: room.isEmpty ? value : room,
+                dormitory: rawDormitory
+            )
+        }
+
         let prefixPattern = #"(?i)^\s*(общежитие|общ(?:ежитие)?\.?|dormitory|гуртожиток|гуртовня)\s*№?\s*"#
         let cleanedDormitory = rawDormitory
             .replacingOccurrences(

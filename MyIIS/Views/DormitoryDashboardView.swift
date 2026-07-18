@@ -308,42 +308,49 @@ private struct DormitoryStatusCard: View {
         }
     }
 
-    private var relevantDate: Date? {
+    private var statusColors: [Color] {
         switch application.presentationState {
-        case .waiting:
-            return application.applicationDate
-        case .documentsAccepted, .readyToSettle:
-            return application.acceptedDate ?? application.applicationDate
         case .settled:
-            return application.settledDate ?? application.acceptedDate
-        case .rejected, .evicted, .unknown:
-            return application.presentationDate
+            return [
+                Color(red: 0.02, green: 0.45, blue: 0.36),
+                Color(red: 0.02, green: 0.62, blue: 0.46),
+                Color(red: 0.04, green: 0.72, blue: 0.61)
+            ]
+        case .readyToSettle:
+            return [
+                Color(red: 0.31, green: 0.18, blue: 0.78),
+                Color(red: 0.46, green: 0.26, blue: 0.92),
+                Color(red: 0.60, green: 0.39, blue: 0.98)
+            ]
+        case .evicted:
+            return [
+                Color(red: 0.30, green: 0.32, blue: 0.37),
+                Color(red: 0.43, green: 0.45, blue: 0.51),
+                Color(red: 0.55, green: 0.57, blue: 0.63)
+            ]
+        case .rejected:
+            return [
+                Color(red: 0.66, green: 0.07, blue: 0.15),
+                Color(red: 0.84, green: 0.12, blue: 0.20),
+                Color(red: 0.94, green: 0.24, blue: 0.27)
+            ]
+        case .waiting, .documentsAccepted, .unknown:
+            return [
+                Color(red: 0.04, green: 0.29, blue: 0.88),
+                Color(red: 0.04, green: 0.47, blue: 0.96),
+                Color(red: 0.12, green: 0.64, blue: 0.98)
+            ]
         }
     }
 
-    private var dateFormatKey: String {
-        switch application.presentationState {
-        case .waiting:
-            return "dormitory_compact_submitted"
-        case .documentsAccepted:
-            return "dormitory_compact_accepted"
-        case .readyToSettle:
-            return "dormitory_compact_ready"
-        case .settled:
-            return "dormitory_compact_settled"
-        case .rejected, .evicted, .unknown:
-            return "dormitory_compact_updated"
-        }
+    private var statusAccent: Color {
+        statusColors[1]
     }
 
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [
-                    Color(red: 0.04, green: 0.29, blue: 0.88),
-                    Color(red: 0.04, green: 0.47, blue: 0.96),
-                    Color(red: 0.12, green: 0.64, blue: 0.98)
-                ],
+                colors: statusColors,
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -368,13 +375,37 @@ private struct DormitoryStatusCard: View {
                 }
 
                 VStack(spacing: 0) {
-                    if let relevantDate {
+                    if let applicationDate = application.applicationDate {
                         DormitoryStatusFact(
                             text: String(
-                                format: dormitoryLocalized(dateFormatKey),
-                                dormitoryDateFormatter.string(from: relevantDate)
+                                format: dormitoryLocalized("dormitory_compact_submitted"),
+                                dormitoryDateFormatter.string(from: applicationDate)
                             ),
-                            systemImage: "calendar"
+                            systemImage: "calendar.badge.plus"
+                        )
+
+                        DormitoryStatusFactDivider()
+                    }
+
+                    if let acceptedDate = application.acceptedDate {
+                        DormitoryStatusFact(
+                            text: String(
+                                format: dormitoryLocalized("dormitory_compact_accepted"),
+                                dormitoryDateFormatter.string(from: acceptedDate)
+                            ),
+                            systemImage: "checkmark.circle.fill"
+                        )
+
+                        DormitoryStatusFactDivider()
+                    }
+
+                    if let settledDate = application.settledDate {
+                        DormitoryStatusFact(
+                            text: String(
+                                format: dormitoryLocalized("dormitory_compact_settled"),
+                                dormitoryDateFormatter.string(from: settledDate)
+                            ),
+                            systemImage: "house.fill"
                         )
 
                         DormitoryStatusFactDivider()
@@ -428,7 +459,7 @@ private struct DormitoryStatusCard: View {
             RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .stroke(.white.opacity(0.18), lineWidth: 1)
         )
-        .shadow(color: Color.blue.opacity(0.2), radius: 18, y: 9)
+        .shadow(color: statusAccent.opacity(0.22), radius: 18, y: 9)
         .rotation3DEffect(
             .degrees(reduceMotion ? 0 : -motion.vertical * 4.5),
             axis: (x: 1, y: 0, z: 0),

@@ -281,6 +281,7 @@ private struct BulletRow: View {
 
 private struct PrivilegesSection: View {
     let records: [DormitoryPrivilegeRecord]
+    @State private var isExpanded = false
 
     private var groups: [DormitoryPrivilegeYearGroup] {
         records.dormitoryPrivilegeYearGroups
@@ -289,18 +290,31 @@ private struct PrivilegesSection: View {
     @ViewBuilder
     var body: some View {
         if !groups.isEmpty {
-            VStack(alignment: .leading, spacing: 16) {
-                Label(
-                    NSLocalizedString("dormitory_section_privileges", comment: ""),
-                    systemImage: "star.circle.fill"
-                )
-                .font(.headline)
-                .foregroundStyle(.primary)
+            DisclosureGroup(isExpanded: $isExpanded) {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(groups) { group in
+                        DormitoryPrivilegeYearRow(group: group)
+                    }
+                }
+                .padding(.top, 12)
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "star.circle.fill")
+                        .foregroundStyle(.secondary)
 
-                ForEach(groups) { group in
-                    DormitoryPrivilegeYearRow(group: group)
+                    Text(NSLocalizedString("dormitory_section_privileges", comment: ""))
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+
+                    Text("\(records.count)")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.secondary.opacity(0.12), in: Capsule())
                 }
             }
+            .tint(.secondary)
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)

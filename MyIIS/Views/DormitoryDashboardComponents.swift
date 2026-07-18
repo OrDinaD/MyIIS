@@ -273,8 +273,23 @@ private struct DormitoryHistoryRow: View {
 private struct DormitoryNumberBadge: View {
     let number: String
 
+    private var isRental: Bool {
+        let normalized = number.lowercased()
+        return normalized.contains("аренд") || normalized.contains("rental")
+    }
+
     private var tint: Color {
+        if isRental {
+            return .cyan
+        }
+
         switch number.filter(\.isNumber) {
+        case "1":
+            return .blue
+        case "2":
+            return .purple
+        case "3":
+            return .pink
         case "4":
             return .indigo
         case "5":
@@ -282,12 +297,19 @@ private struct DormitoryNumberBadge: View {
         case "6":
             return .teal
         default:
-            return .pink
+            return .mint
         }
     }
 
+    private var title: String {
+        if isRental {
+            return number
+        }
+        return "\(dormitoryLocalized("dormitory_label_dormitory")) \(number)"
+    }
+
     var body: some View {
-        Text("\(dormitoryLocalized("dormitory_label_dormitory")) \(number)")
+        Text(title)
             .font(.caption.weight(.bold))
             .foregroundStyle(tint)
             .padding(.horizontal, 9)
