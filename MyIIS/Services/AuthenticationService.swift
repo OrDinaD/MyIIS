@@ -46,6 +46,7 @@ class AuthenticationService: ObservableObject {
         } else if let cachedUserData = UserDefaultsPayloadStore.load(forKey: Self.cachedUserDefaultsKey, from: UserDefaults.standard),
            let cachedUser = try? JSONDecoder().decode(User.self, from: cachedUserData) {
             self.currentUser = cachedUser
+            self.isSessionReady = true
             self.logService.log("🔐 Restored cached user profile for \(cachedUser.fullName)")
         }
 
@@ -81,81 +82,41 @@ class AuthenticationService: ObservableObject {
     ) async {
         logService.log("Attempting to log in user: \(username)")
         isLoading = true
-        isSessionReady = false
+        let hasCachedSession = isSilent && currentUser != nil
+        isSessionReady = hasCachedSession
         errorMessage = nil
-        var exposedCachedSession = false
+        var didAuthenticateWithServer = false
 
         do {
             logService.log("Sending login request to API...")
             let loginResponse = try await apiService.login(username: username, password: password)
+            didAuthenticateWithServer = true
             logService.log("✅ Successfully logged in!")
 
-            if isSilent, currentUser != nil {
+            if hasCachedSession {
                 isSessionReady = true
                 isRestoringSession = false
-                exposedCachedSession = true
             }
 
-            // Получаем профиль только через профильный endpoint
             logService.log("Fetching profile data...")
             let personalProfile = try await apiService.getPersonalProfile()
             logService.log("✅ Profile data received")
-
-            // Создаём User из всех полученных данных
-            let user = convertToUser(
+            completeLogin(
                 loginResponse: loginResponse,
-                personalProfile: personalProfile
+                personalProfile: personalProfile,
+                credentials: StoredCredentials(username: username, password: password),
+                persistCredentials: persistCredentials,
+                isSilent: isSilent
             )
-            self.currentUser = user
-            self.isSessionReady = true
-            if !isSilent {
-                AppRouter.shared.selectedTab = AppRouter.isSectionOrTabEnabled("home") ? .home : .profile
-            }
-            cacheUser(user)
-            MyIISDataStore.update(userGroup: user.education.group)
-
-            if persistCredentials {
-                do {
-                    try credentialStore.save(StoredCredentials(username: username, password: password))
-                    logService.log("🔒 Credentials saved to Keychain.")
-                } catch {
-                    logService.log("⚠️ Failed to store credentials: \(error.localizedDescription)")
-                }
-            }
-
-            logService.log("✅ User profile loaded: \(user.fullName)")
-            AcademicChangeNotificationService.shared.checkWhenAppBecomesActive()
-
         } catch let error as APIError {
-            logService.log("❌ API Error: \(error.localizedDescription)")
-
-            if case .unauthorized = error {
-                isSessionReady = false
-                errorMessage = error.localizedDescription
-                currentUser = nil
-
-                if isSilent {
-                    try? credentialStore.clear()
-                    clearCachedUser()
-                }
-            } else if exposedCachedSession {
-                isSessionReady = true
-                errorMessage = nil
-                logService.log("⚠️ SESSION restored; keeping cached profile after profile refresh failed.")
-            } else {
-                isSessionReady = false
-                errorMessage = error.localizedDescription
-            }
+            handleLoginAPIError(
+                error,
+                hasCachedSession: hasCachedSession,
+                didAuthenticateWithServer: didAuthenticateWithServer,
+                isSilent: isSilent
+            )
         } catch {
-            if exposedCachedSession {
-                isSessionReady = true
-                errorMessage = nil
-                logService.log("⚠️ SESSION restored; keeping cached profile after profile refresh failed.")
-            } else {
-                isSessionReady = false
-                errorMessage = NSLocalizedString("common_unexpected_error", comment: "")
-            }
-            logService.log("❌ Unexpected Error: \(error.localizedDescription)")
+            handleUnexpectedLoginError(error, hasCachedSession: hasCachedSession)
         }
 
         isLoading = false
@@ -163,7 +124,7 @@ class AuthenticationService: ObservableObject {
     }
 
     func restoreSessionIfPossible() async {
-        guard !isLoading, !isSessionReady else {
+        guard !isLoading else {
             isRestoringSession = false
             return
         }
@@ -171,7 +132,7 @@ class AuthenticationService: ObservableObject {
         do {
             guard let credentials = try credentialStore.retrieve() else {
                 logService.log("ℹ️ No stored credentials found for auto-login.")
-                currentUser = nil
+                isSessionReady = currentUser != nil
                 isRestoringSession = false
                 return
             }
@@ -184,11 +145,95 @@ class AuthenticationService: ObservableObject {
                 isSilent: true
             )
         } catch {
-            currentUser = nil
-            isSessionReady = false
+            isSessionReady = currentUser != nil
             isRestoringSession = false
             logService.log("⚠️ Failed to access stored credentials: \(error.localizedDescription)")
         }
+    }
+
+    private func completeLogin(
+        loginResponse: LoginResponse,
+        personalProfile: PersonalProfile,
+        credentials: StoredCredentials,
+        persistCredentials: Bool,
+        isSilent: Bool
+    ) {
+        let user = convertToUser(
+            loginResponse: loginResponse,
+            personalProfile: personalProfile
+        )
+        currentUser = user
+        isSessionReady = true
+
+        if !isSilent {
+            AppRouter.shared.selectedTab = AppRouter.isSectionOrTabEnabled("home") ? .home : .profile
+        }
+
+        cacheUser(user)
+        MyIISDataStore.update(userGroup: user.education.group)
+
+        if persistCredentials {
+            do {
+                try credentialStore.save(credentials)
+                logService.log("🔒 Credentials saved to Keychain.")
+            } catch {
+                logService.log("⚠️ Failed to store credentials: \(error.localizedDescription)")
+            }
+        }
+
+        logService.log("✅ User profile loaded: \(user.fullName)")
+        AcademicChangeNotificationService.shared.checkWhenAppBecomesActive()
+    }
+
+    private func handleLoginAPIError(
+        _ error: APIError,
+        hasCachedSession: Bool,
+        didAuthenticateWithServer: Bool,
+        isSilent: Bool
+    ) {
+        logService.log("❌ API Error: \(error.localizedDescription)")
+
+        guard case .unauthorized = error else {
+            if hasCachedSession {
+                keepCachedSession(after: error)
+            } else {
+                isSessionReady = false
+                errorMessage = error.localizedDescription
+            }
+            return
+        }
+
+        if hasCachedSession, didAuthenticateWithServer {
+            keepCachedSession(after: error)
+            return
+        }
+
+        isSessionReady = false
+        errorMessage = error.localizedDescription
+        currentUser = nil
+
+        if isSilent {
+            try? credentialStore.clear()
+            clearCachedUser()
+        }
+    }
+
+    private func handleUnexpectedLoginError(_ error: Error, hasCachedSession: Bool) {
+        if hasCachedSession {
+            keepCachedSession(after: error)
+        } else {
+            isSessionReady = false
+            errorMessage = NSLocalizedString("common_unexpected_error", comment: "")
+        }
+        logService.log("❌ Unexpected Error: \(error.localizedDescription)")
+    }
+
+    private func keepCachedSession(after error: Error) {
+        isSessionReady = true
+        errorMessage = nil
+        logService.log(
+            "⚠️ Keeping cached session after background refresh failed: \(error.localizedDescription)"
+        )
     }
 
     private func cacheUser(_ user: User) {

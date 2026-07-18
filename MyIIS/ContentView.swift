@@ -14,13 +14,7 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            // Не запускаем защищённые экраны, пока silent login не подтвердил SESSION.
-            if authService.isRestoringSession {
-                ProgressView()
-                    .controlSize(.large)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color(.systemBackground))
-            } else if authService.currentUser != nil, authService.isSessionReady {
+            if authService.currentUser != nil {
                 MainTabView()
             } else {
                 UnauthorizedTabView()

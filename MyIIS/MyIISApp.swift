@@ -55,7 +55,9 @@ struct MyIISApp: App {
         switch phase {
         case .active:
             handlePendingAppIntentNavigation()
-            guard authService.isSessionReady, !authService.isLoading else { return }
+            guard authService.isSessionReady,
+                  !authService.isLoading,
+                  !authService.isRestoringSession else { return }
             AcademicChangeNotificationService.shared.checkWhenAppBecomesActive()
         case .background:
             AcademicChangeNotificationService.shared.scheduleBackgroundRefresh()
