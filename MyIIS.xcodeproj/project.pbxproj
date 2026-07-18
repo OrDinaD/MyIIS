@@ -19,6 +19,7 @@
 		F52AB8D43008F115002D379E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F52AB8D33008F114002D379E /* WidgetKit.framework */; };
 		F52AB8D63008F115002D379E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F52AB8D53008F115002D379E /* SwiftUI.framework */; };
 		F52AB91E300917E1002D379E /* MyIIS Watch WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F547D87D300C0A6600B666F6 /* Default.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE302FB0E1D900EA90E3 /* Default.icon */; };
 		F58E2F0D2FD00E66002BCF03 /* Messages.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F58E2F0C2FD00E66002BCF03 /* Messages.framework */; };
 		F58E2F192FD00E68002BCF03 /* MyIISMessages.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F5A5EE102F1C801900D2B7A1 /* MyIISWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -628,6 +629,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F547D87D300C0A6600B666F6 /* Default.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -845,7 +847,7 @@
 		F52AB8CB3008EF7A002D379E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -879,7 +881,7 @@
 		F52AB8CC3008EF7A002D379E /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = Default;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
