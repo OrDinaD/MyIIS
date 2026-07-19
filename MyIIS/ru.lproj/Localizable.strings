@@ -281,6 +281,16 @@
 "dormitory_full_page_privileges" = "Льготы";
 "dormitory_full_page_generated" = "Снимок создан: %@";
 "dormitory_label_status" = "Статус";
+"dormitory_reveal_congratulations" = "Поздравляем!";
+"dormitory_reveal_subtitle" = "Ваше место готово";
+"dormitory_reveal_dormitory_hint" = "Сначала сотрите слой и откройте общежитие.";
+"dormitory_reveal_room_hint" = "Теперь откройте комнату.";
+"dormitory_reveal_complete" = "Готово — через несколько секунд карточка вернётся на место.";
+"dormitory_reveal_wait_hint" = "Карточка открывается…";
+"dormitory_reveal_locked_room" = "Сначала откройте общежитие";
+"dormitory_reveal_scratch" = "Сотрите защитный слой";
+"dormitory_reveal_complete_short" = "Открыто";
+"dormitory_reveal_demo" = "Демо заселения";
 
 "rating_title" = "Рейтинг";
 "rating_auth_required" = "Нужна авторизация";

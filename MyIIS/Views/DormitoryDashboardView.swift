@@ -12,6 +12,7 @@ struct DormitoryApplicationsDashboard: View {
     let onOpenDocument: (DormitoryQueueApplication) -> Void
     let onEditApplication: (DormitoryQueueApplication) -> Void
     let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
+    var onDemoSettlementReveal: (() -> Void)?
 
     private var sortedApplications: [DormitoryQueueApplication] {
         applications.sorted {
@@ -44,7 +45,17 @@ struct DormitoryApplicationsDashboard: View {
             } else if applications.isEmpty {
                 DormitoryEmptyApplicationsCard()
             }
-
+#if DEBUG
+            if let onDemoSettlementReveal {
+                Button(action: onDemoSettlementReveal) {
+                    Label(dormitoryLocalized("dormitory_reveal_demo"), systemImage: "wand.and.stars")
+                        .font(.subheadline.weight(.semibold))
+                }
+                .buttonStyle(.bordered).tint(.secondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .accessibilityIdentifier("dormitory-settlement-reveal-demo")
+            }
+#endif
             DormitoryApplicationAvailability(
                 canCreateApplication: canCreateApplication,
                 isSubmittingApplication: isSubmittingApplication,

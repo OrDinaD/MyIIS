@@ -276,6 +276,16 @@
 "dormitory_full_page_privileges" = "Ільготы";
 "dormitory_full_page_generated" = "Здымак створаны: %@";
 "dormitory_label_status" = "Статус";
+"dormitory_reveal_congratulations" = "Віншуем!";
+"dormitory_reveal_subtitle" = "Ваша месца гатова";
+"dormitory_reveal_dormitory_hint" = "Спачатку сатрыце слой і адкрыйце гуртоўню.";
+"dormitory_reveal_room_hint" = "Цяпер адкрыйце пакой.";
+"dormitory_reveal_complete" = "Гатова — праз некалькі секунд картка вернецца на месца.";
+"dormitory_reveal_wait_hint" = "Картка адкрываецца…";
+"dormitory_reveal_locked_room" = "Спачатку адкрыйце гуртоўню";
+"dormitory_reveal_scratch" = "Сатрыце ахоўны слой";
+"dormitory_reveal_complete_short" = "Адкрыта";
+"dormitory_reveal_demo" = "Дэма засялення";
 
 "rating_title" = "Рэйтынг";
 "rating_auth_required" = "Патрэбна аўтарызацыя";

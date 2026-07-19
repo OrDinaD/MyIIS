@@ -1,6 +1,32 @@
 import Combine
 import Foundation
 
+struct DormitorySettlementReveal: Identifiable, Equatable {
+    let application: DormitoryQueueApplication
+    let isDemo: Bool
+
+    var id: String {
+        "\(application.id)-\(application.status)-\(isDemo)"
+    }
+
+    static let demo = DormitorySettlementReveal(
+        application: DormitoryQueueApplication(
+            id: 99_001,
+            acceptedDate: Calendar.current.date(byAdding: .day, value: -18, to: .now),
+            applicationDate: Calendar.current.date(byAdding: .day, value: -24, to: .now),
+            settledDate: .now,
+            status: DormitoryApplicationStatus.settled.rawValue,
+            number: 703,
+            numberInQueue: nil,
+            docReference: nil,
+            docContent: nil,
+            rejectionReason: nil,
+            roomInfo: "1302-а, Общ.4"
+        ),
+        isDemo: true
+    )
+}
+
 @MainActor
 final class DormitoryViewModel: ObservableObject {
     @Published private(set) var applications: [DormitoryQueueApplication]
@@ -13,6 +39,7 @@ final class DormitoryViewModel: ObservableObject {
     @Published var actionErrorMessage: String?
     @Published var lastUpdateTime: Date?
     @Published var isShowingStaleDataWarning = false
+    @Published private(set) var settlementReveal: DormitorySettlementReveal?
 
     private let dormitoryService: DormitoryServicing
     private let userDefaults: UserDefaults
@@ -70,6 +97,7 @@ final class DormitoryViewModel: ObservableObject {
         self.errorMessage = nil
         self.actionErrorMessage = nil
         self.lastUpdateTime = resolvedLastUpdateTime
+        self.settlementReveal = nil
     }
 
     var canCreateApplication: Bool {
@@ -115,6 +143,24 @@ final class DormitoryViewModel: ObservableObject {
             announcement = currentAnnouncement
         }
         await loadData()
+    }
+
+    func presentSettlementRevealDemo() {
+        if let application = applications.first(where: {
+            $0.status == DormitoryApplicationStatus.settled.rawValue &&
+                !($0.roomInfo?.isEmpty ?? true)
+        }) {
+            settlementReveal = DormitorySettlementReveal(
+                application: application,
+                isDemo: true
+            )
+        } else {
+            settlementReveal = .demo
+        }
+    }
+
+    func dismissSettlementReveal() {
+        settlementReveal = nil
     }
 
     func createApplication(documentURL: URL?) async -> Bool {
@@ -210,7 +256,15 @@ final class DormitoryViewModel: ObservableObject {
 
         switch result {
         case .success(let payload):
-            applications = sorted(payload.applications)
+            let previousApplications = applications
+            let loadedApplications = sorted(payload.applications)
+            if settlementReveal == nil {
+                settlementReveal = Self.detectSettlementReveal(
+                    previous: previousApplications,
+                    current: loadedApplications
+                )
+            }
+            applications = loadedApplications
             privilegeRecords = payload.privilegeRecords.sorted {
                 if $0.year != $1.year { return $0.year > $1.year }
                 return $0.dormitoryPrivilegeCategoryName < $1.dormitoryPrivilegeCategoryName
@@ -307,6 +361,37 @@ final class DormitoryViewModel: ObservableObject {
             return false
         }
         return day >= start && day <= end
+    }
+}
+
+private extension DormitoryViewModel {
+    static func detectSettlementReveal(
+        previous: [DormitoryQueueApplication],
+        current: [DormitoryQueueApplication]
+    ) -> DormitorySettlementReveal? {
+        let previousByID = Dictionary(
+            previous.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+
+        guard let settledApplication = current.first(where: { application in
+            guard
+                application.status == DormitoryApplicationStatus.settled.rawValue,
+                !(application.roomInfo?.isEmpty ?? true),
+                let previousApplication = previousByID[application.id]
+            else {
+                return false
+            }
+
+            return previousApplication.status == DormitoryApplicationStatus.documentsAccepted.rawValue
+        }) else {
+            return nil
+        }
+
+        return DormitorySettlementReveal(
+            application: settledApplication,
+            isDemo: false
+        )
     }
 }
 

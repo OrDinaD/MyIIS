@@ -276,6 +276,16 @@
 "dormitory_full_page_privileges" = "Пільги";
 "dormitory_full_page_generated" = "Знімок створено: %@";
 "dormitory_label_status" = "Статус";
+"dormitory_reveal_congratulations" = "Вітаємо!";
+"dormitory_reveal_subtitle" = "Ваше місце готове";
+"dormitory_reveal_dormitory_hint" = "Спочатку зітріть шар і відкрийте гуртожиток.";
+"dormitory_reveal_room_hint" = "Тепер відкрийте кімнату.";
+"dormitory_reveal_complete" = "Готово — за кілька секунд картка повернеться на місце.";
+"dormitory_reveal_wait_hint" = "Картка відкривається…";
+"dormitory_reveal_locked_room" = "Спочатку відкрийте гуртожиток";
+"dormitory_reveal_scratch" = "Зітріть захисний шар";
+"dormitory_reveal_complete_short" = "Відкрито";
+"dormitory_reveal_demo" = "Демо заселення";
 
 "rating_title" = "Рейтинг";
 "rating_auth_required" = "Потрібна авторизація";

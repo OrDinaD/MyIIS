@@ -281,6 +281,16 @@
 "dormitory_full_page_privileges" = "Privileges";
 "dormitory_full_page_generated" = "Screenshot created: %@";
 "dormitory_label_status" = "Status";
+"dormitory_reveal_congratulations" = "Congratulations!";
+"dormitory_reveal_subtitle" = "Your place is ready";
+"dormitory_reveal_dormitory_hint" = "Scratch the first panel to reveal your dormitory.";
+"dormitory_reveal_room_hint" = "Now reveal your room.";
+"dormitory_reveal_complete" = "Done — the card will return to its place in a few seconds.";
+"dormitory_reveal_wait_hint" = "Opening the card…";
+"dormitory_reveal_locked_room" = "Reveal the dormitory first";
+"dormitory_reveal_scratch" = "Scratch to reveal";
+"dormitory_reveal_complete_short" = "Revealed";
+"dormitory_reveal_demo" = "Settlement demo";
 
 "rating_title" = "Rating";
 "rating_auth_required" = "Authorization required";

@@ -12,10 +12,23 @@ struct DormitoryView: View {
     }
 
     var body: some View {
-        ScrollView {
-            dormitoryContent
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+        ZStack {
+            ScrollView {
+                dormitoryContent
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+            }
+            .allowsHitTesting(viewModel.settlementReveal == nil)
+
+            if let reveal = viewModel.settlementReveal {
+                DormitorySettlementRevealView(
+                    reveal: reveal,
+                    onDismiss: viewModel.dismissSettlementReveal
+                )
+                .id(reveal.id)
+                .transition(.opacity)
+                .zIndex(20)
+            }
         }
         .background(Color(.systemGroupedBackground))
         .background {
@@ -28,11 +41,15 @@ struct DormitoryView: View {
         .navigationTitle(NSLocalizedString("dormitory_title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
+        .animation(.snappy(duration: 0.32), value: viewModel.settlementReveal?.id)
         .task {
             await viewModel.loadIfNeeded()
         }
         .refreshable {
             await viewModel.reload()
+        }
+        .onDisappear {
+            viewModel.dismissSettlementReveal()
         }
         .quickLookPreview($previewURL)
         .sheet(item: $editorContext) { context in
@@ -110,7 +127,8 @@ struct DormitoryView: View {
                 },
                 onDownloadApplicationForm: { application in
                     Task { await downloadApplicationForm(for: application) }
-                }
+                },
+                onDemoSettlementReveal: viewModel.presentSettlementRevealDemo
             )
             PrivilegesSection(records: viewModel.privilegeRecords)
         }
@@ -176,6 +194,7 @@ private struct ApplicationsSection: View {
     let onOpenDocument: (DormitoryQueueApplication) -> Void
     let onEditApplication: (DormitoryQueueApplication) -> Void
     let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
+    let onDemoSettlementReveal: () -> Void
 
     var body: some View {
         DormitoryApplicationsDashboard(
@@ -187,7 +206,8 @@ private struct ApplicationsSection: View {
             onCreateApplication: onCreateApplication,
             onOpenDocument: onOpenDocument,
             onEditApplication: onEditApplication,
-            onDownloadApplicationForm: onDownloadApplicationForm
+            onDownloadApplicationForm: onDownloadApplicationForm,
+            onDemoSettlementReveal: onDemoSettlementReveal
         )
     }
 }
