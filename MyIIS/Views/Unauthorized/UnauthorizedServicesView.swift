@@ -52,6 +52,12 @@ struct UnauthorizedServicesView: View {
                     }
                 }
 
+                Section("Документы и техподдержка") {
+                    NavigationLink(destination: SupportView()) {
+                        serviceRow(icon: "wrench.and.screwdriver.fill", title: "Техническая поддержка")
+                    }
+                }
+
                 Section(NSLocalizedString("unauthorized_services_locked_section", comment: "")) {
                     lockedServiceRow(icon: "book.closed.fill", title: NSLocalizedString("services_item_markbook", comment: ""))
                     lockedServiceRow(icon: "calendar", title: NSLocalizedString("services_item_schedule", comment: ""))

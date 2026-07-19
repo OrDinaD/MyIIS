@@ -1,0 +1,1244 @@
+{
+  "metadata": {
+    "sourceFile": "Документы Техподдержки.har",
+    "sourceSHA256": "f78fdc5d7979d3b9dd2d95e962b7152863d94e3b568fd91754697218da857d70",
+    "generatedAt": "2026-07-19T10:59:37.411169+00:00",
+    "scope": "Support page (/support), documents list, bug-report form, API behavior present in the loaded JavaScript and requests captured by this HAR.",
+    "sensitiveDataRemoved": true
+  },
+  "architecture": {
+    "frontend": "React SPA with dynamically loaded support chunk",
+    "apiClient": {
+      "baseURL": "https://iis.bsuir.by/api/v1",
+      "withCredentials": true,
+      "authorizationObserved": "SESSION cookie; no Authorization header in captured API request"
+    },
+    "documentsSource": "Hardcoded client-side array; no documents API",
+    "categorySource": "GET /bug-report/categories plus client-side merge by categoryKey",
+    "screenshot": "html2canvas-style page capture passed via router state, annotated locally with Excalidraw 0.14.2, exported as screenshot.jpg and attached on submit"
+  },
+  "endpoints": [
+    {
+      "id": "fetchCategories",
+      "method": "GET",
+      "url": "https://iis.bsuir.by/api/v1/bug-report/categories",
+      "captured": true,
+      "request": {
+        "body": null,
+        "query": null
+      },
+      "response": {
+        "capturedStatus": 200,
+        "contentType": "application/json",
+        "schema": "BugReportCategoryDTO[]",
+        "example": [
+          {
+            "id": 2,
+            "categoryName": "ИИС «БГУИР: Университет»",
+            "categoryKey": "[ИИС]",
+            "bugReportSubcategoriesDto": []
+          },
+          {
+            "id": 1,
+            "categoryName": "Cистема «Студенты»",
+            "categoryKey": "[СТУДЕНТЫ]",
+            "bugReportSubcategoriesDto": []
+          },
+          {
+            "id": 5,
+            "categoryName": "Компьютерная техника и ПО",
+            "categoryKey": "[PC-Software]",
+            "bugReportSubcategoriesDto": [
+              {
+                "id": 4,
+                "subcategoryName": "Неисправности",
+                "subcategoryKey": "[PC-Repair]"
+              },
+              {
+                "id": 7,
+                "subcategoryName": "Установка и обновление ПО",
+                "subcategoryKey": "[PC-InstallSoft]"
+              },
+              {
+                "id": 8,
+                "subcategoryName": "Активация ПО",
+                "subcategoryKey": "[PC-KEY]"
+              },
+              {
+                "id": 5,
+                "subcategoryName": "Первичная настройка компьютера",
+                "subcategoryKey": "[PC-NewUser]"
+              },
+              {
+                "id": 9,
+                "subcategoryName": "Антивирус Kaspersky",
+                "subcategoryKey": "[PC-Antivirus]"
+              },
+              {
+                "id": 6,
+                "subcategoryName": "Другое",
+                "subcategoryKey": "[OS-Other]"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "categoryName": "Учетная запись",
+            "categoryKey": "[Network-Account]",
+            "bugReportSubcategoriesDto": []
+          },
+          {
+            "id": 8,
+            "categoryName": "Принтеры и МФУ",
+            "categoryKey": "[Print]",
+            "bugReportSubcategoriesDto": [
+              {
+                "id": 17,
+                "subcategoryName": "Обслуживание и ремонт",
+                "subcategoryKey": "[Print-Repair]"
+              },
+              {
+                "id": 18,
+                "subcategoryName": "Подключение, настройка",
+                "subcategoryKey": "[Print-Connect]"
+              },
+              {
+                "id": 19,
+                "subcategoryName": "Другое",
+                "subcategoryKey": "[Print-Other]"
+              }
+            ]
+          },
+          {
+            "id": 7,
+            "categoryName": "Компьютерная сеть",
+            "categoryKey": "[Network]",
+            "bugReportSubcategoriesDto": [
+              {
+                "id": 13,
+                "subcategoryName": "Проблемы с сетью и интернетом",
+                "subcategoryKey": "[Network-Offline]"
+              },
+              {
+                "id": 15,
+                "subcategoryName": "Кабельное подключение",
+                "subcategoryKey": "[Network-Connection]"
+              },
+              {
+                "id": 16,
+                "subcategoryName": "Другое",
+                "subcategoryKey": "[Network-Other]"
+              }
+            ]
+          },
+          {
+            "id": 9,
+            "categoryName": "Акт о непригодности оборудования",
+            "categoryKey": "[ActEquip]",
+            "bugReportSubcategoriesDto": []
+          },
+          {
+            "id": 10,
+            "categoryName": "Система электронного обучения",
+            "categoryKey": "[LMS]",
+            "bugReportSubcategoriesDto": []
+          },
+          {
+            "id": 4,
+            "categoryName": "СЭД «SMBusiness»",
+            "categoryKey": "[SMB]",
+            "bugReportSubcategoriesDto": [
+              {
+                "id": 2,
+                "subcategoryName": "Установка",
+                "subcategoryKey": "[SMB-Install]"
+              },
+              {
+                "id": 1,
+                "subcategoryName": "Создание учетной записи",
+                "subcategoryKey": "[SMB-Account]"
+              },
+              {
+                "id": 3,
+                "subcategoryName": "Другое",
+                "subcategoryKey": "[SMB-Other]"
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "categoryName": "Карта работника/студента",
+            "categoryKey": "[ID-Card]",
+            "bugReportSubcategoriesDto": []
+          },
+          {
+            "id": 12,
+            "categoryName": "Учебный отдел",
+            "categoryKey": "[UMU]",
+            "bugReportSubcategoriesDto": []
+          },
+          {
+            "id": 11,
+            "categoryName": "Нет в списке возникшей проблемы",
+            "categoryKey": "[Other]",
+            "bugReportSubcategoriesDto": []
+          }
+        ]
+      },
+      "errorHandling": "Any error -> full-page load error; user is asked to refresh."
+    },
+    {
+      "id": "autocompleteByCredentials",
+      "method": "POST",
+      "url": "https://iis.bsuir.by/api/v1/autocomplete",
+      "captured": false,
+      "request": {
+        "contentType": "application/json",
+        "body": {
+          "login": "string",
+          "password": "string"
+        }
+      },
+      "response": {
+        "inferredSchema": {
+          "fio": "string?",
+          "email": "string?",
+          "phone": "string?",
+          "accountType": "EMPLOYEE | STUDENT | other?",
+          "department": "string?",
+          "room": "string?",
+          "building": "string?",
+          "group": "string?"
+        }
+      },
+      "errorHandling": {
+        "401": "Неверный пароль.",
+        "404": "Не удалось найти учетную запись.",
+        "other": "Modal closes; no reliable response contract captured."
+      }
+    },
+    {
+      "id": "autocompleteByPersonalInfo",
+      "method": "POST",
+      "url": "https://iis.bsuir.by/api/v1/autocomplete/by-personal-info",
+      "captured": false,
+      "request": {
+        "contentType": "application/json",
+        "body": {
+          "fio": "string",
+          "email": "string"
+        }
+      },
+      "response": {
+        "inferredSchema": {
+          "phone": "string?",
+          "department": "string?",
+          "room": "string?",
+          "building": "string?",
+          "additionalKeys": "possible"
+        },
+        "emptyObjectAllowed": true
+      },
+      "trigger": "On blur of FIO or email, only if either value changed and both are non-empty.",
+      "errorHandling": "Any error -> warning that connection to server failed."
+    },
+    {
+      "id": "searchDepartments",
+      "method": "GET",
+      "url": "https://iis.bsuir.by/api/v1/departments/filter",
+      "captured": false,
+      "request": {
+        "query": {
+          "searchValue": "trimmed string"
+        }
+      },
+      "response": {
+        "inferredSchema": [
+          {
+            "name": "string",
+            "abbrev": "string",
+            "code": "non-null value",
+            "additionalKeys": "possible"
+          }
+        ],
+        "clientMapping": "label/value = name + ' (' + abbrev + ')'; rows with code == null are removed"
+      },
+      "errorHandling": "Any error -> empty options + warning."
+    },
+    {
+      "id": "searchAuditories",
+      "method": "GET",
+      "url": "https://iis.bsuir.by/api/v1/auditories/filter",
+      "captured": false,
+      "request": {
+        "query": {
+          "searchValue": "trimmed string"
+        }
+      },
+      "response": {
+        "inferredSchema": [
+          {
+            "name": "string",
+            "buildingNumber": "string | number",
+            "additionalKeys": "possible"
+          }
+        ],
+        "clientMapping": "label/value = name + '-' + buildingNumber"
+      },
+      "errorHandling": "Any error -> warning; reducer controls empty data."
+    },
+    {
+      "id": "submitBugReport",
+      "method": "POST",
+      "url": "https://iis.bsuir.by/api/v1/bug-report",
+      "captured": false,
+      "request": {
+        "contentType": "multipart/form-data",
+        "parts": [
+          "lastName",
+          "firstName",
+          "middleName",
+          "subject",
+          "browser",
+          "labels",
+          "categoryId?",
+          "subcategoryId?",
+          "email",
+          "phone?",
+          "department?",
+          "roomBuilding?",
+          "computerName?",
+          "printerName?",
+          "inventoryNumber?",
+          "group?",
+          "description",
+          "acts? (JSON string)",
+          "files[0..n]?",
+          "url?"
+        ]
+      },
+      "response": {
+        "body": "ignored by frontend",
+        "success": "any resolved Axios response (normally 2xx)",
+        "exactStatusUnknown": true
+      },
+      "errorHandling": "Any failure -> generic 'Не удалось отправить заявку.'"
+    }
+  ],
+  "documents": [
+    {
+      "groupNumber": 1,
+      "groupName": "Система для организации выполнения заявок от структурных подразделений и пользователей",
+      "localNetworkOnly": false,
+      "note": null,
+      "items": [
+        {
+          "number": "1.1",
+          "title": "Стандартный набор ПО",
+          "path": "public_iis_files/softwareList.pdf",
+          "url": "https://iis.bsuir.by/public_iis_files/softwareList.pdf"
+        }
+      ]
+    },
+    {
+      "groupNumber": 2,
+      "groupName": "Настройки компьютерной сети",
+      "localNetworkOnly": false,
+      "note": null,
+      "items": [
+        {
+          "number": "2.1",
+          "title": "Руководство для настройки Wi‑Fi",
+          "path": "public_iis_files/wifiGuide.pdf",
+          "url": "https://iis.bsuir.by/public_iis_files/wifiGuide.pdf"
+        },
+        {
+          "number": "2.2",
+          "title": "Настройка OpenVPN",
+          "path": "public_iis_files/setupOpenVPN.pdf",
+          "url": "https://iis.bsuir.by/public_iis_files/setupOpenVPN.pdf"
+        }
+      ]
+    },
+    {
+      "groupNumber": 3,
+      "groupName": "Политика безопасности в отношении обработки персональных данных БГУИР",
+      "localNetworkOnly": false,
+      "note": null,
+      "items": [
+        {
+          "number": "3.1",
+          "title": "Политика обработки файлов cookie",
+          "path": "public_iis_files/cookiePolicy.pdf",
+          "url": "https://iis.bsuir.by/public_iis_files/cookiePolicy.pdf"
+        },
+        {
+          "number": "3.2",
+          "title": "Инструкция по смене пароля",
+          "path": "public_iis_files/changePasswordLDAP.pdf",
+          "url": "https://iis.bsuir.by/public_iis_files/changePasswordLDAP.pdf"
+        }
+      ]
+    },
+    {
+      "groupNumber": 4,
+      "groupName": "Политика безопасности БГУИР",
+      "localNetworkOnly": true,
+      "note": "Доступно только из локальной сети БГУИР",
+      "items": [
+        {
+          "number": "4.1",
+          "title": "Политика безопасности университета",
+          "path": "iis_files/privacyPolicy.pdf",
+          "url": "https://iis.bsuir.by/iis_files/privacyPolicy.pdf"
+        },
+        {
+          "number": "4.2",
+          "title": "Список ответственных за соблюдение политики безопасности",
+          "path": "iis_files/privacyPolicyList.pdf",
+          "url": "https://iis.bsuir.by/iis_files/privacyPolicyList.pdf"
+        },
+        {
+          "number": "4.3",
+          "title": "Инструкция по настройке ПК в структурных подразделениях",
+          "path": "iis_files/pcSettings.pdf",
+          "url": "https://iis.bsuir.by/iis_files/pcSettings.pdf"
+        }
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": 2,
+      "categoryName": "ИИС «БГУИР: Университет»",
+      "categoryKey": "[ИИС]",
+      "bugReportSubcategoriesDto": [],
+      "frontendFields": [
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "IIS icon"
+    },
+    {
+      "id": 1,
+      "categoryName": "Cистема «Студенты»",
+      "categoryKey": "[СТУДЕНТЫ]",
+      "bugReportSubcategoriesDto": [],
+      "frontendFields": [
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "student icon"
+    },
+    {
+      "id": 5,
+      "categoryName": "Компьютерная техника и ПО",
+      "categoryKey": "[PC-Software]",
+      "bugReportSubcategoriesDto": [
+        {
+          "id": 4,
+          "subcategoryName": "Неисправности",
+          "subcategoryKey": "[PC-Repair]"
+        },
+        {
+          "id": 7,
+          "subcategoryName": "Установка и обновление ПО",
+          "subcategoryKey": "[PC-InstallSoft]"
+        },
+        {
+          "id": 8,
+          "subcategoryName": "Активация ПО",
+          "subcategoryKey": "[PC-KEY]"
+        },
+        {
+          "id": 5,
+          "subcategoryName": "Первичная настройка компьютера",
+          "subcategoryKey": "[PC-NewUser]"
+        },
+        {
+          "id": 9,
+          "subcategoryName": "Антивирус Kaspersky",
+          "subcategoryKey": "[PC-Antivirus]"
+        },
+        {
+          "id": 6,
+          "subcategoryName": "Другое",
+          "subcategoryKey": "[OS-Other]"
+        }
+      ],
+      "frontendFields": [
+        {
+          "name": "phone",
+          "required": true
+        },
+        {
+          "name": "department",
+          "required": true
+        },
+        {
+          "name": "roomBuilding",
+          "required": true
+        },
+        {
+          "name": "computerName",
+          "required": true
+        },
+        {
+          "name": "inventoryNumber",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [
+        "В соответствии с положением о ЦИИР, в отношении кафедр оказываются только услуги по ремонту техники. По остальным вопросам обращаться к инженерам кафедры.",
+        "При необходимости приобретения запасных частей для ремонта компьютерной техники необходимо написать докладную записку на имя курирующего проректора."
+      ],
+      "frontendIconSemantic": "computer icon"
+    },
+    {
+      "id": 3,
+      "categoryName": "Учетная запись",
+      "categoryKey": "[Network-Account]",
+      "bugReportSubcategoriesDto": [],
+      "frontendFields": [
+        {
+          "name": "phone",
+          "required": true
+        },
+        {
+          "name": "department",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "account icon"
+    },
+    {
+      "id": 8,
+      "categoryName": "Принтеры и МФУ",
+      "categoryKey": "[Print]",
+      "bugReportSubcategoriesDto": [
+        {
+          "id": 17,
+          "subcategoryName": "Обслуживание и ремонт",
+          "subcategoryKey": "[Print-Repair]"
+        },
+        {
+          "id": 18,
+          "subcategoryName": "Подключение, настройка",
+          "subcategoryKey": "[Print-Connect]"
+        },
+        {
+          "id": 19,
+          "subcategoryName": "Другое",
+          "subcategoryKey": "[Print-Other]"
+        }
+      ],
+      "frontendFields": [
+        {
+          "name": "phone",
+          "required": true
+        },
+        {
+          "name": "department",
+          "required": true
+        },
+        {
+          "name": "roomBuilding",
+          "required": true
+        },
+        {
+          "name": "computerName",
+          "required": true
+        },
+        {
+          "name": "printerName",
+          "required": true
+        },
+        {
+          "name": "inventoryNumber",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [
+        "При необходимости приобретения запасных частей для ремонта компьютерной техники необходимо написать докладную записку на имя курирующего проректора.",
+        "По вопросу замены картриджей обращайтесь в отдел снабжения."
+      ],
+      "frontendIconSemantic": "printer icon"
+    },
+    {
+      "id": 7,
+      "categoryName": "Компьютерная сеть",
+      "categoryKey": "[Network]",
+      "bugReportSubcategoriesDto": [
+        {
+          "id": 13,
+          "subcategoryName": "Проблемы с сетью и интернетом",
+          "subcategoryKey": "[Network-Offline]"
+        },
+        {
+          "id": 15,
+          "subcategoryName": "Кабельное подключение",
+          "subcategoryKey": "[Network-Connection]"
+        },
+        {
+          "id": 16,
+          "subcategoryName": "Другое",
+          "subcategoryKey": "[Network-Other]"
+        }
+      ],
+      "frontendFields": [
+        {
+          "name": "phone",
+          "required": true
+        },
+        {
+          "name": "department",
+          "required": true
+        },
+        {
+          "name": "roomBuilding",
+          "required": true
+        },
+        {
+          "name": "computerName",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "network icon"
+    },
+    {
+      "id": 9,
+      "categoryName": "Акт о непригодности оборудования",
+      "categoryKey": "[ActEquip]",
+      "bugReportSubcategoriesDto": [],
+      "frontendFields": [
+        {
+          "name": "acts",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": false
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "act/document icon"
+    },
+    {
+      "id": 10,
+      "categoryName": "Система электронного обучения",
+      "categoryKey": "[LMS]",
+      "bugReportSubcategoriesDto": [],
+      "frontendFields": [
+        {
+          "name": "phone",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "education icon"
+    },
+    {
+      "id": 4,
+      "categoryName": "СЭД «SMBusiness»",
+      "categoryKey": "[SMB]",
+      "bugReportSubcategoriesDto": [
+        {
+          "id": 2,
+          "subcategoryName": "Установка",
+          "subcategoryKey": "[SMB-Install]"
+        },
+        {
+          "id": 1,
+          "subcategoryName": "Создание учетной записи",
+          "subcategoryKey": "[SMB-Account]"
+        },
+        {
+          "id": 3,
+          "subcategoryName": "Другое",
+          "subcategoryKey": "[SMB-Other]"
+        }
+      ],
+      "frontendFields": [
+        {
+          "name": "phone",
+          "required": true
+        },
+        {
+          "name": "department",
+          "required": true
+        },
+        {
+          "name": "roomBuilding",
+          "required": true
+        },
+        {
+          "name": "computerName",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "document/system icon"
+    },
+    {
+      "id": 6,
+      "categoryName": "Карта работника/студента",
+      "categoryKey": "[ID-Card]",
+      "bugReportSubcategoriesDto": [],
+      "frontendFields": [
+        {
+          "name": "description",
+          "required": true
+        },
+        {
+          "name": "phone",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "card icon"
+    },
+    {
+      "id": 12,
+      "categoryName": "Учебный отдел",
+      "categoryKey": "[UMU]",
+      "bugReportSubcategoriesDto": [],
+      "frontendFields": [
+        {
+          "name": "phone",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "education/department icon"
+    },
+    {
+      "id": 11,
+      "categoryName": "Нет в списке возникшей проблемы",
+      "categoryKey": "[Other]",
+      "bugReportSubcategoriesDto": [],
+      "frontendFields": [
+        {
+          "name": "phone",
+          "required": true
+        },
+        {
+          "name": "description",
+          "required": true
+        }
+      ],
+      "frontendNotices": [],
+      "frontendIconSemantic": "more/other icon"
+    }
+  ],
+  "validation": {
+    "fio": {
+      "required": true,
+      "regex": "^[a-zA-Zа-яА-ЯЁёЎўІі.'\\- ]+$",
+      "normalization": "trim, collapse spaces, capitalize first character and characters after start/space/dot, then split into lastName/firstName/middleName"
+    },
+    "email": {
+      "required": true,
+      "format": "email",
+      "blockedSuffix": "@tut.by (case-sensitive in frontend code)"
+    },
+    "phone": {
+      "required": "category-dependent",
+      "rule": "Must not consist only of spaces; no numeric format validation in the ordinary phone field."
+    },
+    "department": {
+      "required": "category-dependent",
+      "source": "searchDepartments"
+    },
+    "roomBuilding": {
+      "required": "category-dependent",
+      "source": "searchAuditories",
+      "formatUsedByUI": "<room>-<building>"
+    },
+    "computerName": {
+      "required": "category-dependent",
+      "rule": "Must not consist only of spaces."
+    },
+    "printerName": {
+      "required": "category-dependent",
+      "rule": "Must not consist only of spaces."
+    },
+    "inventoryNumber": {
+      "required": "category-dependent",
+      "regex": "^[а-яА-ЯёЁ0-9]+$"
+    },
+    "group": {
+      "required": "category-dependent",
+      "regex": "^((\\d{6})|(\\dA\\d{4}))$"
+    },
+    "description": {
+      "required": "category-dependent",
+      "trimmed": true
+    },
+    "subcategory": {
+      "requiredWhen": "bugReportSubcategoriesDto.length > 1"
+    },
+    "attachments": {
+      "totalMaxBytes": 52428800,
+      "nonEmpty": true,
+      "filenameCannotContain": "..",
+      "extensionRequired": true,
+      "prohibitedExtensions": [
+        ".ade",
+        ".adp",
+        ".apk",
+        ".appx",
+        ".appxbundle",
+        ".bat",
+        ".cab",
+        ".chm",
+        ".cmd",
+        ".com",
+        ".cpl",
+        ".dll",
+        ".dmg",
+        ".exe",
+        ".hta",
+        ".ins",
+        ".isp",
+        ".iso",
+        ".jar",
+        ".js",
+        ".jse",
+        ".lib",
+        ".lnk",
+        ".mde",
+        ".msc",
+        ".msi",
+        ".msix",
+        ".msixbundle",
+        ".msp",
+        ".mst",
+        ".nsh",
+        ".pif",
+        ".psl",
+        ".scr",
+        ".sct",
+        ".shb",
+        ".sys",
+        ".vb",
+        ".vbe",
+        ".vbs",
+        ".vxd",
+        ".wsc",
+        ".wsf",
+        ".wsh"
+      ],
+      "acceptHint": [
+        ".txt",
+        ".htm",
+        ".html",
+        ".zip",
+        ".doc",
+        ".docx",
+        "image/*",
+        "video/*",
+        "audio/*",
+        ".xml",
+        ".xls",
+        ".xlsx",
+        ".pptx",
+        ".rtf",
+        ".csv",
+        ".pub",
+        ".odt",
+        ".pdf"
+      ],
+      "warning": "Browser accept and client validation are not security boundaries; blocked extension comparison is case-sensitive in this build."
+    },
+    "acts": {
+      "requiredFor": "[ActEquip]",
+      "minimumRows": 1,
+      "rowFields": [
+        "department",
+        "equipmentType",
+        "inventoryNumber",
+        "year",
+        "fullName",
+        "phoneNumber"
+      ],
+      "allRowFieldsRequired": true,
+      "yearRegex": "^\\d{4}$",
+      "phoneNumberRegex": "^(([+]?375\\d{9})|(\\d{4,12}))$",
+      "submission": "JSON.stringify(rows), with key converted from zero-based to one-based"
+    }
+  },
+  "subjectAndContext": {
+    "default": "[Other] Нет в списке возникшей проблемы",
+    "categorySelection": "<categoryKey> <categoryName>",
+    "subcategorySelection": "<subcategoryKey> <subcategoryName>",
+    "iisWithoutSourcePath": "[ИИС] «БГУИР: Университет»",
+    "iisWithSourcePath": "Uses the route context map; exact route provides subject and labels. Dynamic /departments/<id-or-name> and /employees/<id-or-name> derive subject from base route plus last path component.",
+    "browser": "<browserName> <fullBrowserVersion>",
+    "url": "Previous application route, included only when support was opened with router state prevPath.",
+    "routeContextMap": [
+      {
+        "pathname": "/about",
+        "name": "[ИИС] Страница \"о нас\"",
+        "labels": ""
+      },
+      {
+        "pathname": "/api",
+        "name": "[ИИС] Документация",
+        "labels": "Documentation"
+      },
+      {
+        "pathname": "/departments/",
+        "name": "[ИИС] Список работников подразделения",
+        "labels": "Departments Tree, Employees"
+      },
+      {
+        "pathname": "/departments",
+        "name": "[ИИС] Дерево подразделений",
+        "labels": "Departments Tree"
+      },
+      {
+        "pathname": "/employees/",
+        "name": "[ИИС] Персональная страница работника",
+        "labels": "Employee Personal Page"
+      },
+      {
+        "pathname": "/list-of-disciplines",
+        "name": "[ИИС] Список дисциплин",
+        "labels": "Disciplines"
+      },
+      {
+        "pathname": "/login",
+        "name": "[ИИС] Форма входа в систему",
+        "labels": "Auth"
+      },
+      {
+        "pathname": "/new-password",
+        "name": "[ИИС] Создание нового пароля",
+        "labels": "Password Change"
+      },
+      {
+        "pathname": "/phones",
+        "name": "[ИИС] Телефонный справочник",
+        "labels": "Phones"
+      },
+      {
+        "pathname": "/rating-of-students",
+        "name": "[ИИС] Рейтинг",
+        "labels": "Students Rating"
+      },
+      {
+        "pathname": "/schedule",
+        "name": "[ИИС] Расписание",
+        "labels": "Schedule"
+      },
+      {
+        "pathname": "/calendar",
+        "name": "[ИИС] Календарь учебных недель",
+        "labels": "Calendar"
+      },
+      {
+        "pathname": "/",
+        "name": "[ИИС] Главная страница",
+        "labels": ""
+      },
+      {
+        "pathname": "/personal-account/profile",
+        "name": "[ИИС] Личный кабинет. Профиль",
+        "labels": "Personal Account, Profile"
+      },
+      {
+        "pathname": "/personal-account/markbook",
+        "name": "[ИИС] Личный кабинет. Зачетка",
+        "labels": "Personal Account, Markbook"
+      },
+      {
+        "pathname": "/personal-account/study",
+        "name": "[ИИС] Личный кабинет. Учеба",
+        "labels": "Personal Account, Study"
+      },
+      {
+        "pathname": "/personal-account/library",
+        "name": "[ИИС] Личный кабинет. Библиотека",
+        "labels": "Personal Account, Library"
+      },
+      {
+        "pathname": "/personal-account/settings",
+        "name": "[ИИС] Личный кабинет. Настройки",
+        "labels": "Personal Account, Settings"
+      },
+      {
+        "pathname": "/personal-account/rating",
+        "name": "[ИИС] Личный кабинет. Рейтинг",
+        "labels": "Personal Account, Rating"
+      },
+      {
+        "pathname": "/personal-account/headman",
+        "name": "[ИИС] Личный кабинет. Староста",
+        "labels": "Personal Account, Headman"
+      },
+      {
+        "pathname": "/personal-account/group",
+        "name": "[ИИС] Личный кабинет. Группа",
+        "labels": "Personal Account, Group"
+      },
+      {
+        "pathname": "/personal-account/dormitory",
+        "name": "[ИИС] Личный кабинет. Общежитие",
+        "labels": "Personal Account, Dormitory"
+      },
+      {
+        "pathname": "/personal-account/announcements",
+        "name": "[ИИС] Личный кабинет. Объявления",
+        "labels": "Personal Account, Announcements"
+      },
+      {
+        "pathname": "/personal-account/penalty",
+        "name": "[ИИС] Личный кабинет. Взыскания",
+        "labels": "Personal Account, Penalty"
+      },
+      {
+        "pathname": "/personal-account/social-and-research-work",
+        "name": "[ИИС] Личный кабинет. Активность",
+        "labels": "Personal Account, Social and Research Work"
+      },
+      {
+        "pathname": "/personal-account/profiling",
+        "name": "[ИИС] Личный кабинет. Профилизация",
+        "labels": "Personal Account, Profiling"
+      },
+      {
+        "pathname": "/personal-account/lessons",
+        "name": "",
+        "labels": "Personal Account, Lessons"
+      },
+      {
+        "pathname": "/personal-account/graduate",
+        "name": "",
+        "labels": "Personal Account, Graduate"
+      },
+      {
+        "pathname": "/personal-account/omissions",
+        "name": "[ИИС] Личный кабинет. Пропуски",
+        "labels": "Personal Account, Omissions"
+      },
+      {
+        "pathname": "/personal-account/gradebook",
+        "name": "[ИИС] Личный кабинет. Журнал успеваемости",
+        "labels": "Personal Account, Gradebook"
+      },
+      {
+        "pathname": "/personal-account/users",
+        "name": "[ИИС] Личный кабинет. Пользователи",
+        "labels": "Personal Account, Users"
+      },
+      {
+        "pathname": "/personal-account/diploma-students",
+        "name": "[ИИС] Личный кабинет. Дипломники",
+        "labels": "Personal Account, Diploma Students"
+      },
+      {
+        "pathname": "/personal-account/positions",
+        "name": "[ИИС] Личный кабинет. Должности",
+        "labels": "Personal Account, Positions"
+      },
+      {
+        "pathname": "/personal-account/educational-work",
+        "name": "[ИИС] Личный кабинет. Учебная работа",
+        "labels": "Personal Account, Educational Work"
+      }
+    ]
+  },
+  "actualHARRequests": [
+    {
+      "index": 0,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/support",
+      "status": 200,
+      "mimeType": "text/html",
+      "decodedContentSize": 1648,
+      "encodedBodySize": 957,
+      "durationMs": 67.371
+    },
+    {
+      "index": 1,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/manifest.json",
+      "status": 200,
+      "mimeType": "application/json",
+      "decodedContentSize": 506,
+      "encodedBodySize": 271,
+      "durationMs": 68.802
+    },
+    {
+      "index": 2,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/js/main.ceb2ed79.js",
+      "status": 200,
+      "mimeType": "application/javascript",
+      "decodedContentSize": 2881415,
+      "encodedBodySize": 859703,
+      "durationMs": 232.73
+    },
+    {
+      "index": 3,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/css/main.3bac0d4b.css",
+      "status": 200,
+      "mimeType": "text/css",
+      "decodedContentSize": 419986,
+      "encodedBodySize": 64754,
+      "durationMs": 54.285
+    },
+    {
+      "index": 4,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/media/lora-v20-cyrillic-regular.4e608b6f1dfbbcf568bb.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "decodedContentSize": 26940,
+      "encodedBodySize": 26940,
+      "durationMs": 308.314
+    },
+    {
+      "index": 5,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/js/5008.10202704.chunk.js",
+      "status": 200,
+      "mimeType": "application/javascript",
+      "decodedContentSize": 12339,
+      "encodedBodySize": 4244,
+      "durationMs": 43.208
+    },
+    {
+      "index": 6,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/js/4516.d7d35200.chunk.js",
+      "status": 200,
+      "mimeType": "application/javascript",
+      "decodedContentSize": 928815,
+      "encodedBodySize": 255737,
+      "durationMs": 116.996
+    },
+    {
+      "index": 7,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/css/1252.6235b568.chunk.css",
+      "status": 200,
+      "mimeType": "text/css",
+      "decodedContentSize": 14000,
+      "encodedBodySize": 3161,
+      "durationMs": 57.96
+    },
+    {
+      "index": 8,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/js/1252.cf9c347e.chunk.js",
+      "status": 200,
+      "mimeType": "application/javascript",
+      "decodedContentSize": 58070,
+      "encodedBodySize": 13563,
+      "durationMs": 88.556
+    },
+    {
+      "index": 9,
+      "method": "GET",
+      "url": "https://unpkg.com/@excalidraw/excalidraw@0.14.2/dist/excalidraw-assets/vendor-53d1c69ef585b6dd219b.js",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "decodedContentSize": 0,
+      "encodedBodySize": -1,
+      "durationMs": 0.067
+    },
+    {
+      "index": 10,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/api/v1/bug-report/categories",
+      "status": 200,
+      "mimeType": "application/json",
+      "decodedContentSize": 2919,
+      "encodedBodySize": 907,
+      "durationMs": 327.691
+    },
+    {
+      "index": 11,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/media/lora-v20-cyrillic-700.17757007a4506a5d2d53.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "decodedContentSize": 27296,
+      "encodedBodySize": 27296,
+      "durationMs": 40.344
+    },
+    {
+      "index": 12,
+      "method": "GET",
+      "url": "https://iis.bsuir.by/static/media/lora-v20-cyrillic-500.54e1b80175cad6c20ad7.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "decodedContentSize": 28280,
+      "encodedBodySize": 28280,
+      "durationMs": 38.667
+    }
+  ],
+  "relatedLoadedButNotUsedBySupport": [
+    {
+      "method": "GET",
+      "url": "https://iis.bsuir.by/api/v1/departments/tree",
+      "reason": "Present in the same loaded department module, but the support form calls only /departments/filter."
+    },
+    {
+      "method": "GET",
+      "url": "https://iis.bsuir.by/api/v1/swagger",
+      "reason": "Admin navigation link, not part of the support feature."
+    },
+    {
+      "url": "https://json.excalidraw.com/api/v2/",
+      "reason": "Library build-time constant; no call captured and support screenshot export is local."
+    }
+  ],
+  "unknowns": [
+    "Exact response body and exact success status of POST /bug-report.",
+    "Exact response bodies for both autocomplete endpoints and error payloads.",
+    "Whether GET /bug-report/categories works without a SESSION cookie; the captured request contained one.",
+    "Server-side file validation, rate limits, spam protection, maximum field lengths, and backend multipart parser rules.",
+    "Actual HTTP status/content type/size of the eight PDF links because none was clicked in this HAR.",
+    "Exact network-level failure status for the three internal iis_files documents.",
+    "Session creation/login flow is outside this HAR."
+  ]
+}
