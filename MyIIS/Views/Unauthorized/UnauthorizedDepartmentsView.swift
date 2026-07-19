@@ -1,14 +1,14 @@
 import SwiftUI
 
 struct UnauthorizedDepartmentsView: View {
-    @StateObject private var service = DepartmentsService.shared
+    @State private var viewModel = DepartmentsViewModel()
     @State private var searchText = ""
 
     var body: some View {
         Group {
-            if service.isLoading && service.departments.isEmpty {
+            if viewModel.isLoading && viewModel.tree.isEmpty {
                 ProgressView("Загрузка...")
-            } else if service.departments.isEmpty {
+            } else if viewModel.tree.isEmpty {
                 ContentUnavailableView("Нет данных", systemImage: "building.2.crop.circle.fill", description: Text("Не удалось загрузить список подразделений."))
             } else {
                 List(filteredDepartments, children: \.children) { node in
@@ -20,31 +20,31 @@ struct UnauthorizedDepartmentsView: View {
         .navigationTitle("Подразделения")
         .transparentInlineNavigationBar()
         .searchable(text: $searchText, prompt: "Поиск подразделений")
-        .onAppear {
-            if service.departments.isEmpty {
-                service.loadMockData()
+        .task {
+            if viewModel.tree.isEmpty {
+                await viewModel.loadTree()
             }
         }
     }
 
-    private var filteredDepartments: [DepartmentNode] {
+    private var filteredDepartments: [DepartmentTreeNodeDTO] {
         if searchText.isEmpty {
-            return service.departments
+            return viewModel.tree
         } else {
-            return filterNodes(service.departments, query: searchText.lowercased())
+            return filterNodes(viewModel.tree, query: searchText.lowercased())
         }
     }
 
-    private func filterNodes(_ nodes: [DepartmentNode], query: String) -> [DepartmentNode] {
-        var result: [DepartmentNode] = []
+    private func filterNodes(_ nodes: [DepartmentTreeNodeDTO], query: String) -> [DepartmentTreeNodeDTO] {
+        var result: [DepartmentTreeNodeDTO] = []
         for node in nodes {
             let matchesName = node.data.name.lowercased().contains(query)
-            let matchesAbbrev = node.data.abbrev?.lowercased().contains(query) ?? false
+            let matchesAbbrev = (node.data.abbrev ?? "").lowercased().contains(query)
 
             let matchedChildren = filterNodes(node.children ?? [], query: query)
 
             if matchesName || matchesAbbrev || !matchedChildren.isEmpty {
-                let newNode = DepartmentNode(
+                let newNode = DepartmentTreeNodeDTO(
                     data: node.data,
                     children: matchedChildren.isEmpty ? nil : matchedChildren
                 )
@@ -56,7 +56,7 @@ struct UnauthorizedDepartmentsView: View {
 }
 
 private struct DepartmentRow: View {
-    let node: DepartmentNode
+    let node: DepartmentTreeNodeDTO
 
     var body: some View {
         NavigationLink(destination: DepartmentDetailView(node: node)) {
@@ -77,9 +77,8 @@ private struct DepartmentRow: View {
 }
 
 struct DepartmentDetailView: View {
-    let node: DepartmentNode
-    @State private var detailedEmployees: [DepartmentEmployeeDetail] = []
-    @State private var isLoadingEmployees = false
+    let node: DepartmentTreeNodeDTO
+    @State private var viewModel = DepartmentDetailViewModel()
 
     var body: some View {
         List {
@@ -92,7 +91,7 @@ struct DepartmentDetailView: View {
                 }
             }
 
-            if isLoadingEmployees {
+            if viewModel.isLoading {
                 Section {
                     HStack {
                         Spacer()
@@ -100,18 +99,35 @@ struct DepartmentDetailView: View {
                         Spacer()
                     }
                 }
-            } else if !detailedEmployees.isEmpty {
+            } else if !viewModel.employees.isEmpty {
                 Section("Сотрудники") {
-                    ForEach(detailedEmployees) { emp in
-                        NavigationLink(destination: EmployeeProfileView(basicEmployee: emp)) {
+                    ForEach(viewModel.employees, id: \.id) { emp in
+                        let hit = EmployeeSearchHit(
+                            fio: emp.getFullName(),
+                            normalizedFIO: EmployeesRepository.shared.normalizeSearch(emp.getFullName()),
+                            surname: emp.lastName,
+                            phones: [],
+                            departmentId: node.data.id,
+                            departmentUrlId: node.data.urlId ?? "",
+                            departmentName: node.data.name,
+                            departmentAbbrev: node.data.abbrev ?? "",
+                            departmentTypeId: node.data.typeId
+                        )
+                        NavigationLink(destination: EmployeeProfileView(hit: hit)) {
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack(alignment: .top, spacing: 12) {
-                                    if let photo = emp.photoLink, let url = URL(string: photo.replacingOccurrences(of: "http://", with: "https://").replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")) {
-                                        CachedAsyncImage(url: url, maxPixelSize: 160) { image in
-                                            image.resizable().scaledToFill()
-                                        } placeholder: {
-                                            Image(systemName: "person.circle.fill")
-                                                .foregroundStyle(.gray)
+                                    if let url = emp.photoLink {
+                                        AsyncImage(url: url) { phase in
+                                            switch phase {
+                                            case .success(let image):
+                                                image.resizable().scaledToFill()
+                                            case .failure(_), .empty:
+                                                Image(systemName: "person.circle.fill")
+                                                    .resizable()
+                                                    .foregroundStyle(.gray)
+                                            @unknown default:
+                                                EmptyView()
+                                            }
                                         }
                                         .frame(width: 48, height: 48)
                                         .clipShape(Circle())
@@ -123,7 +139,7 @@ struct DepartmentDetailView: View {
                                     }
 
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text(emp.fio)
+                                        Text(emp.getFullName())
                                             .font(.headline)
 
                                         if let positions = emp.jobPositions, !positions.isEmpty {
@@ -147,24 +163,6 @@ struct DepartmentDetailView: View {
                                             .font(.subheadline)
                                     }
                                     .padding(.top, 2)
-                                }
-
-                                if let positions = emp.jobPositions {
-                                    ForEach(positions, id: \.jobPosition) { pos in
-                                        if let contacts = pos.contacts {
-                                            ForEach(contacts, id: \.phoneNumber) { contact in
-                                                if let phone = contact.phoneNumber {
-                                                    HStack {
-                                                        Image(systemName: "phone.fill")
-                                                            .foregroundStyle(.green)
-                                                            .font(.caption)
-                                                        Text(phone)
-                                                            .font(.subheadline)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
                                 }
                             }
                             .padding(.vertical, 6)
@@ -193,14 +191,9 @@ struct DepartmentDetailView: View {
         }
         .navigationTitle(node.data.abbrev ?? node.data.name)
         .transparentInlineNavigationBar()
-        .onAppear {
-            if let urlId = node.data.urlId, detailedEmployees.isEmpty {
-                isLoadingEmployees = true
-                Task {
-                    let emps = await DepartmentsService.shared.fetchEmployees(for: urlId)
-                    detailedEmployees = emps
-                    isLoadingEmployees = false
-                }
+        .task {
+            if let urlId = node.data.urlId, viewModel.employees.isEmpty {
+                await viewModel.loadEmployees(urlId: urlId)
             }
         }
     }
