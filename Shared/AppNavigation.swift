@@ -26,6 +26,7 @@ enum AppSection: String, CaseIterable, Hashable {
     case studyWeeks
     case departments
     case directory
+    case support
 }
 
 /// Transfers navigation requests from the App Intents extension to the app
@@ -99,7 +100,7 @@ class AppRouter: ObservableObject {
             case .attendance: tab = .attendance
             case .rating: tab = .rating
             case .services: tab = .others
-            case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule, .disciplines, .studyWeeks, .departments, .directory:
+            case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule, .disciplines, .studyWeeks, .departments, .directory, .support:
                 tab = .others
                 path.append(section)
             }
@@ -127,7 +128,7 @@ class AppRouter: ObservableObject {
             selectedTab = .rating
         case .services:
             selectedTab = .others
-        case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule, .disciplines, .studyWeeks, .departments, .directory:
+        case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule, .disciplines, .studyWeeks, .departments, .directory, .support:
             selectedTab = .others
             servicesPath.append(section)
         }

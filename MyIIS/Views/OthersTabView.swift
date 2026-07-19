@@ -22,6 +22,7 @@ private enum ServicesDestination: String, Identifiable, Hashable {
     case studyWeeks
     case departments
     case directory
+    case support
 
     var id: String { rawValue }
 
@@ -55,6 +56,7 @@ private enum ServicesDestination: String, Identifiable, Hashable {
         case .studyWeeks: return NSLocalizedString("services_item_study_weeks", comment: "")
         case .departments: return NSLocalizedString("services_item_departments", comment: "")
         case .directory: return NSLocalizedString("services_item_directory", comment: "")
+        case .support: return "Техническая поддержка"
         }
     }
 
@@ -88,6 +90,7 @@ private enum ServicesDestination: String, Identifiable, Hashable {
         case .studyWeeks: return "calendar.day.timeline.left"
         case .departments: return "building.2.fill"
         case .directory: return "book.closed.fill"
+        case .support: return "wrench.and.screwdriver.fill"
         }
     }
 }
@@ -146,6 +149,7 @@ private extension OthersTabView {
                 case .studyWeeks: UnauthorizedStudyWeeksView()
                 case .departments: UnauthorizedDepartmentsView()
                 case .directory: UnauthorizedDirectoryView()
+                case .support: SupportView()
                 default: EmptyView()
                 }
             }
@@ -259,6 +263,7 @@ private extension OthersTabView {
             NavigationLink(value: AppSection.studyWeeks) { serviceRow(for: .studyWeeks) }
             NavigationLink(value: AppSection.departments) { serviceRow(for: .departments) }
             NavigationLink(value: AppSection.directory) { serviceRow(for: .directory) }
+            NavigationLink(value: AppSection.support) { serviceRow(for: .support) }
         }
     }
 
@@ -398,7 +403,7 @@ private extension OthersTabView {
     }
 
     private var openDestinations: [ServicesDestination] {
-        [.disciplines, .studyWeeks, .departments, .directory]
+        [.disciplines, .studyWeeks, .departments, .directory, .support]
     }
 
     private var lockedDestinations: [ServicesDestination] {
@@ -428,6 +433,8 @@ private extension OthersTabView {
             UnauthorizedDepartmentsView()
         case .directory:
             UnauthorizedDirectoryView()
+        case .support:
+            SupportView()
         default:
             EmptyView()
         }
