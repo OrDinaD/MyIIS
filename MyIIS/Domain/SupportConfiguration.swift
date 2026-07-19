@@ -1,48 +1,23 @@
 import Foundation
 
+struct SupportDocumentItem: Identifiable {
+    var id: String { number }
+    let number: String
+    let title: String
+    let path: String
+    let url: URL
+}
+
+struct SupportDocumentGroup: Identifiable {
+    var id: Int { groupNumber }
+    let groupNumber: Int
+    let groupName: String
+    let localNetworkOnly: Bool
+    let note: String?
+    let items: [SupportDocumentItem]
+}
+
 struct SupportConfiguration {
-    static func getFields(for categoryKey: String) -> [SupportField] {
-        switch categoryKey {
-        case "[ИИС]", "[СТУДЕНТЫ]":
-            return [.description]
-        case "[PC-Software]":
-            return [.phone, .department, .roomBuilding, .computerName, .inventoryNumber, .description]
-        case "[Network-Account]":
-            return [.phone, .department, .description]
-        case "[Print]":
-            return [.phone, .department, .roomBuilding, .computerName, .printerName, .inventoryNumber, .description]
-        case "[Network]":
-            return [.phone, .department, .roomBuilding, .computerName, .description]
-        case "[ActEquip]":
-            return [.acts, .description]
-        case "[LMS]", "[UMU]", "[Other]":
-            return [.phone, .description]
-        case "[SMB]":
-            return [.phone, .department, .roomBuilding, .computerName, .description]
-        case "[ID-Card]":
-            return [.description, .phone]
-        default:
-            return [.description]
-        }
-    }
-    
-    static func getNotices(for categoryKey: String) -> [String] {
-        switch categoryKey {
-        case "[PC-Software]":
-            return [
-                "В соответствии с положением о ЦИИР, в отношении кафедр оказываются только услуги по ремонту техники. По остальным вопросам обращаться к инженерам кафедры.",
-                "При необходимости приобретения запасных частей для ремонта компьютерной техники необходимо написать докладную записку на имя курирующего проректора."
-            ]
-        case "[Print]":
-            return [
-                "При необходимости приобретения запасных частей для ремонта компьютерной техники необходимо написать докладную записку на имя курирующего проректора.",
-                "По вопросу замены картриджей обращайтесь в отдел снабжения."
-            ]
-        default:
-            return []
-        }
-    }
-    
     static let documentGroups: [SupportDocumentGroup] = [
         SupportDocumentGroup(
             groupNumber: 1,
