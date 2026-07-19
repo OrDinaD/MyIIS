@@ -232,7 +232,7 @@ private struct ScheduleWidgetView: View {
                     Spacer(minLength: 4)
                     
                     VStack(alignment: .trailing, spacing: 3) {
-                        Text(event.isCurrent(at: entry.date) ? "Пара" : "Перерыв")
+                        Text(event.isCurrent(at: entry.date) ? "Пара" : "П")
                             .font(.caption2.weight(.bold))
                             .foregroundStyle(event.isCurrent(at: entry.date) ? Color.green : Color.orange)
                         
@@ -256,11 +256,9 @@ private struct ScheduleWidgetView: View {
                 Gauge(value: event.isCurrent(at: entry.date) ? event.progress(at: entry.date) : 0) {
                     Image(systemName: "calendar")
                 } currentValueLabel: {
-                    if let target = targetDate(for: event) {
-                        Text(target, style: .timer)
-                            .font(.caption2.monospacedDigit())
-                            .minimumScaleFactor(0.5)
-                    }
+                    Text(event.isCurrent(at: entry.date) ? event.endTime : event.startTime)
+                        .font(.caption2.monospacedDigit())
+                        .minimumScaleFactor(0.5)
                 }
                 .gaugeStyle(.accessoryCircular)
                 .widgetAccentable()
@@ -303,14 +301,10 @@ private struct ScheduleWidgetView: View {
 
     @ViewBuilder
     private func statusText(_ event: WatchWidgetSnapshot.Event) -> some View {
-        if let target = targetDate(for: event) {
+        if event.isCurrent(at: entry.date) {
             HStack(spacing: 2) {
-                Text(event.isCurrent(at: entry.date) ? "watch_widget_until" : "watch_widget_in")
-                if isLuminanceReduced {
-                    Text(target, style: .relative)
-                } else {
-                    Text(target, style: .timer)
-                }
+                Text("watch_widget_until")
+                Text(event.endTime)
             }
         } else {
             Text(event.startTime)
