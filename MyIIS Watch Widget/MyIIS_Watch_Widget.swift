@@ -182,6 +182,7 @@ private struct ScheduleWidgetProvider: TimelineProvider {
 
 private struct ScheduleWidgetView: View {
     @Environment(\.widgetFamily) private var family
+    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
     let entry: ScheduleWidgetEntry
 
     var body: some View {
@@ -206,25 +207,41 @@ private struct ScheduleWidgetView: View {
     private var rectangularContent: some View {
         Group {
             if let event = entry.currentEvent {
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 4) {
-                        Image(systemName: event.isCurrent(at: entry.date) ? "clock.fill" : "calendar")
-                        statusText(event)
-                            .monospacedDigit()
-                    }
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .widgetAccentable()
-
-                    Text(event.title)
-                        .font(.headline.weight(.semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-
-                    Text([event.location, event.lessonType].compactMap { $0 }.joined(separator: " · "))
-                        .font(.caption)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 4) {
+                            Image(systemName: event.isCurrent(at: entry.date) ? "clock.fill" : "calendar")
+                            statusText(event)
+                                .monospacedDigit()
+                        }
+                        .font(.caption2.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .widgetAccentable()
+
+                        Text(event.title)
+                            .font(.headline.weight(.semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.72)
+
+                        Text([event.location, event.lessonType].compactMap { $0 }.joined(separator: " · "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    
+                    Spacer(minLength: 4)
+                    
+                    VStack(alignment: .trailing, spacing: 3) {
+                        Text(event.isCurrent(at: entry.date) ? "Пара" : "Перерыв")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(event.isCurrent(at: entry.date) ? Color.green : Color.orange)
+                        
+                        Text("\(event.startTime)-\(event.endTime)")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                    }
                 }
             } else {
                 Label("watch_widget_no_events", systemImage: "checkmark.circle")
@@ -289,7 +306,11 @@ private struct ScheduleWidgetView: View {
         if let target = targetDate(for: event) {
             HStack(spacing: 2) {
                 Text(event.isCurrent(at: entry.date) ? "watch_widget_until" : "watch_widget_in")
-                Text(target, style: .timer)
+                if isLuminanceReduced {
+                    Text(target, style: .relative)
+                } else {
+                    Text(target, style: .timer)
+                }
             }
         } else {
             Text(event.startTime)
