@@ -406,7 +406,8 @@ extension View {
                 onOpenDocument: { _ in },
                 onEditApplication: { _ in },
                 onDownloadApplicationForm: { _ in },
-                onDemoSettlementReveal: nil
+                pendingSettlementApplicationID: nil,
+                onPresentSettlementReveal: { _ in }
             )
             .padding()
         }
@@ -428,7 +429,8 @@ extension View {
                 onOpenDocument: { _ in },
                 onEditApplication: { _ in },
                 onDownloadApplicationForm: { _ in },
-                onDemoSettlementReveal: nil
+                pendingSettlementApplicationID: nil,
+                onPresentSettlementReveal: { _ in }
             )
             .padding()
         }
@@ -450,7 +452,8 @@ extension View {
                 onOpenDocument: { _ in },
                 onEditApplication: { _ in },
                 onDownloadApplicationForm: { _ in },
-                onDemoSettlementReveal: nil
+                pendingSettlementApplicationID: nil,
+                onPresentSettlementReveal: { _ in }
             )
             .padding()
         }

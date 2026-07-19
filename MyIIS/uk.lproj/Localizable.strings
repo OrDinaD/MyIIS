@@ -285,7 +285,9 @@
 "dormitory_reveal_locked_room" = "Спочатку відкрийте гуртожиток";
 "dormitory_reveal_scratch" = "Зітріть захисний шар";
 "dormitory_reveal_complete_short" = "Відкрито";
-"dormitory_reveal_demo" = "Демо заселення";
+"dormitory_reveal_invitation_body" = "Гуртожиток і кімнату вже призначено.";
+"dormitory_reveal_invitation_action" = "Дізнатися, куди";
+"dormitory_reveal_invitation_hint" = "Запускає відкриття гуртожитку та кімнати.";
 "dormitory_notification_status_title" = "Гуртожиток";
 "dormitory_notification_status_body" = "Ваш статус щодо гуртожитку змінився. Відкрийте розділ «Гуртожиток», щоб переглянути подробиці.";
 

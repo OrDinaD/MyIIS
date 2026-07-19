@@ -290,7 +290,9 @@
 "dormitory_reveal_locked_room" = "Сначала откройте общежитие";
 "dormitory_reveal_scratch" = "Сотрите защитный слой";
 "dormitory_reveal_complete_short" = "Открыто";
-"dormitory_reveal_demo" = "Демо заселения";
+"dormitory_reveal_invitation_body" = "Общежитие и комната уже назначены.";
+"dormitory_reveal_invitation_action" = "Узнать, куда";
+"dormitory_reveal_invitation_hint" = "Запускает раскрытие общежития и комнаты.";
 "dormitory_notification_status_title" = "Общежитие";
 "dormitory_notification_status_body" = "Ваш статус по общежитию изменился. Откройте вкладку «Общежитие», чтобы посмотреть подробности.";
 

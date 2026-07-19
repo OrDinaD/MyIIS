@@ -40,9 +40,11 @@ final class DormitoryViewModel: ObservableObject {
     @Published var lastUpdateTime: Date?
     @Published var isShowingStaleDataWarning = false
     @Published private(set) var settlementReveal: DormitorySettlementReveal?
+    @Published private(set) var pendingSettlementApplicationID: Int?
 
     private let dormitoryService: DormitoryServicing
     private let userDefaults: UserDefaults
+    private let settlementRevealUserID: Int?
     private let automaticRefreshInterval: TimeInterval
     private var hasRequestedInitialRefresh = false
     private var activeLoadTask: Task<LoadPayload, Error>?
@@ -73,6 +75,7 @@ final class DormitoryViewModel: ObservableObject {
         self.dormitoryService = dormitoryService ?? DormitoryService()
         #endif
         self.userDefaults = userDefaults
+        self.settlementRevealUserID = AuthenticationService.shared.currentUser?.id
         self.automaticRefreshInterval = automaticRefreshInterval
         let resolvedApplications: [DormitoryQueueApplication]
         let resolvedPrivilegeRecords: [DormitoryPrivilegeRecord]
@@ -98,6 +101,10 @@ final class DormitoryViewModel: ObservableObject {
         self.actionErrorMessage = nil
         self.lastUpdateTime = resolvedLastUpdateTime
         self.settlementReveal = nil
+        self.pendingSettlementApplicationID = DormitorySettlementRevealStore.pendingApplicationID(
+            for: settlementRevealUserID,
+            userDefaults: userDefaults
+        )
     }
 
     var canCreateApplication: Bool {
@@ -125,9 +132,13 @@ final class DormitoryViewModel: ObservableObject {
     }
 
     func loadIfNeeded() async {
+        refreshPendingSettlementRevealFromStore()
+
         guard !hasRequestedInitialRefresh else {
             if let activeLoadTask {
                 _ = await activeLoadTask.result
+            } else if pendingSettlementApplicationID != nil {
+                await loadData()
             }
             return
         }
@@ -143,24 +154,6 @@ final class DormitoryViewModel: ObservableObject {
             announcement = currentAnnouncement
         }
         await loadData()
-    }
-
-    func presentSettlementRevealDemo() {
-        if let application = applications.first(where: {
-            $0.status == DormitoryApplicationStatus.settled.rawValue &&
-                !($0.roomInfo?.isEmpty ?? true)
-        }) {
-            settlementReveal = DormitorySettlementReveal(
-                application: application,
-                isDemo: true
-            )
-        } else {
-            settlementReveal = .demo
-        }
-    }
-
-    func dismissSettlementReveal() {
-        settlementReveal = nil
     }
 
     func createApplication(documentURL: URL?) async -> Bool {
@@ -258,13 +251,19 @@ final class DormitoryViewModel: ObservableObject {
         case .success(let payload):
             let previousApplications = applications
             let loadedApplications = sorted(payload.applications)
-            if settlementReveal == nil {
-                settlementReveal = Self.detectSettlementReveal(
-                    previous: previousApplications,
-                    current: loadedApplications
+            if let detectedReveal = Self.detectSettlementReveal(
+                previous: previousApplications,
+                current: loadedApplications
+            ) {
+                DormitorySettlementRevealStore.markPending(
+                    applicationID: detectedReveal.application.id,
+                    for: settlementRevealUserID,
+                    userDefaults: userDefaults
                 )
+                pendingSettlementApplicationID = detectedReveal.application.id
             }
             applications = loadedApplications
+            synchronizePendingSettlementReveal(with: loadedApplications)
             privilegeRecords = payload.privilegeRecords.sorted {
                 if $0.year != $1.year { return $0.year > $1.year }
                 return $0.dormitoryPrivilegeCategoryName < $1.dormitoryPrivilegeCategoryName
@@ -296,6 +295,7 @@ final class DormitoryViewModel: ObservableObject {
     }
 
     private var shouldRefreshAutomatically: Bool {
+        guard pendingSettlementApplicationID == nil else { return true }
         guard hasVisibleData else { return true }
         guard let lastUpdateTime else { return true }
         return Date().timeIntervalSince(lastUpdateTime) >= automaticRefreshInterval
@@ -361,6 +361,62 @@ final class DormitoryViewModel: ObservableObject {
             return false
         }
         return day >= start && day <= end
+    }
+}
+
+extension DormitoryViewModel {
+    func isSettlementRevealPending(for application: DormitoryQueueApplication) -> Bool {
+        pendingSettlementApplicationID == application.id &&
+            application.presentationState == .settled &&
+            application.placement != nil
+    }
+
+    func presentSettlementReveal(for application: DormitoryQueueApplication) {
+        guard isSettlementRevealPending(for: application), settlementReveal == nil else { return }
+        settlementReveal = DormitorySettlementReveal(
+            application: application,
+            isDemo: false
+        )
+    }
+
+    func completeSettlementReveal() {
+        guard let applicationID = settlementReveal?.application.id else { return }
+        DormitorySettlementRevealStore.markRevealed(
+            applicationID: applicationID,
+            for: settlementRevealUserID,
+            userDefaults: userDefaults
+        )
+        pendingSettlementApplicationID = nil
+        settlementReveal = nil
+    }
+
+    func cancelSettlementReveal() {
+        settlementReveal = nil
+    }
+
+    private func refreshPendingSettlementRevealFromStore() {
+        pendingSettlementApplicationID = DormitorySettlementRevealStore.pendingApplicationID(
+            for: settlementRevealUserID,
+            userDefaults: userDefaults
+        )
+    }
+
+    private func synchronizePendingSettlementReveal(
+        with applications: [DormitoryQueueApplication]
+    ) {
+        guard let pendingSettlementApplicationID else { return }
+        let isStillAvailable = applications.contains { application in
+            application.id == pendingSettlementApplicationID &&
+                application.presentationState == .settled &&
+                application.placement != nil
+        }
+        guard !isStillAvailable else { return }
+
+        DormitorySettlementRevealStore.clearPending(
+            for: settlementRevealUserID,
+            userDefaults: userDefaults
+        )
+        self.pendingSettlementApplicationID = nil
     }
 }
 

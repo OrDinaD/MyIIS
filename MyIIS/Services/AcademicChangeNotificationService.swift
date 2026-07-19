@@ -164,6 +164,15 @@ final class AcademicChangeNotificationService: NSObject {
             previousSnapshot: oldSnapshot
         )
         GradebookCacheStore.save(markbook: markbook, currentCourse: personalProfile.course, updatedAt: now)
+        if let oldSnapshot {
+            for applicationID in newSnapshot.newlySettledDormitoryApplicationIDs(since: oldSnapshot) {
+                DormitorySettlementRevealStore.markPending(
+                    applicationID: applicationID,
+                    for: AuthenticationService.shared.currentUser?.id,
+                    userDefaults: userDefaults
+                )
+            }
+        }
         saveSnapshot(newSnapshot)
         updateWidgetSnapshot(with: newSnapshot)
         userDefaults.set(now, forKey: Self.lastCheckDefaultsKey)

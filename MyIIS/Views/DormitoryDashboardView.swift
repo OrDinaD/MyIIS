@@ -12,7 +12,8 @@ struct DormitoryApplicationsDashboard: View {
     let onOpenDocument: (DormitoryQueueApplication) -> Void
     let onEditApplication: (DormitoryQueueApplication) -> Void
     let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
-    var onDemoSettlementReveal: (() -> Void)?
+    let pendingSettlementApplicationID: Int?
+    let onPresentSettlementReveal: (DormitoryQueueApplication) -> Void
 
     private var sortedApplications: [DormitoryQueueApplication] {
         applications.sorted {
@@ -38,24 +39,15 @@ struct DormitoryApplicationsDashboard: View {
                 DormitoryCurrentApplicationCard(
                     application: currentApplication,
                     isDownloadingFile: isDownloadingFile,
+                    isSettlementRevealPending: pendingSettlementApplicationID == currentApplication.id,
                     onOpenDocument: { onOpenDocument(currentApplication) },
                     onEditApplication: { onEditApplication(currentApplication) },
-                    onDownloadApplicationForm: { onDownloadApplicationForm(currentApplication) }
+                    onDownloadApplicationForm: { onDownloadApplicationForm(currentApplication) },
+                    onPresentSettlementReveal: { onPresentSettlementReveal(currentApplication) }
                 )
             } else if applications.isEmpty {
                 DormitoryEmptyApplicationsCard()
             }
-#if DEBUG
-            if let onDemoSettlementReveal {
-                Button(action: onDemoSettlementReveal) {
-                    Label(dormitoryLocalized("dormitory_reveal_demo"), systemImage: "wand.and.stars")
-                        .font(.subheadline.weight(.semibold))
-                }
-                .buttonStyle(.bordered).tint(.secondary)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .accessibilityIdentifier("dormitory-settlement-reveal-demo")
-            }
-#endif
             DormitoryApplicationAvailability(
                 canCreateApplication: canCreateApplication,
                 isSubmittingApplication: isSubmittingApplication,
@@ -77,15 +69,22 @@ struct DormitoryApplicationsDashboard: View {
 private struct DormitoryCurrentApplicationCard: View {
     let application: DormitoryQueueApplication
     let isDownloadingFile: Bool
+    let isSettlementRevealPending: Bool
     let onOpenDocument: () -> Void
     let onEditApplication: () -> Void
     let onDownloadApplicationForm: () -> Void
+    let onPresentSettlementReveal: () -> Void
 
     @ViewBuilder
     var body: some View {
         switch application.presentationState {
         case .settled:
-            if application.placement != nil {
+            if application.placement != nil, isSettlementRevealPending {
+                DormitorySettlementInvitationCard(
+                    application: application,
+                    onReveal: onPresentSettlementReveal
+                )
+            } else if application.placement != nil {
                 DormitoryPlaceHero(
                     application: application,
                     isDownloadingFile: isDownloadingFile,
@@ -208,7 +207,7 @@ private struct DormitoryPlaceHero: View {
     }
 }
 
-private struct DormitoryFacadePattern: View {
+struct DormitoryFacadePattern: View {
     var body: some View {
         GeometryReader { proxy in
             HStack(spacing: 14) {

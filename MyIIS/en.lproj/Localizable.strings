@@ -290,7 +290,9 @@
 "dormitory_reveal_locked_room" = "Reveal the dormitory first";
 "dormitory_reveal_scratch" = "Scratch to reveal";
 "dormitory_reveal_complete_short" = "Revealed";
-"dormitory_reveal_demo" = "Settlement demo";
+"dormitory_reveal_invitation_body" = "Your dormitory and room have been assigned.";
+"dormitory_reveal_invitation_action" = "Reveal my place";
+"dormitory_reveal_invitation_hint" = "Starts the dormitory and room reveal.";
 "dormitory_notification_status_title" = "Dormitory";
 "dormitory_notification_status_body" = "Your dormitory status has changed. Open the Dormitory section to view the details.";
 

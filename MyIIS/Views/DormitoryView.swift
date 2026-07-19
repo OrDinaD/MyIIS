@@ -23,7 +23,7 @@ struct DormitoryView: View {
             if let reveal = viewModel.settlementReveal {
                 DormitorySettlementRevealView(
                     reveal: reveal,
-                    onDismiss: viewModel.dismissSettlementReveal
+                    onDismiss: viewModel.completeSettlementReveal
                 )
                 .id(reveal.id)
                 .transition(.opacity)
@@ -49,7 +49,7 @@ struct DormitoryView: View {
             await viewModel.reload()
         }
         .onDisappear {
-            viewModel.dismissSettlementReveal()
+            viewModel.cancelSettlementReveal()
         }
         .quickLookPreview($previewURL)
         .sheet(item: $editorContext) { context in
@@ -128,7 +128,8 @@ struct DormitoryView: View {
                 onDownloadApplicationForm: { application in
                     Task { await downloadApplicationForm(for: application) }
                 },
-                onDemoSettlementReveal: viewModel.presentSettlementRevealDemo
+                pendingSettlementApplicationID: viewModel.pendingSettlementApplicationID,
+                onPresentSettlementReveal: viewModel.presentSettlementReveal
             )
             PrivilegesSection(records: viewModel.privilegeRecords)
         }
@@ -194,7 +195,8 @@ private struct ApplicationsSection: View {
     let onOpenDocument: (DormitoryQueueApplication) -> Void
     let onEditApplication: (DormitoryQueueApplication) -> Void
     let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
-    let onDemoSettlementReveal: () -> Void
+    let pendingSettlementApplicationID: Int?
+    let onPresentSettlementReveal: (DormitoryQueueApplication) -> Void
 
     var body: some View {
         DormitoryApplicationsDashboard(
@@ -207,7 +209,8 @@ private struct ApplicationsSection: View {
             onOpenDocument: onOpenDocument,
             onEditApplication: onEditApplication,
             onDownloadApplicationForm: onDownloadApplicationForm,
-            onDemoSettlementReveal: onDemoSettlementReveal
+            pendingSettlementApplicationID: pendingSettlementApplicationID,
+            onPresentSettlementReveal: onPresentSettlementReveal
         )
     }
 }

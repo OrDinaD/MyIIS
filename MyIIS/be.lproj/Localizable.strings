@@ -285,7 +285,9 @@
 "dormitory_reveal_locked_room" = "Спачатку адкрыйце гуртоўню";
 "dormitory_reveal_scratch" = "Сатрыце ахоўны слой";
 "dormitory_reveal_complete_short" = "Адкрыта";
-"dormitory_reveal_demo" = "Дэма засялення";
+"dormitory_reveal_invitation_body" = "Інтэрнат і пакой ужо прызначаныя.";
+"dormitory_reveal_invitation_action" = "Даведацца, куды";
+"dormitory_reveal_invitation_hint" = "Запускае адкрыццё інтэрната і пакоя.";
 "dormitory_notification_status_title" = "Інтэрнат";
 "dormitory_notification_status_body" = "Ваш статус па інтэрнаце змяніўся. Адкрыйце раздзел «Інтэрнат», каб паглядзець падрабязнасці.";
 

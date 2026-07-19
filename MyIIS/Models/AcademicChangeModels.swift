@@ -118,6 +118,24 @@ struct AcademicChangeSnapshot: Codable, Equatable {
             .sorted(by: AcademicChangeItem.defaultSort)
     }
 
+    func newlySettledDormitoryApplicationIDs(
+        since oldSnapshot: AcademicChangeSnapshot
+    ) -> [Int] {
+        guard hasDormitoryBaseline, oldSnapshot.hasDormitoryBaseline else { return [] }
+        let oldItemsByID = Dictionary(uniqueKeysWithValues: oldSnapshot.dormitoryItems.map { ($0.id, $0) })
+
+        return dormitoryItems.compactMap { item in
+            guard
+                item.status == DormitoryApplicationStatus.settled.rawValue,
+                item.roomInfo != "-",
+                oldItemsByID[item.id]?.status == DormitoryApplicationStatus.documentsAccepted.rawValue
+            else {
+                return nil
+            }
+            return item.id
+        }
+    }
+
     private func scheduleChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
         if oldSnapshot.scheduleItems.isEmpty, !scheduleItems.isEmpty {
             let firstSignature = scheduleItems.first?.signature ?? "schedule"
