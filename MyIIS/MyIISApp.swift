@@ -31,6 +31,11 @@ struct MyIISApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     handleScenePhaseChange(phase)
                 }
+                .overlay {
+                    ScreenshotBrandOverlay(text: "myIIS")
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                }
         }
         .commands {
             AppSceneCommands()
