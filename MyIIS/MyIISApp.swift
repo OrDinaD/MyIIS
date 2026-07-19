@@ -18,6 +18,10 @@ struct MyIISApp: App {
 
     init() {
         AppTheme.configureAppearances()
+        WatchScheduleConnectivityService.shared.activate()
+        if let snapshot = ClassScheduleWidgetDataStore.loadSnapshot() {
+            WatchScheduleConnectivityService.shared.send(snapshot)
+        }
     }
 
     var body: some Scene {
@@ -29,7 +33,6 @@ struct MyIISApp: App {
             .environmentObject(authService) // Внедряем его в окружение
             .onAppear {
                 handlePendingAppIntentNavigation()
-                activateWatchScheduleSync()
             }
             .onChange(of: scenePhase) { _, phase in
                 handleScenePhaseChange(phase)
@@ -37,13 +40,6 @@ struct MyIISApp: App {
         }
         .commands {
             AppSceneCommands()
-        }
-    }
-
-    private func activateWatchScheduleSync() {
-        WatchScheduleConnectivityService.shared.activate()
-        if let snapshot = ClassScheduleWidgetDataStore.loadSnapshot() {
-            WatchScheduleConnectivityService.shared.send(snapshot)
         }
     }
 

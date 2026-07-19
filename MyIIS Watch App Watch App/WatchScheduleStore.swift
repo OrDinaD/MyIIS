@@ -94,6 +94,8 @@ enum WatchScheduleStore {
 
 @MainActor
 final class WatchScheduleReceiver: NSObject, ObservableObject {
+    static let shared = WatchScheduleReceiver()
+
     @Published private(set) var snapshot: WatchScheduleSnapshot?
     @Published private(set) var connectionError: String?
 
