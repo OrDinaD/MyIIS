@@ -22,16 +22,18 @@ struct MyIISApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(authService) // Внедряем его в окружение
-                .onAppear {
-                    handlePendingAppIntentNavigation()
-                    activateWatchScheduleSync()
-                }
-                .onChange(of: scenePhase) { _, phase in
-                    handleScenePhaseChange(phase)
-                }
-                .background(ScreenshotBrandOverlay(text: "myIIS"))
+            ZStack {
+                ContentView()
+                ScreenshotBrandOverlay()
+            }
+            .environmentObject(authService) // Внедряем его в окружение
+            .onAppear {
+                handlePendingAppIntentNavigation()
+                activateWatchScheduleSync()
+            }
+            .onChange(of: scenePhase) { _, phase in
+                handleScenePhaseChange(phase)
+            }
         }
         .commands {
             AppSceneCommands()

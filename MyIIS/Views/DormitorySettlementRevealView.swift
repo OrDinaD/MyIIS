@@ -12,8 +12,6 @@ struct DormitorySettlementRevealView: View {
     @State private var isDormitoryRevealed = false
     @State private var isRoomRevealed = false
     @State private var isReturning = false
-    @State private var cardDrag = CGSize.zero
-    @State private var cardExitOffset = CGSize.zero
 
     private enum Stage {
         case arriving
@@ -32,16 +30,6 @@ struct DormitorySettlementRevealView: View {
         (isDormitoryRevealed ? 1 : 0) + (isRoomRevealed ? 2 : 0)
     }
 
-    private var cardPitch: Double {
-        guard !reduceMotion else { return 0 }
-        return min(max(Double(-cardDrag.height / 24), -8), 8)
-    }
-
-    private var cardYaw: Double {
-        guard !reduceMotion else { return 0 }
-        return min(max(Double(cardDrag.width / 20), -10), 10)
-    }
-
     var body: some View {
         GeometryReader { proxy in
             ZStack {
@@ -57,8 +45,7 @@ struct DormitorySettlementRevealView: View {
                         .offset(y: stage == .arriving ? 12 : 0)
 
                     animatedCard(
-                        width: min(max(proxy.size.width - 32, 300), 430),
-                        viewport: proxy.size
+                        width: min(max(proxy.size.width - 32, 300), 430)
                     )
 
                     if stage == .scratching {
@@ -94,7 +81,7 @@ struct DormitorySettlementRevealView: View {
             }
             try? await Task.sleep(for: .seconds(5))
             guard !Task.isCancelled, !isReturning else { return }
-            await dismissCard(toward: CGSize(width: 0, height: -360))
+            await dismissCard()
         }
     }
 
@@ -104,7 +91,7 @@ struct DormitorySettlementRevealView: View {
             : dormitoryLocalized("dormitory_reveal_dormitory_hint")
     }
 
-    private func animatedCard(width: CGFloat, viewport: CGSize) -> some View {
+    private func animatedCard(width: CGFloat) -> some View {
         let shouldReduceMotion = reduceMotion
         return KeyframeAnimator(
             initialValue: shouldReduceMotion ? SettlementRevealAnimationValues.revealed : .initial,
@@ -113,7 +100,6 @@ struct DormitorySettlementRevealView: View {
             animatedCardContent(
                 values: values,
                 width: width,
-                viewport: viewport,
                 shouldReduceMotion: shouldReduceMotion
             )
         } keyframes: { _ in
@@ -130,14 +116,12 @@ struct DormitorySettlementRevealView: View {
                 SpringKeyframe(0, duration: 0.38)
             }
         }
-        .animation(shouldReduceMotion ? nil : .spring(duration: 0.42, bounce: 0.18), value: cardDrag)
-        .animation(shouldReduceMotion ? nil : .easeIn(duration: 0.3), value: isReturning)
+        .animation(shouldReduceMotion ? nil : .spring(duration: 0.58, bounce: 0.16), value: isReturning)
     }
 
     private func animatedCardContent(
         values: SettlementRevealAnimationValues,
         width: CGFloat,
-        viewport: CGSize,
         shouldReduceMotion: Bool
     ) -> some View {
         DormitorySettlementFlipCard(
@@ -156,87 +140,23 @@ struct DormitorySettlementRevealView: View {
             axis: (x: 0, y: 1, z: 0),
             perspective: 0.42
         )
-        .rotation3DEffect(
-            .degrees(cardPitch),
-            axis: (x: 1, y: 0, z: 0),
-            perspective: 0.5
-        )
-        .rotation3DEffect(
-            .degrees(cardYaw),
-            axis: (x: 0, y: 1, z: 0),
-            perspective: 0.5
-        )
         .keyframeAnimator(initialValue: 0.0, trigger: isDormitoryRevealed) { content, offset in
             content.offset(y: shouldReduceMotion ? 0 : offset)
         } keyframes: { _ in
             SpringKeyframe(-12, duration: 0.18)
             SpringKeyframe(0, duration: 0.34)
         }
-        .scaleEffect(isReturning ? 0.88 : 1)
-        .offset(
-            x: cardDrag.width + cardExitOffset.width,
-            y: cardDrag.height + cardExitOffset.height
-        )
+        .scaleEffect(isReturning ? 0.66 : 1)
+        .offset(y: isReturning ? -240 : 0)
         .opacity(isReturning ? 0 : 1)
-        .simultaneousGesture(
-            cardGesture(in: viewport),
-            including: stage == .arriving || isReturning ? .none : .all
-        )
     }
 
-    private func cardGesture(in viewport: CGSize) -> some Gesture {
-        DragGesture(minimumDistance: 8)
-            .onChanged { drag in
-                guard canMoveCard(from: drag.startLocation) else { return }
-                cardDrag = drag.translation
-            }
-            .onEnded { drag in
-                guard canMoveCard(from: drag.startLocation) else { return }
-                let projected = drag.predictedEndTranslation
-                let projectedDistance = hypot(projected.width, projected.height)
-                let actualDistance = hypot(drag.translation.width, drag.translation.height)
-
-                guard projectedDistance > 170 || actualDistance > 105 else {
-                    withAnimation(reduceMotion ? nil : .spring(duration: 0.42, bounce: 0.2)) {
-                        cardDrag = .zero
-                    }
-                    return
-                }
-
-                let direction = projectedDistance > 0
-                    ? CGSize(
-                        width: projected.width / projectedDistance,
-                        height: projected.height / projectedDistance
-                    )
-                    : CGSize(width: 0, height: -1)
-                let exitDistance = max(viewport.width, viewport.height) * 1.35
-                Task {
-                    await dismissCard(
-                        toward: CGSize(
-                            width: direction.width * exitDistance,
-                            height: direction.height * exitDistance
-                        )
-                    )
-                }
-            }
-    }
-
-    private func canMoveCard(from startLocation: CGPoint) -> Bool {
-        guard stage != .arriving, !isReturning else { return false }
-        if stage == .completed {
-            return true
-        }
-
-        return startLocation.y < 96 || startLocation.y > 368
-    }
-
-    private func dismissCard(toward offset: CGSize) async {
+    private func dismissCard() async {
         guard !isReturning else { return }
-        withAnimation(reduceMotion ? nil : .easeIn(duration: 0.3)) {
+        withAnimation(reduceMotion ? nil : .spring(duration: 0.58, bounce: 0.16)) {
             isReturning = true
-            cardExitOffset = offset
         }
-        try? await Task.sleep(for: reduceMotion ? .milliseconds(80) : .milliseconds(320))
+        try? await Task.sleep(for: reduceMotion ? .milliseconds(80) : .milliseconds(560))
         guard !Task.isCancelled else { return }
         onDismiss()
     }

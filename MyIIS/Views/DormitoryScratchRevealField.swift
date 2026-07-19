@@ -77,7 +77,6 @@ struct DormitoryScratchRevealField: View {
     private var scratchSurface: some View {
         GeometryReader { proxy in
             scratchLayer
-                .compositingGroup()
                 .overlay {
                     DormitoryScratchDustView(particles: particles)
                         .allowsHitTesting(false)
@@ -125,37 +124,47 @@ struct DormitoryScratchRevealField: View {
             }
             .font(.subheadline.weight(.bold))
             .foregroundStyle(Color.black.opacity(0.62))
+        }
+        .mask {
+            scratchMask
+        }
+    }
 
-            Canvas { context, _ in
-                context.blendMode = .destinationOut
-                for stroke in strokes where !stroke.isEmpty {
-                    if stroke.count == 1, let point = stroke.first {
-                        let radius = brushWidth / 2
-                        let rect = CGRect(
-                            x: point.x - radius,
-                            y: point.y - radius,
-                            width: brushWidth,
-                            height: brushWidth
-                        )
-                        context.fill(Path(ellipseIn: rect), with: .color(.white))
-                        continue
-                    }
+    private var scratchMask: some View {
+        Canvas { context, size in
+            context.fill(
+                Path(CGRect(origin: .zero, size: size)),
+                with: .color(.white)
+            )
+            context.blendMode = .destinationOut
 
-                    var path = Path()
-                    path.move(to: stroke[0])
-                    for point in stroke.dropFirst() {
-                        path.addLine(to: point)
-                    }
-                    context.stroke(
-                        path,
-                        with: .color(.white),
-                        style: StrokeStyle(
-                            lineWidth: brushWidth,
-                            lineCap: .round,
-                            lineJoin: .round
-                        )
+            for stroke in strokes where !stroke.isEmpty {
+                if stroke.count == 1, let point = stroke.first {
+                    let radius = brushWidth / 2
+                    let rect = CGRect(
+                        x: point.x - radius,
+                        y: point.y - radius,
+                        width: brushWidth,
+                        height: brushWidth
                     )
+                    context.fill(Path(ellipseIn: rect), with: .color(.white))
+                    continue
                 }
+
+                var path = Path()
+                path.move(to: stroke[0])
+                for point in stroke.dropFirst() {
+                    path.addLine(to: point)
+                }
+                context.stroke(
+                    path,
+                    with: .color(.white),
+                    style: StrokeStyle(
+                        lineWidth: brushWidth,
+                        lineCap: .round,
+                        lineJoin: .round
+                    )
+                )
             }
         }
     }
