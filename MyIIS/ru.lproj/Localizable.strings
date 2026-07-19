@@ -291,6 +291,8 @@
 "dormitory_reveal_scratch" = "Сотрите защитный слой";
 "dormitory_reveal_complete_short" = "Открыто";
 "dormitory_reveal_demo" = "Демо заселения";
+"dormitory_notification_status_title" = "Общежитие";
+"dormitory_notification_status_body" = "Ваш статус по общежитию изменился. Откройте вкладку «Общежитие», чтобы посмотреть подробности.";
 
 "rating_title" = "Рейтинг";
 "rating_auth_required" = "Нужна авторизация";

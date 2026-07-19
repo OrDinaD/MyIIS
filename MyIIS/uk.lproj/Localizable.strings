@@ -286,6 +286,8 @@
 "dormitory_reveal_scratch" = "Зітріть захисний шар";
 "dormitory_reveal_complete_short" = "Відкрито";
 "dormitory_reveal_demo" = "Демо заселення";
+"dormitory_notification_status_title" = "Гуртожиток";
+"dormitory_notification_status_body" = "Ваш статус щодо гуртожитку змінився. Відкрийте розділ «Гуртожиток», щоб переглянути подробиці.";
 
 "rating_title" = "Рейтинг";
 "rating_auth_required" = "Потрібна авторизація";

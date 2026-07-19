@@ -286,6 +286,8 @@
 "dormitory_reveal_scratch" = "Сатрыце ахоўны слой";
 "dormitory_reveal_complete_short" = "Адкрыта";
 "dormitory_reveal_demo" = "Дэма засялення";
+"dormitory_notification_status_title" = "Інтэрнат";
+"dormitory_notification_status_body" = "Ваш статус па інтэрнаце змяніўся. Адкрыйце раздзел «Інтэрнат», каб паглядзець падрабязнасці.";
 
 "rating_title" = "Рэйтынг";
 "rating_auth_required" = "Патрэбна аўтарызацыя";

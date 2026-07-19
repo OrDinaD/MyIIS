@@ -262,12 +262,20 @@ private extension AcademicChangeNotificationService {
         }
 
         let shownChanges = Array(changes.prefix(Self.maxNotificationItems))
+        let isSettlementUpdate = changes.contains(where: isDormitorySettlementUpdate)
         let content = UNMutableNotificationContent()
-        content.title = notificationTitle(for: changes)
-        content.body = notificationBody(for: shownChanges, totalCount: changes.count)
+        content.title = isSettlementUpdate
+            ? NSLocalizedString("dormitory_notification_status_title", comment: "")
+            : notificationTitle(for: changes)
+        content.body = isSettlementUpdate
+            ? NSLocalizedString("dormitory_notification_status_body", comment: "")
+            : notificationBody(for: shownChanges, totalCount: changes.count)
         content.sound = .default
-        content.threadIdentifier = "academic-updates"
-        content.categoryIdentifier = "academic-updates"
+        content.threadIdentifier = isSettlementUpdate ? "dormitory-status" : "academic-updates"
+        content.categoryIdentifier = isSettlementUpdate ? "dormitory-status" : "academic-updates"
+        if isSettlementUpdate {
+            content.userInfo = ["destination": AppSection.dormitory.rawValue]
+        }
 
         let request = UNNotificationRequest(
             identifier: "academic-updates-\(UUID().uuidString)",
@@ -280,6 +288,12 @@ private extension AcademicChangeNotificationService {
         } catch {
             logService.log("⚠️ Failed to deliver academic notification: \(error.localizedDescription)")
         }
+    }
+
+    private func isDormitorySettlementUpdate(_ change: AcademicChangeItem) -> Bool {
+        change.source == .dormitory &&
+            change.signature.contains("|status|") &&
+            change.value.localizedCaseInsensitiveContains(DormitoryApplicationStatus.settled.rawValue)
     }
 
     private func notificationTitle(for changes: [AcademicChangeItem]) -> String {
@@ -454,5 +468,22 @@ extension AcademicChangeNotificationService: UNUserNotificationCenterDelegate {
         willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
         [.banner, .list, .sound]
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        guard
+            response.actionIdentifier == UNNotificationDefaultActionIdentifier,
+            let destination = response.notification.request.content.userInfo["destination"] as? String,
+            let section = AppSection(rawValue: destination)
+        else {
+            return
+        }
+
+        await MainActor.run {
+            AppRouter.shared.navigate(to: section)
+        }
     }
 }

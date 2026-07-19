@@ -12,6 +12,8 @@ struct DormitorySettlementRevealView: View {
     @State private var isDormitoryRevealed = false
     @State private var isRoomRevealed = false
     @State private var isReturning = false
+    @State private var cardDrag = CGSize.zero
+    @State private var cardExitOffset = CGSize.zero
 
     private enum Stage {
         case arriving
@@ -30,6 +32,16 @@ struct DormitorySettlementRevealView: View {
         (isDormitoryRevealed ? 1 : 0) + (isRoomRevealed ? 2 : 0)
     }
 
+    private var cardPitch: Double {
+        guard !reduceMotion else { return 0 }
+        return min(max(Double(-cardDrag.height / 24), -8), 8)
+    }
+
+    private var cardYaw: Double {
+        guard !reduceMotion else { return 0 }
+        return min(max(Double(cardDrag.width / 20), -10), 10)
+    }
+
     var body: some View {
         GeometryReader { proxy in
             ZStack {
@@ -41,19 +53,22 @@ struct DormitorySettlementRevealView: View {
                     Text(dormitoryLocalized("dormitory_reveal_congratulations"))
                         .font(.system(.largeTitle, design: .rounded, weight: .bold))
                         .foregroundStyle(.white)
-                        .opacity(stage == .arriving ? 0 : 1)
+                        .opacity(stage == .arriving || isReturning ? 0 : 1)
                         .offset(y: stage == .arriving ? 12 : 0)
 
                     animatedCard(
-                        width: min(max(proxy.size.width - 32, 300), 430)
+                        width: min(max(proxy.size.width - 32, 300), 430),
+                        viewport: proxy.size
                     )
 
-                    Text(helperText)
-                        .font(.subheadline.weight(.semibold))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.white.opacity(0.82))
-                        .frame(maxWidth: 340)
-                        .opacity(stage == .arriving ? 0 : 1)
+                    if stage == .scratching {
+                        Text(scratchHelperText)
+                            .font(.subheadline.weight(.semibold))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(.white.opacity(0.82))
+                            .frame(maxWidth: 340)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
                 }
                 .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -74,63 +89,33 @@ struct DormitorySettlementRevealView: View {
         }
         .task(id: completionTrigger) {
             guard completionTrigger == 3 else { return }
-            stage = .completed
-            try? await Task.sleep(for: .seconds(5))
-            guard !Task.isCancelled else { return }
-
-            withAnimation(reduceMotion ? nil : .spring(duration: 0.58, bounce: 0.16)) {
-                isReturning = true
+            withAnimation(.snappy(duration: 0.28)) {
+                stage = .completed
             }
-            try? await Task.sleep(for: reduceMotion ? .milliseconds(80) : .milliseconds(560))
-            guard !Task.isCancelled else { return }
-            onDismiss()
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled, !isReturning else { return }
+            await dismissCard(toward: CGSize(width: 0, height: -360))
         }
     }
 
-    private var helperText: String {
-        switch stage {
-        case .arriving:
-            return ""
-        case .scratching:
-            return isDormitoryRevealed
-                ? dormitoryLocalized("dormitory_reveal_room_hint")
-                : dormitoryLocalized("dormitory_reveal_dormitory_hint")
-        case .completed:
-            return dormitoryLocalized("dormitory_reveal_complete")
-        }
+    private var scratchHelperText: String {
+        isDormitoryRevealed
+            ? dormitoryLocalized("dormitory_reveal_room_hint")
+            : dormitoryLocalized("dormitory_reveal_dormitory_hint")
     }
 
-    private func animatedCard(width: CGFloat) -> some View {
+    private func animatedCard(width: CGFloat, viewport: CGSize) -> some View {
         let shouldReduceMotion = reduceMotion
         return KeyframeAnimator(
             initialValue: shouldReduceMotion ? SettlementRevealAnimationValues.revealed : .initial,
             trigger: presentationTrigger
         ) { values in
-            DormitorySettlementFlipCard(
-                reveal: reveal,
-                placement: placement,
-                rotation: values.rotation,
-                scratchEnabled: stage != .arriving,
-                isDormitoryRevealed: $isDormitoryRevealed,
-                isRoomRevealed: $isRoomRevealed
+            animatedCardContent(
+                values: values,
+                width: width,
+                viewport: viewport,
+                shouldReduceMotion: shouldReduceMotion
             )
-            .frame(width: width)
-            .scaleEffect(values.scale)
-            .offset(y: values.verticalOffset)
-            .rotation3DEffect(
-                .degrees(values.rotation),
-                axis: (x: 0, y: 1, z: 0),
-                perspective: 0.42
-            )
-            .keyframeAnimator(initialValue: 0.0, trigger: isDormitoryRevealed) { content, offset in
-                content.offset(y: shouldReduceMotion ? 0 : offset)
-            } keyframes: { _ in
-                SpringKeyframe(-12, duration: 0.18)
-                SpringKeyframe(0, duration: 0.34)
-            }
-            .scaleEffect(isReturning ? 0.66 : 1)
-            .offset(y: isReturning ? -240 : 0)
-            .opacity(isReturning ? 0 : 1)
         } keyframes: { _ in
             KeyframeTrack(\.rotation) {
                 CubicKeyframe(540, duration: 0.72)
@@ -145,7 +130,115 @@ struct DormitorySettlementRevealView: View {
                 SpringKeyframe(0, duration: 0.38)
             }
         }
-        .animation(shouldReduceMotion ? nil : .spring(duration: 0.58, bounce: 0.16), value: isReturning)
+        .animation(shouldReduceMotion ? nil : .spring(duration: 0.42, bounce: 0.18), value: cardDrag)
+        .animation(shouldReduceMotion ? nil : .easeIn(duration: 0.3), value: isReturning)
+    }
+
+    private func animatedCardContent(
+        values: SettlementRevealAnimationValues,
+        width: CGFloat,
+        viewport: CGSize,
+        shouldReduceMotion: Bool
+    ) -> some View {
+        DormitorySettlementFlipCard(
+            reveal: reveal,
+            placement: placement,
+            rotation: values.rotation,
+            scratchEnabled: stage != .arriving,
+            isDormitoryRevealed: $isDormitoryRevealed,
+            isRoomRevealed: $isRoomRevealed
+        )
+        .frame(width: width)
+        .scaleEffect(values.scale)
+        .offset(y: values.verticalOffset)
+        .rotation3DEffect(
+            .degrees(values.rotation),
+            axis: (x: 0, y: 1, z: 0),
+            perspective: 0.42
+        )
+        .rotation3DEffect(
+            .degrees(cardPitch),
+            axis: (x: 1, y: 0, z: 0),
+            perspective: 0.5
+        )
+        .rotation3DEffect(
+            .degrees(cardYaw),
+            axis: (x: 0, y: 1, z: 0),
+            perspective: 0.5
+        )
+        .keyframeAnimator(initialValue: 0.0, trigger: isDormitoryRevealed) { content, offset in
+            content.offset(y: shouldReduceMotion ? 0 : offset)
+        } keyframes: { _ in
+            SpringKeyframe(-12, duration: 0.18)
+            SpringKeyframe(0, duration: 0.34)
+        }
+        .scaleEffect(isReturning ? 0.88 : 1)
+        .offset(
+            x: cardDrag.width + cardExitOffset.width,
+            y: cardDrag.height + cardExitOffset.height
+        )
+        .opacity(isReturning ? 0 : 1)
+        .simultaneousGesture(
+            cardGesture(in: viewport),
+            including: stage == .arriving || isReturning ? .none : .all
+        )
+    }
+
+    private func cardGesture(in viewport: CGSize) -> some Gesture {
+        DragGesture(minimumDistance: 8)
+            .onChanged { drag in
+                guard canMoveCard(from: drag.startLocation) else { return }
+                cardDrag = drag.translation
+            }
+            .onEnded { drag in
+                guard canMoveCard(from: drag.startLocation) else { return }
+                let projected = drag.predictedEndTranslation
+                let projectedDistance = hypot(projected.width, projected.height)
+                let actualDistance = hypot(drag.translation.width, drag.translation.height)
+
+                guard projectedDistance > 170 || actualDistance > 105 else {
+                    withAnimation(reduceMotion ? nil : .spring(duration: 0.42, bounce: 0.2)) {
+                        cardDrag = .zero
+                    }
+                    return
+                }
+
+                let direction = projectedDistance > 0
+                    ? CGSize(
+                        width: projected.width / projectedDistance,
+                        height: projected.height / projectedDistance
+                    )
+                    : CGSize(width: 0, height: -1)
+                let exitDistance = max(viewport.width, viewport.height) * 1.35
+                Task {
+                    await dismissCard(
+                        toward: CGSize(
+                            width: direction.width * exitDistance,
+                            height: direction.height * exitDistance
+                        )
+                    )
+                }
+            }
+    }
+
+    private func canMoveCard(from startLocation: CGPoint) -> Bool {
+        guard stage != .arriving, !isReturning else { return false }
+        if stage == .completed {
+            return true
+        }
+
+        return startLocation.y < 96 || startLocation.y > 368
+    }
+
+    private func dismissCard(toward offset: CGSize) async {
+        guard !isReturning else { return }
+        withAnimation(reduceMotion ? nil : .easeIn(duration: 0.3)) {
+            isReturning = true
+            cardExitOffset = offset
+        }
+        try? await Task.sleep(for: reduceMotion ? .milliseconds(80) : .milliseconds(320))
+        guard !Task.isCancelled else { return }
+        onDismiss()
     }
 
     private func beginPresentation() async {
@@ -273,19 +366,13 @@ private struct DormitorySettlementFlipCard: View {
                         .frame(width: 46, height: 46)
                         .background(.white.opacity(0.16), in: Circle())
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(reveal.application.status)
-                            .font(.system(.title2, design: .rounded, weight: .bold))
-
-                        Text(dormitoryLocalized("dormitory_reveal_subtitle"))
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.78))
-                    }
+                    Text(reveal.application.status)
+                        .font(.system(.title2, design: .rounded, weight: .bold))
 
                     Spacer(minLength: 0)
                 }
 
-                ScratchRevealField(
+                DormitoryScratchRevealField(
                     title: dormitoryLocalized("dormitory_label_dormitory"),
                     value: placement.dormitory ?? dormitoryLocalized("dormitory_place_unknown"),
                     isEnabled: scratchEnabled,
@@ -293,7 +380,7 @@ private struct DormitorySettlementFlipCard: View {
                     isRevealed: $isDormitoryRevealed
                 )
 
-                ScratchRevealField(
+                DormitoryScratchRevealField(
                     title: dormitoryLocalized("dormitory_label_room"),
                     value: placement.room,
                     isEnabled: scratchEnabled && isDormitoryRevealed,
@@ -301,25 +388,13 @@ private struct DormitorySettlementFlipCard: View {
                     isRevealed: $isRoomRevealed
                 )
 
-                HStack {
-                    Label(
-                        String(
-                            format: dormitoryLocalized("dormitory_application_number"),
-                            reveal.application.number
-                        ),
-                        systemImage: "number"
-                    )
-
-                    Spacer()
-
-                    if isDormitoryRevealed && isRoomRevealed {
-                        Label(
-                            dormitoryLocalized("dormitory_reveal_complete_short"),
-                            systemImage: "checkmark.circle.fill"
-                        )
-                        .transition(.scale.combined(with: .opacity))
-                    }
-                }
+                Label(
+                    String(
+                        format: dormitoryLocalized("dormitory_application_number"),
+                        reveal.application.number
+                    ),
+                    systemImage: "number"
+                )
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.white.opacity(0.76))
             }
@@ -351,159 +426,6 @@ private struct DormitorySettlementFlipCard: View {
         .overlay {
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .stroke(.white.opacity(0.2), lineWidth: 1)
-        }
-    }
-}
-
-private struct ScratchRevealField: View {
-    let title: String
-    let value: String
-    let isEnabled: Bool
-    let lockedHint: String
-    @Binding var isRevealed: Bool
-
-    @State private var strokes: [[CGPoint]] = []
-    @State private var activeStrokeIndex: Int?
-    @State private var scratchedDistance = 0.0
-
-    var body: some View {
-        ZStack {
-            VStack(alignment: .leading, spacing: 7) {
-                Text(title.uppercased())
-                    .font(.caption2.weight(.bold))
-                    .tracking(0.8)
-                    .foregroundStyle(.white.opacity(0.66))
-
-                Text(verbatim: value)
-                    .font(.system(.title, design: .rounded, weight: .bold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.55)
-                    .foregroundStyle(.white)
-            }
-            .padding(16)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            .background(.white.opacity(0.13))
-            .accessibilityHidden(!isRevealed)
-
-            if !isRevealed {
-                scratchSurface
-
-                if !isEnabled {
-                    RoundedRectangle(cornerRadius: 17, style: .continuous)
-                        .fill(Color(uiColor: .systemGray3))
-
-                    Label(lockedHint, systemImage: "lock.fill")
-                        .font(.caption.weight(.bold))
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.primary.opacity(0.76))
-                        .padding(.horizontal, 20)
-                }
-            }
-        }
-        .frame(height: 112)
-        .clipShape(RoundedRectangle(cornerRadius: 17, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 17, style: .continuous)
-                .stroke(.white.opacity(0.17), lineWidth: 1)
-        }
-        .sensoryFeedback(.impact(weight: .medium), trigger: isRevealed)
-        .animation(.snappy(duration: 0.28), value: isEnabled)
-        .animation(.snappy(duration: 0.28), value: isRevealed)
-        .accessibilityElement(children: .contain)
-    }
-
-    private var scratchSurface: some View {
-        GeometryReader { proxy in
-            ZStack {
-                RoundedRectangle(cornerRadius: 17, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(uiColor: .systemGray3),
-                                Color(uiColor: .systemGray5),
-                                Color(uiColor: .systemGray2)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                HStack(spacing: 8) {
-                    Image(systemName: "hand.draw.fill")
-                    Text(dormitoryLocalized("dormitory_reveal_scratch"))
-                }
-                .font(.subheadline.weight(.bold))
-                .foregroundStyle(.primary.opacity(0.76))
-
-                Canvas { context, _ in
-                    context.blendMode = .destinationOut
-                    for stroke in strokes where !stroke.isEmpty {
-                        var path = Path()
-                        path.move(to: stroke[0])
-                        for point in stroke.dropFirst() {
-                            path.addLine(to: point)
-                        }
-                        context.stroke(
-                            path,
-                            with: .color(.white),
-                            style: StrokeStyle(
-                                lineWidth: 34,
-                                lineCap: .round,
-                                lineJoin: .round
-                            )
-                        )
-                    }
-                }
-            }
-            .compositingGroup()
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 0)
-                    .onChanged { value in
-                        appendScratchPoint(value.location, in: proxy.size)
-                    }
-                    .onEnded { _ in
-                        activeStrokeIndex = nil
-                    },
-                including: isEnabled ? .all : .none
-            )
-            .accessibilityLabel(isEnabled ? dormitoryLocalized("dormitory_reveal_scratch") : lockedHint)
-            .accessibilityAddTraits(isEnabled ? .isButton : [])
-            .accessibilityAction {
-                guard isEnabled else { return }
-                revealField()
-            }
-        }
-    }
-
-    private func appendScratchPoint(_ rawPoint: CGPoint, in size: CGSize) {
-        guard isEnabled, !isRevealed, size.width > 0 else { return }
-
-        let point = CGPoint(
-            x: min(max(rawPoint.x, 0), size.width),
-            y: min(max(rawPoint.y, 0), size.height)
-        )
-
-        if let activeStrokeIndex,
-           let previousPoint = strokes[activeStrokeIndex].last {
-            let segment = hypot(point.x - previousPoint.x, point.y - previousPoint.y)
-            guard segment >= 1.5 else { return }
-            strokes[activeStrokeIndex].append(point)
-            scratchedDistance += segment
-        } else {
-            strokes.append([point])
-            activeStrokeIndex = strokes.indices.last
-        }
-
-        if scratchedDistance >= max(150, size.width * 1.45) {
-            revealField()
-        }
-    }
-
-    private func revealField() {
-        guard !isRevealed else { return }
-        withAnimation(.snappy(duration: 0.3)) {
-            isRevealed = true
         }
     }
 }

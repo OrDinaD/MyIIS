@@ -291,6 +291,8 @@
 "dormitory_reveal_scratch" = "Scratch to reveal";
 "dormitory_reveal_complete_short" = "Revealed";
 "dormitory_reveal_demo" = "Settlement demo";
+"dormitory_notification_status_title" = "Dormitory";
+"dormitory_notification_status_body" = "Your dormitory status has changed. Open the Dormitory section to view the details.";
 
 "rating_title" = "Rating";
 "rating_auth_required" = "Authorization required";
