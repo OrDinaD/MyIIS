@@ -22,20 +22,21 @@ struct MyIISApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .environmentObject(authService) // Внедряем его в окружение
-                .onAppear {
-                    handlePendingAppIntentNavigation()
-                    activateWatchScheduleSync()
-                }
-                .onChange(of: scenePhase) { _, phase in
-                    handleScenePhaseChange(phase)
-                }
-                .overlay {
-                    ScreenshotBrandOverlay(text: "myIIS")
-                        .ignoresSafeArea()
-                        .allowsHitTesting(false)
-                }
+            ZStack {
+                ContentView()
+
+                ScreenshotBrandOverlay(text: "myIIS")
+                    .ignoresSafeArea()
+                    .allowsHitTesting(false)
+            }
+            .environmentObject(authService) // Внедряем его в окружение
+            .onAppear {
+                handlePendingAppIntentNavigation()
+                activateWatchScheduleSync()
+            }
+            .onChange(of: scenePhase) { _, phase in
+                handleScenePhaseChange(phase)
+            }
         }
         .commands {
             AppSceneCommands()

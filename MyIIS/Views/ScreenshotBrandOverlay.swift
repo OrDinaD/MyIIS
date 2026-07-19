@@ -92,7 +92,7 @@ extension ScreenshotBrandOverlay {
 
             label.frame = CGRect(
                 x: 0,
-                y: 6,
+                y: 14,
                 width: bounds.width,
                 height: 16
             )
