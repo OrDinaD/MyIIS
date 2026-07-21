@@ -69,7 +69,7 @@
 "settings_confirm_code_placeholder" = "Код пацверджання";
 "settings_confirm_resend" = "Адправіць код яшчэ раз";
 
-"services_section_study" = "Вучэба";
+"services_section_study" = "Вучоба";
 "services_section_resources" = "Рэсурсы";
 "services_section_info" = "Інфа";
 "services_section_open" = "Даступныя сэрвісы";
@@ -79,7 +79,7 @@
 "services_account_locked_subtitle" = "Спіс можна разгарнуць, але для пераходу патрэбны ўваход.";
 "services_locked_hint" = "Патрэбны ўваход у акаўнт.";
 "services_item_markbook" = "Залікоўка";
-"services_item_study" = "Вучэба";
+"services_item_study" = "Вучоба";
 "services_item_diploma" = "Дыплом";
 "services_item_group" = "Група";
 "services_item_headman" = "Стараста";
