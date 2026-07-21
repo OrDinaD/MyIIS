@@ -29,11 +29,11 @@
 "profile_logout_confirmation_title" = "Выйсці з акаўнта?";
 "profile_logout_confirmation_message" = "Бягучая сесія будзе завершана на гэтай прыладзе.";
 "profile_logout_confirm" = "Выйсці";
-"profile_logout_cancel" = "Адмена";
+"profile_logout_cancel" = "Скасаваць";
 "profile_rating_alert_title" = "Пра рэйтынг у профілі";
 "profile_rating_alert_message" = "Колькасць зорак залежыць ад сярэдняга бала залікоўкі. Адна зорка роўная двум балам.";
 "profile_rating_alert_button" = "Зразумела";
-"profile_no_data" = "Няма даных аб карыстальніку";
+"profile_no_data" = "Няма даных пра карыстальніка";
 
 "settings_title" = "Налады карыстальніка";
 "settings_tab_password" = "Пароль";
@@ -63,7 +63,7 @@
 "settings_photo_change_button" = "Змяніць фота";
 "settings_photo_source_camera" = "Зрабіць фота";
 "settings_photo_source_library" = "Выбраць з галерэі";
-"settings_photo_uploading" = "Загрузка фота...";
+"settings_photo_uploading" = "Загружванне фота...";
 "settings_confirm_title" = "Пацверджанне кантакту";
 "settings_confirm_code_sent" = "Код адпраўлены на %@";
 "settings_confirm_code_placeholder" = "Код пацверджання";
@@ -83,10 +83,10 @@
 "services_item_diploma" = "Дыплом";
 "services_item_group" = "Група";
 "services_item_headman" = "Стараста";
-"services_item_dormitory" = "Гуртовня";
+"services_item_dormitory" = "Інтэрнат";
 "services_item_library" = "Бібліятэка";
 "services_item_announcements" = "Аб’явы";
-"services_item_penalties" = "Сягненні";
+"services_item_penalties" = "Спагнанні";
 "services_item_activities" = "Актыўнасці";
 "services_item_schedule" = "Расклад";
 "services_item_about" = "Пра праграму";
@@ -97,7 +97,7 @@
 "services_schedule_group_placeholder" = "Увядзіце нумар групы";
 "services_schedule_teacher_placeholder" = "Увядзіце імя выкладчыка або абярыце са спісу";
 "services_schedule_load_button" = "Загрузіць расклад";
-"services_schedule_exams" = "Экзамены і кансультацыі";
+"services_schedule_exams" = "Іспыты і кансультацыі";
 "services_schedule_empty_week" = "На выбраным тыдні заняткаў няма";
 "services_schedule_no_future_lessons" = "Заняткаў больш няма";
 "services_schedule_publication_pending" = "Раскладу пакуль няма. Звычайна яго публікуюць пасля 15 жніўня.";
@@ -133,10 +133,10 @@
 "services_schedule_report_downloading" = "Спампоўваем Excel…";
 "services_schedule_report_group_missing" = "Не атрымалася вызначыць групу для раскладу";
 "services_schedule_google_calendar" = "Імпартаваць у Google Каляндар";
-"services_schedule_exam_reminders" = "Нагадаць перад экзаменамі";
+"services_schedule_exam_reminders" = "Нагадаць перад іспытамі";
 "services_schedule_reminders_title" = "Напаміны";
 "services_schedule_reminders_enabled" = "Гатова: запланавана напамінаў — %d";
-"services_schedule_reminders_empty" = "Будучых экзаменаў для напамінаў не знойдзена або апавяшчэнні забаронены ў наладах iOS.";
+"services_schedule_reminders_empty" = "Будучых іспытаў для напамінаў не знойдзена або апавяшчэнні забаронены ў наладах iOS.";
 
 "about_title" = "Пра праграму";
 "about_section_version" = "Версія";
@@ -147,20 +147,20 @@
 "about_telegram" = "Telegram";
 "about_privacy_policy" = "Палітыка канфідэнцыяльнасці";
 "about_terms" = "Правілы выкарыстання";
-"about_contact_me" = "Па любых багах, праблемах і прапановах можна пісаць мне ў Telegram: @lokhotonkot";
-"about_support_title" = "Сказаць дзякуй аўтару";
+"about_contact_me" = "Пра любыя багі, праблемы і прапановы можна пісаць мне ў Telegram: @lokhotonkot";
+"about_support_title" = "Падзякаваць аўтару";
 "about_support_subtitle" = "Можна закінуць на каву праз App Store.";
 "about_support_accessibility_hint" = "Адкрывае варыянты добраахвотнай падтрымкі аўтара.";
-"support_author_title" = "Сказаць дзякуй";
+"support_author_title" = "Падзякаваць";
 "support_author_headline" = "Дзякуй, што карыстаецеся MyIIS";
-"support_author_message" = "Калі праграма дапамагла, можна падтрымаць распрацоўку любой зручнай пакупкай са спіса. Самы просты варыянт — на каву.";
+"support_author_message" = "Калі праграма дапамагла, можна падтрымаць распрацоўку любой зручнай пакупкай са спісу. Самы просты варыянт — на каву.";
 "support_author_products_title" = "Выберыце суму";
 "support_author_loading_message" = "Правяраем даступныя варыянты падтрымкі…";
 "support_author_pending_title" = "Варыянты падтрымкі хутка з'явяцца";
-"support_author_pending_message" = "Пакуль пакупкі не наладжаны ў App Store Connect, данат недаступны. Нічога не зламалася — гэты раздзел чакае рэлізныя прадукты.";
+"support_author_pending_message" = "Пакуль пакупкі не наладжаны ў App Store Connect, данат недаступны. Нічога не зламалася — гэты раздзел чакае рэлізных прадуктаў.";
 "support_author_unavailable_title" = "Пакупкі недаступныя";
 "support_author_unavailable_message" = "Раздзел запрацуе пасля наладжвання In-App Purchases у App Store Connect.";
-"support_author_footer" = "Пакупкі праходзяць праз App Store. Гэта добраахвотная падтрымка і яна не адкрывае платныя функцыі.";
+"support_author_footer" = "Пакупкі праходзяць праз App Store. Гэта добраахвотная падтрымка і яна не адкрывае платных функцый.";
 
 "attendance_title" = "Пропускі";
 "attendance_section_applications" = "Заявы па ВРВІ";
@@ -171,12 +171,12 @@
 "attendance_rejection_reason" = "Прычына адмовы";
 "attendance_section_summary" = "Пропускі па непаважлівай прычыне";
 "attendance_section_summary_subtitle" = "Бягучы семестр";
-"attendance_no_summary" = "Няма статыстыкі за семестр.";
+"attendance_no_summary" = "Няма статыстыкі за сэместр.";
 "attendance_total" = "Усяго";
 "attendance_hours_unit" = "г.";
 "attendance_section_certificates" = "Інфармацыя аб даведках";
 "attendance_section_certificates_subtitle" = "Дакументы па паважлівых прычынах";
-"attendance_info_banner" = "Пры пропусках па хваробе прадастаўце даведкі ў дэканат на працягу 3 дзён.";
+"attendance_info_banner" = "У выпадку пропускаў па хваробе перадайце даведкі ў дэканат на працягу 3 дзён.";
 "attendance_no_certificates" = "Даведкі не знойдзены.";
 "attendance_term_format" = "%lld сэместр";
 "attendance_from" = "З";
@@ -186,12 +186,12 @@
 "gradebook_title" = "Залікоўка";
 "gradebook_number" = "Нумар: %@";
 "gradebook_overall_average" = "Агульны сярэдні бал: %@";
-"gradebook_loading" = "Загружаем залікоўку...";
+"gradebook_loading" = "Загружванне залікоўкі...";
 "gradebook_section_semester" = "Сэместр";
-"gradebook_semesters_not_found" = "Семестры не знойдзены";
-"gradebook_semester_average" = "Сярэдні бал за семестр";
+"gradebook_semesters_not_found" = "Сэместры не знойдзены";
+"gradebook_semester_average" = "Сярэдні бал за сэместр";
 "gradebook_section_subjects" = "Дысцыпліны";
-"gradebook_no_subjects" = "Няма даных па дысцыплінах";
+"gradebook_no_subjects" = "Няма даных пра дысцыпліны";
 "gradebook_hours" = "Гадзіны";
 "gradebook_control_form" = "Ф.кантролю";
 "gradebook_date" = "Дата";
@@ -213,16 +213,16 @@
 "gradebook_share_retakes" = "Пераздачы";
 "gradebook_share_generated" = "Сфарміравана";
 "gradebook_share_render_failed" = "Не ўдалося падрыхтаваць выяву залікоўкі.";
-"gradebook_share_no_data" = "Няма даных выбранага семестра для экспарту.";
-"gradebook_share_preview_title" = "Прадпрагляд";
+"gradebook_share_no_data" = "Няма даных выбранага сэместра для экспарту.";
+"gradebook_share_preview_title" = "Папярэдні прагляд";
 "gradebook_share_save" = "Захаваць";
 "gradebook_share_saved" = "Выява захавана ў Фота.";
 "gradebook_share_photo_add_usage" = "Трэба захаваць выяву залікоўкі ў Фота.";
 
 "dormitory_title" = "Гуртовня";
-"dormitory_loading" = "Загружаем інфармацыю аб гуртаўні";
+"dormitory_loading" = "Загружванне інфармацыі пра інтэрнат";
 "dormitory_doc_unavailable" = "Дакумент недаступны";
-"dormitory_section_applications" = "Інфармацыя аб засяленні";
+"dormitory_section_applications" = "Інфармацыя пра засяленне";
 "dormitory_no_applications" = "Заявы на засяленне не знойдзены";
 "dormitory_application_number" = "Заява №%lld";
 "dormitory_application_accepted" = "Прынята: %@";
@@ -235,7 +235,7 @@
 "dormitory_open_attachment" = "Адкрыць укладанне";
 "dormitory_open_document" = "Адкрыць дакумент";
 "dormitory_section_privileges" = "Ільготы";
-"dormitory_no_privileges" = "Інфармацыя аб ільготах адсутнічае";
+"dormitory_no_privileges" = "Інфармацыя пра ільготы адсутнічае";
 "dormitory_my_place" = "Маё месца";
 "dormitory_place_assigned" = "Месца выдзелена";
 "dormitory_settled_since" = "Заселены з %@";
@@ -298,9 +298,9 @@
 "rating_group" = "Група %@";
 "rating_average_grade" = "Сярэдні бал";
 "rating_missed_hours" = "Прапушчана гадзін";
-"rating_loading_subjects" = "Загружаем прадметы і КТ...";
-"rating_semester_completed_title" = "Семестр завяршыўся";
-"rating_semester_completed_desc" = "Рэйтынгу за новы семестр пакуль няма. Мы паведамім, калі з'явяцца першыя адзнакі.";
+"rating_loading_subjects" = "Загружванне прадметаў і КТ...";
+"rating_semester_completed_title" = "Сэместр завяршыўся";
+"rating_semester_completed_desc" = "Рэйтынгу за новы сэместр пакуль няма. Мы паведамім, калі з'явяцца першыя адзнакі.";
 "rating_disciplines_unavailable_title" = "Прадметы часова недаступныя";
 "rating_disciplines_unavailable_desc" = "Рэйтынг загружаны, але API прадметаў зараз не адказвае.";
 "rating_disciplines_not_found_title" = "Прадметы пакуль не знойдзены";
@@ -312,8 +312,8 @@
 "rating_no_grades" = "Адзнак пакуль няма";
 "rating_grades_format" = "Адзнакі: %@";
 "rating_section_missed" = "Пропускі па непаважлівай прычыне";
-"rating_total_semester" = "Усяго за семестр";
-"rating_checkpoints_not_found" = "Даныя па КТ пакуль не атрыманы";
+"rating_total_semester" = "Усяго за сэместр";
+"rating_checkpoints_not_found" = "Даныя пра КТ пакуль не атрыманы";
 "rating_checkpoint_format" = "КТ %lld";
 
 "error_partial_data" = "Частка даных не загрузілася";
@@ -321,7 +321,7 @@
 
 "common_ok" = "Добра";
 "common_close" = "Закрыць";
-"common_cancel" = "Адмена";
+"common_cancel" = "Скасаваць";
 "common_retry" = "Паўтарыць";
 "common_refresh" = "Абнавіць";
 "common_unexpected_error" = "Адбылася непрадбачаная памылка.";
@@ -337,7 +337,7 @@
 "services_announcements_subtitle" = "Стужка аб’яў, як у вэб-версіі IIS.";
 "services_announcements_empty" = "Аб’яў няма";
 "services_penalties_title" = "Заахвочванні і спагнанні";
-"services_penalties_subtitle" = "Інфармацыя па спагнаннях з IIS.";
+"services_penalties_subtitle" = "Інфармацыя пра спагнанні з IIS.";
 "services_penalties_empty" = "Заахвочванняў і спагнанняў няма";
 "services_activities_brsm_title" = "БРСМ";
 "services_activities_brsm_subtitle" = "Сяброўства ў БРСМ.";
@@ -347,7 +347,7 @@
 "services_activities_social_subtitle" = "Спіс сацыяльнай актыўнасці.";
 "services_activities_science_title" = "Навуковая работа";
 "services_activities_science_subtitle" = "Спіс даследчай актыўнасці.";
-"services_activities_checking_status" = "Правяраем статус...";
+"services_activities_checking_status" = "Правяранне статусу...";
 "services_activities_member" = "Вы ўваходзіце ў арганізацыю";
 "services_activities_not_member" = "Вы не ўваходзіце ў арганізацыю";
 "common_loading" = "Загружванне...";
@@ -355,7 +355,7 @@
 "about_academic_notifications_title" = "Змены ў вучэбных даных";
 "about_academic_notifications_subtitle" = "Атрымлівайце лакальныя апавяшчэнні, калі залікоўка, пропускі або расклад абнавіліся.";
 "about_academic_notifications_denied_title" = "Апавяшчэнні выключаны";
-"about_academic_notifications_denied_message" = "Дазвольце апавяшчэнні ў наладах iOS, каб атрымліваць паведамленні аб зменах.";
+"about_academic_notifications_denied_message" = "Дазвольце апавяшчэнні ў наладах iOS, каб атрымліваць паведамленні пра змены.";
 "library_my_books" = "Мае кнігі";
 "library_my_books_subtitle" = "Даныя з IIS для падзелу бібліятэкі.";
 "library_empty_books" = "Кніг няма";
@@ -376,7 +376,7 @@
 "activities_research" = "Навуковая работа";
 "activities_research_subtitle" = "Спіс даследчай актыўнасці.";
 "activities_empty" = "Актыўнасцяў няма";
-"activities_checking_status" = "Правяраем статус...";
+"activities_checking_status" = "Правяранне статусу...";
 "activities_member" = "Вы ўваходзіце ў арганізацыю";
 "activities_not_member" = "Вы не ўваходзіце ў арганізацыю";
 "common_error" = "Памылка";
@@ -396,7 +396,7 @@
 "about_section_app_icon" = "Іконка праграмы";
 "about_app_icon_error_message" = "Не ўдалося змяніць іконку праграмы.";
 "about_app_icon_accessibility_hint" = "Мяняе іконку праграмы на выбраны варыянт.";
-"services_placeholder_description" = "Выберыце сэрвіс у спісе злева";
+"services_placeholder_description" = "Абярыце сэрвіс у спісе злева";
 "common_enabled" = "Уключана";
 "common_disabled" = "Выключана";
 "common_not_specified_feminine" = "Не пазначана";
@@ -423,7 +423,7 @@
 "group_curator_phone_hint" = "Адкрывае нумар у Тэлефоне";
 "group_roster_title" = "Склад групы";
 "group_load_failed" = "Не ўдалося загрузіць групу";
-"group_students_loading" = "Загрузка спісу...";
+"group_students_loading" = "Загружванне спісу...";
 "group_students_empty" = "Студэнты не знойдзены";
 "group_role_me" = "Я";
 "group_role_headman" = "Стараста";
@@ -439,14 +439,14 @@
 "unauthorized_home_sign_in_message" = "Увайдзіце, каб адкрыць асабісты расклад, залікоўку, групу і іншыя студэнцкія сэрвісы.";
 "unauthorized_available_without_sign_in" = "Даступна без уваходу";
 "unauthorized_rating_title" = "Рэйтынг групы";
-"unauthorized_rating_subtitle" = "Факультэт, спецыяльнасць, курс і падрабязнасці па студэнтах";
+"unauthorized_rating_subtitle" = "Факультэт, спецыяльнасць, курс і падрабязнасці пра студэнтаў";
 "unauthorized_disciplines_subtitle" = "Вучэбныя планы па спецыяльнасці і курсе";
-"unauthorized_study_weeks_subtitle" = "Бягучы тыдзень і каляндар семестра";
+"unauthorized_study_weeks_subtitle" = "Бягучы тыдзень і каляндар сэместра";
 "unauthorized_directory_subtitle" = "Кантакты супрацоўнікаў і падраздзяленняў";
 "unauthorized_after_sign_in" = "Пасля ўваходу";
 "unauthorized_all_features_subtitle" = "Для доступу да ўсіх функцый";
 "unauthorized_services_locked_section" = "Сэрвісы (патрабуецца аўтарызацыя)";
-"about_rate_app" = "Ацаніць дадатак";
+"about_rate_app" = "Ацаніць праграму";
 
 /* Апавяшчэнні асабістага кабінета */
 "notifications_title" = "Апавяшчэнні";
