@@ -117,7 +117,7 @@
 "services_schedule_display_mode" = "Рэжым адлюстравання";
 "services_schedule_display_continuous" = "Стужка";
 "services_schedule_display_day" = "Па днях";
-"services_schedule_display_exams" = "Экзамены";
+"services_schedule_display_exams" = "Іспыты";
 "services_schedule_subgroup_filter" = "Падгрупа";
 "services_schedule_subgroup_all" = "Усе падгрупы";
 "services_schedule_subgroup_number" = "Падгрупа %d";
@@ -126,7 +126,7 @@
 "services_schedule_my_group" = "Мая група";
 "services_schedule_now_badge" = "ЗАРАЗ";
 "services_schedule_tomorrow_prefix" = "Заўтра";
-"services_schedule_exams_short" = "Экзамены";
+"services_schedule_exams_short" = "Іспыты";
 "services_schedule_exams_no_date" = "Дата не пазначана";
 "services_schedule_actions" = "Дзеянні";
 "services_schedule_report_download" = "Спампаваць расклад у Excel";
@@ -178,7 +178,7 @@
 "attendance_section_certificates_subtitle" = "Дакументы па паважлівых прычынах";
 "attendance_info_banner" = "Пры пропусках па хваробе прадастаўце даведкі ў дэканат на працягу 3 дзён.";
 "attendance_no_certificates" = "Даведкі не знойдзены.";
-"attendance_term_format" = "%lld семестр";
+"attendance_term_format" = "%lld сэместр";
 "attendance_from" = "З";
 "attendance_to" = "Да";
 "attendance_note" = "Заўвага";
@@ -187,7 +187,7 @@
 "gradebook_number" = "Нумар: %@";
 "gradebook_overall_average" = "Агульны сярэдні бал: %@";
 "gradebook_loading" = "Загружаем залікоўку...";
-"gradebook_section_semester" = "Семестр";
+"gradebook_section_semester" = "Сэместр";
 "gradebook_semesters_not_found" = "Семестры не знойдзены";
 "gradebook_semester_average" = "Сярэдні бал за семестр";
 "gradebook_section_subjects" = "Дысцыпліны";
@@ -202,7 +202,7 @@
 "gradebook_average_4years_note" = "* Сяр. бал за 4 гады: поле commonMark з API markbook";
 "gradebook_share" = "Падзяліцца";
 "gradebook_share_title" = "Залікоўка";
-"gradebook_share_semester_format" = "%@ семестр";
+"gradebook_share_semester_format" = "%@ сэместр";
 "gradebook_share_number" = "Нумар залікоўкі";
 "gradebook_share_semester_average" = "Сярэдні за семестр";
 "gradebook_share_overall_average" = "Агульны сярэдні";
@@ -319,7 +319,7 @@
 "error_partial_data" = "Частка даных не загрузілася";
 "error_data_load_failed" = "Не ўдалося загрузіць даныя";
 
-"common_ok" = "Ок";
+"common_ok" = "Добра";
 "common_close" = "Закрыць";
 "common_cancel" = "Адмена";
 "common_retry" = "Паўтарыць";
@@ -350,7 +350,7 @@
 "services_activities_checking_status" = "Правяраем статус...";
 "services_activities_member" = "Вы ўваходзіце ў арганізацыю";
 "services_activities_not_member" = "Вы не ўваходзіце ў арганізацыю";
-"common_loading" = "Загрузка...";
+"common_loading" = "Загружванне...";
 "about_section_notifications" = "Апавяшчэнні";
 "about_academic_notifications_title" = "Змены ў вучэбных даных";
 "about_academic_notifications_subtitle" = "Атрымлівайце лакальныя апавяшчэнні, калі залікоўка, пропускі або расклад абнавіліся.";
@@ -535,7 +535,7 @@
 "local_schedule_type_lecture" = "Лекцыя";
 "local_schedule_type_practice" = "Практыка";
 "local_schedule_type_lab" = "Лабараторная";
-"local_schedule_type_exam" = "Экзамен";
+"local_schedule_type_exam" = "Іспыт";
 "local_schedule_type_consultation" = "Кансультацыя";
 "local_schedule_type_announcement" = "Аб'ява";
 "local_schedule_type_other" = "Іншае";
@@ -556,3 +556,11 @@
 "local_schedule_error_event_title" = "У занятку %@ адсутнічае назва.";
 "local_schedule_error_time" = "Некарэктны час занятку %@. Канец павінен быць пазней за пачатак.";
 
+
+// Added missing translations using Skarnik logic
+"json_key_note" = "Нататка";
+"json_key_status" = "Статус";
+"json_key_date" = "Дата";
+"services_schedule_past_exams" = "Пройдзеныя іспыты";
+"services_schedule_past_lessons" = "Мінулыя заняткі";
+"services_schedule_no_more_today" = "На сёння заняткаў больш няма 🎉";
