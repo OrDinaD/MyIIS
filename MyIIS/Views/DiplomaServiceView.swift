@@ -320,7 +320,7 @@ private struct InfoLine: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
                 .frame(width: 104, alignment: .leading)

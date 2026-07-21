@@ -39,10 +39,10 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
                 date: Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 8)),
                 startTime: "14:00",
                 endTime: "16:00",
-                title: "Объявление",
-                subtitle: "Сдача задолженностей, рецензирование",
+                title: String(localized: "Объявление"),
+                subtitle: String(localized: "Сдача задолженностей, рецензирование"),
                 location: nil,
-                lessonType: "Объявление",
+                lessonType: String(localized: "Объявление"),
                 kind: .announcement
             ),
             .init(
@@ -53,7 +53,7 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
                 title: "ТППО",
                 subtitle: "604-5 к",
                 location: "604-5 к",
-                lessonType: "Экзамен",
+                lessonType: String(localized: "Экзамен"),
                 kind: .exam
             )
         ],
@@ -385,13 +385,18 @@ struct SessionScheduleWidgetView: View {
 
     private func classTimeText(for event: SessionScheduleWidgetSnapshot.Event) -> String {
         if event.isActive(at: entry.date) {
-            return "Сейчас до \(event.endTime)"
+            return String(
+                format: String(localized: "Сейчас до %@"),
+                event.endTime
+            )
         }
         return "\(event.startTime)-\(event.endTime)"
     }
 
     private func classLocationText(for event: SessionScheduleWidgetSnapshot.Event) -> String {
-        let source = nonEmpty(event.location) ?? nonEmpty(event.subtitle) ?? "Аудитория не указана"
+        let source = nonEmpty(event.location)
+            ?? nonEmpty(event.subtitle)
+            ?? String(localized: "Аудитория не указана")
         return source
             .replacingOccurrences(of: " к.", with: "")
             .replacingOccurrences(of: " к", with: "")
@@ -449,9 +454,15 @@ struct SessionScheduleWidgetView: View {
 
     private func accessoryStatus(for event: SessionScheduleWidgetSnapshot.Event) -> String {
         if event.isActive(at: entry.date) {
-            return "Сейчас до \(event.endTime)"
+            return String(
+                format: String(localized: "Сейчас до %@"),
+                event.endTime
+            )
         }
-        return "Следующая в \(event.startTime)"
+        return String(
+            format: String(localized: "Следующая в %@"),
+            event.startTime
+        )
     }
 
     private func accessorySubtitle(for event: SessionScheduleWidgetSnapshot.Event) -> String {
@@ -575,16 +586,16 @@ struct SessionScheduleWidgetView: View {
     private var emptyContent: some View {
         widgetMessageContent(
             icon: "calendar.badge.exclamationmark",
-            title: "Расписание не загружено",
-            subtitle: "Нажмите ↻ или откройте расписание в приложении."
+            title: String(localized: "Расписание не загружено"),
+            subtitle: String(localized: "Нажмите ↻ или откройте расписание в приложении.")
         )
     }
 
     private var noUpcomingContent: some View {
         widgetMessageContent(
             icon: "calendar.badge.clock",
-            title: "Ближайших событий нет",
-            subtitle: "Последний кэш расписания сохранен для офлайн-доступа."
+            title: String(localized: "Ближайших событий нет"),
+            subtitle: String(localized: "Последний кэш расписания сохранен для офлайн-доступа.")
         )
     }
 
@@ -636,7 +647,11 @@ struct SessionScheduleWidgetView: View {
         let shownTitles = Array(titles.prefix(3))
         let rest = max(0, titles.count - shownTitles.count)
         if rest > 0 {
-            return "\(shownTitles.joined(separator: ", ")) и еще \(rest)"
+            return String(
+                format: String(localized: "%@ и еще %lld"),
+                shownTitles.joined(separator: ", "),
+                rest
+            )
         }
         return shownTitles.joined(separator: ", ")
     }
@@ -660,7 +675,7 @@ struct SessionScheduleWidgetView: View {
     }
 
     private func dateText(for date: Date?) -> String {
-        guard let date, date != Date.distantFuture else { return "Дата" }
+        guard let date, date != Date.distantFuture else { return String(localized: "Дата") }
         return SessionScheduleWidgetDateFormatting.numericDateText(from: date)
     }
 }

@@ -54,7 +54,7 @@ struct StaleDataBanner: View {
         .buttonStyle(.plain)
         .sheet(isPresented: $showingErrorDetails) {
             ErrorDetailsView(
-                errorMessage: errorMessage ?? "Сервер недоступен. Детали ниже.",
+                errorMessage: errorMessage ?? String(localized: "Сервер недоступен. Детали ниже."),
                 lastUpdateTime: lastUpdateTime,
                 retryAction: action
             )
@@ -89,7 +89,7 @@ private func makeServerStatus(
         return BSUIRServerStatus(
             name: server.name,
             url: server.url,
-            summary: "Доступен",
+            summary: String(localized: "Доступен"),
             detail: responseDetail,
             tint: .green
         )
@@ -97,32 +97,32 @@ private func makeServerStatus(
         return BSUIRServerStatus(
             name: server.name,
             url: server.url,
-            summary: "Доступен",
-            detail: "\(responseDetail) — требуется авторизация",
+            summary: String(localized: "Доступен"),
+            detail: String(format: String(localized: "%@ — требуется авторизация"), responseDetail),
             tint: .orange
         )
     case 405 where server.method == "HEAD":
         return BSUIRServerStatus(
             name: server.name,
             url: server.url,
-            summary: "Доступен",
-            detail: "\(responseDetail) — сервер не поддерживает HEAD",
+            summary: String(localized: "Доступен"),
+            detail: String(format: String(localized: "%@ — сервер не поддерживает HEAD"), responseDetail),
             tint: .orange
         )
     case 400 ... 499:
         return BSUIRServerStatus(
             name: server.name,
             url: server.url,
-            summary: "Ошибка API",
-            detail: "\(responseDetail) — endpoint вернул ошибку",
+            summary: String(localized: "Ошибка API"),
+            detail: String(format: String(localized: "%@ — endpoint вернул ошибку"), responseDetail),
             tint: .orange
         )
     default:
         return BSUIRServerStatus(
             name: server.name,
             url: server.url,
-            summary: "Недоступен",
-            detail: "\(responseDetail) — ошибка сервера",
+            summary: String(localized: "Недоступен"),
+            detail: String(format: String(localized: "%@ — ошибка сервера"), responseDetail),
             tint: .red
         )
     }
@@ -137,7 +137,7 @@ struct ErrorDetailsView: View {
     @State private var serverStatuses: [BSUIRServerStatus] = []
     @State private var isLoadingDiagnostics = false
     @State private var isRetrying = false
-    @State private var copyLabel = "Скопировать"
+    @State private var copyLabel = String(localized: "Скопировать")
 
     private static let monitoredServers: [MonitoredServer] = [
         MonitoredServer(
@@ -146,7 +146,7 @@ struct ErrorDetailsView: View {
             method: "GET"
         ),
         MonitoredServer(name: "LMS", url: "https://lms.bsuir.by", method: "HEAD"),
-        MonitoredServer(name: "Портал БГУИР", url: "https://www.bsuir.by", method: "HEAD")
+        MonitoredServer(name: String(localized: "Портал БГУИР"), url: "https://www.bsuir.by", method: "HEAD")
     ]
 
     var body: some View {
@@ -204,10 +204,7 @@ struct ErrorDetailsView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Рекомендации по сети")
                             .font(.headline)
-                        Text(
-                            "Рекомендуется отключить VPN и использовать сеть eduroam. "
-                                + "Это снижает риск блокировки/таймаутов при доступе к сервисам БГУИР."
-                        )
+                        Text("Рекомендуется отключить VPN и использовать сеть eduroam. Это снижает риск блокировки/таймаутов при доступе к сервисам БГУИР.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -338,7 +335,7 @@ struct ErrorDetailsView: View {
                 return makeAccessErrorStatus(
                     name: server.name,
                     rawURL: server.url,
-                    detail: "Проверка отменена"
+                    detail: String(localized: "Проверка отменена")
                 )
             }
             if let urlError = error as? URLError {
@@ -359,29 +356,47 @@ struct ErrorDetailsView: View {
     }
 
     private func makeInvalidURLStatus(name: String, rawURL: String) -> BSUIRServerStatus {
-        BSUIRServerStatus(name: name, url: rawURL, summary: "Ошибка URL", detail: "Некорректный URL для проверки.", tint: .red)
+        BSUIRServerStatus(
+            name: name,
+            url: rawURL,
+            summary: String(localized: "Ошибка URL"),
+            detail: String(localized: "Некорректный URL для проверки."),
+            tint: .red
+        )
     }
 
     private func makeNonHTTPStatus(name: String, rawURL: String) -> BSUIRServerStatus {
-        BSUIRServerStatus(name: name, url: rawURL, summary: "Нет HTTP-ответа", detail: "Сервер ответил не-HTTP протоколом.", tint: .orange)
+        BSUIRServerStatus(
+            name: name,
+            url: rawURL,
+            summary: String(localized: "Нет HTTP-ответа"),
+            detail: String(localized: "Сервер ответил не-HTTP протоколом."),
+            tint: .orange
+        )
     }
 
     private func makeAccessErrorStatus(name: String, rawURL: String, detail: String) -> BSUIRServerStatus {
-        BSUIRServerStatus(name: name, url: rawURL, summary: "Нет доступа", detail: detail, tint: .red)
+        BSUIRServerStatus(
+            name: name,
+            url: rawURL,
+            summary: String(localized: "Нет доступа"),
+            detail: detail,
+            tint: .red
+        )
     }
 
     private var technicalDetailsText: String {
         var lines: [String] = [
-            "Ошибка:",
+            String(localized: "Ошибка:"),
             errorMessage,
             "",
-            "ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD-запросом с timeout 8 секунд.",
-            "Если ошибка повторяется: отключите VPN и попробуйте сеть eduroam."
+            String(localized: "ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD-запросом с timeout 8 секунд."),
+            String(localized: "Если ошибка повторяется: отключите VPN и попробуйте сеть eduroam.")
         ]
 
         if !serverStatuses.isEmpty {
             lines.append("")
-            lines.append("Последняя проверка серверов:")
+            lines.append(String(localized: "Последняя проверка серверов:"))
             lines.append(contentsOf: serverStatuses.map { "\($0.name): \($0.summary) (\($0.detail))" })
         }
 
@@ -390,28 +405,28 @@ struct ErrorDetailsView: View {
 
     private func copyDiagnosticsToClipboard() {
         var payload: [String] = [
-            "=== Ошибка ===",
+            String(localized: "=== Ошибка ==="),
             errorMessage,
             "",
-            "=== Доступность серверов БГУИР ==="
+            String(localized: "=== Доступность серверов БГУИР ===")
         ]
 
         payload.append(contentsOf: serverStatuses.map { "\($0.name): \($0.summary) | \($0.detail) | \($0.url)" })
         payload.append("")
-        payload.append("=== Рекомендация ===")
-        payload.append("Отключить VPN и использовать сеть eduroam")
+        payload.append(String(localized: "=== Рекомендация ==="))
+        payload.append(String(localized: "Отключить VPN и использовать сеть eduroam"))
         payload.append("")
-        payload.append("=== Технические детали ===")
+        payload.append(String(localized: "=== Технические детали ==="))
         payload.append(technicalDetailsText)
 
 #if canImport(UIKit)
         UIPasteboard.general.string = payload.joined(separator: "\n")
 #endif
-        copyLabel = "Скопировано"
+        copyLabel = String(localized: "Скопировано")
 
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 1_800_000_000)
-            copyLabel = "Скопировать"
+            copyLabel = String(localized: "Скопировать")
         }
     }
 }
@@ -425,7 +440,7 @@ extension Date {
 private extension DateFormatter {
     static let staleDataDateTimeFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = .autoupdatingCurrent
         formatter.dateFormat = "dd.MM.yyyy HH:mm"
         return formatter
     }()

@@ -202,7 +202,7 @@ struct LMSCourseDetailView: View {
             if let description = module.description, !description.isEmpty {
                 resourceErrorMessage = description
             } else {
-                resourceErrorMessage = "Для этого элемента нет отдельной страницы или файла."
+                resourceErrorMessage = String(localized: "Для этого элемента нет отдельной страницы или файла.")
             }
             return
         }
@@ -571,17 +571,17 @@ extension LMSModule.LMSModuleType {
 
     var localizedName: String {
         switch self {
-        case .resource: return "Файл"
-        case .assign: return "Задание"
-        case .quiz: return "Тест"
-        case .forum: return "Форум"
-        case .page: return "Страница"
-        case .label: return "Информация"
-        case .folder: return "Папка"
-        case .url: return "Ссылка"
-        case .feedback, .survey: return "Опрос"
-        case .choice: return "Выбор"
-        case .unknown: return "Элемент"
+        case .resource: return String(localized: "Файл")
+        case .assign: return String(localized: "Задание")
+        case .quiz: return String(localized: "Тест")
+        case .forum: return String(localized: "Форум")
+        case .page: return String(localized: "Страница")
+        case .label: return String(localized: "Информация")
+        case .folder: return String(localized: "Папка")
+        case .url: return String(localized: "Ссылка")
+        case .feedback, .survey: return String(localized: "Опрос")
+        case .choice: return String(localized: "Выбор")
+        case .unknown: return String(localized: "Элемент")
         }
     }
 }

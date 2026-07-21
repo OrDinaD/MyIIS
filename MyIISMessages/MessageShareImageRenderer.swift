@@ -66,7 +66,12 @@ enum MessageShareImageRenderer {
         draw(item.title, in: CGRect(x: 218, y: 118, width: 760, height: 62), font: .systemFont(ofSize: 55, weight: .heavy), color: .white)
         draw(item.subtitle, in: CGRect(x: 218, y: 188, width: 760, height: 72), font: .systemFont(ofSize: 27, weight: .medium), color: .secondaryLabel)
 
-        draw("Зачетка \(snapshot.number)", in: CGRect(x: 72, y: 278, width: 420, height: 34), font: .systemFont(ofSize: 23, weight: .medium), color: .secondaryLabel)
+        draw(
+            localized("Зачетка %@", snapshot.number),
+            in: CGRect(x: 72, y: 278, width: 420, height: 34),
+            font: .systemFont(ofSize: 23, weight: .medium),
+            color: .secondaryLabel
+        )
     }
 
     private static func drawMainContent(item: MessageShareItem, snapshot: MessageGradebookSnapshot) -> CGFloat {
@@ -87,23 +92,28 @@ enum MessageShareImageRenderer {
     }
 
     private static func drawOverall(_ snapshot: MessageGradebookSnapshot) -> CGFloat {
-        metricCard(title: "Общий средний", value: snapshot.overallAverageText, rect: CGRect(x: 72, y: 354, width: 448, height: 170))
-        metricCard(title: "Семестров", value: "\(snapshot.semesters.count)", rect: CGRect(x: 560, y: 354, width: 448, height: 170))
+        metricCard(title: localized("Общий средний"), value: snapshot.overallAverageText, rect: CGRect(x: 72, y: 354, width: 448, height: 170))
+        metricCard(title: localized("Семестров"), value: "\(snapshot.semesters.count)", rect: CGRect(x: 560, y: 354, width: 448, height: 170))
 
-        drawSectionTitle("Семестры", verticalPosition: 590)
+        drawSectionTitle(localized("Семестры"), verticalPosition: 590)
         var verticalPosition: CGFloat = 662
         for semester in snapshot.semesters.reversed() {
-            row(title: semester.title, subtitle: "Предметов: \(semester.subjects.count)", value: semester.averageText, verticalPosition: verticalPosition)
+            row(
+                title: semester.title,
+                subtitle: localized("Предметов: %lld", semester.subjects.count),
+                value: semester.averageText,
+                verticalPosition: verticalPosition
+            )
             verticalPosition += 88
         }
         return verticalPosition
     }
 
     private static func drawSemester(_ semester: MessageGradebookSnapshot.Semester) -> CGFloat {
-        metricCard(title: "Средний семестра", value: semester.averageText, rect: CGRect(x: 72, y: 354, width: 448, height: 170))
-        metricCard(title: "Предметов", value: "\(semester.subjects.count)", rect: CGRect(x: 560, y: 354, width: 448, height: 170))
+        metricCard(title: localized("Средний семестра"), value: semester.averageText, rect: CGRect(x: 72, y: 354, width: 448, height: 170))
+        metricCard(title: localized("Предметов"), value: "\(semester.subjects.count)", rect: CGRect(x: 560, y: 354, width: 448, height: 170))
 
-        drawSectionTitle("Предметы", verticalPosition: 590)
+        drawSectionTitle(localized("Предметы"), verticalPosition: 590)
         var verticalPosition: CGFloat = 662
         for subject in semester.subjects {
             row(title: subject.abbreviation, subtitle: subject.fullName, value: subject.grade, verticalPosition: verticalPosition)
@@ -113,22 +123,25 @@ enum MessageShareImageRenderer {
     }
 
     private static func drawSubject(_ subject: MessageGradebookSnapshot.Subject, semester: MessageGradebookSnapshot.Semester) -> CGFloat {
-        metricCard(title: "Оценка", value: subject.grade, rect: CGRect(x: 72, y: 354, width: 448, height: 170))
-        metricCard(title: "Средний семестра", value: semester.averageText, rect: CGRect(x: 560, y: 354, width: 448, height: 170))
+        metricCard(title: localized("Оценка"), value: subject.grade, rect: CGRect(x: 72, y: 354, width: 448, height: 170))
+        metricCard(title: localized("Средний семестра"), value: semester.averageText, rect: CGRect(x: 560, y: 354, width: 448, height: 170))
 
         drawSectionTitle(subject.abbreviation, verticalPosition: 590)
         draw(subject.fullName, in: CGRect(x: 72, y: 654, width: 936, height: 98), font: .systemFont(ofSize: 38, weight: .bold), color: .white)
 
-        detail(title: "Форма контроля", value: subject.controlForm, verticalPosition: 800)
-        detail(title: "Средний за 4 года", value: subject.averageText, verticalPosition: 888)
-        detail(title: "Пересдачи", value: subject.retakesText, verticalPosition: 976)
-        detail(title: "Дата", value: subject.dateText, verticalPosition: 1064)
-        detail(title: "Преподаватель", value: subject.teacherText, verticalPosition: 1152)
+        detail(title: localized("Форма контроля"), value: subject.controlForm, verticalPosition: 800)
+        detail(title: localized("Средний за 4 года"), value: subject.averageText, verticalPosition: 888)
+        detail(title: localized("Пересдачи"), value: subject.retakesText, verticalPosition: 976)
+        detail(title: localized("Дата"), value: subject.dateText, verticalPosition: 1064)
+        detail(title: localized("Преподаватель"), value: subject.teacherText, verticalPosition: 1152)
         return 1240
     }
 
     private static func drawFooter(snapshot: MessageGradebookSnapshot, yPosition: CGFloat) {
-        let text = "Сформировано в MyIIS · данные от \(snapshot.updatedAt.formatted(date: .numeric, time: .shortened))"
+        let text = localized(
+            "Сформировано в MyIIS · данные от %@",
+            snapshot.updatedAt.formatted(date: .numeric, time: .shortened)
+        )
         draw(text, in: CGRect(x: 72, y: yPosition, width: 936, height: 34), font: .systemFont(ofSize: 22, weight: .medium), color: .tertiaryLabel)
     }
 
@@ -206,6 +219,13 @@ enum MessageShareImageRenderer {
         path.stroke()
     }
 
+    private static func localized(_ key: String, _ arguments: CVarArg...) -> String {
+        String(
+            format: NSLocalizedString(key, comment: ""),
+            arguments: arguments
+        )
+    }
+
     private static func draw(_ text: String, in rect: CGRect, font: UIFont, color: UIColor, alignment: NSTextAlignment = .left) {
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineBreakMode = .byTruncatingTail
@@ -223,6 +243,6 @@ enum MessageShareImageError: LocalizedError {
     case renderingFailed
 
     var errorDescription: String? {
-        "Не удалось подготовить PNG для iMessage."
+        String(localized: "Не удалось подготовить PNG для iMessage.")
     }
 }

@@ -99,9 +99,9 @@ private extension DormitoryApplicationEditorContext {
     var headerTitle: String {
         switch self {
         case .create:
-            return "Заявка на общежитие"
+            return String(localized: "Заявка на общежитие")
         case .edit:
-            return "Вложение к заявке"
+            return String(localized: "Вложение к заявке")
         }
     }
 
@@ -117,9 +117,9 @@ private extension DormitoryApplicationEditorContext {
     var supportMessage: String {
         switch self {
         case .create:
-            return "Приложение отправит заявку без локального вложения. Подтверждающий файл лучше добавить через сайт."
+            return String(localized: "Приложение отправит заявку без локального вложения. Подтверждающий файл лучше добавить через сайт.")
         case .edit:
-            return "Текущий файл можно открыть и сохранить. Удаление и замена вложения доступны на сайте."
+            return String(localized: "Текущий файл можно открыть и сохранить. Удаление и замена вложения доступны на сайте.")
         }
     }
 }

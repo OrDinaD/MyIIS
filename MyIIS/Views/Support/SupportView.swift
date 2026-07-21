@@ -18,7 +18,7 @@ class SupportDocumentDownloader: ObservableObject {
             let (tempURL, response) = try await URLSession.shared.download(from: url)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 DispatchQueue.main.async {
-                    self.errorMessage = "Ошибка при загрузке документа"
+                    self.errorMessage = String(localized: "Ошибка при загрузке документа")
                     self.isDownloading = false
                 }
                 return
@@ -39,7 +39,10 @@ class SupportDocumentDownloader: ObservableObject {
             }
         } catch {
             DispatchQueue.main.async {
-                self.errorMessage = "Не удалось загрузить файл: \(error.localizedDescription)"
+                self.errorMessage = String(
+                    format: String(localized: "Не удалось загрузить файл: %@"),
+                    error.localizedDescription
+                )
                 self.isDownloading = false
             }
         }

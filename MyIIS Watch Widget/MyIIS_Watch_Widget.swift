@@ -232,7 +232,11 @@ private struct ScheduleWidgetView: View {
                     Spacer(minLength: 4)
                     
                     VStack(alignment: .trailing, spacing: 3) {
-                        Text(event.isCurrent(at: entry.date) ? "Пара" : "П")
+                        Text(
+                            event.isCurrent(at: entry.date)
+                                ? String(localized: "watch_widget_current_class")
+                                : String(localized: "watch_widget_upcoming_class_short")
+                        )
                             .font(.caption2.weight(.bold))
                             .foregroundStyle(event.isCurrent(at: entry.date) ? Color.green : Color.orange)
                         

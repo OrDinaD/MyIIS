@@ -564,3 +564,9 @@
 "local_schedule_error_event_title" = "Event %@ is missing a title.";
 "local_schedule_error_time" = "Invalid time for event %@. The end must be later than the start.";
 
+/* App language */
+"about_section_language" = "Language";
+"about_app_language_title" = "App Language";
+"about_app_language_subtitle" = "Open the system language settings for MyIIS";
+"about_app_language_hint" = "Opens MyIIS settings, where you can choose the app language.";
+

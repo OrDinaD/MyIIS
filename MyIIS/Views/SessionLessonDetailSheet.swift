@@ -128,7 +128,7 @@ struct ScheduleLessonDetailSheet: View {
     private func detailRow(_ title: String, value: String, showsDivider: Bool = true) -> some View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(.title3.weight(.regular))
                     .foregroundStyle(.primary)
                 Spacer(minLength: 16)
@@ -147,13 +147,13 @@ struct ScheduleLessonDetailSheet: View {
     }
 
     private var shortTitle: String {
-        if lesson.isAnnouncement { return "Объявление" }
+        if lesson.isAnnouncement { return String(localized: "Объявление") }
         return lesson.subject.nilIfBlank ?? lesson.title
     }
 
     private var fullSubjectTitle: String {
         if lesson.isAnnouncement {
-            return lesson.note.nilIfBlank ?? "Объявление"
+            return lesson.note.nilIfBlank ?? String(localized: "Объявление")
         }
         return lesson.subjectFullName?.nilIfBlank ?? lesson.subject.nilIfBlank ?? lesson.title
     }
@@ -170,9 +170,10 @@ struct ScheduleLessonDetailSheet: View {
 
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = .autoupdatingCurrent
         formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.dateFormat = "d MMMM yyyy 'г.'"
+        formatter.dateStyle = .long
+        formatter.timeStyle = .none
         return formatter
     }()
 }

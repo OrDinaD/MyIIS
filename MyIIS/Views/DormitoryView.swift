@@ -169,18 +169,18 @@ enum DormitoryApplicationEditorContext: Identifiable {
     var title: String {
         switch self {
         case .create:
-            return "Оформление заявки на общежитие"
+            return String(localized: "Оформление заявки на общежитие")
         case .edit:
-            return "Редактирование заявки на общежитие"
+            return String(localized: "Редактирование заявки на общежитие")
         }
     }
 
     var submitTitle: String {
         switch self {
         case .create:
-            return "Отправить заявку"
+            return String(localized: "Отправить заявку")
         case .edit:
-            return "Сохранить изменения"
+            return String(localized: "Сохранить изменения")
         }
     }
 }
@@ -267,7 +267,9 @@ struct DormitoryAnnouncementCard: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color.orange.opacity(0.28), lineWidth: 1)
         )
-        .accessibilityAction(named: isExpanded ? "Свернуть" : "Развернуть") {
+        .accessibilityAction(
+            named: Text(isExpanded ? String(localized: "Свернуть") : String(localized: "Развернуть"))
+        ) {
             AccessibilitySupport.update(reduceMotion: reduceMotion, animation: .snappy) {
                 isExpanded.toggle()
             }

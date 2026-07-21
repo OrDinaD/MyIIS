@@ -82,7 +82,7 @@ struct SummaryTable: View {
         isResponsible: Bool = false,
         rowBackground: Color = .clear
     ) -> some View {
-        Text(text)
+        Text(LocalizedStringKey(text))
             .fontWeight(isHeader ? .semibold : .regular)
             .foregroundColor(isHeader ? .secondary : foreground)
             .lineLimit(2)
@@ -182,7 +182,7 @@ struct WeeklySummaryTable: View {
         isResponsible: Bool = false,
         rowBackground: Color = Color(uiColor: .tertiarySystemFill)
     ) -> some View {
-        Text(text)
+        Text(LocalizedStringKey(text))
             .fontWeight(isHeader ? .semibold : .regular)
             .foregroundStyle(isHeader ? .secondary : foreground)
             .lineLimit(2)

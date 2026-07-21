@@ -28,8 +28,12 @@ struct MessageShareItem: Identifiable {
     init(overall snapshot: MessageGradebookSnapshot) {
         id = "overall"
         kind = .overall
-        title = "Вся зачетка"
-        subtitle = "Номер \(snapshot.number) · общий средний \(snapshot.overallAverageText)"
+        title = String(localized: "Вся зачетка")
+        subtitle = String(
+            format: String(localized: "Номер %@ · общий средний %@"),
+            snapshot.number,
+            snapshot.overallAverageText
+        )
         fileName = "myiis-gradebook-overall.png"
         symbolName = "graduationcap.fill"
         accent = Color(red: 0.00, green: 0.44, blue: 0.39)
@@ -39,7 +43,11 @@ struct MessageShareItem: Identifiable {
         id = "semester-\(semester.id)"
         kind = .semester(semester.id)
         title = semester.title
-        subtitle = "Предметов: \(semester.subjects.count) · средний \(semester.averageText)"
+        subtitle = String(
+            format: String(localized: "Предметов: %lld · средний %@"),
+            semester.subjects.count,
+            semester.averageText
+        )
         fileName = "myiis-gradebook-semester-\(semester.id.sanitizedForFileName).png"
         symbolName = "books.vertical.fill"
         accent = Color(red: 0.25, green: 0.30, blue: 0.63)
@@ -83,7 +91,7 @@ struct MessageGradebookSnapshot: Codable, Equatable {
         let subjects: [Subject]
 
         var title: String {
-            "Семестр \(id)"
+            String(format: String(localized: "Семестр %@"), id)
         }
 
         func subject(id: String) -> Subject? {

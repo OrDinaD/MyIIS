@@ -14,10 +14,10 @@ final class HeadmanViewModel: ObservableObject {
 
         var title: String {
             switch self {
-            case .byDate: return "Пропуски"
-            case .summary: return "Сводная"
-            case .weekly: return "Неделя"
-            case .responsibles: return "Отмечающие"
+            case .byDate: return String(localized: "Пропуски")
+            case .summary: return String(localized: "Сводная")
+            case .weekly: return String(localized: "Неделя")
+            case .responsibles: return String(localized: "Отмечающие")
             }
         }
     }
@@ -272,7 +272,7 @@ final class HeadmanViewModel: ObservableObject {
             )
             applySavedOmissions(updatedStudents, lessonId: lesson.id)
             pendingOmissions[lesson.id] = nil
-            successMessage = "Пропуски сохранены."
+            successMessage = String(localized: "Пропуски сохранены.")
             await loadSummary()
             await loadWeeklySummary()
         } catch let apiError as APIError {

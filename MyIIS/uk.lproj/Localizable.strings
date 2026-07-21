@@ -556,3 +556,9 @@
 "local_schedule_error_event_title" = "У заняття %@ відсутня назва.";
 "local_schedule_error_time" = "Некоректний час заняття %@. Завершення має бути пізніше за початок.";
 
+/* App language */
+"about_section_language" = "Мова";
+"about_app_language_title" = "Мова застосунку";
+"about_app_language_subtitle" = "Відкрити системні налаштування мови MyIIS";
+"about_app_language_hint" = "Відкриває налаштування MyIIS, де можна вибрати мову застосунку.";
+

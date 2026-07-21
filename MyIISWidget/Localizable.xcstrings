@@ -1,0 +1,897 @@
+{
+  "sourceLanguage" : "ru",
+  "strings" : {
+    "%@ — endpoint вернул ошибку" : {
+
+    },
+    "%@ — ошибка сервера" : {
+
+    },
+    "%@ — сервер не поддерживает HEAD" : {
+
+    },
+    "%@ — требуется авторизация" : {
+
+    },
+    "%@ и еще %lld" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ і яшчэ %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ and %lld more"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ и ещё %lld"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ і ще %lld"
+          }
+        }
+      }
+    },
+    "%lld часов" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Гадзін: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hours: %lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Часов: %lld"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Годин: %lld"
+          }
+        }
+      }
+    },
+    "=== Доступность серверов БГУИР ===" : {
+
+    },
+    "=== Ошибка ===" : {
+
+    },
+    "=== Рекомендация ===" : {
+
+    },
+    "=== Технические детали ===" : {
+
+    },
+    "error_stale_data" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Данные могут быть устаревшими."
+          }
+        }
+      }
+    },
+    "error_stale_data_with_time" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "ru" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Данные могут быть устаревшими. Последнее обновление: %@"
+          }
+        }
+      }
+    },
+    "gradebook_share_semester_format" : {
+
+    },
+    "intent_absences_response_format" : {
+
+    },
+    "intent_absences_title" : {
+
+    },
+    "intent_absences_unavailable_dialog" : {
+
+    },
+    "intent_absences_unavailable_short" : {
+
+    },
+    "intent_average_response_format" : {
+
+    },
+    "intent_average_title" : {
+
+    },
+    "intent_average_unavailable_dialog" : {
+
+    },
+    "intent_average_unavailable_short" : {
+
+    },
+    "intent_group_response_format" : {
+
+    },
+    "intent_group_title" : {
+
+    },
+    "intent_group_unavailable_dialog" : {
+
+    },
+    "intent_group_unavailable_short" : {
+
+    },
+    "intent_open_section_title" : {
+
+    },
+    "intent_section_attendance" : {
+
+    },
+    "intent_section_diploma" : {
+
+    },
+    "intent_section_dormitory" : {
+
+    },
+    "intent_section_gradebook" : {
+
+    },
+    "intent_section_group" : {
+
+    },
+    "intent_section_headman" : {
+
+    },
+    "intent_section_library" : {
+
+    },
+    "intent_section_parameter" : {
+
+    },
+    "intent_section_profile" : {
+
+    },
+    "intent_section_rating" : {
+
+    },
+    "intent_section_schedule" : {
+
+    },
+    "intent_section_services" : {
+
+    },
+    "intent_section_study" : {
+
+    },
+    "intent_section_type" : {
+
+    },
+    "tab_attendance" : {
+
+    },
+    "tab_profile" : {
+
+    },
+    "tab_rating" : {
+
+    },
+    "tab_services" : {
+
+    },
+    "Аудитория не указана" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аўдыторыя не пазначана"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Room not specified"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аудитория не указана"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аудиторію не вказано"
+          }
+        }
+      }
+    },
+    "Ближайших событий нет" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бліжэйшых падзей няма"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No upcoming events"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ближайших событий нет"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Найближчих подій немає"
+          }
+        }
+      }
+    },
+    "Дата" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дата"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дата"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дата"
+          }
+        }
+      }
+    },
+    "Детали ошибки" : {
+
+    },
+    "Доступен" : {
+
+    },
+    "Доступность серверов БГУИР" : {
+
+    },
+    "Если ошибка повторяется: отключите VPN и попробуйте сеть eduroam." : {
+
+    },
+    "Закрыть" : {
+
+    },
+    "ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD-запросом с timeout 8 секунд." : {
+
+    },
+    "Код ошибки / Подробности:" : {
+
+    },
+    "Моя группа" : {
+
+    },
+    "Навигация" : {
+
+    },
+    "Нажмите ↻ или откройте расписание в приложении." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Націсніце ↻ або адкрыйце расклад у праграме."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap ↻ or open the schedule in the app."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите ↻ или откройте расписание в приложении."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Натисніть ↻ або відкрийте розклад у застосунку."
+          }
+        }
+      }
+    },
+    "Не удалось обновить данные" : {
+
+    },
+    "Недоступен" : {
+
+    },
+    "Некорректный URL для проверки." : {
+
+    },
+    "Нет HTTP-ответа" : {
+
+    },
+    "Нет ближайших событий" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Няма бліжэйшых падзей"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No upcoming events"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет ближайших событий"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Немає найближчих подій"
+          }
+        }
+      }
+    },
+    "Нет доступа" : {
+
+    },
+    "Обновить" : {
+
+    },
+    "Обновить расписание" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Абнавіць расклад"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh schedule"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обновить расписание"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оновити розклад"
+          }
+        }
+      }
+    },
+    "Обновление данных" : {
+
+    },
+    "Объявление" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Аб’ява"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Announcement"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Объявление"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оголошення"
+          }
+        }
+      }
+    },
+    "Отключить VPN и использовать сеть eduroam" : {
+
+    },
+    "Открыть раздел" : {
+
+    },
+    "Ошибка API" : {
+
+    },
+    "Ошибка URL" : {
+
+    },
+    "Ошибка:" : {
+
+    },
+    "Пары" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Заняткі"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Classes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пары"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пари"
+          }
+        }
+      }
+    },
+    "Перечитать локальное расписание и обновить виджет «Пары»." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перачытаць лакальны расклад і абнавіць віджэт «Заняткі»."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reload the local schedule and refresh the Classes widget."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перечитать локальное расписание и обновить виджет «Пары»."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перечитати локальний розклад і оновити віджет «Пари»."
+          }
+        }
+      }
+    },
+    "Показывает ближайшие экзамены, консультации и объявления вашей группы." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паказвае найбліжэйшыя іспыты, кансультацыі і аб’явы вашай групы."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows your group's upcoming exams, consultations, and announcements."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывает ближайшие экзамены, консультации и объявления вашей группы."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показує найближчі іспити, консультації та оголошення вашої групи."
+          }
+        }
+      }
+    },
+    "Показывает ближайшую пару вашей группы: время, предмет и аудиторию." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паказвае найбліжэйшы занятак вашай групы: час, прадмет і аўдыторыю."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows your group's next class: time, subject, and room."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывает ближайшую пару вашей группы: время, предмет и аудиторию."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показує найближчу пару вашої групи: час, предмет і аудиторію."
+          }
+        }
+      }
+    },
+    "Показывает пропуски за месяц." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паказвае пропускі за месяц."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows absences for the month."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывает пропуски за месяц."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показує пропуски за місяць."
+          }
+        }
+      }
+    },
+    "Портал БГУИР" : {
+
+    },
+    "Последнее успешное обновление данных:\n%@" : {
+
+    },
+    "Последний кэш расписания сохранен для офлайн-доступа." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Апошні кэш раскладу захаваны для доступу без інтэрнэту."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The latest schedule cache is available offline."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Последний кэш расписания сохранён для офлайн-доступа."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Останній кеш розкладу збережено для офлайн-доступу."
+          }
+        }
+      }
+    },
+    "Последняя проверка серверов:" : {
+
+    },
+    "Проверка отменена" : {
+
+    },
+    "Проверяем серверы..." : {
+
+    },
+    "Пропуски" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропускі"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Absences"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски"
+          }
+        }
+      }
+    },
+    "Пропуски за" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропускі за"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Absences for"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски за"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски за"
+          }
+        }
+      }
+    },
+    "Расписание не загружено" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расклад не загружаны"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schedule not loaded"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расписание не загружено"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Розклад не завантажено"
+          }
+        }
+      }
+    },
+    "Рекомендации по сети" : {
+
+    },
+    "Рекомендуется отключить VPN и использовать сеть eduroam. Это снижает риск блокировки/таймаутов при доступе к сервисам БГУИР." : {
+
+    },
+    "Сдача задолженностей, рецензирование" : {
+
+    },
+    "Сейчас до %@" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зараз да %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now until %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сейчас до %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зараз до %@"
+          }
+        }
+      }
+    },
+    "Сервер недоступен. Детали ниже." : {
+
+    },
+    "Сервер ответил не-HTTP протоколом." : {
+
+    },
+    "Сессия" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сесія"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exam session"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сессия"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сесія"
+          }
+        }
+      }
+    },
+    "Скопировано" : {
+
+    },
+    "Скопировать" : {
+
+    },
+    "Следующая в %@" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Наступны занятак а %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next at %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Следующая в %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Наступна о %@"
+          }
+        }
+      }
+    },
+    "Средний балл" : {
+
+    },
+    "Технические детали" : {
+
+    },
+    "ч." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "г."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hr"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ч."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "год."
+          }
+        }
+      }
+    },
+    "Экзамен" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Іспыт"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exam"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Экзамен"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Іспит"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

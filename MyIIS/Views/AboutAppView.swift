@@ -3,6 +3,7 @@
 //  MyIIS
 //
 import SwiftUI
+import UIKit
 
 struct AboutAppView: View {
     @Environment(\.openURL) private var openURL
@@ -17,6 +18,7 @@ struct AboutAppView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 versionSection
+                languageSection
                 academicNotificationsSection
                 // supportSection
                 linksSection
@@ -61,6 +63,30 @@ struct AboutAppView: View {
                 .padding(.vertical, 18)
                 .background(cardShape.fill(cardBackgroundColor))
                 .overlay(cardShape.stroke(cardBorderColor, lineWidth: 1))
+        }
+    }
+
+    private var languageSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("about_section_language", comment: ""))
+
+            cardContainer {
+                linkRow(
+                    icon: "character.bubble.fill",
+                    title: NSLocalizedString("about_app_language_title", comment: "")
+                ) {
+                    guard let settingsURL = URL(string: UIApplication.openSettingsURLString) else {
+                        return
+                    }
+                    openURL(settingsURL)
+                }
+                .accessibilityHint(NSLocalizedString("about_app_language_hint", comment: ""))
+            }
+
+            Text(NSLocalizedString("about_app_language_subtitle", comment: ""))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
         }
     }
 

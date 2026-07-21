@@ -6,7 +6,7 @@ struct SectionTitle: View {
 
     var body: some View {
         HStack(spacing: 3) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.subheadline.weight(.semibold))
             if required {
                 Text("*")

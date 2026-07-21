@@ -43,7 +43,7 @@ final class DiplomaApplicationViewModel: ObservableObject {
     }
 
     var screenTitle: String {
-        isFirstDegree ? "Дипломный проект" : "Диссертация"
+        isFirstDegree ? String(localized: "Дипломный проект") : String(localized: "Диссертация")
     }
 
     var isFirstDegree: Bool {
@@ -56,18 +56,18 @@ final class DiplomaApplicationViewModel: ObservableObject {
 
     var statusMessage: String {
         guard let personalInformation else {
-            return "Загружаем данные из ИИС."
+            return String(localized: "Загружаем данные из ИИС.")
         }
         guard personalInformation.graduating else {
-            return "Оставить заявку Вы сможете только на выпускном курсе."
+            return String(localized: "Оставить заявку Вы сможете только на выпускном курсе.")
         }
         if hasAcceptedApplication {
-            return "У Вас уже есть одобренная заявка."
+            return String(localized: "У Вас уже есть одобренная заявка.")
         }
         if hasProcessingApplication {
-            return "У Вас уже есть обрабатывающаяся заявка."
+            return String(localized: "У Вас уже есть обрабатывающаяся заявка.")
         }
-        return "Выберите руководителя и тему диплома."
+        return String(localized: "Выберите руководителя и тему диплома.")
     }
 
     var canOpenRequestForm: Bool {
@@ -95,7 +95,9 @@ final class DiplomaApplicationViewModel: ObservableObject {
     }
 
     var localizedTopicPlaceholder: String {
-        isBelarusian ? "Увядзіце тэму на беларускай мове" : "Enter topic in English"
+        isBelarusian
+            ? String(localized: "Введите тему на белорусском языке")
+            : String(localized: "Введите тему на английском языке")
     }
 
     func loadIfNeeded() async {
@@ -181,7 +183,7 @@ final class DiplomaApplicationViewModel: ObservableObject {
 
     func submitApplication() async -> Bool {
         guard canSubmitApplication, let selectedSupervisor else {
-            errorMessage = "Выберите руководителя и заполните обязательные поля."
+            errorMessage = String(localized: "Выберите руководителя и заполните обязательные поля.")
             return false
         }
 
@@ -201,7 +203,7 @@ final class DiplomaApplicationViewModel: ObservableObject {
             let application = try await service.submitApplication(payload)
             applications.insert(application, at: 0)
             clearForm()
-            successMessage = "Заявка успешно отправлена."
+            successMessage = String(localized: "Заявка успешно отправлена.")
             errorMessage = nil
             await reload()
             return true
@@ -215,7 +217,7 @@ final class DiplomaApplicationViewModel: ObservableObject {
         do {
             try await service.deleteApplication(id: application.id)
             applications.removeAll { $0.id == application.id }
-            successMessage = "Заявка отменена."
+            successMessage = String(localized: "Заявка отменена.")
             errorMessage = nil
         } catch {
             errorMessage = displayMessage(for: error)
@@ -228,7 +230,7 @@ final class DiplomaApplicationViewModel: ObservableObject {
 
         do {
             downloadedApplicationURL = try await service.downloadApplication(for: application)
-            successMessage = "Заявление сформировано."
+            successMessage = String(localized: "Заявление сформировано.")
             errorMessage = nil
         } catch {
             errorMessage = displayMessage(for: error)

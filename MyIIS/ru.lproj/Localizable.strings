@@ -568,3 +568,9 @@
 "local_schedule_error_event_title" = "У занятия %@ отсутствует название.";
 "local_schedule_error_time" = "Некорректное время занятия %@. Окончание должно быть позже начала.";
 
+/* App language */
+"about_section_language" = "Язык";
+"about_app_language_title" = "Язык приложения";
+"about_app_language_subtitle" = "Открыть системные настройки языка MyIIS";
+"about_app_language_hint" = "Открывает настройки MyIIS, где можно выбрать язык приложения.";
+

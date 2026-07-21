@@ -83,7 +83,7 @@ struct HeadmanView: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text("Журнал старосты")
                             .font(.headline)
-                        Text(viewModel.hasAccess ? accessSubtitle : "Проверяем доступ по данным ИИС.")
+                        Text(viewModel.hasAccess ? accessSubtitle : String(localized: "Проверяем доступ по данным ИИС."))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -93,7 +93,7 @@ struct HeadmanView: View {
                     if viewModel.isLoadingAccess {
                         ProgressView()
                     } else {
-                        Text(viewModel.hasAccess ? "Доступно" : "Нет доступа")
+                        Text(viewModel.hasAccess ? String(localized: "Доступно") : String(localized: "Нет доступа"))
                             .font(.caption.weight(.semibold))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
@@ -120,9 +120,9 @@ struct HeadmanView: View {
 
     private var accessSubtitle: String {
         if viewModel.isGroupHead {
-            return "Полный доступ: пропуски, сводная таблица и назначение отмечающих."
+            return String(localized: "Полный доступ: пропуски, сводная таблица и назначение отмечающих.")
         }
-        return "Доступ отмечающего: можно выставлять пропуски и смотреть сводную."
+        return String(localized: "Доступ отмечающего: можно выставлять пропуски и смотреть сводную.")
     }
 
     private var noAccessSection: some View {
@@ -130,10 +130,7 @@ struct HeadmanView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Label("Вкладка доступна только старосте или назначенному отмечающему.", systemImage: "lock.fill")
                     .font(.headline)
-                Text(
-                    "Проверка выполняется через endpoints `grade-book/is-group-head`, "
-                        + "`grade-book/who-can-note` и список студентов группы из HAR."
-                )
+                Text("Проверка выполняется через endpoints `grade-book/is-group-head`, `grade-book/who-can-note` и список студентов группы из HAR.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
@@ -203,7 +200,11 @@ struct HeadmanView: View {
                         set: { subgroup in Task { await viewModel.selectSubgroup(subgroup) } }
                     )) {
                         ForEach(viewModel.availableSubgroups, id: \.self) { subgroup in
-                            Text(subgroup == 0 ? "Вся группа" : "\(subgroup) подгруппа").tag(subgroup)
+                            Text(
+                                subgroup == 0
+                                    ? String(localized: "Вся группа")
+                                    : String(format: String(localized: "%lld подгруппа"), Int64(subgroup))
+                            ).tag(subgroup)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -377,7 +378,12 @@ private struct OmissionStudentRow: View {
             HStack(spacing: 10) {
                 if let omission = student.omission {
                     Label(
-                        omission.respectfulOmission == true ? "Уважительная причина" : "\(omission.missedHours ?? 0) ч уже выставлено",
+                        omission.respectfulOmission == true
+                            ? String(localized: "Уважительная причина")
+                            : String(
+                                format: String(localized: "%lld ч уже выставлено"),
+                                Int64(omission.missedHours ?? 0)
+                            ),
                         systemImage: omission.respectfulOmission == true ? "checkmark.seal.fill" : "lock.fill"
                     )
                     .foregroundColor(omission.respectfulOmission == true ? .green : .secondary)

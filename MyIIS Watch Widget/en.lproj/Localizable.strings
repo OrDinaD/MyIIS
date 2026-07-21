@@ -13,3 +13,5 @@
 "watch_widget_no_events" = "No more classes";
 "watch_widget_until" = "until";
 "watch_widget_in" = "in";
+"watch_widget_current_class" = "Class";
+"watch_widget_upcoming_class_short" = "C";
