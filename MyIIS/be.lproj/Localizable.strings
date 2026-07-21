@@ -239,9 +239,9 @@
 "dormitory_my_place" = "Маё месца";
 "dormitory_place_assigned" = "Месца выдзелена";
 "dormitory_settled_since" = "Заселены з %@";
-"dormitory_ready_description" = "Праверце гуртоўню і пакой перад засяленнем.";
+"dormitory_ready_description" = "Праверце інтэрнат і пакой перад засяленнем.";
 "dormitory_place_unknown" = "Не пазначана";
-"dormitory_label_dormitory" = "Гуртоўня";
+"dormitory_label_dormitory" = "Інтэрнат";
 "dormitory_label_accepted_date" = "Пастаўлена на ўлік";
 "dormitory_current_application" = "Бягучая заява";
 "dormitory_queue_position" = "у чарзе";
@@ -270,7 +270,7 @@
 "dormitory_new_application_unavailable" = "Падача новай заявы зараз недаступная.";
 "dormitory_history" = "Гісторыя заяў";
 "dormitory_no_applications_description" = "Тут з’явяцца бягучая заява і выдзеленае месца.";
-"dormitory_full_page_title" = "Гуртоўня";
+"dormitory_full_page_title" = "Інтэрнат";
 "dormitory_full_page_subtitle" = "Поўная гісторыя засяленняў і заяў";
 "dormitory_full_page_applications" = "Засяленні і заявы";
 "dormitory_full_page_privileges" = "Ільготы";
@@ -278,11 +278,11 @@
 "dormitory_label_status" = "Статус";
 "dormitory_reveal_congratulations" = "Віншуем!";
 "dormitory_reveal_subtitle" = "Ваша месца гатова";
-"dormitory_reveal_dormitory_hint" = "Спачатку сатрыце слой і адкрыйце гуртоўню.";
+"dormitory_reveal_dormitory_hint" = "Спачатку сатрыце слой і адкрыйце інтэрнат.";
 "dormitory_reveal_room_hint" = "Цяпер адкрыйце пакой.";
 "dormitory_reveal_complete" = "Гатова — праз некалькі секунд картка вернецца на месца.";
 "dormitory_reveal_wait_hint" = "Картка адкрываецца…";
-"dormitory_reveal_locked_room" = "Спачатку адкрыйце гуртоўню";
+"dormitory_reveal_locked_room" = "Спачатку адкрыйце інтэрнат";
 "dormitory_reveal_scratch" = "Сатрыце ахоўны слой";
 "dormitory_reveal_complete_short" = "Адкрыта";
 "dormitory_reveal_invitation_body" = "Інтэрнат і пакой ужо прызначаныя.";
