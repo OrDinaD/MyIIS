@@ -268,7 +268,7 @@ class AttendanceViewModel: ObservableObject {
         guard let target = latestCount(in: counts) else { return nil }
 
         return AttendanceWidgetSnapshot(
-            monthTitle: target.month,
+            monthTitle: MonthParser.localizedTitle(from: target.month),
             unexcusedHours: target.omissionCount,
             updatedAt: Date()
         )
@@ -408,6 +408,26 @@ enum MonthParser {
         }
 
         return nil
+    }
+
+    static func localizedTitle(
+        from rawString: String,
+        locale: Locale = .autoupdatingCurrent
+    ) -> String {
+        guard let month = components(from: rawString)?.month,
+              let date = calendar.date(from: DateComponents(year: 2000, month: month, day: 1))
+        else {
+            return rawString
+        }
+
+        let title = date.formatted(
+            Date.FormatStyle()
+                .month(.wide)
+                .locale(locale)
+        )
+        guard !title.isEmpty else { return rawString }
+
+        return title.prefix(1).uppercased(with: locale) + String(title.dropFirst())
     }
 
     private static func sanitize(_ string: String) -> String {

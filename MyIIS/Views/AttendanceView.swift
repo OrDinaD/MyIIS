@@ -83,7 +83,7 @@ private struct ApplicationsSection: View {
                     Image(systemName: "doc.text.magnifyingglass")
                         .font(.largeTitle)
                         .foregroundStyle(.tertiary)
-                    Text("Заявлений нет")
+                    Text(NSLocalizedString("attendance_no_applications", comment: ""))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                 }
@@ -209,7 +209,7 @@ private struct MonthlyBarRow: View {
                 }
             } else {
                 HStack(spacing: 10) {
-                    Text(month)
+                    Text(MonthParser.localizedTitle(from: month))
                         .font(.footnote.weight(.medium))
                         .frame(width: 80, alignment: .leading)
                     bar
@@ -219,7 +219,7 @@ private struct MonthlyBarRow: View {
             }
         }
         .accessibilityTextPair(
-            label: month,
+            label: MonthParser.localizedTitle(from: month),
             value: "\(value) \(NSLocalizedString("attendance_hours_unit", comment: ""))"
         )
         .onAppear {
@@ -232,7 +232,7 @@ private struct MonthlyBarRow: View {
 
     private var rowHeader: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(month)
+            Text(MonthParser.localizedTitle(from: month))
                 .font(.footnote.weight(.medium))
             Spacer()
             valueText
