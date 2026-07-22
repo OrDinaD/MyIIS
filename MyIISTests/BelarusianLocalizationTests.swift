@@ -63,7 +63,10 @@ final class BelarusianLocalizationTests: XCTestCase {
 
             for (key, rawEntry) in strings {
                 let entry = try XCTUnwrap(rawEntry as? [String: Any])
-                let localizations = try XCTUnwrap(entry["localizations"] as? [String: Any])
+                guard let localizations = entry["localizations"] as? [String: Any] else {
+                    // Пустая запись хранит исходную русскую строку и не является переводом.
+                    continue
+                }
                 let belarusian = try XCTUnwrap(
                     localizations["be"] as? [String: Any],
                     "В \(relativePath) нет белорусского перевода для \(key)"

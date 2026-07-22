@@ -55,7 +55,7 @@ final class PortalNotificationsViewModelTests: XCTestCase {
         await viewModel.loadMoreIfNeeded(current: lastItem)
         await viewModel.loadMoreIfNeeded(current: lastItem)
 
-        let requestedPages = await stub.requestedPages()
+        let requestedPages = stub.requestedPages()
         XCTAssertEqual(viewModel.notifications.map(\.id), [3, 2, 1])
         XCTAssertEqual(requestedPages, [0, 1])
     }
@@ -72,7 +72,7 @@ final class PortalNotificationsViewModelTests: XCTestCase {
         await viewModel.loadInitial()
         await viewModel.markAsRead(viewModel.notifications[0])
 
-        let markedIDs = await stub.markedNotificationIDs()
+        let markedIDs = stub.markedNotificationIDs()
         XCTAssertTrue(viewModel.notifications[0].isViewed)
         XCTAssertEqual(viewModel.unreadCount, 0)
         XCTAssertEqual(markedIDs, [7])
@@ -120,7 +120,7 @@ final class PortalNotificationsViewModelTests: XCTestCase {
         await viewModel.loadInitial()
         await viewModel.markAllAsRead()
 
-        let markedIDs = await stub.markedNotificationIDs()
+        let markedIDs = stub.markedNotificationIDs()
         XCTAssertTrue(viewModel.notifications.allSatisfy(\.isViewed))
         XCTAssertEqual(viewModel.unreadCount, 0)
         XCTAssertEqual(Set(markedIDs), Set([1, 2, 3]))
@@ -151,7 +151,8 @@ private extension PortalNotificationsViewModelTests {
     }
 }
 
-private actor StubPortalNotificationsService: PortalNotificationsServicing {
+@MainActor
+private final class StubPortalNotificationsService: PortalNotificationsServicing {
     enum StubError: Error {
         case markingFailed
     }

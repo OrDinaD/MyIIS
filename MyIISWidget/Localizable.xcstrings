@@ -84,6 +84,12 @@
     "error_stale_data" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Даныя могуць быць састарэлымі."
+          }
+        },
         "ru" : {
           "stringUnit" : {
             "state" : "new",
@@ -95,6 +101,12 @@
     "error_stale_data_with_time" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Даныя могуць быць састарэлымі. Апошняе абнаўленне: %@"
+          }
+        },
         "ru" : {
           "stringUnit" : {
             "state" : "new",

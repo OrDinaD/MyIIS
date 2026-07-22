@@ -44,8 +44,9 @@ class LoginViewModel: ObservableObject {
     }
 
     func login() async {
-        guard isServerActive == true else { return }
         guard validateInput() else { return }
+        let usesDemoCredentials = username == APIService.demoUsername && password == APIService.demoPassword
+        guard usesDemoCredentials || isServerActive == true else { return }
         await authService.login(username: username, password: password)
     }
 

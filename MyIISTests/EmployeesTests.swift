@@ -1,6 +1,7 @@
 import XCTest
 @testable import MyIIS
 
+@MainActor
 final class EmployeesTests: XCTestCase {
     
     func testNormalization() {
