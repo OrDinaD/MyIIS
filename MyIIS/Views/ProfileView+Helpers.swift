@@ -12,26 +12,48 @@ extension ProfileView {
         return formatter.string(from: date)
     }
 
-    func formattedFullName(_ user: User) -> String {
-        let parts = [user.lastName, user.firstName, user.middleName]
+    func primaryFullName(for user: User, locale: Locale) -> String {
+        if isBelarusian(locale), let belarusianName = belarusianNameParts(for: user) {
+            return formattedPrimaryName(belarusianName)
+        }
+
+        return formattedPrimaryName(russianNameParts(for: user))
+    }
+
+    func secondaryFullName(for user: User, locale: Locale) -> String? {
+        if isBelarusian(locale), belarusianNameParts(for: user) != nil {
+            let russianName = russianNameParts(for: user)
+            return russianName.isEmpty ? nil : russianName.joined(separator: " ")
+        }
+
+        return belarusianNameParts(for: user)?.joined(separator: " ")
+    }
+
+    private func isBelarusian(_ locale: Locale) -> Bool {
+        locale.language.languageCode?.identifier == "be"
+    }
+
+    private func russianNameParts(for user: User) -> [String] {
+        [user.lastName, user.firstName, user.middleName]
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
+    }
 
+    private func belarusianNameParts(for user: User) -> [String]? {
+        let parts = [user.belarusianLastName, user.belarusianFirstName, user.belarusianMiddleName]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+
+        return parts.isEmpty ? nil : parts
+    }
+
+    private func formattedPrimaryName(_ parts: [String]) -> String {
         guard parts.count == 3 else {
             return parts.joined(separator: " ")
         }
 
         // Фамилия остаётся на первой строке, имя и отчество переносятся ниже при необходимости.
         return "\(parts[0])\n\(parts[1]) \(parts[2])"
-    }
-
-    func formattedBelarusianFullName(_ user: User) -> String? {
-        let parts = [user.belarusianLastName, user.belarusianFirstName, user.belarusianMiddleName]
-            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-
-        guard !parts.isEmpty else { return nil }
-        return parts.joined(separator: " ")
     }
 
     func getIconForReference(_ name: String) -> String {

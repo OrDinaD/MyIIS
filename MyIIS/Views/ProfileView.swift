@@ -7,6 +7,7 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel = ProfileViewModel()
     @StateObject private var notificationsViewModel = PortalNotificationsViewModel()
@@ -135,7 +136,7 @@ private extension ProfileView {
         VStack(spacing: 12) {
             avatarThumbnail(for: user)
 
-            Text(formattedFullName(user))
+            Text(primaryFullName(for: user, locale: locale))
                 .font(.title2.weight(.bold))
                 .multilineTextAlignment(.center)
                 .lineLimit(3)
@@ -143,8 +144,8 @@ private extension ProfileView {
                 .minimumScaleFactor(0.92)
                 .padding(.horizontal, 20)
 
-            if let belarusianFullName = formattedBelarusianFullName(user) {
-                Text(belarusianFullName)
+            if let secondaryFullName = secondaryFullName(for: user, locale: locale) {
+                Text(secondaryFullName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary.opacity(0.75))
                     .multilineTextAlignment(.center)
