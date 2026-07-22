@@ -78,6 +78,10 @@ struct GradebookView: View {
         .onChange(of: viewModel.selectedSemesterKey) { _, _ in
             expandedSubjectId = nil
         }
+        .sensoryFeedback(.selection, trigger: viewModel.selectedSemesterKey)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.65), trigger: expandedSubjectId)
+        .sensoryFeedback(.success, trigger: sharePayload != nil)
+        .sensoryFeedback(.error, trigger: shareErrorMessage != nil)
     }
 
     private var shareErrorBinding: Binding<Bool> {
@@ -139,14 +143,17 @@ struct GradebookView: View {
 
     private var headerSection: some View {
         Section {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(String(format: NSLocalizedString("gradebook_number", comment: ""), viewModel.numberText))
-                        .font(.title3.weight(.semibold))
-                    Spacer()
-                    Text(String(format: NSLocalizedString("gradebook_overall_average", comment: ""), viewModel.overallAverageText))
-                        .font(.headline)
-                        .multilineTextAlignment(.trailing)
+            VStack(alignment: .leading, spacing: 12) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 12) {
+                        gradebookNumberMetric
+                        overallAverageMetric
+                    }
+
+                    VStack(spacing: 10) {
+                        gradebookNumberMetric
+                        overallAverageMetric
+                    }
                 }
 
                 if viewModel.isLoading {
@@ -162,6 +169,24 @@ struct GradebookView: View {
             }
             .padding(.vertical, 4)
         }
+    }
+
+    private var gradebookNumberMetric: some View {
+        GradebookMetricCard(
+            title: NSLocalizedString("gradebook_number_label", comment: ""),
+            value: viewModel.numberText,
+            systemImage: "number"
+        )
+        .textSelection(.enabled)
+    }
+
+    private var overallAverageMetric: some View {
+        GradebookMetricCard(
+            title: NSLocalizedString("gradebook_overall_average_label", comment: ""),
+            value: viewModel.overallAverageText,
+            systemImage: "chart.line.uptrend.xyaxis",
+            tint: .accentColor
+        )
     }
 
     private var semesterSection: some View {
@@ -223,6 +248,39 @@ private extension String {
     var nonEmptyOrDash: String {
         let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "—" : trimmed
+    }
+}
+
+private struct GradebookMetricCard: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    let title: String
+    let value: String
+    let systemImage: String
+    var tint: Color = .primary
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label(title, systemImage: systemImage)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
+
+            Text(value)
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(tint)
+                .monospacedDigit()
+                .contentTransition(reduceMotion ? .identity : .numericText())
+                .animation(reduceMotion ? nil : .snappy, value: value)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, minHeight: 72, alignment: .leading)
+        .padding(14)
+        .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityValue(value)
     }
 }
 

@@ -185,7 +185,9 @@
 
 "gradebook_title" = "Заліковка";
 "gradebook_number" = "Номер: %@";
+"gradebook_number_label" = "Номер заліковки";
 "gradebook_overall_average" = "Загальний середній бал: %@";
+"gradebook_overall_average_label" = "Середній бал";
 "gradebook_loading" = "Завантажуємо заліковку...";
 "gradebook_section_semester" = "Семестр";
 "gradebook_semesters_not_found" = "Семестри не знайдені";

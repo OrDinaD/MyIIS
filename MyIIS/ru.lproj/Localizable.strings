@@ -190,7 +190,9 @@
 
 "gradebook_title" = "Зачётка";
 "gradebook_number" = "Номер: %@";
+"gradebook_number_label" = "Номер зачётки";
 "gradebook_overall_average" = "Общий средний балл: %@";
+"gradebook_overall_average_label" = "Средний балл";
 "gradebook_loading" = "Загружаем зачётку...";
 "gradebook_section_semester" = "Семестр";
 "gradebook_semesters_not_found" = "Семестры не найдены";

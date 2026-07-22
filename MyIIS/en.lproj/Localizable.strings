@@ -190,7 +190,9 @@
 
 "gradebook_title" = "Gradebook";
 "gradebook_number" = "Number: %@";
+"gradebook_number_label" = "Record book";
 "gradebook_overall_average" = "Overall GPA: %@";
+"gradebook_overall_average_label" = "Overall GPA";
 "gradebook_loading" = "Loading gradebook...";
 "gradebook_section_semester" = "Semester";
 "gradebook_semesters_not_found" = "Semesters not found";
