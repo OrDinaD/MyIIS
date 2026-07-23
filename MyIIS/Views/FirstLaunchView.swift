@@ -8,6 +8,7 @@ struct FirstLaunchView: View {
     @Environment(\.colorScheme) private var colorScheme
     @StateObject private var loginViewModel = LoginViewModel()
     @State private var stage: Stage = .choices
+    @State private var introPhase: IntroPhase
     @FocusState private var focusedField: LoginField?
 
     let showsControls: Bool
@@ -19,6 +20,14 @@ struct FirstLaunchView: View {
     ) {
         self.showsControls = showsControls
         self.onContinueWithoutAccount = onContinueWithoutAccount
+        _introPhase = State(initialValue: showsControls ? .video : .ready)
+    }
+
+    private enum IntroPhase {
+        case video
+        case handoff
+        case moving
+        case ready
     }
 
     private enum Stage {
@@ -45,46 +54,49 @@ struct FirstLaunchView: View {
     var body: some View {
         GeometryReader { proxy in
             let contentWidth = min(max(proxy.size.width - 64, 280), 340)
+            let isInterfaceVisible = introPhase == .ready
 
             ZStack {
                 welcomeBackground
 
-                ScrollView {
-                    VStack(spacing: 0) {
-                        appIcon
-                            .frame(
-                                width: stage == .choices ? 164 : 104,
-                                height: stage == .choices ? 164 : 104
-                            )
-                            .padding(.top, stage == .choices ? 44 : 20)
-
-                        if stage == .choices {
-                            Spacer(minLength: 72)
-                            if showsControls {
-                                choices
-                                    .frame(width: contentWidth)
-                            }
-                            Spacer(minLength: 96)
-                        } else {
-                            loginForm
-                                .frame(width: contentWidth)
-                                .padding(.top, 24)
-                                .padding(.bottom, 32)
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: proxy.size.height)
+                if !isInterfaceVisible {
+                    launchVideoBackdrop
+                        .opacity(introPhase == .moving ? 0 : 1)
+                        .animation(
+                            reduceMotion ? nil : .easeInOut(duration: 0.65),
+                            value: introPhase
+                        )
                 }
-                .scrollDismissesKeyboard(.interactively)
+
+                interfaceContent(
+                    contentWidth: contentWidth,
+                    availableHeight: proxy.size.height
+                )
+                .opacity(isInterfaceVisible ? 1 : 0)
+                .allowsHitTesting(isInterfaceVisible)
+                .accessibilityHidden(!isInterfaceVisible)
+
+                if !isInterfaceVisible {
+                    transitionIcon(in: proxy.size)
+                }
+
+                if !reduceMotion && (introPhase == .video || introPhase == .handoff) {
+                    FirstLaunchVideoView(onFinished: beginVideoHandoff)
+                        .ignoresSafeArea()
+                        .opacity(introPhase == .video ? 1 : 0)
+                }
             }
         }
         .overlay(alignment: .topLeading) {
-            if stage == .login {
+            if stage == .login, introPhase == .ready {
                 backButton
                     .padding(.top, 8)
                     .padding(.leading, 12)
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
+        }
+        .task(id: introPhase) {
+            await advanceIntroIfNeeded()
         }
         .animation(reduceMotion ? nil : .spring(duration: 0.55, bounce: 0.12), value: stage)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: loginViewModel.errorMessage)
@@ -93,6 +105,89 @@ struct FirstLaunchView: View {
 }
 
 private extension FirstLaunchView {
+    func interfaceContent(contentWidth: CGFloat, availableHeight: CGFloat) -> some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                appIcon
+                    .frame(
+                        width: stage == .choices ? 164 : 104,
+                        height: stage == .choices ? 164 : 104
+                    )
+                    .padding(.top, stage == .choices ? 44 : 20)
+
+                if stage == .choices {
+                    Spacer(minLength: 72)
+                    if showsControls {
+                        choices
+                            .frame(width: contentWidth)
+                    }
+                    Spacer(minLength: 96)
+                } else {
+                    loginForm
+                        .frame(width: contentWidth)
+                        .padding(.top, 24)
+                        .padding(.bottom, 32)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: availableHeight)
+        }
+        .scrollDismissesKeyboard(.interactively)
+    }
+
+    var launchVideoBackdrop: some View {
+        Color(red: 0.53, green: 0.67, blue: 0.76)
+            .ignoresSafeArea()
+    }
+
+    func transitionIcon(in size: CGSize) -> some View {
+        let isMoving = introPhase == .moving
+        let iconSize = isMoving ? 164 : min(size.width * 0.76, 320)
+        let iconCenterY = isMoving ? 126 : size.height / 2
+
+        return appIcon
+            .frame(width: iconSize, height: iconSize)
+            .position(x: size.width / 2, y: iconCenterY)
+            .opacity(introPhase == .video && !reduceMotion ? 0 : 1)
+            .accessibilityHidden(true)
+    }
+
+    func beginVideoHandoff() {
+        guard introPhase == .video else { return }
+
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.36)) {
+            introPhase = .handoff
+        }
+    }
+
+    func advanceIntroIfNeeded() async {
+        guard showsControls else { return }
+
+        if reduceMotion, introPhase == .video {
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            introPhase = .ready
+            return
+        }
+
+        switch introPhase {
+        case .handoff:
+            try? await Task.sleep(for: .milliseconds(380))
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(duration: 0.72, bounce: 0.12)) {
+                introPhase = .moving
+            }
+        case .moving:
+            try? await Task.sleep(for: .milliseconds(720))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.28)) {
+                introPhase = .ready
+            }
+        case .video, .ready:
+            break
+        }
+    }
+
     var welcomeBackground: some View {
         ZStack {
             LinearGradient(
