@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
     inputs:
       release_version:
-        description: "Optional MARKETING_VERSION override, for example 0.6.8"
+        description: "Optional MARKETING_VERSION override, for example 1.0.7"
         required: false
         type: string
       upload_to_testflight:
-        description: "Upload to App Store Connect when credentials are available"
+        description: "Upload to App Store Connect"
         required: true
         default: true
         type: boolean
@@ -20,8 +20,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: testflight-${{ github.ref }}
-  cancel-in-progress: true
+  group: testflight-release
+  cancel-in-progress: false
 
 env:
   PROJECT_PATH: MyIIS.xcodeproj
@@ -29,27 +29,29 @@ env:
   CONFIGURATION: Release
   TEAM_ID: Y85TSUMM4F
   BUNDLE_ID: com.OrDinaD.MyIIS
-  XCODE_PATH: /Applications/Xcode_26.5.app
-  TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+  TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=latest
   APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
   APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
   APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+  IOS_SIGNING_CERTIFICATE_BASE64: ${{ secrets.IOS_SIGNING_CERTIFICATE_BASE64 }}
+  IOS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.IOS_SIGNING_CERTIFICATE_PASSWORD }}
 
 jobs:
   test:
     name: Run Unit Tests
     runs-on: macos-26
+    timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v7
 
-      - name: Select Xcode 26.5
+      - name: Verify Xcode
         shell: bash
         run: |
           set -euo pipefail
-          sudo xcode-select -s "$XCODE_PATH"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -E 'iphoneos|iphonesimulator'
 
       - name: Build for Testing
         shell: bash
@@ -76,19 +78,23 @@ jobs:
     name: Archive & Upload to TestFlight
     needs: test
     runs-on: macos-26
+    timeout-minutes: 35
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
-      - name: Select Xcode 26.5
+      - name: Verify Xcode
         shell: bash
         run: |
           set -euo pipefail
-          sudo xcode-select -s "$XCODE_PATH"
+          xcodebuild -version
+          xcodebuild -showsdks | grep iphoneos
 
-      - name: Resolve build metadata
+      - name: Resolve release metadata
         id: metadata
         shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.release_version }}
         run: |
           set -euo pipefail
 
@@ -97,62 +103,66 @@ jobs:
             -target "$SCHEME" \
             -configuration "$CONFIGURATION")"
 
-          PROJECT_BUILD_NUMBER="$(awk -F ' = ' '/^[[:space:]]*CURRENT_PROJECT_VERSION = / { print $2; exit }' <<< "$BUILD_SETTINGS")"
           PROJECT_VERSION="$(awk -F ' = ' '/^[[:space:]]*MARKETING_VERSION = / { print $2; exit }' <<< "$BUILD_SETTINGS")"
+          VERSION_PATTERN='^[0-9]+([.][0-9]+){1,2}$'
 
-          if [[ ! "$PROJECT_BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
-            echo "::error::CURRENT_PROJECT_VERSION must be an integer, got '$PROJECT_BUILD_NUMBER'."
-            exit 1
-          fi
-
-          BUILD_NUMBER="$((PROJECT_BUILD_NUMBER + 1))"
-
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ inputs.release_version }}" ]]; then
-            VERSION="${{ inputs.release_version }}"
-          else
+          if [[ -n "$REQUESTED_VERSION" && "$REQUESTED_VERSION" =~ $VERSION_PATTERN ]]; then
+            VERSION="$REQUESTED_VERSION"
+            VERSION_SOURCE="workflow input"
+          elif [[ "$PROJECT_VERSION" =~ $VERSION_PATTERN ]]; then
             VERSION="$PROJECT_VERSION"
+            VERSION_SOURCE="Xcode project"
+            if [[ -n "$REQUESTED_VERSION" ]]; then
+              echo "::warning::Ignoring invalid release_version '$REQUESTED_VERSION'; using project version $VERSION."
+            fi
+          else
+            VERSION="$(date -u +%Y.%-m.%-d)"
+            VERSION_SOURCE="UTC date fallback"
+            echo "::warning::Project MARKETING_VERSION '$PROJECT_VERSION' is invalid; using $VERSION."
           fi
 
-          if [[ ! "$VERSION" =~ ^[0-9]+([.][0-9]+){1,2}$ ]]; then
-            echo "::error::MARKETING_VERSION must contain two or three numeric components, got '$VERSION'."
-            exit 1
-          fi
+          # A UTC timestamp is monotonic for serialized deploys and does not
+          # depend on a manually maintained CURRENT_PROJECT_VERSION value.
+          BUILD_NUMBER="$(date -u +%Y%m%d%H%M%S)"
 
           echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
           echo "marketing_version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Archiving version $VERSION, build $BUILD_NUMBER (project build $PROJECT_BUILD_NUMBER + 1)."
+          echo "Resolved version $VERSION from $VERSION_SOURCE; build $BUILD_NUMBER."
 
-      - name: Verify release settings
+      - name: Verify upload credentials
+        id: credentials
         shell: bash
+        env:
+          REQUESTED_UPLOAD: ${{ inputs.upload_to_testflight }}
         run: |
           set -euo pipefail
 
-          xcodebuild -showBuildSettings \
-            -project "$PROJECT_PATH" \
-            -scheme "$SCHEME" \
-            -configuration "$CONFIGURATION" \
-            -destination 'generic/platform=iOS' \
-            CURRENT_PROJECT_VERSION="${{ steps.metadata.outputs.build_number }}" \
-            MARKETING_VERSION="${{ steps.metadata.outputs.marketing_version }}" |
-            grep -E 'MARKETING_VERSION|CURRENT_PROJECT_VERSION|PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM'
+          SHOULD_UPLOAD=true
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && "$REQUESTED_UPLOAD" == "false" ]]; then
+            SHOULD_UPLOAD=false
+          fi
 
-      - name: Detect App Store Connect credentials
-        id: asc
-        shell: bash
-        run: |
-          set -euo pipefail
+          echo "should_upload=$SHOULD_UPLOAD" >> "$GITHUB_OUTPUT"
+          if [[ "$SHOULD_UPLOAD" == "false" ]]; then
+            echo "::notice::Upload disabled for this manual run."
+            exit 0
+          fi
 
-          if [[ -n "$APPSTORE_API_KEY_ID" && -n "$APPSTORE_API_ISSUER_ID" && -n "$APPSTORE_API_PRIVATE_KEY" ]]; then
-            echo "available=true" >> "$GITHUB_OUTPUT"
-            echo "App Store Connect credentials are configured."
-          else
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::App Store Connect secrets are missing. This run will build and test only."
+          missing=()
+          [[ -n "$APPSTORE_API_KEY_ID" ]] || missing+=("APPSTORE_API_KEY_ID")
+          [[ -n "$APPSTORE_API_ISSUER_ID" ]] || missing+=("APPSTORE_API_ISSUER_ID")
+          [[ -n "$APPSTORE_API_PRIVATE_KEY" ]] || missing+=("APPSTORE_API_PRIVATE_KEY")
+          [[ -n "$IOS_SIGNING_CERTIFICATE_BASE64" ]] || missing+=("IOS_SIGNING_CERTIFICATE_BASE64")
+          [[ -n "$IOS_SIGNING_CERTIFICATE_PASSWORD" ]] || missing+=("IOS_SIGNING_CERTIFICATE_PASSWORD")
+
+          if (( ${#missing[@]} > 0 )); then
+            printf '::error::Missing GitHub Actions secrets: %s\n' "${missing[*]}"
+            exit 1
           fi
 
       - name: Prepare App Store Connect API key
         id: asc_key
-        if: ${{ steps.asc.outputs.available == 'true' && (github.event_name == 'push' || inputs.upload_to_testflight) }}
+        if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -163,11 +173,70 @@ jobs:
 
           printf '%s' "$APPSTORE_API_PRIVATE_KEY" | sed $'s/\\\\n/\\\n/g' > "$KEY_PATH"
           chmod 600 "$KEY_PATH"
-
           echo "key_path=$KEY_PATH" >> "$GITHUB_OUTPUT"
 
+      - name: Import reusable signing certificate
+        id: signing
+        if: steps.credentials.outputs.should_upload == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/MyIIS-CI.p12"
+          CI_KEYCHAIN_PATH="$RUNNER_TEMP/MyIIS-CI.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+
+          printf '%s' "$IOS_SIGNING_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$CI_KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$CI_KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$CI_KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -k "$CI_KEYCHAIN_PATH" \
+            -P "$IOS_SIGNING_CERTIFICATE_PASSWORD" \
+            -A \
+            -t agg \
+            -f pkcs12
+          security set-key-partition-list \
+            -S apple-tool:,apple: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$CI_KEYCHAIN_PATH"
+          security list-keychains -d user -s "$CI_KEYCHAIN_PATH"
+          security default-keychain -d user -s "$CI_KEYCHAIN_PATH"
+
+          SIGNING_IDENTITY="$(security find-identity \
+            -v \
+            -p codesigning \
+            "$CI_KEYCHAIN_PATH" |
+            awk '/Apple Development/ { print $2; exit }')"
+
+          if [[ -z "$SIGNING_IDENTITY" ]]; then
+            echo "::error::The imported certificate does not contain a valid Apple Development identity."
+            exit 1
+          fi
+
+          echo "identity=$SIGNING_IDENTITY" >> "$GITHUB_OUTPUT"
+          echo "Reusable signing identity imported successfully."
+
+      - name: Verify release settings
+        if: steps.credentials.outputs.should_upload == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          xcodebuild -showBuildSettings \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -configuration "$CONFIGURATION" \
+            -destination 'generic/platform=iOS' \
+            CURRENT_PROJECT_VERSION="${{ steps.metadata.outputs.build_number }}" \
+            MARKETING_VERSION="${{ steps.metadata.outputs.marketing_version }}" \
+            CODE_SIGN_IDENTITY="${{ steps.signing.outputs.identity }}" |
+            grep -E 'MARKETING_VERSION|CURRENT_PROJECT_VERSION|PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY'
+
       - name: Archive signed app
-        if: ${{ steps.asc_key.outputs.key_path != '' }}
+        if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -181,17 +250,18 @@ jobs:
             -archivePath build/MyIIS.xcarchive \
             CURRENT_PROJECT_VERSION="${{ steps.metadata.outputs.build_number }}" \
             MARKETING_VERSION="${{ steps.metadata.outputs.marketing_version }}" \
+            CODE_SIGN_IDENTITY="${{ steps.signing.outputs.identity }}" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/MyIIS-CI.keychain-db" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "${{ steps.asc_key.outputs.key_path }}" \
             -authenticationKeyID "$APPSTORE_API_KEY_ID" \
             -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID"
 
       - name: Create TestFlight export options
-        if: ${{ steps.asc_key.outputs.key_path != '' }}
+        if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p build
 
           plutil -create xml1 build/ExportOptions-TestFlight.plist
           plutil -insert method -string app-store-connect build/ExportOptions-TestFlight.plist
@@ -199,12 +269,12 @@ jobs:
           plutil -insert signingStyle -string automatic build/ExportOptions-TestFlight.plist
           plutil -insert teamID -string "$TEAM_ID" build/ExportOptions-TestFlight.plist
           plutil -insert distributionBundleIdentifier -string "$BUNDLE_ID" build/ExportOptions-TestFlight.plist
-          plutil -insert manageAppVersionAndBuildNumber -bool false build/ExportOptions-TestFlight.plist
+          plutil -insert manageAppVersionAndBuildNumber -bool true build/ExportOptions-TestFlight.plist
           plutil -insert stripSwiftSymbols -bool true build/ExportOptions-TestFlight.plist
           plutil -insert uploadSymbols -bool true build/ExportOptions-TestFlight.plist
 
       - name: Upload to TestFlight
-        if: ${{ steps.asc_key.outputs.key_path != '' }}
+        if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -218,12 +288,19 @@ jobs:
             -authenticationKeyID "$APPSTORE_API_KEY_ID" \
             -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID"
 
-      - name: Upload archive logs
-        if: ${{ always() && steps.asc_key.outputs.key_path != '' }}
-        uses: actions/upload-artifact@v4
+      - name: Upload release diagnostics
+        if: ${{ always() && steps.credentials.outputs.should_upload == 'true' }}
+        uses: actions/upload-artifact@v7
         with:
-          name: testflight-build-artifacts
+          name: testflight-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             build/ExportOptions-TestFlight.plist
             build/*.xcarchive
           if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Remove temporary signing keychain
+        if: ${{ always() && steps.signing.outcome != 'skipped' }}
+        shell: bash
+        run: |
+          security delete-keychain "$RUNNER_TEMP/MyIIS-CI.keychain-db" 2>/dev/null || true
