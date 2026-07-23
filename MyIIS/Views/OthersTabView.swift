@@ -301,15 +301,18 @@ private extension OthersTabView {
             .listStyle(.insetGrouped)
             .navigationTitle(NSLocalizedString("tab_services", comment: ""))
         } detail: {
-            Group {
-                if let destination = desktopSelection {
-                    destinationView(for: destination)
-                } else {
-                    ServicesPlaceholderView()
+            NavigationStack {
+                Group {
+                    if let destination = desktopSelection {
+                        destinationView(for: destination)
+                    } else {
+                        ServicesPlaceholderView()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .appBackground()
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .appBackground()
+            .id(desktopSelection)
         }
         .navigationSplitViewStyle(.balanced)
     }

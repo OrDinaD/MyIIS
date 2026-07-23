@@ -71,7 +71,7 @@ extension String {
         }
     }
 
-    func decodingHTMLEntities() -> String {
+    nonisolated func decodingHTMLEntities() -> String {
         var decoded = self
         let replacements: [(String, String)] = [
             ("&quot;", "\""),

@@ -102,7 +102,7 @@ enum DepartmentKind: Sendable, Hashable {
     case deanOffice
     case researchOrOther
     case unknown(Int)
-    
+
     init(typeId: Int) {
         switch typeId {
         case 1: self = .administrative
@@ -137,10 +137,38 @@ struct EmployeeContact: Hashable, Sendable {
 }
 
 struct EmployeeInfoSection: Identifiable, Sendable {
-    var id: Int { idType }
+    nonisolated var id: Int { idType }
+
     let idType: Int
     let title: String
-    let htmlContent: String
+    let textContent: String
+
+    nonisolated init(idType: Int, title: String, htmlContent: String) {
+        self.idType = idType
+        self.title = title
+        self.textContent = Self.plainText(from: htmlContent)
+    }
+
+    private nonisolated static func plainText(from html: String) -> String {
+        let text = html
+            .replacingOccurrences(
+                of: #"(?i)<br\s*/?>|</(?:p|li|div|h[1-6])\s*>"#,
+                with: "\n",
+                options: .regularExpression
+            )
+            .replacingOccurrences(of: #"<[^>]+>"#, with: " ", options: .regularExpression)
+            .decodingHTMLEntities()
+            .replacingOccurrences(of: "\u{00A0}", with: " ")
+
+        return text
+            .components(separatedBy: .newlines)
+            .map {
+                $0.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+    }
 }
 
 struct EmployeeLink: Hashable, Sendable {
