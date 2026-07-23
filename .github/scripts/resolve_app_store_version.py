@@ -14,15 +14,6 @@ import urllib.request
 
 
 VERSION_PATTERN = re.compile(r"^[0-9]+(?:\.[0-9]+){1,2}$")
-CLOSED_STATES = {
-    "READY_FOR_SALE",
-    "PENDING_APPLE_RELEASE",
-    "PENDING_DEVELOPER_RELEASE",
-    "PROCESSING_FOR_DISTRIBUTION",
-    "PREORDER_READY_FOR_SALE",
-    "REMOVED_FROM_SALE",
-    "DEVELOPER_REMOVED_FROM_SALE",
-}
 
 
 def base64url(value: bytes) -> str:
@@ -147,13 +138,10 @@ def resolve_version(
         key=lambda item: version_tuple(item["attributes"]["versionString"]),
     )
     latest_version = latest["attributes"]["versionString"]
-    latest_state = latest["attributes"].get("appStoreState", "UNKNOWN")
 
     if version_tuple(project_version) > version_tuple(latest_version):
         return project_version, "Xcode project"
-    if latest_state in CLOSED_STATES:
-        return increment_patch(latest_version), f"App Store Connect after {latest_version}"
-    return latest_version, f"open App Store Connect version ({latest_state})"
+    return increment_patch(latest_version), f"App Store Connect after {latest_version}"
 
 
 def main() -> None:
