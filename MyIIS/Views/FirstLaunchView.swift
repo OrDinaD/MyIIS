@@ -57,19 +57,9 @@ struct FirstLaunchView: View {
             let isInterfaceVisible = introPhase == .ready
 
             ZStack {
-                welcomeBackground
-
-                if !isInterfaceVisible {
-                    launchVideoBackdrop
-                        .opacity(introPhase == .moving ? 0 : 1)
-                        .animation(
-                            reduceMotion ? nil : .easeInOut(duration: 0.65),
-                            value: introPhase
-                        )
-                }
-
                 interfaceContent(
                     contentWidth: contentWidth,
+                    availableWidth: proxy.size.width,
                     availableHeight: proxy.size.height
                 )
                 .opacity(isInterfaceVisible ? 1 : 0)
@@ -85,6 +75,20 @@ struct FirstLaunchView: View {
                         .ignoresSafeArea()
                         .opacity(introPhase == .video ? 1 : 0)
                 }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+            .background {
+                if !isInterfaceVisible {
+                    launchVideoBackdrop
+                        .opacity(introPhase == .moving ? 0 : 1)
+                        .animation(
+                            reduceMotion ? nil : .easeInOut(duration: 0.65),
+                            value: introPhase
+                        )
+                }
+            }
+            .background {
+                welcomeBackground
             }
         }
         .overlay(alignment: .topLeading) {
@@ -105,34 +109,48 @@ struct FirstLaunchView: View {
 }
 
 private extension FirstLaunchView {
-    func interfaceContent(contentWidth: CGFloat, availableHeight: CGFloat) -> some View {
-        ScrollView {
+    @ViewBuilder
+    func interfaceContent(
+        contentWidth: CGFloat,
+        availableWidth: CGFloat,
+        availableHeight: CGFloat
+    ) -> some View {
+        if stage == .choices {
             VStack(spacing: 0) {
                 appIcon
-                    .frame(
-                        width: stage == .choices ? 164 : 104,
-                        height: stage == .choices ? 164 : 104
-                    )
-                    .padding(.top, stage == .choices ? 44 : 20)
+                    .frame(width: 164, height: 164)
+                    .padding(.top, 44)
 
-                if stage == .choices {
-                    Spacer(minLength: 72)
-                    if showsControls {
-                        choices
-                            .frame(width: contentWidth)
-                    }
-                    Spacer(minLength: 96)
-                } else {
+                Spacer(minLength: 72)
+
+                if showsControls {
+                    choices
+                        .frame(width: contentWidth)
+                }
+
+                Spacer(minLength: 96)
+            }
+            .frame(width: availableWidth)
+            .frame(minHeight: availableHeight)
+        } else {
+            ScrollView {
+                VStack(spacing: 0) {
+                    appIcon
+                        .frame(width: 104, height: 104)
+                        .padding(.top, 20)
+
                     loginForm
                         .frame(width: contentWidth)
                         .padding(.top, 24)
                         .padding(.bottom, 32)
                 }
+                .frame(width: availableWidth)
+                .frame(minHeight: availableHeight)
             }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: availableHeight)
+            .frame(width: availableWidth)
+            .scrollDismissesKeyboard(.interactively)
+            .scrollIndicators(.hidden)
         }
-        .scrollDismissesKeyboard(.interactively)
     }
 
     var launchVideoBackdrop: some View {

@@ -5,9 +5,14 @@ import UIKit
 struct FirstLaunchVideoView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var player: AVPlayer?
+    @State private var hapticObserver: Any?
     @State private var didFinish = false
 
     let onFinished: () -> Void
+
+    private static let hapticCueTimes = [0.15, 1.69, 3.91, 5.91].map {
+        NSValue(time: CMTime(seconds: $0, preferredTimescale: 600))
+    }
 
     var body: some View {
         PlayerLayerSurface(player: player)
@@ -42,6 +47,7 @@ struct FirstLaunchVideoView: View {
                 }
             }
             .onDisappear {
+                removeHapticObserver()
                 player?.pause()
             }
     }
@@ -60,14 +66,50 @@ struct FirstLaunchVideoView: View {
         player.actionAtItemEnd = .pause
         player.automaticallyWaitsToMinimizeStalling = false
         self.player = player
+
+        FirstLaunchHapticPlayer.shared.prepare()
+        hapticObserver = player.addBoundaryTimeObserver(
+            forTimes: Self.hapticCueTimes,
+            queue: .main
+        ) {
+            Task { @MainActor in
+                FirstLaunchHapticPlayer.shared.playSoftImpact()
+            }
+        }
+
         player.playImmediately(atRate: 1)
     }
 
     private func finishPlayback() {
         guard !didFinish else { return }
         didFinish = true
+        removeHapticObserver()
         player?.pause()
         onFinished()
+    }
+
+    private func removeHapticObserver() {
+        guard let hapticObserver else { return }
+        player?.removeTimeObserver(hapticObserver)
+        self.hapticObserver = nil
+    }
+}
+
+@MainActor
+private final class FirstLaunchHapticPlayer {
+    static let shared = FirstLaunchHapticPlayer()
+
+    private let generator = UIImpactFeedbackGenerator(style: .soft)
+
+    private init() {}
+
+    func prepare() {
+        generator.prepare()
+    }
+
+    func playSoftImpact() {
+        generator.impactOccurred(intensity: 0.42)
+        generator.prepare()
     }
 }
 
