@@ -572,3 +572,13 @@
 "about_app_language_subtitle" = "Open the system language settings for MyIIS";
 "about_app_language_hint" = "Opens MyIIS settings, where you can choose the app language.";
 
+/* First launch */
+"first_launch_app_icon" = "MyIIS app icon";
+"first_launch_sign_in" = "Sign in to your account";
+"first_launch_continue_guest" = "Continue without signing in";
+"first_launch_server_retry" = "Check again";
+"first_launch_server_available" = "BSUIR servers are available";
+"first_launch_server_unavailable" = "BSUIR servers are unavailable";
+"first_launch_server_checking" = "Checking BSUIR servers";
+"first_launch_server_unavailable_message" = "BSUIR servers are not responding, so signing in is temporarily unavailable. You can continue without an account.";
+

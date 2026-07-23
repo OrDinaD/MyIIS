@@ -20,6 +20,7 @@
 		F52AB8D63008F115002D379E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F52AB8D53008F115002D379E /* SwiftUI.framework */; };
 		F52AB91E300917E1002D379E /* MyIIS Watch WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F547D87D300C0A6600B666F6 /* Default.icon in Resources */ = {isa = PBXBuildFile; fileRef = F51DCE302FB0E1D900EA90E3 /* Default.icon */; };
+		F56F7A9C3011EA7200DBCCC7 /* Default-iOS-Default-1024x1024@1x.png in Resources */ = {isa = PBXBuildFile; fileRef = F56F7A9B3011EA7200DBCCC7 /* Default-iOS-Default-1024x1024@1x.png */; };
 		F58E2F0D2FD00E66002BCF03 /* Messages.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F58E2F0C2FD00E66002BCF03 /* Messages.framework */; };
 		F58E2F192FD00E68002BCF03 /* MyIISMessages.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F5A5EE102F1C801900D2B7A1 /* MyIISWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -139,6 +140,7 @@
 		F52AB8D33008F114002D379E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		F52AB8D53008F115002D379E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		F52AB91D300916B2002D379E /* MyIIS Watch WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "MyIIS Watch WidgetExtension.entitlements"; sourceTree = "<group>"; };
+		F56F7A9B3011EA7200DBCCC7 /* Default-iOS-Default-1024x1024@1x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-iOS-Default-1024x1024@1x.png"; sourceTree = "<group>"; };
 		F56FE4ED2FD2DD45004E8300 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F58E2F0C2FD00E66002BCF03 /* Messages.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Messages.framework; path = System/Library/Frameworks/Messages.framework; sourceTree = SDKROOT; };
@@ -301,6 +303,7 @@
 				F51DCE2E2FB0E1D900EA90E3 /* bright.icon */,
 				F51DCE2F2FB0E1D900EA90E3 /* KSIS.icon */,
 				F51DCE302FB0E1D900EA90E3 /* Default.icon */,
+				F56F7A9B3011EA7200DBCCC7 /* Default-iOS-Default-1024x1024@1x.png */,
 			);
 			path = logos;
 			sourceTree = "<group>";
@@ -658,6 +661,7 @@
 				F51DCE352FB0E1D900EA90E3 /* KSIS.icon in Resources */,
 				F51DCE362FB0E1D900EA90E3 /* Default.icon in Resources */,
 				F51DC97C2FB0920300EA90E3 /* PrivacyInfo.xcprivacy in Resources */,
+				F56F7A9C3011EA7200DBCCC7 /* Default-iOS-Default-1024x1024@1x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
