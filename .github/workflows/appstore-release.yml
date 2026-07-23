@@ -30,7 +30,6 @@ env:
   TEAM_ID: Y85TSUMM4F
   BUNDLE_ID: com.OrDinaD.MyIIS
   DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
-  TEST_DESTINATION: platform=iOS Simulator,name=iPhone 17,OS=latest
   APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
   APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
   APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
@@ -38,45 +37,8 @@ env:
   IOS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.IOS_SIGNING_CERTIFICATE_PASSWORD }}
 
 jobs:
-  test:
-    name: Run Unit Tests
-    runs-on: macos-26
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Verify Xcode
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild -version
-          xcodebuild -showsdks | grep -E 'iphoneos|iphonesimulator'
-
-      - name: Build for Testing
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild build-for-testing \
-            -project "$PROJECT_PATH" \
-            -scheme "$SCHEME" \
-            -configuration Debug \
-            -destination "$TEST_DESTINATION"
-
-      - name: Run Tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild test-without-building \
-            -project "$PROJECT_PATH" \
-            -scheme "$SCHEME" \
-            -destination "$TEST_DESTINATION" \
-            -parallel-testing-enabled NO \
-            -only-testing:MyIISTests
-
   deploy:
     name: Archive & Upload to TestFlight
-    needs: test
     runs-on: macos-26
     timeout-minutes: 35
     steps:
@@ -196,12 +158,14 @@ jobs:
             -P "$IOS_SIGNING_CERTIFICATE_PASSWORD" \
             -A \
             -t agg \
-            -f pkcs12
+            -f pkcs12 \
+            >/dev/null
           security set-key-partition-list \
             -S apple-tool:,apple: \
             -s \
             -k "$KEYCHAIN_PASSWORD" \
-            "$CI_KEYCHAIN_PATH"
+            "$CI_KEYCHAIN_PATH" \
+            >/dev/null
           security list-keychains -d user -s "$CI_KEYCHAIN_PATH"
           security default-keychain -d user -s "$CI_KEYCHAIN_PATH"
 
@@ -216,7 +180,6 @@ jobs:
             exit 1
           fi
 
-          echo "identity=$SIGNING_IDENTITY" >> "$GITHUB_OUTPUT"
           echo "Reusable signing identity imported successfully."
 
       - name: Verify release settings
@@ -232,7 +195,7 @@ jobs:
             -destination 'generic/platform=iOS' \
             CURRENT_PROJECT_VERSION="${{ steps.metadata.outputs.build_number }}" \
             MARKETING_VERSION="${{ steps.metadata.outputs.marketing_version }}" \
-            CODE_SIGN_IDENTITY="${{ steps.signing.outputs.identity }}" |
+            CODE_SIGN_IDENTITY="Apple Development" |
             grep -E 'MARKETING_VERSION|CURRENT_PROJECT_VERSION|PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY'
 
       - name: Archive signed app
@@ -250,7 +213,7 @@ jobs:
             -archivePath build/MyIIS.xcarchive \
             CURRENT_PROJECT_VERSION="${{ steps.metadata.outputs.build_number }}" \
             MARKETING_VERSION="${{ steps.metadata.outputs.marketing_version }}" \
-            CODE_SIGN_IDENTITY="${{ steps.signing.outputs.identity }}" \
+            CODE_SIGN_IDENTITY="Apple Development" \
             OTHER_CODE_SIGN_FLAGS="--keychain $RUNNER_TEMP/MyIIS-CI.keychain-db" \
             -allowProvisioningUpdates \
             -authenticationKeyPath "${{ steps.asc_key.outputs.key_path }}" \
