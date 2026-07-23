@@ -1,34 +1,123 @@
-import XCTest
 @testable import MyIIS
+import XCTest
 
 @MainActor
 final class DiplomaApplicationTests: XCTestCase {
 
     func testDiplomaApplicationSupervisorName() {
-        let emp = DiplomaEmployee(id: 1, firstName: "Иван", lastName: "Иванов", middleName: "Иванович", fio: "Иванов И.И.", academicDepartment: nil, price: nil)
-        let app1 = DiplomaApplication(id: 1, date: nil, employee: emp, externalManager: nil, topic: "Topic", belarusianTopic: nil, englishTopic: nil, justification: nil, rejectionReason: nil, status: "Pending", statusId: 1)
+        let emp = DiplomaEmployee(
+            id: 1,
+            firstName: "Иван",
+            lastName: "Иванов",
+            middleName: "Иванович",
+            fio: "Иванов И.И.",
+            academicDepartment: nil,
+            price: nil
+        )
+        let app1 = DiplomaApplication(
+            id: 1,
+            date: nil,
+            employee: emp,
+            externalManager: nil,
+            topic: "Topic",
+            belarusianTopic: nil,
+            englishTopic: nil,
+            justification: nil,
+            rejectionReason: nil,
+            status: "Pending",
+            statusId: 1
+        )
         XCTAssertEqual(app1.supervisorName, "Иванов И.И.")
+    }
 
-        let extManager = DiplomaExternalManager(id: 2, firstName: "Петр", lastName: "Петров", middleName: "Петрович", scienceDegree: nil, employeeRank: nil, workPlace: nil, jobPosition: nil)
-        let app2 = DiplomaApplication(id: 2, date: nil, employee: nil, externalManager: extManager, topic: "Topic2", belarusianTopic: nil, englishTopic: nil, justification: nil, rejectionReason: nil, status: "Pending", statusId: 1)
+    func testDiplomaApplicationExternalManagerName() {
+        let extManager = DiplomaExternalManager(
+            id: 2,
+            firstName: "Петр",
+            lastName: "Петров",
+            middleName: "Петрович",
+            scienceDegree: nil,
+            employeeRank: nil,
+            workPlace: nil,
+            jobPosition: nil
+        )
+        let app2 = DiplomaApplication(
+            id: 2,
+            date: nil,
+            employee: nil,
+            externalManager: extManager,
+            topic: "Topic2",
+            belarusianTopic: nil,
+            englishTopic: nil,
+            justification: nil,
+            rejectionReason: nil,
+            status: "Pending",
+            statusId: 1
+        )
         XCTAssertEqual(app2.supervisorName, "Петров Петр Петрович")
+    }
 
-        let app3 = DiplomaApplication(id: 3, date: nil, employee: nil, externalManager: nil, topic: "Topic3", belarusianTopic: nil, englishTopic: nil, justification: nil, rejectionReason: nil, status: "Pending", statusId: 1)
+    func testDiplomaApplicationMissingSupervisorName() {
+        let app3 = DiplomaApplication(
+            id: 3,
+            date: nil,
+            employee: nil,
+            externalManager: nil,
+            topic: "Topic3",
+            belarusianTopic: nil,
+            englishTopic: nil,
+            justification: nil,
+            rejectionReason: nil,
+            status: "Pending",
+            statusId: 1
+        )
         XCTAssertEqual(app3.supervisorName, "Руководитель не указан")
     }
 
     func testDiplomaApplicationStatuses() {
-        let appCancel = DiplomaApplication(id: 1, date: nil, employee: nil, externalManager: nil, topic: "Topic", belarusianTopic: nil, englishTopic: nil, justification: nil, rejectionReason: nil, status: "status", statusId: 5)
+        let appCancel = DiplomaApplication(
+            id: 1,
+            date: nil,
+            employee: nil,
+            externalManager: nil,
+            topic: "Topic",
+            belarusianTopic: nil,
+            englishTopic: nil,
+            justification: nil,
+            rejectionReason: nil,
+            status: "status",
+            statusId: 5
+        )
         XCTAssertTrue(appCancel.canCancel)
         XCTAssertFalse(appCancel.canDownloadApplication)
 
-        let appDownload = DiplomaApplication(id: 2, date: nil, employee: nil, externalManager: nil, topic: "Topic", belarusianTopic: nil, englishTopic: nil, justification: nil, rejectionReason: nil, status: "status", statusId: 1)
+        let appDownload = DiplomaApplication(
+            id: 2,
+            date: nil,
+            employee: nil,
+            externalManager: nil,
+            topic: "Topic",
+            belarusianTopic: nil,
+            englishTopic: nil,
+            justification: nil,
+            rejectionReason: nil,
+            status: "status",
+            statusId: 1
+        )
         XCTAssertFalse(appDownload.canCancel)
         XCTAssertTrue(appDownload.canDownloadApplication)
     }
 
     func testDiplomaEmployeeDisplayName() {
-        let emp1 = DiplomaEmployee(id: 1, firstName: "Алексей", lastName: "Смирнов", middleName: "Иванович", fio: nil, academicDepartment: nil, price: nil)
+        let emp1 = DiplomaEmployee(
+            id: 1,
+            firstName: "Алексей",
+            lastName: "Смирнов",
+            middleName: "Иванович",
+            fio: nil,
+            academicDepartment: nil,
+            price: nil
+        )
         XCTAssertEqual(emp1.displayName, "Смирнов Алексей Иванович")
 
         let emp2 = DiplomaEmployee(id: 2, firstName: nil, lastName: "Смирнов", middleName: nil, fio: "", academicDepartment: nil, price: nil)
@@ -46,10 +135,28 @@ final class DiplomaApplicationTests: XCTestCase {
     func testDiplomaExternalManagerSubtitle() {
         let deg = DiplomaNamedValue(id: 1, name: "Кандидат", abbrev: "К.т.н.", price: nil)
         let rank = DiplomaNamedValue(id: 2, name: "Доцент", abbrev: nil, price: nil)
-        let ext1 = DiplomaExternalManager(id: 1, firstName: nil, lastName: nil, middleName: nil, scienceDegree: deg, employeeRank: rank, workPlace: "БГУИР", jobPosition: "Преподаватель")
+        let ext1 = DiplomaExternalManager(
+            id: 1,
+            firstName: nil,
+            lastName: nil,
+            middleName: nil,
+            scienceDegree: deg,
+            employeeRank: rank,
+            workPlace: "БГУИР",
+            jobPosition: "Преподаватель"
+        )
         XCTAssertEqual(ext1.subtitle, "К.т.н., Доцент, Преподаватель, БГУИР")
 
-        let ext2 = DiplomaExternalManager(id: 2, firstName: nil, lastName: nil, middleName: nil, scienceDegree: nil, employeeRank: nil, workPlace: "", jobPosition: nil)
+        let ext2 = DiplomaExternalManager(
+            id: 2,
+            firstName: nil,
+            lastName: nil,
+            middleName: nil,
+            scienceDegree: nil,
+            employeeRank: nil,
+            workPlace: "",
+            jobPosition: nil
+        )
         XCTAssertNil(ext2.subtitle)
     }
 
@@ -74,7 +181,16 @@ final class DiplomaApplicationTests: XCTestCase {
         XCTAssertNil(supEmp.externalManagerId)
         XCTAssertFalse(supEmp.isExternal)
 
-        let ext = DiplomaExternalManager(id: 2, firstName: "X", lastName: "Y", middleName: "Z", scienceDegree: nil, employeeRank: nil, workPlace: nil, jobPosition: nil)
+        let ext = DiplomaExternalManager(
+            id: 2,
+            firstName: "X",
+            lastName: "Y",
+            middleName: "Z",
+            scienceDegree: nil,
+            employeeRank: nil,
+            workPlace: nil,
+            jobPosition: nil
+        )
         let supExt = DiplomaSupervisor.external(ext)
         XCTAssertEqual(supExt.id, "external-2")
         XCTAssertEqual(supExt.title, "Y X Z")

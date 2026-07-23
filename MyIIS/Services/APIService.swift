@@ -187,7 +187,7 @@ class APIService {
 
             logService.log("Status Code: \(httpResponse.statusCode)")
 
-            guard (200...299).contains(httpResponse.statusCode) else {
+            guard (200 ... 299).contains(httpResponse.statusCode) else {
                 throw APIError.serverError(
                     statusCode: httpResponse.statusCode,
                     message: NSLocalizedString("api_error_server", value: "Ошибка сервера", comment: "")
@@ -342,7 +342,7 @@ class APIService {
     }
 
     func handleStatusCode(_ statusCode: Int, data: Data) throws {
-        guard !(200...299).contains(statusCode) else { return }
+        guard !(200 ... 299).contains(statusCode) else { return }
 
         let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
         let message = errorResponse?.msg

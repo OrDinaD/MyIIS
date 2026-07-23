@@ -58,6 +58,43 @@ struct PublicScheduleResponse: Decodable {
         case endExamsDate
     }
 
+    static let publicationPending = PublicScheduleResponse(
+        employee: nil,
+        group: nil,
+        exams: [],
+        startDate: nil,
+        endDate: nil,
+        startExamsDate: nil,
+        endExamsDate: nil,
+        scheduleByWeekday: [:],
+        previousScheduleByWeekday: [:],
+        nextScheduleByWeekday: [:]
+    )
+
+    private init(
+        employee: DisciplineEmployee?,
+        group: StudyGroup?,
+        exams: [DisciplineSchedule],
+        startDate: Date?,
+        endDate: Date?,
+        startExamsDate: Date?,
+        endExamsDate: Date?,
+        scheduleByWeekday: [StudyWeekday: [DisciplineSchedule]],
+        previousScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]],
+        nextScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
+    ) {
+        self.employee = employee
+        self.group = group
+        self.exams = exams
+        self.startDate = startDate
+        self.endDate = endDate
+        self.startExamsDate = startExamsDate
+        self.endExamsDate = endExamsDate
+        self.scheduleByWeekday = scheduleByWeekday
+        self.previousScheduleByWeekday = previousScheduleByWeekday
+        self.nextScheduleByWeekday = nextScheduleByWeekday
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let dateParser = StudyPlanDateParser.shared
@@ -251,6 +288,26 @@ struct ServiceJSONObject: Codable, Hashable {
     }
 }
 
+struct ServiceJSONObjectPage: Decodable, Equatable {
+    let content: [ServiceJSONObject]
+    let totalElements: Int
+    let totalPages: Int
+    let number: Int
+    let size: Int
+    let isLast: Bool
+    let isEmpty: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case content
+        case totalElements
+        case totalPages
+        case number
+        case size
+        case isLast = "last"
+        case isEmpty = "empty"
+    }
+}
+
 extension ServiceJSONObject {
     var stableID: String {
         if let id = fields["id"]?.scalarText {
@@ -270,6 +327,9 @@ extension ServiceJSONObject {
             return value
         }
         if let value = fields["name"]?.scalarText, !value.isEmpty {
+            return value
+        }
+        if let value = fields["content"]?.scalarText, !value.isEmpty {
             return value
         }
         if let value = fields["description"]?.scalarText, !value.isEmpty {
@@ -335,7 +395,16 @@ final class ServiceEndpointsAPI {
     }
 
     func fetchAnnouncements() async throws -> [ServiceJSONObject] {
-        try await decodeJSONArray(path: "announcements")
+        let data = try await fetchData(path: "announcements/students")
+
+        do {
+            return try JSONDecoder().decode(ServiceJSONObjectPage.self, from: data).content
+        } catch {
+            if let legacyArray = try? JSONDecoder().decode([ServiceJSONObject].self, from: data) {
+                return legacyArray
+            }
+            throw APIError.decodingError(error)
+        }
     }
 
     func fetchPenalties() async throws -> [ServiceJSONObject] {

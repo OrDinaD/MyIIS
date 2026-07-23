@@ -100,7 +100,7 @@
 "services_schedule_exams" = "Exams and consultations";
 "services_schedule_empty_week" = "No classes for the selected week";
 "services_schedule_no_future_lessons" = "There are no more classes";
-"services_schedule_publication_pending" = "The schedule is not available yet. It is usually published after August 15.";
+"services_schedule_publication_pending" = "The schedule for the next study period has not been published yet. It will appear here automatically when available.";
 "services_schedule_empty_title" = "Schedule";
 "services_schedule_empty_subtitle" = "Choose a group or a teacher";
 "services_schedule_empty_hint" = "Enter a query and tap “Load Schedule”";

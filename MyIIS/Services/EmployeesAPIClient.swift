@@ -16,7 +16,7 @@ struct EmployeesAPIClient: Sendable {
         }
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        
+
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw EmployeesAPIError.invalidResponse
@@ -24,7 +24,7 @@ struct EmployeesAPIClient: Sendable {
         guard httpResponse.statusCode == 200 else {
             throw EmployeesAPIError.badStatusCode(httpResponse.statusCode)
         }
-        
+
         return try JSONDecoder().decode([DepartmentTreeNodeDTO].self, from: data)
     }
 
@@ -34,10 +34,10 @@ struct EmployeesAPIClient: Sendable {
         }
         components.queryItems = [URLQueryItem(name: "departmentUrlId", value: urlId)]
         guard let url = components.url else { throw EmployeesAPIError.invalidURL }
-        
+
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        
+
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw EmployeesAPIError.invalidResponse
@@ -45,7 +45,7 @@ struct EmployeesAPIClient: Sendable {
         guard httpResponse.statusCode == 200 else {
             throw EmployeesAPIError.badStatusCode(httpResponse.statusCode)
         }
-        
+
         return try JSONDecoder().decode([EmployeeSummaryDTO].self, from: data)
     }
 
@@ -55,10 +55,10 @@ struct EmployeesAPIClient: Sendable {
         }
         components.queryItems = [URLQueryItem(name: "urlId", value: urlId)]
         guard let url = components.url else { throw EmployeesAPIError.invalidURL }
-        
+
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        
+
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw EmployeesAPIError.invalidResponse
@@ -66,7 +66,7 @@ struct EmployeesAPIClient: Sendable {
         guard httpResponse.statusCode == 200 else {
             throw EmployeesAPIError.badStatusCode(httpResponse.statusCode)
         }
-        
+
         return try JSONDecoder().decode(EmployeeDetailsDTO.self, from: data)
     }
 }

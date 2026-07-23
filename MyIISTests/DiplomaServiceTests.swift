@@ -1,11 +1,11 @@
-import XCTest
 @testable import MyIIS
+import XCTest
 
 @MainActor
 final class DiplomaServiceTests: XCTestCase {
-    
+
     var service: DiplomaService!
-    
+
     override func setUp() async throws {
         try await super.setUp()
         let config = URLSessionConfiguration.ephemeral
@@ -13,7 +13,7 @@ final class DiplomaServiceTests: XCTestCase {
         let session = URLSession(configuration: config)
         service = DiplomaService(session: session)
     }
-    
+
     override func tearDown() async throws {
         MockURLProtocol.requestHandler = nil
         MockURLProtocol.mockResponse = nil
@@ -22,14 +22,14 @@ final class DiplomaServiceTests: XCTestCase {
         service = nil
         try await super.tearDown()
     }
-    
+
     func testFetchProgressUnauthorized() async {
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 401, httpVersion: nil, headerFields: nil)!
-            let data = "{\"msg\": \"Unauthorized\"}".data(using: .utf8)!
+            let data = Data("{\"msg\": \"Unauthorized\"}".utf8)
             return (response, data)
         }
-        
+
         do {
             _ = try await service.fetchDiplomaProgress(for: "123")
             XCTFail("Expected unauthorized error")
@@ -43,7 +43,7 @@ final class DiplomaServiceTests: XCTestCase {
             XCTFail("Wrong error type: \(error)")
         }
     }
-    
+
     func testFetchProgressEmptyIdentifier() async {
         do {
             _ = try await service.fetchDiplomaProgress(for: "")
@@ -58,14 +58,14 @@ final class DiplomaServiceTests: XCTestCase {
             XCTFail("Wrong error type: \(error)")
         }
     }
-    
+
     func testFetchProgressServiceUnavailable() async {
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 503, httpVersion: nil, headerFields: nil)!
-            let data = "{\"msg\": \"Unavailable\"}".data(using: .utf8)!
+            let data = Data("{\"msg\": \"Unavailable\"}".utf8)
             return (response, data)
         }
-        
+
         do {
             _ = try await service.fetchDiplomaProgress(for: "123")
             XCTFail("Expected serviceUnavailable error")

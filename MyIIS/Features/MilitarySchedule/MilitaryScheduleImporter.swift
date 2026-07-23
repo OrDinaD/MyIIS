@@ -1,6 +1,6 @@
+import JavaScriptCore
 import SwiftUI
 import UniformTypeIdentifiers
-import JavaScriptCore
 
 @MainActor
 struct MilitaryScheduleImportButton: View {
@@ -8,7 +8,7 @@ struct MilitaryScheduleImportButton: View {
     @ObservedObject var localScheduleViewModel: LocalScheduleViewModel
     @State private var isImporterPresented = false
     @State private var isParsing = false
-    
+
     var body: some View {
         Button(action: {
             isImporterPresented = true
@@ -46,7 +46,7 @@ struct MilitaryScheduleImportButton: View {
             }
         }
     }
-    
+
     private func parseAndApplySchedule(from url: URL) {
         let gainedAccess = url.startAccessingSecurityScopedResource()
         isParsing = true
@@ -87,19 +87,19 @@ struct MilitaryScheduleImportButton: View {
             }
         }
     }
-    
+
     private func parseXLS(b64: String) async throws -> [[String]] {
         guard let jsPath = Bundle.main.path(forResource: "xlsx_full_min", ofType: "js"),
               let jsCode = try? String(contentsOfFile: jsPath, encoding: .utf8) else {
             throw NSError(domain: "MilitaryImporter", code: 1, userInfo: [NSLocalizedDescriptionKey: "JS библиотека SheetJS не найдена в бандле (xlsx_full_min.js)"])
         }
-        
+
         guard let context = JSContext() else {
             throw NSError(domain: "MilitaryImporter", code: 2, userInfo: [NSLocalizedDescriptionKey: "Не удалось создать JSContext"])
         }
-        
+
         context.evaluateScript(jsCode)
-        
+
         let parseJS = """
         function parseXLS(b64) {
             var wb = XLSX.read(b64, {type: 'base64'});
@@ -114,26 +114,26 @@ struct MilitaryScheduleImportButton: View {
         }
         """
         context.evaluateScript(parseJS)
-        
+
         guard let parseFunc = context.objectForKeyedSubscript("parseXLS"), !parseFunc.isUndefined else {
             throw NSError(domain: "MilitaryImporter", code: 3, userInfo: [NSLocalizedDescriptionKey: "Функция парсинга не инициализировалась"])
         }
-        
+
         guard let result = parseFunc.call(withArguments: [b64]) else {
             throw NSError(domain: "MilitaryImporter", code: 4, userInfo: [NSLocalizedDescriptionKey: "JS вернул null"])
         }
-        
+
         if result.isUndefined {
             throw NSError(domain: "MilitaryImporter", code: 5, userInfo: [NSLocalizedDescriptionKey: "Ошибка парсинга файла SheetJS"])
         }
-        
+
         guard let array = result.toArray() as? [[String]] else {
             throw NSError(domain: "MilitaryImporter", code: 6, userInfo: [NSLocalizedDescriptionKey: "Неверный формат данных от JS"])
         }
-        
+
         return array
     }
-    
+
     private func buildPublicScheduleResponseJSON(from array: [[String]]) throws -> Data {
         var targetRow = -1
         for (i, row) in array.enumerated() {
@@ -142,11 +142,11 @@ struct MilitaryScheduleImportButton: View {
                 break
             }
         }
-        
+
         guard targetRow != -1 else {
             throw NSError(domain: "MilitaryImporter", code: 7, userInfo: [NSLocalizedDescriptionKey: "Группа 534104 не найдена в расписании"])
         }
-        
+
         let pairTimes = [
             ("08:30", "09:55"),
             ("10:05", "11:30"),
@@ -154,30 +154,30 @@ struct MilitaryScheduleImportButton: View {
             ("13:35", "15:00"),
             ("15:30", "16:55")
         ]
-        
+
         let weekdays = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота"]
         var schedulesMap: [String: [Any]] = [:]
-        
+
         let startDayCol = 3
-        
+
         for (dayIndex, weekday) in weekdays.enumerated() {
             var dayLessons: [Any] = []
             let colOffset = startDayCol + dayIndex * 3
-            
-            for pairIndex in 0..<5 {
-                let r = targetRow + pairIndex
-                if r < array.count {
-                    let row = array[r]
+
+            for pairIndex in 0 ..< 5 {
+                let rowIndex = targetRow + pairIndex
+                if rowIndex < array.count {
+                    let row = array[rowIndex]
                     if colOffset + 2 < row.count {
                         let subject = row[colOffset].trimmingCharacters(in: .whitespacesAndNewlines)
                         let teacher = row[colOffset + 1].trimmingCharacters(in: .whitespacesAndNewlines)
                         let location = row[colOffset + 2].trimmingCharacters(in: .whitespacesAndNewlines)
-                        
+
                         if !subject.isEmpty {
                             let (startT, endT) = pairTimes[pairIndex]
-                            let dateStr = "0\(dayIndex+6).07.2026"
+                            let dateStr = "0\(dayIndex + 6).07.2026"
                             let lessonId = UUID().uuidString
-                            
+
                             let lesson: [String: Any] = [
                                 "id": lessonId,
                                 "auditories": [location],
@@ -207,24 +207,30 @@ struct MilitaryScheduleImportButton: View {
             }
             schedulesMap[weekday] = dayLessons
         }
-        
+
         let jsonDict: [String: Any] = [
             "studentGroupDto": [
-                "name": "534104", "facultyId": 0, "facultyAbbrev": "ВФ", "facultyName": "Военный факультет", "specialityName": "Военная кафедра", "specialityAbbrev": "ВК", "course": 4
+                "name": "534104",
+                "facultyId": 0,
+                "facultyAbbrev": "ВФ",
+                "facultyName": "Военный факультет",
+                "specialityName": "Военная кафедра",
+                "specialityAbbrev": "ВК",
+                "course": 4
             ],
             "schedules": schedulesMap,
             "startDate": "06.07.2026",
             "endDate": "12.07.2026"
         ]
-        
+
         return try JSONSerialization.data(withJSONObject: jsonDict)
     }
-    
+
     private struct FakeCachedEnvelope: Codable {
         let data: Data
         let cachedAt: Date
     }
-    
+
     private func cacheSchedule(_ jsonData: Data, group: String) throws {
         let envelope = FakeCachedEnvelope(data: jsonData, cachedAt: Date())
         let payload = try JSONEncoder().encode(envelope)

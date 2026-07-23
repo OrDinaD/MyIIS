@@ -127,6 +127,11 @@ Tests/Videos/
 coverage.txt
 *.xcresult
 *.resultbundle
+benchmark_files.txt
+benchmark_rules.txt
+format_report.txt
+lint_report.txt
+periphery_report.txt
 
 # Mac
 .DS_Store

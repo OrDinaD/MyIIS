@@ -121,7 +121,7 @@ struct DepartmentDetailView: View {
                                             switch phase {
                                             case .success(let image):
                                                 image.resizable().scaledToFill()
-                                            case .failure(_), .empty:
+                                            case .failure, .empty:
                                                 Image(systemName: "person.circle.fill")
                                                     .resizable()
                                                     .foregroundStyle(.gray)

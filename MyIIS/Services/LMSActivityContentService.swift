@@ -129,7 +129,7 @@ private extension LMSActivityContentService {
         request.timeoutInterval = 60
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200...399).contains(http.statusCode),
+        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode),
               let html = String(data: data, encoding: .utf8) else {
             throw LMSActivityContentError.invalidResponse
         }
@@ -158,7 +158,7 @@ private extension LMSActivityContentService {
 
         request.timeoutInterval = 60
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200...399).contains(http.statusCode),
+        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode),
               let html = String(data: data, encoding: .utf8) else {
             throw LMSActivityContentError.invalidResponse
         }
@@ -306,7 +306,7 @@ private extension LMSActivityContentService {
         return starts.enumerated().map { index, match in
             let start = match.fullRange.lowerBound
             let end = index + 1 < starts.count ? starts[index + 1].fullRange.lowerBound : formBlock.endIndex
-            return String(formBlock[start..<end])
+            return String(formBlock[start ..< end])
         }.filter { block in
             !block.contains(#"id="fgroup_id_buttonar""#) && !block.contains(#"id="fitem_id_requiredfields""#)
         }

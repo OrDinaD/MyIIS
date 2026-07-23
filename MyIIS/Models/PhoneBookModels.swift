@@ -7,7 +7,7 @@ struct PhoneBookResponse: Codable {
 
 struct PhoneBookEntry: Codable, Identifiable {
     var id: String { auditory + (phones.first ?? "") }
-    
+
     let auditory: String
     let phones: [String]
     let employees: [PhoneBookEmployee]

@@ -211,9 +211,9 @@ struct DormitoryFacadePattern: View {
     var body: some View {
         GeometryReader { proxy in
             HStack(spacing: 14) {
-                ForEach(0..<6, id: \.self) { column in
+                ForEach(0 ..< 6, id: \.self) { column in
                     VStack(spacing: 14) {
-                        ForEach(0..<5, id: \.self) { row in
+                        ForEach(0 ..< 5, id: \.self) { row in
                             RoundedRectangle(cornerRadius: 3, style: .continuous)
                                 .fill(.white.opacity((column + row).isMultiple(of: 3) ? 0.10 : 0.045))
                                 .frame(

@@ -59,7 +59,7 @@ struct NotificationsView: View {
     private var loadingView: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                ForEach(0..<4, id: \.self) { _ in
+                ForEach(0 ..< 4, id: \.self) { _ in
                     PortalNotificationRow(notification: .placeholder)
                 }
             }
@@ -334,7 +334,7 @@ private final class PreviewPortalNotificationsService: PortalNotificationsServic
         )
     }
 
-    func markViewed(ids: [Int]) async throws { }
+    func markViewed(ids: [Int]) async throws {}
 }
 
 #Preview {

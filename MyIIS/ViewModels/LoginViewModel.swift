@@ -10,7 +10,7 @@ class LoginViewModel: ObservableObject {
 
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var isServerActive: Bool? = nil
+    @Published var isServerActive: Bool?
 
     private var authService: AuthenticationService
     private var cancellables = Set<AnyCancellable>()

@@ -301,4 +301,3 @@ private struct MessagesRootView: View {
             .padding(.horizontal, 2)
     }
 }
-

@@ -43,13 +43,13 @@ private struct EmployeeSearchHitRow: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(hit.fio)
                 .font(.headline)
-            
+
             HStack {
                 Text(hit.departmentAbbrev)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
-            
+
             if !hit.phones.isEmpty {
                 ForEach(hit.phones, id: \.self) { phone in
                     HStack {

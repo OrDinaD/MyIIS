@@ -161,6 +161,8 @@ final class ScheduleServiceViewModel: ObservableObject {
     @Published var isDownloadingReport = false
     @Published var errorMessage: String?
     @Published var noticeMessage: String?
+    @Published private(set) var isShowingStaleDataWarning = false
+    @Published private(set) var staleErrorMessage: String?
     @Published private(set) var continuousTimelineDays: [ScheduleContinuousDay] = []
     @Published private(set) var pinnedGroupNames: [String] = []
 
@@ -413,21 +415,24 @@ final class ScheduleServiceViewModel: ObservableObject {
     func loadGroup(_ groupNumber: String) async {
         if isLoading { return }
 
-        if let cachedSchedule = api.cachedGroupSchedule(groupNumber: groupNumber) {
+        let cachedSchedule = api.cachedGroupSchedule(groupNumber: groupNumber)
+        let restoredCachedSchedule = cachedSchedule != nil
+        if let cachedSchedule {
             applyGroupSchedule(cachedSchedule, week: nil, groupNumber: groupNumber)
         }
 
-        isLoading = schedule == nil
+        isLoading = true
         defer { isLoading = false }
 
         do {
             let scheduleResponse = try await api.fetchGroupSchedule(groupNumber: groupNumber)
             let week = try? await api.fetchCurrentWeek()
             applyGroupSchedule(scheduleResponse, week: week, groupNumber: groupNumber)
+            clearStaleDataWarning()
         } catch is CancellationError {
             return
         } catch {
-            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            handleScheduleLoadFailure(error, hasCachedSchedule: restoredCachedSchedule)
         }
     }
 
@@ -438,22 +443,68 @@ final class ScheduleServiceViewModel: ObservableObject {
         }
         if isLoading { return }
 
-        if let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId) {
+        let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId)
+        let restoredCachedSchedule = cachedSchedule != nil
+        if let cachedSchedule {
             applyEmployeeSchedule(cachedSchedule, week: nil, employee: employee, urlId: urlId)
         }
 
-        isLoading = schedule == nil
+        isLoading = true
         defer { isLoading = false }
 
         do {
             let scheduleResponse = try await api.fetchEmployeeSchedule(urlId: urlId)
             let week = try? await api.fetchCurrentWeek()
             applyEmployeeSchedule(scheduleResponse, week: week, employee: employee, urlId: urlId)
+            clearStaleDataWarning()
         } catch is CancellationError {
             return
         } catch {
-            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            handleScheduleLoadFailure(error, hasCachedSchedule: restoredCachedSchedule)
         }
+    }
+
+    private func handleScheduleLoadFailure(_ error: Error, hasCachedSchedule: Bool) {
+        let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+
+        if !hasCachedSchedule, Self.isPublicationPendingError(error) {
+            schedule = .publicationPending
+            currentWeekNumber = nil
+            errorMessage = nil
+            staleErrorMessage = nil
+            isShowingStaleDataWarning = false
+            rebuildContinuousTimeline(reset: true)
+            return
+        }
+
+        guard hasCachedSchedule else {
+            errorMessage = message
+            return
+        }
+
+        errorMessage = nil
+        staleErrorMessage = message
+        isShowingStaleDataWarning = true
+    }
+
+    static func isPublicationPendingError(_ error: Error) -> Bool {
+        guard let apiError = error as? APIError,
+              case .serverError(let statusCode, let message) = apiError,
+              statusCode == 503 else {
+            return false
+        }
+
+        let normalizedMessage = message.lowercased()
+        return normalizedMessage.contains("распис")
+            || normalizedMessage.contains("schedule")
+            || normalizedMessage.contains("расклад")
+            || normalizedMessage.contains("розклад")
+    }
+
+    private func clearStaleDataWarning() {
+        errorMessage = nil
+        staleErrorMessage = nil
+        isShowingStaleDataWarning = false
     }
 
     func openTeacherSchedule(_ teacher: DisciplineEmployee) async {

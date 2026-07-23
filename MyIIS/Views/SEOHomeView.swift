@@ -47,7 +47,7 @@ struct SEOHomeView: View {
                 await lmsService.refreshCourses(force: true)
             }
             .alert("Ошибка", isPresented: $showingError) {
-                Button("ОК", role: .cancel) { }
+                Button("ОК", role: .cancel) {}
             } message: {
                 Text(errorMessage)
             }

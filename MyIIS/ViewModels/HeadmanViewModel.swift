@@ -222,7 +222,7 @@ final class HeadmanViewModel: ObservableObject {
             let weekStart = Self.weekStart(for: selectedWeekAnchorDate)
             var collectedLessons: [HeadmanLesson] = []
 
-            for dayOffset in 0..<6 {
+            for dayOffset in 0 ..< 6 {
                 guard let day = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) else { continue }
                 let lessons = try await apiService.getHeadmanLessonsByDate(day)
                 collectedLessons.append(contentsOf: lessons)

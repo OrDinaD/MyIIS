@@ -53,7 +53,7 @@ enum MessageShareImageRenderer {
 
     private static func drawHeader(item: MessageShareItem, snapshot: MessageGradebookSnapshot, context: UIGraphicsImageRendererContext) {
         let iconRect = CGRect(x: 72, y: 72, width: 118, height: 118)
-        
+
         context.cgContext.saveGState()
         let path = UIBezierPath(roundedRect: iconRect, cornerRadius: 24)
         path.addClip()

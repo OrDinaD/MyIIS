@@ -151,7 +151,7 @@ final class DormitoryService: DormitoryServicing {
         }
 
         switch httpResponse.statusCode {
-        case 200...299:
+        case 200 ... 299:
             break
         case 403:
             throw DormitoryServiceError.forbidden

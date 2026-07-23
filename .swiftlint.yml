@@ -14,6 +14,10 @@ opt_in_rules:
   - toggle_bool
   - untyped_error_in_catch
 
+analyzer_rules:
+  - unused_declaration
+  - unused_import
+
 identifier_name:
   excluded:
     - id
@@ -50,3 +54,6 @@ included:
   - Shared
   - MyIISTests
   - MyIISUITests
+
+excluded:
+  - MyIIS/Resources/AppMockData.swift

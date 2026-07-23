@@ -370,7 +370,7 @@ private extension AccountSettingsView {
         let newPassword = viewModel.newPassword
         let oldPassword = viewModel.oldPassword
 
-        let hasValidLength = (8...30).contains(newPassword.count)
+        let hasValidLength = (8 ... 30).contains(newPassword.count)
         let hasLowercaseLatin = newPassword.range(of: "[a-z]", options: .regularExpression) != nil
         let hasUppercaseLatin = newPassword.range(of: "[A-Z]", options: .regularExpression) != nil
         let hasDigit = newPassword.range(of: "\\d", options: .regularExpression) != nil

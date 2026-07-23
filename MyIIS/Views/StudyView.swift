@@ -34,7 +34,7 @@ struct StudyView: View {
             CertificateOrderSheet(viewModel: viewModel)
         }
         .alert(alertMessage ?? "", isPresented: $showsAlert) {
-            Button("ОК", role: .cancel) { }
+            Button("ОК", role: .cancel) {}
         }
         .onChange(of: viewModel.toastMessage) { _, newValue in
             guard let message = newValue, !message.isEmpty else { return }

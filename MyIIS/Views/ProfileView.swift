@@ -232,7 +232,7 @@ private extension ProfileView {
 
     func ratingView(for user: User) -> some View {
         HStack(spacing: 4) {
-            ForEach(0..<5) { index in
+            ForEach(0 ..< 5) { index in
                 Image(systemName: "star.fill")
                     .foregroundStyle(
                         index < user.rating ? Color.yellow : Color.secondary.opacity(0.3)

@@ -228,9 +228,9 @@ private struct ScheduleWidgetView: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
-                    
+
                     Spacer(minLength: 4)
-                    
+
                     VStack(alignment: .trailing, spacing: 3) {
                         Text(
                             event.isCurrent(at: entry.date)
@@ -239,7 +239,7 @@ private struct ScheduleWidgetView: View {
                         )
                             .font(.caption2.weight(.bold))
                             .foregroundStyle(event.isCurrent(at: entry.date) ? Color.green : Color.orange)
-                        
+
                         Text("\(event.startTime)-\(event.endTime)")
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(.secondary)

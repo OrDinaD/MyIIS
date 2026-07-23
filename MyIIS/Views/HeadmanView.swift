@@ -400,7 +400,7 @@ private struct OmissionStudentRow: View {
                             viewModel.setPendingOmission(lessonId: lesson.id, studentId: student.id, hours: hours)
                         }
                     )) {
-                        ForEach(1...lessonHours, id: \.self) { hours in
+                        ForEach(1 ... lessonHours, id: \.self) { hours in
                             Text("\(hours) ч").tag(hours)
                         }
                     }

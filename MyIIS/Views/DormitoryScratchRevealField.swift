@@ -209,7 +209,7 @@ struct DormitoryScratchRevealField: View {
         let sampleCount = max(1, Int(ceil(distance / (coverageCellSize * 0.45))))
         let brushRadius = brushWidth / 2
 
-        for sample in 0...sampleCount {
+        for sample in 0 ... sampleCount {
             let progress = CGFloat(sample) / CGFloat(sampleCount)
             let point = CGPoint(
                 x: start.x + (end.x - start.x) * progress,
@@ -220,8 +220,8 @@ struct DormitoryScratchRevealField: View {
             let minRow = max(0, Int(floor((point.y - brushRadius) / coverageCellSize)))
             let maxRow = min(rows - 1, Int(floor((point.y + brushRadius) / coverageCellSize)))
 
-            for row in minRow...maxRow {
-                for column in minColumn...maxColumn {
+            for row in minRow ... maxRow {
+                for column in minColumn ... maxColumn {
                     let cellCenter = CGPoint(
                         x: (CGFloat(column) + 0.5) * coverageCellSize,
                         y: (CGFloat(row) + 0.5) * coverageCellSize
@@ -244,18 +244,18 @@ struct DormitoryScratchRevealField: View {
         let normal = CGVector(dx: -direction.dy / length, dy: direction.dx / length)
         let now = Date()
 
-        let newParticles = (0..<3).map { index in
+        let newParticles = (0 ..< 3).map { index in
             let side = index.isMultiple(of: 2) ? 1.0 : -1.0
-            let spread = CGFloat.random(in: 18...42) * side
+            let spread = CGFloat.random(in: 18 ... 42) * side
             return DormitoryScratchParticle(
                 origin: point,
                 velocity: CGVector(
-                    dx: normal.dx * spread + CGFloat.random(in: -14...14),
+                    dx: normal.dx * spread + CGFloat.random(in: -14 ... 14),
                     dy: normal.dy * spread + CGFloat.random(in: -28 ... -8)
                 ),
                 createdAt: now,
-                lifetime: Double.random(in: 0.42...0.72),
-                size: CGFloat.random(in: 2.5...6.5),
+                lifetime: Double.random(in: 0.42 ... 0.72),
+                size: CGFloat.random(in: 2.5 ... 6.5),
                 shade: index
             )
         }

@@ -100,7 +100,7 @@
 "services_schedule_exams" = "Іспити та консультації";
 "services_schedule_empty_week" = "На вибраному тижні занять немає";
 "services_schedule_no_future_lessons" = "Занять більше немає";
-"services_schedule_publication_pending" = "Розкладу поки немає. Зазвичай його публікують після 15 серпня.";
+"services_schedule_publication_pending" = "Розклад на наступний навчальний період ще не опубліковано. Він з’явиться тут автоматично після публікації.";
 "services_schedule_empty_title" = "Розклад";
 "services_schedule_empty_subtitle" = "Оберіть групу або викладача";
 "services_schedule_empty_hint" = "Введіть запит і натисніть «Завантажити розклад»";

@@ -129,10 +129,10 @@ final class HeadmanViewModelTests: XCTestCase {
             let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
 
             if url.path.contains("grade-book/is-group-head") {
-                let data = "true".data(using: .utf8)!
+                let data = Data("true".utf8)
                 return (response, data)
             } else if url.path.contains("grade-book/who-can-note") {
-                let data = "[1, 2]".data(using: .utf8)!
+                let data = Data("[1, 2]".utf8)
                 return (response, data)
             } else if url.path.contains("grade-book/group-students") {
                 let students = [HeadmanStudent(id: 1, fio: "Иванов Иван", username: "ivanov")]
@@ -145,10 +145,10 @@ final class HeadmanViewModelTests: XCTestCase {
                 let data = try JSONEncoder().encode(subjects)
                 return (response, data)
             } else if url.path.contains("grade-book/by-date") {
-                let data = "[]".data(using: .utf8)!
+                let data = Data("[]".utf8)
                 return (response, data)
             } else if url.path.contains("grade-book/1/0") || url.path.contains("grade-book/weekly") {
-                let data = "[]".data(using: .utf8)!
+                let data = Data("[]".utf8)
                 return (response, data)
             }
 
@@ -183,7 +183,7 @@ final class HeadmanViewModelTests: XCTestCase {
                     }
                 ]
                 """
-                return (response, json.data(using: .utf8)!)
+                return (response, Data(json.utf8))
             }
             return (response, Data())
         }
@@ -217,7 +217,7 @@ final class HeadmanViewModelTests: XCTestCase {
                     }
                 ]
                 """
-                return (response, json.data(using: .utf8)!)
+                return (response, Data(json.utf8))
             }
             return (response, Data())
         }
@@ -295,7 +295,7 @@ final class HeadmanViewModelTests: XCTestCase {
         // Success
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, "[]".data(using: .utf8)!)
+            return (response, Data("[]".utf8))
         }
 
         await viewModel.saveOmissions(for: lesson)
@@ -341,13 +341,13 @@ final class HeadmanViewModelTests: XCTestCase {
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
             if request.url!.path.contains("is-group-head") {
-                return (response, "true".data(using: .utf8)!)
+                return (response, Data("true".utf8))
             } else if request.url!.path.contains("who-can-note") {
-                return (response, "[]".data(using: .utf8)!)
+                return (response, Data("[]".utf8))
             } else if request.url!.path.contains("group-students") {
-                return (response, "[]".data(using: .utf8)!)
+                return (response, Data("[]".utf8))
             } else if request.url!.path.contains("subjects") {
-                return (response, "{}".data(using: .utf8)!)
+                return (response, Data("{}".utf8))
             }
             return (response, Data())
         }
@@ -360,7 +360,7 @@ final class HeadmanViewModelTests: XCTestCase {
         viewModel.hasAccess = true
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, "[]".data(using: .utf8)!)
+            return (response, Data("[]".utf8))
         }
 
         await viewModel.selectWeekAnchorDate(Date())

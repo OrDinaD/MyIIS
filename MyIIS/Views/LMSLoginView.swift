@@ -110,7 +110,7 @@ struct LMSLoginView: View {
         .navigationTitle(NSLocalizedString("services_item_lms", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .alert("Ошибка", isPresented: $showingError) {
-            Button("ОК", role: .cancel) { }
+            Button("ОК", role: .cancel) {}
         } message: {
             Text(errorMessage)
         }

@@ -202,7 +202,7 @@ extension LMSService {
 
             let start = match.fullRange.lowerBound
             let end = idx + 1 < matches.count ? matches[idx + 1].fullRange.lowerBound : scopedHTML.endIndex
-            let content = String(scopedHTML[start..<end])
+            let content = String(scopedHTML[start ..< end])
 
             let namePattern = #"<h3[^>]*class="[^"]*\bcoursename\b[^"]*"[^>]*>\s*<a[^>]*>([\s\S]*?)<\/a>\s*<\/h3>"#
             let nameRaw = content.captureGroup(at: 1, pattern: namePattern) ?? "Курс \(courseId)"
@@ -235,9 +235,9 @@ extension LMSService {
             return html
         }
 
-        let searchRange = start.lowerBound..<html.endIndex
+        let searchRange = start.lowerBound ..< html.endIndex
         let end = html.range(of: #"<span\s+class="skip-block-to"\s+id="skipmycourses""#, options: .regularExpression, range: searchRange)
-        return String(html[start.lowerBound..<(end?.lowerBound ?? html.endIndex)])
+        return String(html[start.lowerBound ..< (end?.lowerBound ?? html.endIndex)])
     }
 
     private static func cleanHTMLText(_ value: String) -> String {

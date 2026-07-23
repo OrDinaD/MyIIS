@@ -3,7 +3,7 @@ import SwiftUI
 func localizedJSONKey(_ key: String) -> String {
     let lower = key.lowercased()
     if lower == "id" { return "ID" }
-    
+
     let localized = NSLocalizedString("json_key_\(lower)", value: key.capitalized, comment: "")
     // Fallback to capitalized if not found (assuming NSLocalizedString returns key if value is not set and key not in dict, but with value param it returns value)
     return localized
@@ -87,15 +87,15 @@ struct PenaltyItemCard: View {
         let reason = item.fields["reason"]?.scalarText ?? item.primaryText
         let information = item.fields["information"]?.scalarText ?? item.secondaryText ?? ""
         let status = item.fields["status"]?.scalarText ?? ""
-        
+
         let lowerReason = reason.lowercased()
         let isPositive = lowerReason.contains("грамот") || lowerReason.contains("поощрение") || lowerReason.contains("благодарность")
-        
+
         let backgroundColor = isPositive ? Color.green.opacity(0.12) : Color(uiColor: .tertiarySystemGroupedBackground)
         let primaryColor = isPositive ? Color.green : Color.primary
         let iconName = isPositive ? "star.fill" : "exclamationmark.triangle.fill"
         let iconColor = isPositive ? Color.green : Color.orange
-        
+
         let lowerStatus = status.lowercased()
         let isStatusActive = lowerStatus.contains("активен")
 
@@ -104,13 +104,13 @@ struct PenaltyItemCard: View {
                 Image(systemName: iconName)
                     .foregroundStyle(iconColor)
                     .font(.title3)
-                
+
                 VStack(alignment: .leading, spacing: 4) {
                     Text(reason)
                         .font(.headline)
                         .foregroundStyle(primaryColor)
                         .fixedSize(horizontal: false, vertical: true)
-                    
+
                     if !information.isEmpty {
                         Text(information)
                             .font(.subheadline)
@@ -119,7 +119,7 @@ struct PenaltyItemCard: View {
                     }
                 }
             }
-            
+
             let filteredPairs = item.detailPairs.filter { pair in
                 let lowerKey = pair.0.lowercased()
                 let isDirective = lowerKey.contains("directive")
@@ -127,7 +127,7 @@ struct PenaltyItemCard: View {
                 let isObject = pair.1.hasPrefix("Объект") || pair.1.hasPrefix("Массив")
                 return !isDirective && !isReasonOrInfo && !isObject
             }
-            
+
             if !filteredPairs.isEmpty {
                 VStack(spacing: 6) {
                     ForEach(filteredPairs, id: \.0) { pair in
@@ -136,7 +136,7 @@ struct PenaltyItemCard: View {
                                 .font(.caption.weight(.medium))
                                 .foregroundStyle(.secondary)
                                 .frame(width: 110, alignment: .leading)
-                            
+
                             if pair.0.lowercased() == "status" {
                                 Text(pair.1)
                                     .font(.caption.weight(.semibold))

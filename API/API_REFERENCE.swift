@@ -3,9 +3,9 @@
 // API Documentation: https://app.swaggerhub.com/apis/N1ghtF1re/BsuirAdditionalApi/2.0.0
 
 // ⚠️ ⚠️ ⚠️ КРИТИЧЕСКОЕ ПРЕДУПРЕЖДЕНИЕ ⚠️ ⚠️ ⚠️
-// 
+//
 // ЭТА ДОКУМЕНТАЦИЯ НЕ СООТВЕТСТВУЕТ РЕАЛЬНОМУ API!
-// 
+//
 // Реальные рабочие эндпоинты смотрите в:
 // /API/REAL_API_ENDPOINTS.md
 //
@@ -721,15 +721,15 @@ struct AuthorizationHeader {
  let authRequest = AuthEndpoint.Request(username: "12345678", password: "password")
  // POST to /auth with authRequest
  // Receive: AuthEndpoint.Response with token
- 
+
  // 2. Get current user info
  // GET to /students/me with Authorization header
  // Receive: GetStudentEndpoint.Response
- 
+
  // 3. Get record book
  // GET to /students/me/record-book with Authorization header
  // Receive: GetRecordBookEndpoint.Response
- 
+
  // 4. Search news
  let newsSearch = SearchNewsEndpoint.Request(
      page: 0,
@@ -739,7 +739,7 @@ struct AuthorizationHeader {
  )
  // POST to /news/search with newsSearch
  // Receive: SearchNewsEndpoint.Response
- 
+
  // 5. Get schedule
  // GET to /schedule?studentGroup=751006&from=2024-01-01&to=2024-01-31
  // Receive: [GetScheduleEndpoint.Response]

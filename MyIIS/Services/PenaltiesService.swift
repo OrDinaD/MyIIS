@@ -88,7 +88,7 @@ final class PenaltiesService: PenaltiesServicing {
 
     private func resolvePenalties(data: Data, response: HTTPURLResponse, request: URLRequest) throws -> [PenaltyRecord] {
         switch response.statusCode {
-        case 200...299:
+        case 200 ... 299:
             if data.isEmpty {
                 return []
             }

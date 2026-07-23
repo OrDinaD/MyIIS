@@ -73,12 +73,12 @@ final class LMSQuizService {
         }
 
         let response = try await submit(form: form)
-        
+
         if let preflightForm = parsePreflightForm(from: response.html) {
             let preflightResponse = try await submit(form: preflightForm)
             return try parseScreen(from: preflightResponse)
         }
-        
+
         return try parseScreen(from: response)
     }
 
@@ -214,7 +214,7 @@ private extension LMSQuizService {
         let method = formBlock.captureGroup(at: 1, pattern: #"method=\"([^\"]+)\""#)?.uppercased() ?? "POST"
         var fields = parseInputFields(in: formBlock)
         fields.removeValue(forKey: "cancel")
-        
+
         if let submitValue = formBlock.captureGroup(at: 1, pattern: #"name=\"submitbutton\"[^>]*value=\"([^\"]+)\""#) {
             fields["submitbutton"] = submitValue.decodingHTMLEntities()
         } else {
@@ -441,7 +441,7 @@ private extension LMSQuizService {
         request.timeoutInterval = 60
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200...399).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
             throw LMSError.invalidResponse
         }
 
@@ -475,7 +475,7 @@ private extension LMSQuizService {
 
         request.timeoutInterval = 60
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200...399).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
             throw LMSError.invalidResponse
         }
 
@@ -496,7 +496,7 @@ private extension LMSQuizService {
         request.httpBody = multipartBody(fields: form.fields, boundary: boundary)
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200...399).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
             throw LMSError.invalidResponse
         }
 

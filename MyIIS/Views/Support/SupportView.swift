@@ -1,6 +1,6 @@
-import SwiftUI
-import QuickLook
 import Combine
+import QuickLook
+import SwiftUI
 
 class SupportDocumentDownloader: ObservableObject {
     @Published var isDownloading = false
@@ -13,7 +13,7 @@ class SupportDocumentDownloader: ObservableObject {
             self.errorMessage = nil
             self.downloadedFileURL = nil
         }
-        
+
         do {
             let (tempURL, response) = try await URLSession.shared.download(from: url)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
@@ -23,16 +23,16 @@ class SupportDocumentDownloader: ObservableObject {
                 }
                 return
             }
-            
+
             let documentsDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
             let destinationURL = documentsDirectory.appendingPathComponent(filename)
-            
+
             if FileManager.default.fileExists(atPath: destinationURL.path) {
                 try FileManager.default.removeItem(at: destinationURL)
             }
-            
+
             try FileManager.default.moveItem(at: tempURL, to: destinationURL)
-            
+
             DispatchQueue.main.async {
                 self.downloadedFileURL = destinationURL
                 self.isDownloading = false
@@ -51,7 +51,7 @@ class SupportDocumentDownloader: ObservableObject {
 
 struct SupportView: View {
     @StateObject private var downloader = SupportDocumentDownloader()
-    
+
     var body: some View {
         List {
             ForEach(SupportConfiguration.documentGroups) { group in
@@ -65,7 +65,7 @@ struct SupportView: View {
                                 .foregroundColor(.red)
                         }
                     }
-                    
+
                     ForEach(group.items) { item in
                         Button {
                             Task {
@@ -114,7 +114,7 @@ struct SupportView: View {
                ),
                presenting: downloader.errorMessage
         ) { _ in
-            Button("OK", role: .cancel) { }
+            Button("OK", role: .cancel) {}
         } message: { msg in
             Text(msg)
         }

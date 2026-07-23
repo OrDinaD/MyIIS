@@ -28,6 +28,8 @@ class AuthenticationService: ObservableObject {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     private static let isRunningUITests =
         ProcessInfo.processInfo.arguments.contains("-ui_testing") || ProcessInfo.processInfo.arguments.contains("-UITesting")
+    private static let isRunningScreenshotTests =
+        isRunningUITests && ProcessInfo.processInfo.environment["UI_SCREENSHOT_MODE"] == "1"
 
     init(
         apiService: APIService? = nil,
@@ -42,7 +44,17 @@ class AuthenticationService: ObservableObject {
             self.currentUser = nil
             try? self.credentialStore.clear()
             self.clearCachedUser()
-            UserDefaults.standard.set(true, forKey: "hasSeenLaunchReveal") // Пропускаем анимацию в UI тестах
+            UserDefaults.standard.set(true, forKey: FirstLaunchView.completionKey)
+
+            if Self.isRunningScreenshotTests {
+                Task { [weak self] in
+                    await self?.login(
+                        username: APIService.demoUsername,
+                        password: APIService.demoPassword,
+                        persistCredentials: false
+                    )
+                }
+            }
         } else if let cachedUserData = UserDefaultsPayloadStore.load(forKey: Self.cachedUserDefaultsKey, from: UserDefaults.standard),
            let cachedUser = try? JSONDecoder().decode(User.self, from: cachedUserData) {
             self.currentUser = cachedUser
@@ -66,7 +78,7 @@ class AuthenticationService: ObservableObject {
             let request = URLRequest(url: URL(string: "https://iis.bsuir.by/api/v1/faculties")!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 5.0)
             let (_, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse {
-                return (200...299).contains(httpResponse.statusCode)
+                return (200 ... 299).contains(httpResponse.statusCode)
             }
             return false
         } catch {

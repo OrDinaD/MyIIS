@@ -33,16 +33,16 @@ struct LMSModule: Identifiable, Codable {
 
     enum LMSModuleType: String, Codable {
         case resource // File (PDF, etc)
-        case assign   // Assignment
-        case quiz     // Test
-        case forum    // Forum
-        case page     // Moodle page
-        case label    // Text label
-        case folder   // Folder
-        case url      // Link
+        case assign // Assignment
+        case quiz // Test
+        case forum // Forum
+        case page // Moodle page
+        case label // Text label
+        case folder // Folder
+        case url // Link
         case feedback // Poll/Feedback
-        case choice   // Choice/Poll
-        case survey   // Survey
+        case choice // Choice/Poll
+        case survey // Survey
         case unknown
 
         var icon: String {

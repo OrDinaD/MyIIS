@@ -55,7 +55,7 @@ final class MyIISUITests: XCTestCase {
         app.launchArguments += [
             "-UITesting",
             "-ui_testing",
-            "-hasSeenLaunchReveal", "YES",
+            "-has_completed_first_launch", "YES",
             "-enable_beta_sections", "NO",
             "-show_tab_profile", "YES",
             "-show_tab_attendance", "YES",
@@ -70,7 +70,8 @@ final class MyIISUITests: XCTestCase {
     @MainActor
     private func loginWithDemoAccount(_ app: XCUIApplication) {
         XCTContext.runActivity(named: "Login with demo account") { _ in
-            if app.tabBars.firstMatch.waitForExistence(timeout: 2) {
+            let profileTab = app.tabBars.buttons["Профиль"]
+            if profileTab.waitForExistence(timeout: 10) {
                 return
             }
 
@@ -94,8 +95,10 @@ final class MyIISUITests: XCTestCase {
             XCTAssertTrue(loginButton.waitForExistence(timeout: 5), "Login button did not appear")
             loginButton.tap()
 
-            let tabBar = app.tabBars.firstMatch
-            XCTAssertTrue(tabBar.waitForExistence(timeout: 20), "Main tab bar did not appear after demo login")
+            XCTAssertTrue(
+                profileTab.waitForExistence(timeout: 20),
+                "Authenticated tabs did not appear after demo login"
+            )
             dismissSystemAlertsIfNeeded()
             waitForUIToSettle()
         }

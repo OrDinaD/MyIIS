@@ -8,8 +8,8 @@ final class MockURLProtocol: URLProtocol {
     static nonisolated(unsafe) var mockError: Error?
     static nonisolated(unsafe) var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
 
-    override class func canInit(with request: URLRequest) -> Bool { return true }
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest { return request }
+    override static func canInit(with request: URLRequest) -> Bool { true }
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
         if let handler = MockURLProtocol.requestHandler {
@@ -108,12 +108,12 @@ final class GroupViewModelTests: XCTestCase {
     // MARK: - groupTitle Tests
 
     func testGroupTitle_WhenGroupInfoLoaded_ReturnsGroupInfoNumber() throws {
-        let json = """
+        let json = Data("""
         {
             "numberOfGroup": "G-123",
             "groupInfoStudentDto": []
         }
-        """.data(using: .utf8)!
+        """.utf8)
         viewModel.groupInfo = try JSONDecoder().decode(UserGroupInfoResponse.self, from: json)
         authService.currentUser = createMockUser(group: "G-456")
         XCTAssertEqual(viewModel.groupTitle, "G-123")
@@ -134,7 +134,7 @@ final class GroupViewModelTests: XCTestCase {
     // MARK: - studentsCount and students Tests
 
     func testStudentsCount_ReturnsArrayCount() throws {
-        let json = """
+        let json = Data("""
         {
             "numberOfGroup": "1",
             "groupInfoStudentDto": [
@@ -142,7 +142,7 @@ final class GroupViewModelTests: XCTestCase {
                 {"position": "C", "fio": "D"}
             ]
         }
-        """.data(using: .utf8)!
+        """.utf8)
         viewModel.groupInfo = try JSONDecoder().decode(UserGroupInfoResponse.self, from: json)
         XCTAssertEqual(viewModel.studentsCount, 2)
         XCTAssertEqual(viewModel.students.count, 2)
@@ -157,12 +157,12 @@ final class GroupViewModelTests: XCTestCase {
     // MARK: - load() state tests
 
     func testLoadIfNeeded_FirstCall_FetchesData() async throws {
-        let json = """
+        let json = Data("""
         {
             "numberOfGroup": "123",
             "groupInfoStudentDto": []
         }
-        """.data(using: .utf8)!
+        """.utf8)
         MockURLProtocol.mockData = json
         MockURLProtocol.mockResponse = HTTPURLResponse(url: URL(string: "https://test.com")!, statusCode: 200, httpVersion: nil, headerFields: nil)
 
@@ -189,12 +189,12 @@ final class GroupViewModelTests: XCTestCase {
 
     func testLoad_WhenFailsAndHasLoadedOnce_SetsStaleDataWarning() async throws {
         // Load once successfully
-        let json = """
+        let json = Data("""
         {
             "numberOfGroup": "123",
             "groupInfoStudentDto": []
         }
-        """.data(using: .utf8)!
+        """.utf8)
         MockURLProtocol.mockData = json
         MockURLProtocol.mockResponse = HTTPURLResponse(url: URL(string: "https://test.com")!, statusCode: 200, httpVersion: nil, headerFields: nil)
         await viewModel.loadIfNeeded()

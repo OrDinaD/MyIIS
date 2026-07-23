@@ -100,7 +100,9 @@ class AppRouter: ObservableObject {
             case .attendance: tab = .attendance
             case .rating: tab = .rating
             case .services: tab = .others
-            case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule, .disciplines, .studyWeeks, .departments, .directory, .support:
+            case .gradebook, .study, .diploma, .group, .headman, .dormitory,
+                 .library, .lms, .schedule, .disciplines, .studyWeeks,
+                 .departments, .directory, .support:
                 tab = .others
                 path.append(section)
             }

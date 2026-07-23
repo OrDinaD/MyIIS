@@ -1,14 +1,14 @@
-import SwiftUI
 import Observation
+import SwiftUI
 
 @Observable
 @MainActor
 final class DepartmentsViewModel {
     var tree: [DepartmentTreeNodeDTO] = []
     var isLoading = false
-    
+
     private let repository = EmployeesRepository.shared
-    
+
     func loadTree() async {
         isLoading = true
         do {
@@ -25,10 +25,10 @@ final class DepartmentsViewModel {
 final class DepartmentDetailViewModel {
     var employees: [EmployeeSummaryDTO] = []
     var isLoading = false
-    
+
     private let repository = EmployeesRepository.shared
     private let apiClient = EmployeesAPIClient()
-    
+
     func loadEmployees(urlId: String) async {
         isLoading = true
         do {

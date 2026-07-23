@@ -102,7 +102,7 @@ private extension PortalNotificationsService {
         let safePageSize = max(1, pageSize)
         let startIndex = min(safePage * safePageSize, demoNotifications.count)
         let endIndex = min(startIndex + safePageSize, demoNotifications.count)
-        let items = Array(demoNotifications[startIndex..<endIndex])
+        let items = Array(demoNotifications[startIndex ..< endIndex])
 
         return PortalNotificationsPage(
             notifications: items,

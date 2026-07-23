@@ -1,0 +1,8 @@
+--swift-version 6.3
+--language-mode 6
+
+--exclude MyIIS/Resources/AppMockData.swift
+
+# Keep formatting mechanical and reviewable. Semantic refactors stay explicit.
+--disable all
+--enable consecutiveBlankLines,consecutiveSpaces,duplicateImports,emptyBraces,linebreakAtEndOfFile,semicolons,sortImports,spaceAroundBraces,spaceAroundBrackets,spaceAroundComments,spaceAroundGenerics,spaceAroundOperators,spaceAroundParens,spaceInsideBraces,spaceInsideBrackets,spaceInsideComments,spaceInsideGenerics,spaceInsideParens,trailingSpace

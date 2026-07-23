@@ -139,7 +139,7 @@ struct UnauthorizedDisciplinesView: View {
             if let course = selectedCourse {
                 Picker("Семестр", selection: $selectedTerm) {
                     Text("Весь курс").tag(nil as Int?)
-                    ForEach(1...(2 * course), id: \.self) { term in
+                    ForEach(1 ... (2 * course), id: \.self) { term in
                         Text("\(term) семестр").tag(Optional(term))
                     }
                 }

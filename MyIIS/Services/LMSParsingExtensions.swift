@@ -20,12 +20,12 @@ extension String {
 
     func matches(pattern: String) -> [RegexMatch] {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) else { return [] }
-        let nsRange = NSRange(self.startIndex..<self.endIndex, in: self)
+        let nsRange = NSRange(self.startIndex ..< self.endIndex, in: self)
         return regex.matches(in: self, range: nsRange).compactMap { match in
             guard let fullRange = Range(match.range(at: 0), in: self) else { return nil }
             var groups: [String] = []
             if match.numberOfRanges > 1 {
-                for idx in 1..<match.numberOfRanges {
+                for idx in 1 ..< match.numberOfRanges {
                     let groupRange = match.range(at: idx)
                     if groupRange.location != NSNotFound, let captureRange = Range(groupRange, in: self) {
                         groups.append(String(self[captureRange]))
@@ -44,7 +44,7 @@ extension String {
 
     func captureGroup(at index: Int, pattern: String) -> String? {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) else { return nil }
-        let nsRange = NSRange(self.startIndex..<self.endIndex, in: self)
+        let nsRange = NSRange(self.startIndex ..< self.endIndex, in: self)
         if let match = regex.firstMatch(in: self, range: nsRange) {
             if match.numberOfRanges > index {
                 let range = match.range(at: index)
@@ -58,7 +58,7 @@ extension String {
 
     func captureGroups(at index: Int, pattern: String) -> [String] {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: .dotMatchesLineSeparators) else { return [] }
-        let nsRange = NSRange(self.startIndex..<self.endIndex, in: self)
+        let nsRange = NSRange(self.startIndex ..< self.endIndex, in: self)
         let matches = regex.matches(in: self, range: nsRange)
         return matches.compactMap { match in
             if match.numberOfRanges > index {
@@ -109,7 +109,7 @@ extension LMSService {
 
             let blockStart = sectionMatch.fullRange.lowerBound
             let blockEnd = idx + 1 < sectionMatches.count ? sectionMatches[idx + 1].fullRange.lowerBound : html.endIndex
-            let sectionBlock = String(html[blockStart..<blockEnd])
+            let sectionBlock = String(html[blockStart ..< blockEnd])
 
             let modules = parseModules(from: sectionBlock, sectionIndex: idx)
             if !modules.isEmpty {
@@ -189,7 +189,7 @@ extension LMSService {
                 let moduleId = (sectionIndex + 1) * 10_000 + cardIndex + 1
                 let start = cardMatch.fullRange.lowerBound
                 let end = cardIndex + 1 < cardMatches.count ? cardMatches[cardIndex + 1].fullRange.lowerBound : source.endIndex
-                let moduleBlock = String(source[start..<end])
+                let moduleBlock = String(source[start ..< end])
 
                 let modName = cardMatch.groups[safe: 0]?
                     .decodingHTMLEntities()

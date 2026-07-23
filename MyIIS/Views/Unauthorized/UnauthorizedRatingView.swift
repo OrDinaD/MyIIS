@@ -575,9 +575,9 @@ private func gradeTint(_ value: Double?) -> Color {
     switch value {
     case 9...:
         return .green
-    case 7..<9:
+    case 7 ..< 9:
         return .mint
-    case 5..<7:
+    case 5 ..< 7:
         return .orange
     default:
         return .red

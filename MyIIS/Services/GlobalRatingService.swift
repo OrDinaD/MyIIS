@@ -180,7 +180,7 @@ final class GlobalRatingService: ObservableObject {
             throw URLError(.badServerResponse)
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard (200 ... 299).contains(httpResponse.statusCode) else {
             throw GlobalRatingServiceError.server(statusCode: httpResponse.statusCode)
         }
 

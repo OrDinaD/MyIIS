@@ -184,7 +184,7 @@ struct TeacherAvatarView: View {
 
     var body: some View {
         Group {
-            if let link = teacher?.photoLink, let url = URL(string: link.replacingOccurrences(of: "http://", with: "https://").replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")) {
+            if let url = teacher?.securePhotoURL {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
@@ -217,7 +217,7 @@ private struct TeacherPhotoPreview: View {
         ZStack(alignment: .topTrailing) {
             Color.black.ignoresSafeArea()
 
-            if let link = teacher?.photoLink, let url = URL(string: link.replacingOccurrences(of: "http://", with: "https://").replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")) {
+            if let url = teacher?.securePhotoURL {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFit()
                 } placeholder: {
@@ -289,5 +289,16 @@ private struct TeacherPhotoPreview: View {
             .padding(24)
             .accessibilityLabel("Закрыть")
         }
+    }
+}
+
+private extension DisciplineEmployee {
+    var securePhotoURL: URL? {
+        guard let photoLink else { return nil }
+
+        let normalizedLink = photoLink
+            .replacingOccurrences(of: "http://", with: "https://")
+            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")
+        return URL(string: normalizedLink)
     }
 }

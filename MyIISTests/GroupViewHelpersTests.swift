@@ -1,13 +1,13 @@
-import XCTest
-import SwiftUI
 @testable import MyIIS
+import SwiftUI
+import XCTest
 
 @MainActor
 final class GroupViewHelpersTests: XCTestCase {
 
     func testOptionalText() {
         let view = GroupView()
-        
+
         XCTAssertEqual(view.optionalText("Hello"), "Hello")
         XCTAssertEqual(view.optionalText("  Hello  \n"), "Hello")
         XCTAssertNil(view.optionalText(""))

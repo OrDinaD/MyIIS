@@ -100,7 +100,7 @@
 "services_schedule_exams" = "Экзамены и консультации";
 "services_schedule_empty_week" = "На выбранной неделе занятий нет";
 "services_schedule_no_future_lessons" = "Занятий больше нет";
-"services_schedule_publication_pending" = "Расписания пока нет. Обычно его публикуют после 15 августа.";
+"services_schedule_publication_pending" = "Расписание на следующий учебный период ещё не опубликовано. Оно появится здесь автоматически после публикации.";
 "services_schedule_empty_title" = "Расписание";
 "services_schedule_empty_subtitle" = "Выберите группу или преподавателя";
 "services_schedule_empty_hint" = "Введите запрос и нажмите «Загрузить расписание»";

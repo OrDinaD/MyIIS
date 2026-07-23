@@ -33,7 +33,7 @@ struct MarkSheetOrderSheet: View {
         selectedEmployee != nil &&
         selectedMarkSheetType != nil &&
         (!reason || useAbsentDate) &&
-        (selectedMarkSheetType?.id != 3 || (1...4).contains(hours)) &&
+        (selectedMarkSheetType?.id != 3 || (1 ... 4).contains(hours)) &&
         !viewModel.isSubmitting
     }
 
@@ -78,7 +78,7 @@ struct MarkSheetOrderSheet: View {
                         DatePicker("Дата", selection: $absentDate, displayedComponents: .date)
                     }
                     if selectedMarkSheetType?.id == 3 {
-                        Stepper("Часы ЛР: \(hours)", value: $hours, in: 1...4)
+                        Stepper("Часы ЛР: \(hours)", value: $hours, in: 1 ... 4)
                     }
                 }
 
@@ -176,7 +176,7 @@ struct CertificateOrderSheet: View {
         if selectedPlace.requiresComment && comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return false
         }
-        return (1...10).contains(count) && !viewModel.isSubmitting
+        return (1 ... 10).contains(count) && !viewModel.isSubmitting
     }
 
     private var provisionPlace: String {
@@ -212,7 +212,7 @@ struct CertificateOrderSheet: View {
 
                     commentControl
 
-                    Stepper("Количество: \(count)", value: $count, in: 1...10)
+                    Stepper("Количество: \(count)", value: $count, in: 1 ... 10)
                 }
 
                 if selectedPlace?.isMilitary == true {
@@ -286,7 +286,7 @@ struct CertificateOrderSheet: View {
             } else {
                 VStack(alignment: .leading, spacing: 6) {
                     TextField(commentPlaceholder, text: $comment, axis: .vertical)
-                        .lineLimit(2...4)
+                        .lineLimit(2 ... 4)
 
                     Text(commentHint)
                         .font(.caption)

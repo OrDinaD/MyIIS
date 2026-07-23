@@ -3,8 +3,8 @@
 //  MyIIS
 //
 
-import SwiftUI
 import SceneKit
+import SwiftUI
 
 // MARK: - 3D Balloons Overlay
 
@@ -73,34 +73,34 @@ struct BalloonsOverlayView: View {
 
         let colors: [UIColor] = [.systemRed, .systemBlue, .systemGreen, .systemOrange, .systemPurple, .systemPink, .systemYellow, .systemTeal]
 
-        for _ in 0..<30 {
+        for _ in 0 ..< 30 {
             let balloon = createBalloonNode(color: colors.randomElement() ?? .systemBlue)
-            
-            let startX = Float.random(in: -7...7)
+
+            let startX = Float.random(in: -7 ... 7)
             let startY = Float.random(in: -15 ... -10)
-            let startZ = Float.random(in: -5...2)
+            let startZ = Float.random(in: -5 ... 2)
             balloon.position = SCNVector3(startX, startY, startZ)
-            
+
             balloon.eulerAngles = SCNVector3(
-                Float.random(in: -0.2...0.2),
-                Float.random(in: -0.5...0.5),
-                Float.random(in: -0.2...0.2)
+                Float.random(in: -0.2 ... 0.2),
+                Float.random(in: -0.5 ... 0.5),
+                Float.random(in: -0.2 ... 0.2)
             )
-            
+
             scene.rootNode.addChildNode(balloon)
-            
-            let endY = CGFloat.random(in: 15...25)
-            let duration = TimeInterval.random(in: 3.5...5.5)
-            let delay = TimeInterval.random(in: 0...1.5)
-            
-            let moveUp = SCNAction.moveBy(x: CGFloat.random(in: -2...2), y: endY - CGFloat(startY), z: CGFloat.random(in: -1...1), duration: duration)
+
+            let endY = CGFloat.random(in: 15 ... 25)
+            let duration = TimeInterval.random(in: 3.5 ... 5.5)
+            let delay = TimeInterval.random(in: 0 ... 1.5)
+
+            let moveUp = SCNAction.moveBy(x: CGFloat.random(in: -2 ... 2), y: endY - CGFloat(startY), z: CGFloat.random(in: -1 ... 1), duration: duration)
             moveUp.timingMode = .easeInEaseOut
-            
+
             // Sway effect via custom action
             let sway = SCNAction.customAction(duration: duration) { node, elapsedTime in
                 node.position.x += Float(sin(elapsedTime * 3)) * 0.02
             }
-            
+
             let group = SCNAction.group([moveUp, sway])
             let sequence = SCNAction.sequence([SCNAction.wait(duration: delay), group, SCNAction.removeFromParentNode()])
             balloon.runAction(sequence)
@@ -109,7 +109,7 @@ struct BalloonsOverlayView: View {
 
     private func createBalloonNode(color: UIColor) -> SCNNode {
         let node = SCNNode()
-        
+
         let sphere = SCNSphere(radius: 1.0)
         let material = SCNMaterial()
         material.diffuse.contents = color
@@ -119,20 +119,20 @@ struct BalloonsOverlayView: View {
         material.clearCoat.contents = 1.0
         material.clearCoatRoughness.contents = 0.1
         sphere.materials = [material]
-        
+
         let bodyNode = SCNNode(geometry: sphere)
         bodyNode.scale = SCNVector3(1, 1.25, 1)
         node.addChildNode(bodyNode)
-        
+
         let cone = SCNCone(topRadius: 0.05, bottomRadius: 0.15, height: 0.25)
         cone.materials = [material]
         let knotNode = SCNNode(geometry: cone)
         knotNode.position = SCNVector3(0, -1.3, 0)
         node.addChildNode(knotNode)
-        
-        let randomScale = Float.random(in: 0.6...1.2)
+
+        let randomScale = Float.random(in: 0.6 ... 1.2)
         node.scale = SCNVector3(randomScale, randomScale, randomScale)
-        
+
         return node
     }
 }
@@ -178,14 +178,14 @@ struct BirthdayBalloonsModifier: ViewModifier {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         var parsedDate = formatter.date(from: dateString)
-        
+
         if parsedDate == nil {
             formatter.dateFormat = "dd.MM.yyyy"
             parsedDate = formatter.date(from: dateString)
         }
-        
+
         guard let date = parsedDate else { return false }
-        
+
         let today = Date()
         let cal = Calendar.current
         return cal.component(.month, from: date) == cal.component(.month, from: today) &&

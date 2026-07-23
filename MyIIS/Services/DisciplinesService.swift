@@ -80,7 +80,7 @@ final class DisciplinesService: ObservableObject {
             throw DisciplinesServiceError.badResponse
         }
 
-        guard (200...299).contains(httpResponse.statusCode) else {
+        guard (200 ... 299).contains(httpResponse.statusCode) else {
             throw DisciplinesServiceError.server(statusCode: httpResponse.statusCode)
         }
 
