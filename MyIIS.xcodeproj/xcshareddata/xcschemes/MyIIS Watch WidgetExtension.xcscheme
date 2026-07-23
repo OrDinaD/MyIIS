@@ -74,7 +74,6 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F52AB8D13008F114002D379E"
             BuildableName = "MyIIS Watch WidgetExtension.appex"
-            BlueprintName = "MyIIS Watch WidgetExtension"
             ReferencedContainer = "container:MyIIS.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

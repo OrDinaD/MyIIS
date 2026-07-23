@@ -7,25 +7,25 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ІІС"
+            "value" : "MyIIS"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "IIS"
+            "value" : "MyIIS"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ИИС"
+            "value" : "MyIIS"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ІІС"
+            "value" : "MyIIS"
           }
         }
       }

@@ -55,7 +55,7 @@
             {
               "appearance" : "dark",
               "value" : {
-                "automatic-gradient" : "extended-srgb:0.38039,0.33333,0.96078,1.00000",
+                "automatic-gradient" : "display-p3:0.09661,0.11071,0.59346,1.00000",
                 "orientation" : {
                   "start" : {
                     "x" : 0.5,
