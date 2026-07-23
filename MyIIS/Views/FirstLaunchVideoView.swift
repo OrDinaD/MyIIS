@@ -77,7 +77,7 @@ struct FirstLaunchVideoView: View {
             }
         }
 
-        player.playImmediately(atRate: 1)
+        player.playImmediately(atRate: 1.5)
     }
 
     private func finishPlayback() {

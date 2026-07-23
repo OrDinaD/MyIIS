@@ -102,6 +102,9 @@ struct FirstLaunchView: View {
         .task(id: introPhase) {
             await advanceIntroIfNeeded()
         }
+        .onTapGesture(count: 3) {
+            skipIntro()
+        }
         .animation(reduceMotion ? nil : .spring(duration: 0.55, bounce: 0.12), value: stage)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.22), value: loginViewModel.errorMessage)
         .reduceMotionSensitive()
@@ -173,8 +176,15 @@ private extension FirstLaunchView {
     func beginVideoHandoff() {
         guard introPhase == .video else { return }
 
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.36)) {
+        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) {
             introPhase = .handoff
+        }
+    }
+
+    func skipIntro() {
+        guard introPhase != .ready else { return }
+        withAnimation(.easeOut(duration: 0.22)) {
+            introPhase = .ready
         }
     }
 
@@ -190,15 +200,15 @@ private extension FirstLaunchView {
 
         switch introPhase {
         case .handoff:
-            try? await Task.sleep(for: .milliseconds(380))
+            try? await Task.sleep(for: .milliseconds(250))
             guard !Task.isCancelled else { return }
-            withAnimation(.spring(duration: 0.72, bounce: 0.12)) {
+            withAnimation(.spring(duration: 0.52, bounce: 0.12)) {
                 introPhase = .moving
             }
         case .moving:
-            try? await Task.sleep(for: .milliseconds(720))
+            try? await Task.sleep(for: .milliseconds(450))
             guard !Task.isCancelled else { return }
-            withAnimation(.easeOut(duration: 0.28)) {
+            withAnimation(.easeOut(duration: 0.22)) {
                 introPhase = .ready
             }
         case .video, .ready:
