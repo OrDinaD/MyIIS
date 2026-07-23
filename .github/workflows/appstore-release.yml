@@ -52,45 +52,6 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep iphoneos
 
-      - name: Resolve release metadata
-        id: metadata
-        shell: bash
-        env:
-          REQUESTED_VERSION: ${{ inputs.release_version }}
-        run: |
-          set -euo pipefail
-
-          BUILD_SETTINGS="$(xcodebuild -showBuildSettings \
-            -project "$PROJECT_PATH" \
-            -target "$SCHEME" \
-            -configuration "$CONFIGURATION")"
-
-          PROJECT_VERSION="$(awk -F ' = ' '/^[[:space:]]*MARKETING_VERSION = / { print $2; exit }' <<< "$BUILD_SETTINGS")"
-          VERSION_PATTERN='^[0-9]+([.][0-9]+){1,2}$'
-
-          if [[ -n "$REQUESTED_VERSION" && "$REQUESTED_VERSION" =~ $VERSION_PATTERN ]]; then
-            VERSION="$REQUESTED_VERSION"
-            VERSION_SOURCE="workflow input"
-          elif [[ "$PROJECT_VERSION" =~ $VERSION_PATTERN ]]; then
-            VERSION="$PROJECT_VERSION"
-            VERSION_SOURCE="Xcode project"
-            if [[ -n "$REQUESTED_VERSION" ]]; then
-              echo "::warning::Ignoring invalid release_version '$REQUESTED_VERSION'; using project version $VERSION."
-            fi
-          else
-            VERSION="$(date -u +%Y.%-m.%-d)"
-            VERSION_SOURCE="UTC date fallback"
-            echo "::warning::Project MARKETING_VERSION '$PROJECT_VERSION' is invalid; using $VERSION."
-          fi
-
-          # A UTC timestamp is monotonic for serialized deploys and does not
-          # depend on a manually maintained CURRENT_PROJECT_VERSION value.
-          BUILD_NUMBER="$(date -u +%Y%m%d%H%M%S)"
-
-          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "marketing_version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Resolved version $VERSION from $VERSION_SOURCE; build $BUILD_NUMBER."
-
       - name: Verify upload credentials
         id: credentials
         shell: bash
@@ -136,6 +97,46 @@ jobs:
           printf '%s' "$APPSTORE_API_PRIVATE_KEY" | sed $'s/\\\\n/\\\n/g' > "$KEY_PATH"
           chmod 600 "$KEY_PATH"
           echo "key_path=$KEY_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve release metadata
+        id: metadata
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.release_version }}
+        run: |
+          set -euo pipefail
+
+          BUILD_SETTINGS="$(xcodebuild -showBuildSettings \
+            -project "$PROJECT_PATH" \
+            -target "$SCHEME" \
+            -configuration "$CONFIGURATION")"
+          PROJECT_VERSION="$(awk -F ' = ' '/^[[:space:]]*MARKETING_VERSION = / { print $2; exit }' <<< "$BUILD_SETTINGS")"
+
+          if [[ "${{ steps.credentials.outputs.should_upload }}" == "true" ]]; then
+            VERSION_JSON="$(python3 .github/scripts/resolve_app_store_version.py \
+              --project-version "$PROJECT_VERSION" \
+              --requested-version "$REQUESTED_VERSION" \
+              --bundle-id "$BUNDLE_ID" \
+              --key-id "$APPSTORE_API_KEY_ID" \
+              --issuer-id "$APPSTORE_API_ISSUER_ID" \
+              --key-path "${{ steps.asc_key.outputs.key_path }}")"
+            VERSION="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["version"])' <<< "$VERSION_JSON")"
+            VERSION_SOURCE="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["source"])' <<< "$VERSION_JSON")"
+          elif [[ -n "$REQUESTED_VERSION" ]]; then
+            VERSION="$REQUESTED_VERSION"
+            VERSION_SOURCE="workflow input"
+          else
+            VERSION="$PROJECT_VERSION"
+            VERSION_SOURCE="Xcode project"
+          fi
+
+          # A UTC timestamp is monotonic for serialized deploys and does not
+          # depend on a manually maintained CURRENT_PROJECT_VERSION value.
+          BUILD_NUMBER="$(date -u +%Y%m%d%H%M%S)"
+
+          echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "marketing_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Resolved version $VERSION from $VERSION_SOURCE; build $BUILD_NUMBER."
 
       - name: Import reusable signing certificate
         id: signing
