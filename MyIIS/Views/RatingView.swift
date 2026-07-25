@@ -201,25 +201,29 @@ struct RatingView: View {
     @ViewBuilder
     private var emptyDisciplinesRatingView: some View {
         Section {
-            if viewModel.isRatingPendingForNewSemester {
-                ContentUnavailableView(
-                    NSLocalizedString("rating_semester_completed_title", comment: ""),
-                    systemImage: "hourglass",
-                    description: Text(NSLocalizedString("rating_semester_completed_desc", comment: ""))
-                )
-            } else if viewModel.isGradebookUnavailable {
-                ContentUnavailableView(
-                    NSLocalizedString("rating_disciplines_unavailable_title", comment: ""),
-                    systemImage: "book.closed",
-                    description: Text(NSLocalizedString("rating_disciplines_unavailable_desc", comment: ""))
-                )
-            } else {
-                ContentUnavailableView(
-                    NSLocalizedString("rating_disciplines_not_found_title", comment: ""),
-                    systemImage: "list.bullet.rectangle",
-                    description: Text(NSLocalizedString("rating_disciplines_not_found_desc", comment: ""))
-                )
+            Group {
+                if viewModel.isRatingPendingForNewSemester {
+                    ContentUnavailableView(
+                        NSLocalizedString("rating_semester_completed_title", comment: ""),
+                        systemImage: "hourglass",
+                        description: Text(NSLocalizedString("rating_semester_completed_desc", comment: ""))
+                    )
+                } else if viewModel.isGradebookUnavailable {
+                    ContentUnavailableView(
+                        NSLocalizedString("rating_disciplines_unavailable_title", comment: ""),
+                        systemImage: "book.closed",
+                        description: Text(NSLocalizedString("rating_disciplines_unavailable_desc", comment: ""))
+                    )
+                } else {
+                    ContentUnavailableView(
+                        NSLocalizedString("rating_disciplines_not_found_title", comment: ""),
+                        systemImage: "list.bullet.rectangle",
+                        description: Text(NSLocalizedString("rating_disciplines_not_found_desc", comment: ""))
+                    )
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 8)
         }
     }
 
