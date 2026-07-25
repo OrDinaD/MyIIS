@@ -386,12 +386,20 @@ final class ServiceEndpointsAPI {
     }
 
     func fetchLibraryBooks() async throws -> [ServiceJSONObject] {
-        try await decodeJSONArray(path: "library/books")
+        do {
+            return try await decodeJSONArray(path: "library/books")
+        } catch let APIError.serverError(statusCode, _) where statusCode == 404 {
+            return []
+        }
     }
 
     func fetchLibraryNews() async throws -> [LibraryNewsEntry] {
-        let data = try await fetchData(path: "library/news")
-        return try JSONDecoder().decode([LibraryNewsEntry].self, from: data)
+        do {
+            let data = try await fetchData(path: "library/news")
+            return try JSONDecoder().decode([LibraryNewsEntry].self, from: data)
+        } catch let APIError.serverError(statusCode, _) where statusCode == 404 {
+            return []
+        }
     }
 
     func fetchAnnouncements() async throws -> [ServiceJSONObject] {
