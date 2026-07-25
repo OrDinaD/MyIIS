@@ -177,6 +177,8 @@ struct UnauthorizedDisciplinesView: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
         } else if selectedFacultyId == nil && !formService.isLoadingFaculties {
             Section {
@@ -185,6 +187,8 @@ struct UnauthorizedDisciplinesView: View {
                 } description: {
                     Text("После выбора появятся специальности, курсы, семестры и список дисциплин IIS.")
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
         } else if selectedFacultyId != nil,
                   selectedSpecialityId == nil,
@@ -196,6 +200,8 @@ struct UnauthorizedDisciplinesView: View {
                     systemImage: "list.bullet.rectangle",
                     description: Text("Для выбранного факультета IIS не вернул список специальностей.")
                 )
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
         } else if selectedSpecialityId != nil,
                   selectedCourse == nil,
@@ -207,6 +213,8 @@ struct UnauthorizedDisciplinesView: View {
                     systemImage: "calendar.badge.exclamationmark",
                     description: Text("Для выбранной специальности IIS не вернул доступные курсы.")
                 )
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
         }
     }
@@ -248,6 +256,8 @@ struct UnauthorizedDisciplinesView: View {
                         systemImage: "list.bullet.clipboard",
                         description: Text("IIS не вернул дисциплины для выбранных параметров. Попробуйте другой семестр или учебный план.")
                     )
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 8)
                 } else {
                     ForEach(service.disciplines) { discipline in
                         DisciplineRow(discipline: discipline)

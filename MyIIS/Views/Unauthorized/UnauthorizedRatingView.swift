@@ -157,6 +157,8 @@ struct UnauthorizedRatingView: View {
                     }
                     .buttonStyle(.borderedProminent)
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
         } else if selectedFacultyId == nil && !service.isLoadingFaculties {
             Section {
@@ -165,6 +167,8 @@ struct UnauthorizedRatingView: View {
                 } description: {
                     Text("После выбора факультета появятся специальности, курсы и общий рейтинг группы.")
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
         } else if selectedFacultyId != nil,
                   selectedSpecialityId == nil,
@@ -176,6 +180,8 @@ struct UnauthorizedRatingView: View {
                     systemImage: "list.bullet.rectangle",
                     description: Text("Для выбранного факультета IIS не вернул список специальностей.")
                 )
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
         } else if selectedSpecialityId != nil,
                   selectedCourse == nil,
@@ -187,6 +193,8 @@ struct UnauthorizedRatingView: View {
                     systemImage: "calendar.badge.exclamationmark",
                     description: Text("Для выбранной специальности IIS не вернул доступные курсы.")
                 )
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 8)
             }
         }
     }
@@ -221,6 +229,8 @@ struct UnauthorizedRatingView: View {
                     LoadingRow(title: "Загрузка рейтинга...")
                 } else if service.ratingEntries.isEmpty, service.errorMessage == nil {
                     ContentUnavailableView("Нет данных", systemImage: "chart.bar.doc.horizontal", description: Text("IIS не вернул студентов для выбранного курса."))
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.vertical, 8)
                 } else {
                     ForEach(Array(service.ratingEntries.enumerated()), id: \.element.id) { index, entry in
                         Button {
