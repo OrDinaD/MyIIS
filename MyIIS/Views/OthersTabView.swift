@@ -418,7 +418,7 @@ private extension OthersTabView {
         switch destination {
         case .announcements, .penalties, .activities, .about:
             infoDestinationView(for: destination)
-        case .disciplines, .studyWeeks, .departments, .directory:
+        case .disciplines, .studyWeeks, .departments, .directory, .support:
             openDestinationView(for: destination)
         default:
             studyOrResourceDestinationView(for: destination)
