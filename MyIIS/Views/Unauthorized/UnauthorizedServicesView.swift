@@ -52,9 +52,9 @@ struct UnauthorizedServicesView: View {
                     }
                 }
 
-                Section("Документы и техподдержка") {
+                Section(NSLocalizedString("services_section_open", comment: "")) {
                     NavigationLink(destination: SupportView()) {
-                        serviceRow(icon: "wrench.and.screwdriver.fill", title: "Техническая поддержка")
+                        serviceRow(icon: "wrench.and.screwdriver.fill", title: NSLocalizedString("services_item_support", comment: ""))
                     }
                 }
 

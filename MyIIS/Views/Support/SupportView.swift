@@ -86,7 +86,7 @@ struct SupportView: View {
                 }
             }
         }
-        .navigationTitle("Техническая поддержка")
+        .navigationTitle(NSLocalizedString("services_item_support", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .overlay {
             if downloader.isDownloading {

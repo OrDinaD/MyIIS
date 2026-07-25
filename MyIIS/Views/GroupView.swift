@@ -24,7 +24,7 @@ struct GroupView: View {
 
                 if let curator = viewModel.groupInfo?.studentGroupCuratorDto {
                     curatorCard(curator)
-                        .padding(.horizontal, 8)
+                        .padding(.horizontal, 16)
                 }
             }
             .padding(.bottom, 28)
@@ -136,6 +136,7 @@ struct GroupView: View {
                     contactRow(icon: "envelope.fill", text: email)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 

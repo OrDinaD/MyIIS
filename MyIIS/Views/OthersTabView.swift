@@ -56,7 +56,7 @@ private enum ServicesDestination: String, Identifiable, Hashable {
         case .studyWeeks: return NSLocalizedString("services_item_study_weeks", comment: "")
         case .departments: return NSLocalizedString("services_item_departments", comment: "")
         case .directory: return NSLocalizedString("services_item_directory", comment: "")
-        case .support: return "Техническая поддержка"
+        case .support: return NSLocalizedString("services_item_support", comment: "")
         }
     }
 

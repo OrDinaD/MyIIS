@@ -412,6 +412,7 @@
 "services_item_study_weeks" = "Study Weeks";
 "services_item_departments" = "Departments";
 "services_item_directory" = "Directory";
+"services_item_support" = "Technical Support";
 "profile_photo_accessibility" = "Profile photo";
 "profile_photo_open_hint" = "Opens the photo full screen";
 "profile_photo_open_action" = "Open photo";

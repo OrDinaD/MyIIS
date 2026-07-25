@@ -412,6 +412,7 @@
 "services_item_study_weeks" = "Учебные недели";
 "services_item_departments" = "Подразделения";
 "services_item_directory" = "Справочник";
+"services_item_support" = "Техническая поддержка";
 "profile_photo_accessibility" = "Фото профиля";
 "profile_photo_open_hint" = "Открывает фото на весь экран";
 "profile_photo_open_action" = "Открыть фото";
