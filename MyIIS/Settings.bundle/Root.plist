@@ -40,6 +40,25 @@
 				<string>Общежитие</string>
 				<string>Библиотека</string>
 			</array>
+			<key>ShortTitles</key>
+			<array>
+				<string>Профиль</string>
+				<string>Посещаемость</string>
+				<string>Рейтинг</string>
+				<string>Сервисы (Главная)</string>
+				<string>СЭО (Главная)</string>
+				<string>--- Учеба ---</string>
+				<string>Зачетка</string>
+				<string>Учебный план</string>
+				<string>СЭО (Сервис)</string>
+				<string>Расписание</string>
+				<string>Диплом</string>
+				<string>Моя группа</string>
+				<string>Староста</string>
+				<string>--- Ресурсы ---</string>
+				<string>Общежитие</string>
+				<string>Библиотека</string>
+			</array>
 			<key>Values</key>
 			<array>
 				<string>profile</string>
