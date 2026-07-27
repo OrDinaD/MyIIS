@@ -19,6 +19,7 @@ struct ScheduleServiceView: View {
     }
 
     @State private var isSearchSheetPresented = false
+    @State private var showsAllGroups = false
 
     var body: some View {
         ScrollView {
@@ -26,10 +27,6 @@ struct ScheduleServiceView: View {
                 if usesLocalJSONSchedule {
                     LocalScheduleView(viewModel: localScheduleViewModel)
                 } else {
-                    if viewModel.schedule == nil, !viewModel.isLoading {
-                        searchBlock()
-                    }
-
                     if viewModel.dataSource == .api, viewModel.schedule != nil {
                         LazyVStack(alignment: .leading, spacing: 14) {
                             if viewModel.isShowingStaleDataWarning {
@@ -261,13 +258,17 @@ struct ScheduleServiceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .hiddenNavigationBarBackground()
         .toolbar {
-            if viewModel.schedule != nil || usesLocalJSONSchedule {
-                if viewModel.dataSource == .api, viewModel.schedule != nil {
+            if viewModel.dataSource == .api || usesLocalJSONSchedule {
+                if viewModel.dataSource == .api {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
+                            showsAllGroups = false
                             isSearchSheetPresented = true
                         } label: {
-                            Label("Поиск расписания", systemImage: "magnifyingglass")
+                            Label(
+                                NSLocalizedString("services_schedule_search_title", value: "Поиск расписания", comment: ""),
+                                systemImage: "magnifyingglass"
+                            )
                         }
                     }
                 }
@@ -392,7 +393,8 @@ struct ScheduleServiceView: View {
                 .onSubmit(of: .search) {
                     Task { await viewModel.loadByQuery() }
                 }
-                .navigationTitle("Поиск расписания")
+                .task { await viewModel.reloadDirectory() }
+                .navigationTitle(NSLocalizedString("services_schedule_search_title", value: "Поиск расписания", comment: ""))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -414,7 +416,7 @@ struct ScheduleServiceView: View {
     }
 
     private var availableDisplayModes: [ScheduleDisplayMode] {
-        enableBetaSections ? ScheduleDisplayMode.allCases : [.byDay, .exams]
+        ScheduleDisplayMode.allCases
     }
 
     private func enforceBetaScheduleOptions() {
@@ -468,25 +470,16 @@ struct ScheduleServiceView: View {
                     }
             }
 
-            Button {
-                Task { await viewModel.loadByQuery() }
-            } label: {
-                Label(NSLocalizedString("services_schedule_load_button", comment: ""), systemImage: "arrow.down.circle.fill")
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
             if viewModel.mode == .group {
                 ScheduleSuggestionsView(
                     groups: viewModel.filteredGroups,
                     accountGroupName: viewModel.accountGroupName,
-                    pinnedGroupNames: viewModel.pinnedGroupNames,
+                    showsAllGroups: showsAllGroups,
                     onSelect: { group in
                         Task { await viewModel.loadGroup(group.name) }
                     },
-                    onTogglePin: { group in
-                        viewModel.togglePinnedGroup(group)
+                    onShowAllGroups: {
+                        showsAllGroups = true
                     }
                 )
             } else {

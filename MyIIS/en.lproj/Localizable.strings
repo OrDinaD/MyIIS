@@ -91,6 +91,9 @@
 "services_item_schedule" = "Schedule";
 "services_item_about" = "About App";
 "services_schedule_title" = "BSUIR Schedule";
+"services_schedule_search_title" = "Search schedule";
+"services_schedule_show_more_groups" = "Show other groups";
+"services_schedule_course_number" = "Course %d";
 "services_schedule_subtitle" = "Search by group or teacher";
 "services_schedule_mode_group" = "Group";
 "services_schedule_mode_teacher" = "Teacher";
@@ -582,4 +585,3 @@
 "first_launch_server_unavailable" = "BSUIR servers are unavailable";
 "first_launch_server_checking" = "Checking BSUIR servers";
 "first_launch_server_unavailable_message" = "BSUIR servers are not responding, so signing in is temporarily unavailable. You can continue without an account.";
-

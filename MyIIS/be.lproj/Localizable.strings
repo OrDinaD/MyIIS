@@ -91,6 +91,9 @@
 "services_item_schedule" = "Расклад";
 "services_item_about" = "Пра праграму";
 "services_schedule_title" = "Расклад БДУІР";
+"services_schedule_search_title" = "Пошук раскладу";
+"services_schedule_show_more_groups" = "Паказаць іншыя групы";
+"services_schedule_course_number" = "%d курс";
 "services_schedule_subtitle" = "Пошук па групе або выкладчыку";
 "services_schedule_mode_group" = "Група";
 "services_schedule_mode_teacher" = "Выкладчык";

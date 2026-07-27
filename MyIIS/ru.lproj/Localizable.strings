@@ -91,6 +91,9 @@
 "services_item_schedule" = "Расписание";
 "services_item_about" = "О приложении";
 "services_schedule_title" = "Расписание БГУИР";
+"services_schedule_search_title" = "Поиск расписания";
+"services_schedule_show_more_groups" = "Показать другие группы";
+"services_schedule_course_number" = "%d курс";
 "services_schedule_subtitle" = "Поиск по группе или преподавателю";
 "services_schedule_mode_group" = "Группа";
 "services_schedule_mode_teacher" = "Преподаватель";
@@ -586,4 +589,3 @@
 "first_launch_server_unavailable" = "Серверы БГУИР недоступны";
 "first_launch_server_checking" = "Проверяем серверы БГУИР";
 "first_launch_server_unavailable_message" = "Серверы БГУИР сейчас не отвечают, поэтому войти пока не получится. Можно продолжить без аккаунта.";
-

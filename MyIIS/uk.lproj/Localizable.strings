@@ -91,6 +91,9 @@
 "services_item_schedule" = "Розклад";
 "services_item_about" = "Про програму";
 "services_schedule_title" = "Розклад БДУІР";
+"services_schedule_search_title" = "Пошук розкладу";
+"services_schedule_show_more_groups" = "Показати інші групи";
+"services_schedule_course_number" = "%d курс";
 "services_schedule_subtitle" = "Пошук за групою або викладачем";
 "services_schedule_mode_group" = "Група";
 "services_schedule_mode_teacher" = "Викладач";
@@ -574,4 +577,3 @@
 "first_launch_server_unavailable" = "Сервери БДУІР недоступні";
 "first_launch_server_checking" = "Перевіряємо сервери БДУІР";
 "first_launch_server_unavailable_message" = "Сервери БДУІР зараз не відповідають, тому увійти поки не вийде. Можна продовжити без облікового запису.";
-

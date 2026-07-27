@@ -3,103 +3,78 @@ import SwiftUI
 struct ScheduleSuggestionsView: View {
     let groups: [StudyGroup]
     let accountGroupName: String?
-    let pinnedGroupNames: [String]
+    let showsAllGroups: Bool
     let onSelect: (StudyGroup) -> Void
-    let onTogglePin: (StudyGroup) -> Void
+    let onShowAllGroups: () -> Void
 
     var body: some View {
         if groups.isEmpty {
             ServiceEmptyState(text: NSLocalizedString("services_schedule_groups_empty", comment: ""))
         } else {
             VStack(spacing: 8) {
-                ForEach(groups.prefix(12), id: \.name) { group in
-                    groupRow(group)
+                ForEach(visibleGroups, id: \.name) { group in
+                    Button {
+                        onSelect(group)
+                    } label: {
+                        groupRow(group)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if !showsAllGroups, groups.count > visibleGroups.count {
+                    Button {
+                        onShowAllGroups()
+                    } label: {
+                        Label(
+                            NSLocalizedString("services_schedule_show_more_groups", value: "Показать другие группы", comment: ""),
+                            systemImage: "person.2"
+                        )
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.bordered)
                 }
             }
         }
+    }
+
+    private var visibleGroups: ArraySlice<StudyGroup> {
+        groups.prefix(showsAllGroups ? 30 : 1)
     }
 
     private func groupRow(_ group: StudyGroup) -> some View {
         HStack(spacing: 10) {
-            Button {
-                onSelect(group)
-            } label: {
-                groupLabel(group)
-            }
-            .buttonStyle(.plain)
-
-            pinButton(for: group)
-        }
-        .padding(10)
-        .background(
-            Color(uiColor: .secondarySystemGroupedBackground),
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(.white.opacity(0.08))
-        }
-    }
-
-    private func groupLabel(_ group: StudyGroup) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: groupIcon(for: group))
+            Image(systemName: group.name == accountGroupName ? "person.crop.circle.badge.checkmark" : "person.2.fill")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(group.name == accountGroupName ? .green : .blue)
                 .frame(width: 28, height: 28)
 
-            groupText(group)
-        }
-        .contentShape(Rectangle())
-    }
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(group.name)
+                        .font(.headline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .monospacedDigit()
 
-    private func groupText(_ group: StudyGroup) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 6) {
-                Text(group.name)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .monospacedDigit()
-
-                if group.name == accountGroupName {
-                    Text(NSLocalizedString("services_schedule_my_group", comment: ""))
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.green)
+                    if group.name == accountGroupName {
+                        Text(NSLocalizedString("services_schedule_my_group", comment: ""))
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.green)
+                    }
                 }
-            }
 
-            if let speciality = group.specialityName.nilIfBlank {
-                Text(speciality)
+                Text(group.detailsText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
+
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.tertiary)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func pinButton(for group: StudyGroup) -> some View {
-        Button {
-            onTogglePin(group)
-        } label: {
-            Image(systemName: isPinned(group) ? "pin.fill" : "pin")
-                .font(.callout.weight(.semibold))
-                .foregroundStyle(isPinned(group) ? .orange : .secondary)
-                .frame(width: 34, height: 34)
-                .background(.thinMaterial, in: Circle())
-        }
-        .buttonStyle(.borderless)
-        .accessibilityLabel(isPinned(group) ? "Открепить группу" : "Закрепить группу")
-    }
-
-    private func isPinned(_ group: StudyGroup) -> Bool {
-        pinnedGroupNames.contains(group.name)
-    }
-
-    private func groupIcon(for group: StudyGroup) -> String {
-        if group.name == accountGroupName { return "person.crop.circle.badge.checkmark" }
-        if isPinned(group) { return "pin.circle.fill" }
-        return "person.2.fill"
+        .padding(10)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -121,23 +96,17 @@ struct ScheduleTeacherSuggestionsView: View {
                     } label: {
                         HStack(spacing: 12) {
                             teacherPhoto(for: employee)
-
                             Text(employee.displayName)
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(.primary)
                                 .lineLimit(2)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-
                             Image(systemName: "chevron.right")
                                 .font(.caption.weight(.bold))
                                 .foregroundStyle(.tertiary)
                         }
                         .padding(10)
                         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .strokeBorder(.white.opacity(0.08))
-                        }
                     }
                     .buttonStyle(.plain)
                 }
@@ -168,6 +137,19 @@ struct ScheduleTeacherSuggestionsView: View {
                 .font(.callout.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+private extension StudyGroup {
+    var detailsText: String {
+        let speciality = [specialityAbbrev.nilIfBlank, specialityName.nilIfBlank]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+        let faculty = [facultyAbbrev.nilIfBlank, facultyName.nilIfBlank]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+        let courseText = course.map { String(format: NSLocalizedString("services_schedule_course_number", value: "%d курс", comment: ""), $0) }
+        return [faculty.nilIfBlank, speciality.nilIfBlank, courseText].compactMap { $0 }.joined(separator: " • ")
     }
 }
 

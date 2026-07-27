@@ -141,6 +141,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     @Published var groups: [StudyGroup] = []
     @Published var employees: [ScheduleEmployeeDirectoryEntry] = []
     @Published var schedule: PublicScheduleResponse?
+    @Published private(set) var selectedEmployee: ScheduleEmployeeDirectoryEntry?
     @Published var currentWeekNumber: Int?
     @Published var weekFilter: StudyWeekFilter = .all
     @Published var displayMode: ScheduleDisplayMode = .byDay {
@@ -324,8 +325,6 @@ final class ScheduleServiceViewModel: ObservableObject {
         guard !hasLoadedInitialData else { return }
         hasLoadedInitialData = true
 
-        await loadDirectoryIfNeeded(force: false)
-
         if let group = accountGroupName {
             await loadGroup(group)
             return
@@ -410,6 +409,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     func loadGroup(_ groupNumber: String) async {
         if isLoading { return }
 
+        selectedEmployee = nil
         let cachedSchedule = api.cachedGroupSchedule(groupNumber: groupNumber)
         let restoredCachedSchedule = cachedSchedule != nil
         if let cachedSchedule {
@@ -438,6 +438,7 @@ final class ScheduleServiceViewModel: ObservableObject {
         }
         if isLoading { return }
 
+        selectedEmployee = employee
         let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId)
         let restoredCachedSchedule = cachedSchedule != nil
         if let cachedSchedule {
@@ -1426,6 +1427,9 @@ extension ScheduleServiceViewModel {
         }
         if let employee = schedule?.employee?.fullName.nilIfBlank {
             return employee
+        }
+        if let selectedEmployee {
+            return selectedEmployee.displayName
         }
         return NSLocalizedString("services_schedule_title", comment: "")
     }
