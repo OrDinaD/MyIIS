@@ -142,14 +142,12 @@ struct ScheduleTeacherSuggestionsView: View {
 
 private extension StudyGroup {
     var detailsText: String {
-        let speciality = [specialityAbbrev.nilIfBlank, specialityName.nilIfBlank]
+        let courseText = course.map {
+            String(format: NSLocalizedString("services_schedule_course_number", value: "%d курс", comment: ""), $0)
+        }
+        return [facultyAbbrev.nilIfBlank, specialityAbbrev.nilIfBlank, courseText]
             .compactMap { $0 }
-            .joined(separator: " · ")
-        let faculty = [facultyAbbrev.nilIfBlank, facultyName.nilIfBlank]
-            .compactMap { $0 }
-            .joined(separator: " · ")
-        let courseText = course.map { String(format: NSLocalizedString("services_schedule_course_number", value: "%d курс", comment: ""), $0) }
-        return [faculty.nilIfBlank, speciality.nilIfBlank, courseText].compactMap { $0 }.joined(separator: " • ")
+            .joined(separator: " • ")
     }
 }
 

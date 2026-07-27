@@ -53,6 +53,10 @@ struct ScheduleServiceView: View {
                                 }
                             }
 
+                            if let employee = viewModel.selectedEmployee {
+                                ScheduleTeacherHeader(employee: employee)
+                            }
+
                             switch viewModel.displayMode {
                             case .continuous:
                                 if !viewModel.pastContinuousDays.isEmpty {
@@ -408,6 +412,9 @@ struct ScheduleServiceView: View {
             .onChange(of: viewModel.schedule?.group?.name ?? viewModel.schedule?.employee?.fullName) {
                 isSearchSheetPresented = false
             }
+            .onChange(of: viewModel.selectedEmployee?.id) {
+                isSearchSheetPresented = false
+            }
         }
     }
 
@@ -522,6 +529,77 @@ private extension ScheduleServiceView {
             return .secondary
         }
         return Calendar.current.isDateInTomorrow(day.date) ? .red : .primary
+    }
+}
+
+private struct ScheduleTeacherHeader: View {
+    let employee: ScheduleEmployeeDirectoryEntry
+    @State private var isPhotoPresented = false
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button {
+                isPhotoPresented = true
+            } label: {
+                avatar
+                    .frame(width: 56, height: 56)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(employee.displayName)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(employee.displayName)
+                    .font(.headline)
+                if let degree = employee.degree.nilIfBlank {
+                    Text(degree)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                if let rank = employee.rank.nilIfBlank {
+                    Text(rank)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .sheet(isPresented: $isPhotoPresented) {
+            avatar
+                .scaledToFit()
+                .padding()
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    @ViewBuilder
+    private var avatar: some View {
+        if let url = photoURL {
+            CachedAsyncImage(url: url, maxPixelSize: 360) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                placeholder
+            }
+        } else {
+            placeholder
+        }
+    }
+
+    private var photoURL: URL? {
+        guard let link = employee.photoLink.nilIfBlank else { return nil }
+        return URL(string: link
+            .replacingOccurrences(of: "http://", with: "https://")
+            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
+    }
+
+    private var placeholder: some View {
+        ZStack {
+            Circle().fill(Color(uiColor: .tertiarySystemGroupedBackground))
+            Image(systemName: "person.fill")
+                .foregroundStyle(.secondary)
+        }
     }
 }
 
