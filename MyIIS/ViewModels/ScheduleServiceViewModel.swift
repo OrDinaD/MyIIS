@@ -10,7 +10,6 @@ enum ScheduleLookupMode: String, CaseIterable {
 enum ScheduleDataSource: String, CaseIterable, Identifiable {
     case api
     case localJSON
-    case localExcel
 
     var id: String { rawValue }
 
@@ -20,8 +19,6 @@ enum ScheduleDataSource: String, CaseIterable, Identifiable {
             return NSLocalizedString("local_schedule_source_api", comment: "")
         case .localJSON:
             return NSLocalizedString("local_schedule_source_json", comment: "")
-        case .localExcel:
-            return NSLocalizedString("local_schedule_source_excel", comment: "")
         }
     }
 
@@ -31,8 +28,6 @@ enum ScheduleDataSource: String, CaseIterable, Identifiable {
             return "network"
         case .localJSON:
             return "curlybraces.square"
-        case .localExcel:
-            return "doc.text.image"
         }
     }
 }

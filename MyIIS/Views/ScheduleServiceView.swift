@@ -8,6 +8,7 @@ import SwiftUI
 struct ScheduleServiceView: View {
     @StateObject private var viewModel = ScheduleServiceViewModel()
     @StateObject private var localScheduleViewModel = LocalScheduleViewModel()
+    @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @State private var scheduleReportURL: URL?
     @State private var selectedExamLesson: DisciplineSchedule?
 
@@ -22,10 +23,8 @@ struct ScheduleServiceView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 14) {
-                if viewModel.dataSource == .localJSON {
+                if usesLocalJSONSchedule {
                     LocalScheduleView(viewModel: localScheduleViewModel)
-                } else if viewModel.dataSource == .localExcel {
-                    localExcelBlock()
                 } else {
                     if viewModel.schedule == nil, !viewModel.isLoading {
                         searchBlock()
@@ -262,7 +261,7 @@ struct ScheduleServiceView: View {
         .navigationBarTitleDisplayMode(.inline)
         .hiddenNavigationBarBackground()
         .toolbar {
-            if viewModel.schedule != nil || viewModel.dataSource != .api {
+            if viewModel.schedule != nil || usesLocalJSONSchedule {
                 if viewModel.dataSource == .api, viewModel.schedule != nil {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -275,28 +274,29 @@ struct ScheduleServiceView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Picker(
-                            "Источник данных",
-                            selection: $viewModel.dataSource
-                        ) {
-                            ForEach(ScheduleDataSource.allCases) { source in
-                                Label(source.localizedTitle, systemImage: source.icon).tag(source)
+                        if enableBetaSections {
+                            Picker("Источник данных", selection: $viewModel.dataSource) {
+                                ForEach(ScheduleDataSource.allCases) { source in
+                                    Label(source.localizedTitle, systemImage: source.icon).tag(source)
+                                }
                             }
                         }
 
                         if viewModel.dataSource == .api, viewModel.schedule != nil {
-                            Divider()
+                            if enableBetaSections {
+                                Divider()
+                            }
 
                             Picker(
                                 NSLocalizedString("services_schedule_display_mode", comment: ""),
                                 selection: $viewModel.displayMode
                             ) {
-                                ForEach(ScheduleDisplayMode.allCases) { mode in
+                                ForEach(availableDisplayModes) { mode in
                                     Label(mode.localizedTitle, systemImage: mode.icon).tag(mode)
                                 }
                             }
 
-                            if viewModel.showsSubgroupPicker {
+                            if enableBetaSections, viewModel.showsSubgroupPicker {
                                 Divider()
                                 Picker(
                                     NSLocalizedString("services_schedule_subgroup_filter", comment: ""),
@@ -308,22 +308,24 @@ struct ScheduleServiceView: View {
                                 }
                             }
 
-                            Divider()
-                            Button {
-                                Task {
-                                    scheduleReportURL = await viewModel.downloadScheduleReport()
+                            if enableBetaSections {
+                                Divider()
+                                Button {
+                                    Task {
+                                        scheduleReportURL = await viewModel.downloadScheduleReport()
+                                    }
+                                } label: {
+                                    Label(NSLocalizedString("services_schedule_report_download", comment: ""), systemImage: "square.and.arrow.down")
                                 }
-                            } label: {
-                                Label(NSLocalizedString("services_schedule_report_download", comment: ""), systemImage: "square.and.arrow.down")
-                            }
-                            .disabled(viewModel.isDownloadingReport)
+                                .disabled(viewModel.isDownloadingReport)
 
-                            Button {
-                                Task { await viewModel.enableExamRemindersFromUserAction() }
-                            } label: {
-                                Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
+                                Button {
+                                    Task { await viewModel.enableExamRemindersFromUserAction() }
+                                } label: {
+                                    Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
+                                }
+                                .disabled(viewModel.filteredExams.isEmpty)
                             }
-                            .disabled(viewModel.filteredExams.isEmpty)
                         }
                     } label: {
                         Label(NSLocalizedString("services_schedule_actions", comment: ""), systemImage: "ellipsis.circle")
@@ -339,7 +341,13 @@ struct ScheduleServiceView: View {
                     .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
             }
         }
-        .task { await viewModel.loadInitialDataIfNeeded() }
+        .task {
+            enforceBetaScheduleOptions()
+            await viewModel.loadInitialDataIfNeeded()
+        }
+        .onChange(of: enableBetaSections) { _, _ in
+            enforceBetaScheduleOptions()
+        }
         .refreshable { await viewModel.refreshData() }
         .quickLookPreview($scheduleReportURL)
         .sheet(item: $selectedExamLesson) { lesson in
@@ -401,6 +409,26 @@ struct ScheduleServiceView: View {
         }
     }
 
+    private var usesLocalJSONSchedule: Bool {
+        enableBetaSections && viewModel.dataSource == .localJSON
+    }
+
+    private var availableDisplayModes: [ScheduleDisplayMode] {
+        enableBetaSections ? ScheduleDisplayMode.allCases : [.byDay, .exams]
+    }
+
+    private func enforceBetaScheduleOptions() {
+        guard !enableBetaSections else { return }
+
+        if viewModel.dataSource == .localJSON {
+            viewModel.dataSource = .api
+        }
+
+        if viewModel.displayMode == .continuous {
+            viewModel.displayMode = .byDay
+        }
+    }
+
     @ViewBuilder
     private func searchBlock(inSheet: Bool = false) -> some View {
         if inSheet {
@@ -425,13 +453,6 @@ struct ScheduleServiceView: View {
                 Text(NSLocalizedString("services_schedule_mode_teacher", comment: "")).tag(ScheduleLookupMode.teacher)
             }
             .pickerStyle(.segmented)
-
-            if viewModel.mode == .group {
-                MilitaryScheduleImportButton(
-                    viewModel: viewModel,
-                    localScheduleViewModel: localScheduleViewModel
-                )
-            }
 
             if showTextField {
                 TextField(viewModel.searchPlaceholder, text: $viewModel.query)
@@ -477,36 +498,6 @@ struct ScheduleServiceView: View {
                     }
                 )
             }
-        }
-    }
-    @ViewBuilder
-    private func localExcelBlock() -> some View {
-        ServiceEndpointSection(
-            title: "Локальное расписание",
-            subtitle: "Загрузка из файла Excel",
-            icon: "doc.text.image"
-        ) {
-            VStack(spacing: 16) {
-                Text(
-                    "Функция импорта расписания из локального Excel-файла. "
-                        + "Здесь вы сможете загрузить свой файл с расписанием, "
-                        + "и приложение отобразит его вместо расписания с сервера БГУИР."
-                )
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-
-                Button {} label: {
-                    Label("Выбрать Excel-файл", systemImage: "folder")
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.roundedRectangle(radius: 12))
-                .controlSize(.large)
-                .disabled(true)
-            }
-            .padding(.vertical, 8)
         }
     }
 }
