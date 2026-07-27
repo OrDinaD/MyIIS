@@ -7,6 +7,7 @@ import SwiftUI
 struct LoginView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var viewModel = LoginViewModel()
+    @State private var isPasswordVisible = false
     @FocusState private var focusedField: Field?
 
     private enum Field {
@@ -56,16 +57,11 @@ struct LoginView: View {
                     Color(uiColor: .systemBackground).opacity(0.4)
                         .ignoresSafeArea()
 
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .controlSize(.large)
-                        Text(NSLocalizedString("login_loading", value: "Авторизация...", comment: ""))
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(32)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                    .shadow(color: Color.black.opacity(0.1), radius: 20, y: 10)
+                    ProgressView()
+                        .controlSize(.large)
+                        .padding(32)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .shadow(color: Color.black.opacity(0.1), radius: 20, y: 10)
                 }
                 .transition(.opacity.animation(.easeInOut(duration: 0.2)))
             }
@@ -116,7 +112,20 @@ struct LoginView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
 
-                SecureField(NSLocalizedString("login_password_placeholder", comment: ""), text: $viewModel.password)
+                HStack(spacing: 12) {
+                    Group {
+                        if isPasswordVisible {
+                            TextField(
+                                NSLocalizedString("login_password_placeholder", comment: ""),
+                                text: $viewModel.password
+                            )
+                        } else {
+                            SecureField(
+                                NSLocalizedString("login_password_placeholder", comment: ""),
+                                text: $viewModel.password
+                            )
+                        }
+                    }
                     .textFieldStyle(.plain)
                     .textContentType(.password)
                     .focused($focusedField, equals: .password)
@@ -126,11 +135,29 @@ struct LoginView: View {
                             await viewModel.login()
                         }
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 16)
-                    .background(nativeFieldBackground(cornerRadius: 14))
                     .accessibilityLabel(NSLocalizedString("login_password_label", comment: ""))
                     .accessibilityIdentifier("passwordField")
+
+                    Button {
+                        isPasswordVisible.toggle()
+                        focusedField = .password
+                    } label: {
+                        Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(
+                        isPasswordVisible
+                            ? NSLocalizedString("login_password_hide", value: "Скрыть пароль", comment: "")
+                            : NSLocalizedString("login_password_show", value: "Показать пароль", comment: "")
+                    )
+                    .accessibilityIdentifier("passwordVisibilityButton")
+                }
+                .padding(.leading, 18)
+                .padding(.trailing, 6)
+                .padding(.vertical, 4)
+                .background(nativeFieldBackground(cornerRadius: 14))
             }
 
             if let errorMessage = viewModel.errorMessage {
