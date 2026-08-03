@@ -71,7 +71,7 @@ struct PublicScheduleResponse: Decodable {
         nextScheduleByWeekday: [:]
     )
 
-    private init(
+    init(
         employee: DisciplineEmployee?,
         group: StudyGroup?,
         exams: [DisciplineSchedule],

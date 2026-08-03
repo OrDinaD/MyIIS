@@ -30,11 +30,30 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
     var schemaVersion: Int
     var id: String
     var title: String
+    var groupName: String?
     var timeZone: String
     var validFrom: String?
     var validThrough: String?
     var updatedAt: String?
     var events: [Event]
+
+    struct Teacher: Codable, Equatable, Sendable {
+        var id: Int
+        var firstName: String
+        var middleName: String?
+        var lastName: String
+        var degree: String?
+        var rank: String?
+        var photoLink: String?
+        var urlId: String?
+        var calendarId: String?
+
+        var fullName: String {
+            [lastName, firstName, middleName]
+                .compactMap { $0?.nilIfBlank }
+                .joined(separator: " ")
+        }
+    }
 
     struct Event: Codable, Equatable, Identifiable, Sendable {
         var id: String
@@ -46,9 +65,11 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
         var type: LocalScheduleEventType
         var location: String?
         var teacher: String?
+        var teacherDetails: Teacher?
         var note: String?
         var isCancelled: Bool
 
+        // swiftlint:disable:next nesting
         enum CodingKeys: String, CodingKey {
             case id
             case date
@@ -59,6 +80,7 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
             case type
             case location
             case teacher
+            case teacherDetails
             case note
             case isCancelled
         }
@@ -73,6 +95,7 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
             type: LocalScheduleEventType,
             location: String? = nil,
             teacher: String? = nil,
+            teacherDetails: Teacher? = nil,
             note: String? = nil,
             isCancelled: Bool = false
         ) {
@@ -85,6 +108,7 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
             self.type = type
             self.location = location
             self.teacher = teacher
+            self.teacherDetails = teacherDetails
             self.note = note
             self.isCancelled = isCancelled
         }
@@ -100,6 +124,7 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
             type = try container.decode(LocalScheduleEventType.self, forKey: .type)
             location = try container.decodeIfPresent(String.self, forKey: .location)
             teacher = try container.decodeIfPresent(String.self, forKey: .teacher)
+            teacherDetails = try container.decodeIfPresent(Teacher.self, forKey: .teacherDetails)
             note = try container.decodeIfPresent(String.self, forKey: .note)
             isCancelled = try container.decodeIfPresent(Bool.self, forKey: .isCancelled) ?? false
         }
@@ -110,6 +135,10 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
 
         var displayTitle: String {
             shortTitle?.nilIfBlank ?? title
+        }
+
+        var teacherDisplayName: String? {
+            teacherDetails?.fullName.nilIfBlank ?? teacher?.nilIfBlank
         }
 
         func interval(calendar: Calendar = .current, timeZone: TimeZone) -> DateInterval? {

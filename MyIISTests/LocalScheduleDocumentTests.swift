@@ -76,6 +76,70 @@ final class LocalScheduleDocumentTests: XCTestCase {
         XCTAssertEqual(snapshot.events.first?.title, "SwiftUI")
     }
 
+    func testBundledFixtureCoversSeveralWeeksAndThreeAPITeachers() throws {
+        let document = try XCTUnwrap(LocalScheduleStore.loadBundledExample())
+        let teacherIDs = Set(document.events.compactMap { $0.teacherDetails?.id })
+
+        XCTAssertEqual(document.groupName, "420603")
+        XCTAssertEqual(document.validFrom, "2026-07-26")
+        XCTAssertEqual(document.validThrough, "2026-08-16")
+        XCTAssertGreaterThanOrEqual(document.events.count, 25)
+        XCTAssertEqual(teacherIDs, [500084, 500434, 500780])
+        XCTAssertTrue(document.events.contains { $0.date == "2026-07-28" })
+        XCTAssertEqual(document.apiSchedule().exams.count, 3)
+    }
+
+    func testScheduleDefaultsToLocalPreviewForExistingInstallations() {
+        let suiteName = "LocalScheduleDocumentTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(ScheduleDataSource.api.rawValue, forKey: "services.schedule.dataSource")
+
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+
+        XCTAssertEqual(viewModel.dataSource, .localJSON)
+        XCTAssertTrue(defaults.bool(forKey: "services.schedule.localPreview.default.2026-07-28"))
+    }
+
+    func testAPIScheduleUsesExactDateAndRealTeacherMetadata() throws {
+        let teacher = LocalScheduleDocument.Teacher(
+            id: 500434,
+            firstName: "Игорь",
+            middleName: "Иванович",
+            lastName: "Абрамов",
+            degree: "д.т.н.",
+            rank: "профессор",
+            photoLink: "https://iis.bsuir.by/api/v1/employees/photo/500434",
+            urlId: "i-abramov",
+            calendarId: nil
+        )
+        let event = LocalScheduleDocument.Event(
+            id: "real-teacher",
+            date: "2026-07-28",
+            startTime: "09:50",
+            endTime: "11:25",
+            title: "Системы искусственного интеллекта",
+            shortTitle: "СИИ",
+            type: .practice,
+            location: "409-5 к.",
+            teacher: teacher.fullName,
+            teacherDetails: teacher
+        )
+        var document = makeDocument(events: [event])
+        document.groupName = "420603"
+
+        let schedule = try document.validated().apiSchedule()
+        let lesson = try XCTUnwrap(schedule.orderedDays.first?.lessons.first)
+
+        XCTAssertEqual(schedule.group?.name, "420603")
+        XCTAssertEqual(lesson.subject, "СИИ")
+        XCTAssertEqual(lesson.title, "Системы искусственного интеллекта")
+        XCTAssertEqual(lesson.lessonTypeAbbrev, "ПЗ")
+        XCTAssertEqual(lesson.employees.first?.id, 500434)
+        XCTAssertEqual(lesson.employees.first?.urlId, "i-abramov")
+        XCTAssertEqual(lesson.lessonDate, LocalScheduleFormatting.dayFormatter.date(from: "2026-07-28"))
+    }
+
     private func makeDocument(events: [LocalScheduleDocument.Event]) -> LocalScheduleDocument {
         LocalScheduleDocument(
             schemaVersion: LocalScheduleDocument.currentSchemaVersion,

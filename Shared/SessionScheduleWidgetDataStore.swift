@@ -131,6 +131,7 @@ enum ClassScheduleWidgetDataStore {
 
 private struct LocalScheduleWidgetDocument: Decodable {
     let title: String
+    let groupName: String?
     let timeZone: String
     let validFrom: String?
     let validThrough: String?
@@ -203,7 +204,7 @@ private enum LocalScheduleWidgetSnapshotLoader {
         }
 
         return SessionScheduleWidgetSnapshot(
-            groupName: document.title,
+            groupName: nonEmpty(document.groupName) ?? document.title,
             startDate: document.validFrom.flatMap { day(from: $0, timeZone: timeZone) },
             endDate: document.validThrough.flatMap { day(from: $0, timeZone: timeZone) },
             events: events,

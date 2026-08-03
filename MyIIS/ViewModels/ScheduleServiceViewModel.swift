@@ -129,7 +129,7 @@ final class ScheduleServiceViewModel: ObservableObject {
             }
         }
     }
-    @Published var dataSource: ScheduleDataSource = .api {
+    @Published var dataSource: ScheduleDataSource = .localJSON {
         didSet {
             defaults.set(dataSource.rawValue, forKey: Self.dataSourceDefaultsKey)
         }
@@ -171,9 +171,11 @@ final class ScheduleServiceViewModel: ObservableObject {
     private var isContinuousEndReached = false
     private var isLoadingContinuousChunk = false
     private var searchDebounceTask: Task<Void, Never>?
+    private var localScheduleDocument: LocalScheduleDocument?
 
     private static let displayModeDefaultsKey = "services.schedule.displayMode"
     private static let dataSourceDefaultsKey = "services.schedule.dataSource"
+    private static let localPreviewDefaultDefaultsKey = "services.schedule.localPreview.default.2026-07-28"
     private static let subgroupFilterDefaultsKey = "services.schedule.subgroupFilter"
     private static let selectedModeDefaultsKey = "services.schedule.selectedMode"
     private static let lastGroupDefaultsKey = "services.schedule.lastGroup"
@@ -209,8 +211,11 @@ final class ScheduleServiceViewModel: ObservableObject {
             displayMode = restoredMode
         }
 
-        if let dataSourceRaw = defaults.string(forKey: Self.dataSourceDefaultsKey),
-           let restoredDataSource = ScheduleDataSource(rawValue: dataSourceRaw) {
+        if !defaults.bool(forKey: Self.localPreviewDefaultDefaultsKey) {
+            dataSource = .localJSON
+            defaults.set(true, forKey: Self.localPreviewDefaultDefaultsKey)
+        } else if let dataSourceRaw = defaults.string(forKey: Self.dataSourceDefaultsKey),
+                  let restoredDataSource = ScheduleDataSource(rawValue: dataSourceRaw) {
             dataSource = restoredDataSource
         }
 
@@ -231,7 +236,7 @@ final class ScheduleServiceViewModel: ObservableObject {
             query = lastTeacherName
         }
 
-        if !applyCachedSnapshotIfAvailable() {
+        if dataSource == .api, !applyCachedSnapshotIfAvailable() {
             restorePersistedScheduleIfAvailable()
         }
         debouncedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -322,6 +327,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     }
 
     func loadInitialDataIfNeeded() async {
+        guard dataSource == .api else { return }
         guard !hasLoadedInitialData else { return }
         hasLoadedInitialData = true
 
@@ -358,6 +364,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     }
 
     func refreshData() async {
+        guard dataSource == .api else { return }
         await loadDirectoryIfNeeded(force: true)
 
         switch mode {
@@ -404,6 +411,60 @@ final class ScheduleServiceViewModel: ObservableObject {
                 errorMessage = NSLocalizedString("services_schedule_teacher_pick_hint", comment: "")
             }
         }
+    }
+
+    func prepareForAPISource() {
+        guard dataSource == .api else { return }
+        localScheduleDocument = nil
+        selectedEmployee = nil
+        schedule = nil
+        currentWeekNumber = nil
+        continuousTimelineDays = []
+        continuousCursorDate = nil
+        isContinuousEndReached = false
+        hasLoadedInitialData = false
+        clearStaleDataWarning()
+    }
+
+    func applyLocalSchedule(_ document: LocalScheduleDocument) {
+        localScheduleDocument = document
+        selectedEmployee = nil
+        let response = document.apiSchedule()
+        schedule = response
+        currentWeekNumber = resolveCurrentWeekNumber(
+            backendValue: nil,
+            termStartDate: response.startDate
+        )
+        displayMode = .continuous
+        weekFilter = .all
+        subgroupFilter = .all
+        rebuildContinuousTimeline(reset: true)
+        setMode(.group, preservingQuery: document.groupName?.nilIfBlank ?? document.title)
+        saveSnapshot()
+        clearStaleDataWarning()
+        updateClassScheduleWidgetSnapshot(from: response)
+        updateSessionScheduleWidgetSnapshot(from: response)
+    }
+
+    private func applyLocalTeacherSchedule(_ teacher: DisciplineEmployee) {
+        guard let document = localScheduleDocument,
+              let employee = document.teacherDirectoryEntry(id: teacher.id) else {
+            return
+        }
+        let response = document.apiSchedule(teacherID: teacher.id)
+        schedule = response
+        selectedEmployee = employee
+        currentWeekNumber = resolveCurrentWeekNumber(
+            backendValue: nil,
+            termStartDate: response.startDate
+        )
+        displayMode = .continuous
+        weekFilter = .all
+        subgroupFilter = .all
+        rebuildContinuousTimeline(reset: true)
+        setMode(.teacher, preservingQuery: employee.displayName)
+        saveSnapshot()
+        clearStaleDataWarning()
     }
 
     func loadGroup(_ groupNumber: String) async {
@@ -504,6 +565,10 @@ final class ScheduleServiceViewModel: ObservableObject {
     }
 
     func openTeacherSchedule(_ teacher: DisciplineEmployee) async {
+        if dataSource == .localJSON {
+            applyLocalTeacherSchedule(teacher)
+            return
+        }
         guard let urlId = teacher.urlId, !urlId.isEmpty else { return }
         let mapped = ScheduleEmployeeDirectoryEntry(
             firstName: teacher.firstName,
@@ -521,6 +586,10 @@ final class ScheduleServiceViewModel: ObservableObject {
     }
 
     func openGroupSchedule(_ groupName: String) async {
+        if dataSource == .localJSON, let localScheduleDocument {
+            applyLocalSchedule(localScheduleDocument)
+            return
+        }
         await loadGroup(groupName)
     }
 
@@ -772,7 +841,7 @@ final class ScheduleServiceViewModel: ObservableObject {
 
     private func updateClassScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {
         guard let groupName = scheduleResponse.group?.name.nilIfBlank else { return }
-        if let accountGroupName, accountGroupName != groupName {
+        if dataSource == .api, let accountGroupName, accountGroupName != groupName {
             return
         }
 
@@ -795,7 +864,7 @@ final class ScheduleServiceViewModel: ObservableObject {
 
     private func updateSessionScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {
         guard let groupName = scheduleResponse.group?.name.nilIfBlank else { return }
-        if let accountGroupName, accountGroupName != groupName {
+        if dataSource == .api, let accountGroupName, accountGroupName != groupName {
             return
         }
 

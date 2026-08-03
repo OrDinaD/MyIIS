@@ -2,8 +2,12 @@ import Combine
 import QuickLook
 import SwiftUI
 
+// The schedule screen intentionally keeps its closely coupled cards and presentation helpers together.
+// swiftlint:disable file_length
+
 // MARK: - Schedule
 
+// swiftlint:disable type_body_length
 @MainActor
 struct ScheduleServiceView: View {
     @StateObject private var viewModel = ScheduleServiceViewModel()
@@ -11,6 +15,7 @@ struct ScheduleServiceView: View {
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @State private var scheduleReportURL: URL?
     @State private var selectedExamLesson: DisciplineSchedule?
+    @State private var isLocalScheduleEditorPresented = false
 
     private var loadingOverlayTitle: String {
         viewModel.isDownloadingReport
@@ -24,11 +29,8 @@ struct ScheduleServiceView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 14) {
-                if usesLocalJSONSchedule {
-                    LocalScheduleView(viewModel: localScheduleViewModel)
-                } else {
-                    if viewModel.dataSource == .api, viewModel.schedule != nil {
-                        LazyVStack(alignment: .leading, spacing: 14) {
+                if viewModel.schedule != nil {
+                    LazyVStack(alignment: .leading, spacing: 14) {
                             if viewModel.isShowingStaleDataWarning {
                                 StaleDataBanner(
                                     lastUpdateTime: nil,
@@ -252,7 +254,6 @@ struct ScheduleServiceView: View {
                             ServiceEmptyState(text: NSLocalizedString("services_schedule_empty_hint", comment: ""))
                         }
                     }
-                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -279,19 +280,23 @@ struct ScheduleServiceView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        if enableBetaSections {
-                            Picker("Источник данных", selection: $viewModel.dataSource) {
-                                ForEach(ScheduleDataSource.allCases) { source in
-                                    Label(source.localizedTitle, systemImage: source.icon).tag(source)
-                                }
+                        Picker("Источник данных", selection: $viewModel.dataSource) {
+                            ForEach(ScheduleDataSource.allCases) { source in
+                                Label(source.localizedTitle, systemImage: source.icon).tag(source)
                             }
                         }
 
-                        if viewModel.dataSource == .api, viewModel.schedule != nil {
-                            if enableBetaSections {
-                                Divider()
+                        if usesLocalJSONSchedule {
+                            Divider()
+                            Button {
+                                isLocalScheduleEditorPresented = true
+                            } label: {
+                                Label(NSLocalizedString("local_schedule_edit_event", comment: ""), systemImage: "pencil")
                             }
+                        }
 
+                        if viewModel.schedule != nil {
+                            Divider()
                             Picker(
                                 NSLocalizedString("services_schedule_display_mode", comment: ""),
                                 selection: $viewModel.displayMode
@@ -300,37 +305,37 @@ struct ScheduleServiceView: View {
                                     Label(mode.localizedTitle, systemImage: mode.icon).tag(mode)
                                 }
                             }
+                        }
 
-                            if enableBetaSections, viewModel.showsSubgroupPicker {
-                                Divider()
-                                Picker(
-                                    NSLocalizedString("services_schedule_subgroup_filter", comment: ""),
-                                    selection: $viewModel.subgroupFilter
-                                ) {
-                                    ForEach(viewModel.subgroupFilters) { filter in
-                                        Text(filter.localizedTitle).tag(filter)
-                                    }
+                        if viewModel.dataSource == .api, enableBetaSections, viewModel.showsSubgroupPicker {
+                            Divider()
+                            Picker(
+                                NSLocalizedString("services_schedule_subgroup_filter", comment: ""),
+                                selection: $viewModel.subgroupFilter
+                            ) {
+                                ForEach(viewModel.subgroupFilters) { filter in
+                                    Text(filter.localizedTitle).tag(filter)
                                 }
                             }
+                        }
 
-                            if enableBetaSections {
-                                Divider()
-                                Button {
-                                    Task {
-                                        scheduleReportURL = await viewModel.downloadScheduleReport()
-                                    }
-                                } label: {
-                                    Label(NSLocalizedString("services_schedule_report_download", comment: ""), systemImage: "square.and.arrow.down")
+                        if viewModel.dataSource == .api, enableBetaSections, viewModel.schedule != nil {
+                            Divider()
+                            Button {
+                                Task {
+                                    scheduleReportURL = await viewModel.downloadScheduleReport()
                                 }
-                                .disabled(viewModel.isDownloadingReport)
-
-                                Button {
-                                    Task { await viewModel.enableExamRemindersFromUserAction() }
-                                } label: {
-                                    Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
-                                }
-                                .disabled(viewModel.filteredExams.isEmpty)
+                            } label: {
+                                Label(NSLocalizedString("services_schedule_report_download", comment: ""), systemImage: "square.and.arrow.down")
                             }
+                            .disabled(viewModel.isDownloadingReport)
+
+                            Button {
+                                Task { await viewModel.enableExamRemindersFromUserAction() }
+                            } label: {
+                                Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
+                            }
+                            .disabled(viewModel.filteredExams.isEmpty)
                         }
                     } label: {
                         Label(NSLocalizedString("services_schedule_actions", comment: ""), systemImage: "ellipsis.circle")
@@ -348,13 +353,26 @@ struct ScheduleServiceView: View {
         }
         .task {
             enforceBetaScheduleOptions()
-            await viewModel.loadInitialDataIfNeeded()
+            await loadSelectedScheduleSource()
+        }
+        .onChange(of: viewModel.dataSource) { _, _ in
+            Task { await loadSelectedScheduleSource() }
         }
         .onChange(of: enableBetaSections) { _, _ in
             enforceBetaScheduleOptions()
         }
-        .refreshable { await viewModel.refreshData() }
+        .refreshable {
+            if usesLocalJSONSchedule {
+                localScheduleViewModel.reload()
+                applyLocalSchedule()
+            } else {
+                await viewModel.refreshData()
+            }
+        }
         .quickLookPreview($scheduleReportURL)
+        .sheet(isPresented: $isLocalScheduleEditorPresented, onDismiss: applyLocalSchedule) {
+            LocalScheduleEditorSheet(viewModel: localScheduleViewModel)
+        }
         .sheet(item: $selectedExamLesson) { lesson in
             ScheduleLessonDetailSheet(
                 lesson: lesson,
@@ -419,7 +437,21 @@ struct ScheduleServiceView: View {
     }
 
     private var usesLocalJSONSchedule: Bool {
-        enableBetaSections && viewModel.dataSource == .localJSON
+        viewModel.dataSource == .localJSON
+    }
+
+    private func loadSelectedScheduleSource() async {
+        if usesLocalJSONSchedule {
+            applyLocalSchedule()
+        } else {
+            viewModel.prepareForAPISource()
+            await viewModel.loadInitialDataIfNeeded()
+        }
+    }
+
+    private func applyLocalSchedule() {
+        guard let document = localScheduleViewModel.document else { return }
+        viewModel.applyLocalSchedule(document)
     }
 
     private var availableDisplayModes: [ScheduleDisplayMode] {
@@ -429,11 +461,7 @@ struct ScheduleServiceView: View {
     private func enforceBetaScheduleOptions() {
         guard !enableBetaSections else { return }
 
-        if viewModel.dataSource == .localJSON {
-            viewModel.dataSource = .api
-        }
-
-        if viewModel.displayMode == .continuous {
+        if viewModel.dataSource == .api, viewModel.displayMode == .continuous {
             viewModel.displayMode = .byDay
         }
     }
@@ -497,6 +525,31 @@ struct ScheduleServiceView: View {
                         Task { await viewModel.loadEmployee(employee) }
                     }
                 )
+            }
+        }
+    }
+}
+// swiftlint:enable type_body_length
+
+private struct LocalScheduleEditorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject var viewModel: LocalScheduleViewModel
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                LocalScheduleView(viewModel: viewModel)
+                    .padding(16)
+            }
+            .background(Color(uiColor: .systemGroupedBackground))
+            .navigationTitle(NSLocalizedString("local_schedule_edit_event", comment: ""))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(NSLocalizedString("common_close", comment: "")) {
+                        dismiss()
+                    }
+                }
             }
         }
     }
@@ -893,5 +946,11 @@ private struct ScheduleLessonCard: View {
         lesson.studentGroups
             .compactMap(\.name)
             .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+    }
+}
+
+#Preview("Расписание из локального JSON") {
+    NavigationStack {
+        ScheduleServiceView()
     }
 }

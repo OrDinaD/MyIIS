@@ -7,7 +7,11 @@ final class LocalScheduleViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var noticeMessage: String?
 
-    init() {
+    private let defaults: UserDefaults
+    private static let installedFixtureDefaultsKey = "local.schedule.fixture.2026-07-28"
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         reload()
     }
 
@@ -24,6 +28,12 @@ final class LocalScheduleViewModel: ObservableObject {
 
     func reload() {
         do {
+            if !defaults.bool(forKey: Self.installedFixtureDefaultsKey),
+               let bundledExample = try LocalScheduleStore.loadBundledExample() {
+                try save(bundledExample)
+                defaults.set(true, forKey: Self.installedFixtureDefaultsKey)
+                return
+            }
             document = try LocalScheduleStore.load()
         } catch {
             errorMessage = error.localizedDescription
@@ -77,7 +87,7 @@ final class LocalScheduleViewModel: ObservableObject {
 
     func createExample() {
         do {
-            try save(.example())
+            try save(try LocalScheduleStore.loadBundledExample() ?? .example())
         } catch {
             errorMessage = error.localizedDescription
         }
