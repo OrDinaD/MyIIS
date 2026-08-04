@@ -13,8 +13,25 @@ class APIService {
     private let logService = LogService.shared
     private let userDefaults = UserDefaults.standard
 
-    init(session: URLSession = .shared) {
+    init(session: URLSession = APIService.createOptimizedSession()) {
         self.session = session
+    }
+
+    static func createOptimizedSession() -> URLSession {
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForRequest = 20.0
+        config.timeoutIntervalForResource = 60.0
+        config.httpMaximumConnectionsPerHost = 8
+
+        let cache = URLCache(
+            memoryCapacity: 20 * 1024 * 1024,
+            diskCapacity: 100 * 1024 * 1024,
+            directory: nil
+        )
+        config.urlCache = cache
+        config.requestCachePolicy = .useProtocolCachePolicy
+        return URLSession(configuration: config)
     }
 
     private static let responseCachePrefix = "APIService.responseCache."
