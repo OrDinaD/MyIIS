@@ -2,6 +2,50 @@ import Foundation
 
 // MARK: - API Errors
 
+struct NetworkRetryPolicy: Sendable {
+    let maxRetries: Int
+    let initialDelay: TimeInterval
+    let maxDelay: TimeInterval
+
+    static let `default` = NetworkRetryPolicy(maxRetries: 3, initialDelay: 0.4, maxDelay: 3.5)
+
+    func delay(forAttempt attempt: Int) -> TimeInterval {
+        guard attempt > 0 else { return 0 }
+        let exponential = initialDelay * pow(2.0, Double(attempt - 1))
+        let capped = min(maxDelay, exponential)
+        let jitter = Double.random(in: 0.8...1.2)
+        return capped * jitter
+    }
+
+    func shouldRetry(error: Error) -> Bool {
+        if error is CancellationError { return false }
+
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .serviceUnavailable, .serverError:
+                return true
+            case .unauthorized, .decodingError, .invalidURL, .invalidResponse:
+                return false
+            case .networkError(let underlying):
+                return shouldRetry(error: underlying)
+            }
+        }
+
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .timedOut, .cannotConnectToHost, .networkConnectionLost, .notConnectedToInternet, .dnsLookupFailed:
+                return true
+            case .cancelled, .userAuthenticationRequired, .userCancelledAuthentication, .badURL:
+                return false
+            default:
+                return true
+            }
+        }
+
+        return false
+    }
+}
+
 enum APIError: LocalizedError {
     case invalidURL
     case invalidResponse

@@ -2,7 +2,6 @@ import Foundation
 
 // MARK: - API Service
 
-// swiftlint:disable:this type_body_length
 class APIService {
 
     static var isDemoMode = false
@@ -262,7 +261,30 @@ class APIService {
         try await performRequest(request)
     }
 
-    func performRequest<T: Decodable>(_ request: URLRequest) async throws -> T {
+    func performRequest<T: Decodable>(_ request: URLRequest, retryPolicy: NetworkRetryPolicy = .default) async throws -> T {
+        var attempt = 0
+        while true {
+            do {
+                return try await performSingleRequest(request)
+            } catch {
+                attempt += 1
+                if attempt <= retryPolicy.maxRetries && retryPolicy.shouldRetry(error: error) {
+                    let delay = retryPolicy.delay(forAttempt: attempt)
+                    let errMessage = error.localizedDescription
+                    logService.log("⚠️ Request failed (\(errMessage)). Retrying attempt \(attempt)/\(retryPolicy.maxRetries) in \(String(format: "%.2f", delay))s...")
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    continue
+                }
+
+                if let cached: T = tryDecodeCachedResponse(for: request, originalErrorDescription: error.localizedDescription) {
+                    return cached
+                }
+                throw error
+            }
+        }
+    }
+
+    private func performSingleRequest<T: Decodable>(_ request: URLRequest) async throws -> T {
         do {
             let (data, response) = try await session.data(for: request)
             logResponse(data, response)
@@ -275,16 +297,10 @@ class APIService {
             persistCache(data: data, for: request)
             return try decode(data)
         } catch let apiError as APIError {
-            if let cached: T = tryDecodeCachedResponse(for: request, originalErrorDescription: apiError.localizedDescription) {
-                return cached
-            }
             throw apiError
         } catch {
             if isCancellationError(error) {
                 throw CancellationError()
-            }
-            if let cached: T = tryDecodeCachedResponse(for: request, originalErrorDescription: error.localizedDescription) {
-                return cached
             }
             logTransportFailure(error, request: request)
             throw APIError.networkError(error)

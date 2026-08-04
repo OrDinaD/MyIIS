@@ -119,4 +119,31 @@ final class APIServiceTests: XCTestCase {
         let result = APIService.filenameFromContentDisposition(header)
         XCTAssertEqual(result, "")
     }
+
+    // MARK: - NetworkRetryPolicy Tests
+
+    func testNetworkRetryPolicy_ShouldRetryOnServerAndConnectionErrors() {
+        let policy = NetworkRetryPolicy.default
+
+        XCTAssertTrue(policy.shouldRetry(error: APIError.serviceUnavailable(message: "418")))
+        XCTAssertTrue(policy.shouldRetry(error: APIError.serverError(statusCode: 503, message: "Server Error")))
+        XCTAssertTrue(policy.shouldRetry(error: URLError(.timedOut)))
+        XCTAssertTrue(policy.shouldRetry(error: URLError(.networkConnectionLost)))
+
+        XCTAssertFalse(policy.shouldRetry(error: APIError.unauthorized(message: "401")))
+        XCTAssertFalse(policy.shouldRetry(error: APIError.invalidURL))
+        XCTAssertFalse(policy.shouldRetry(error: CancellationError()))
+    }
+
+    func testNetworkRetryPolicy_DelayCalculationHasJitterAndCapping() {
+        let policy = NetworkRetryPolicy(maxRetries: 3, initialDelay: 0.5, maxDelay: 2.0)
+
+        XCTAssertEqual(policy.delay(forAttempt: 0), 0)
+        let delayAttempt1 = policy.delay(forAttempt: 1)
+        XCTAssertGreaterThan(delayAttempt1, 0.3)
+        XCTAssertLessThan(delayAttempt1, 1.0)
+
+        let delayAttempt5 = policy.delay(forAttempt: 5)
+        XCTAssertLessThanOrEqual(delayAttempt5, 2.5) // capped around 2.0 * jitter max 1.2
+    }
 }
