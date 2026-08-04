@@ -210,6 +210,9 @@ jobs:
       - name: Archive signed app
         if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
         run: |
           set -euo pipefail
           mkdir -p build
