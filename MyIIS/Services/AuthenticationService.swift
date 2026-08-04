@@ -258,7 +258,7 @@ class AuthenticationService: ObservableObject {
     }
 
     private func clearCachedUser() {
-        UserDefaults.standard.removeObject(forKey: Self.cachedUserDefaultsKey)
+        UserDefaultsPayloadStore.clear(forKey: Self.cachedUserDefaultsKey, from: UserDefaults.standard)
     }
 
     /// Конвертирует данные из API в модель User
@@ -334,6 +334,7 @@ class AuthenticationService: ObservableObject {
 
         AttendanceWidgetDataStore.clear()
         MyIISDataStore.clear()
+        UserDefaultsPayloadStore.clearAll()
         logService.log("User logged out.")
     }
 }

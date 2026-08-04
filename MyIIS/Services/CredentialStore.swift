@@ -44,7 +44,7 @@ final class CredentialStore {
 
         var newItem = baseQuery
         newItem[kSecValueData as String] = encoded
-        newItem[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        newItem[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
 
         let status = SecItemAdd(newItem as CFDictionary, nil)
 

@@ -26,7 +26,7 @@ enum UserDefaultsPayloadStore {
 
         guard let url = fileURL(forKey: key) else { return false }
         do {
-            try data.write(to: url, options: .atomic)
+            try data.write(to: url, options: [.atomic, .completeFileProtection])
             return true
         } catch {
             return false
@@ -47,5 +47,21 @@ enum UserDefaultsPayloadStore {
         }
 
         return nil
+    }
+
+    static func clear(forKey key: String, from defaults: UserDefaults) {
+        defaults.removeObject(forKey: key)
+        if let url = fileURL(forKey: key), FileManager.default.fileExists(atPath: url.path) {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    static func clearAll(in defaults: UserDefaults = .standard) {
+        guard let cacheDir = cacheDirectory() else { return }
+        if let files = try? FileManager.default.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: nil) {
+            for file in files {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
     }
 }

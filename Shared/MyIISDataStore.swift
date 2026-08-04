@@ -101,8 +101,8 @@ enum MyIISDataStore {
 
     static func clear() {
         guard let defaults else { return }
-        defaults.removeObject(forKey: Key.sharedData)
-        defaults.removeObject(forKey: Key.gradebookMessageSnapshot)
+        UserDefaultsPayloadStore.clear(forKey: Key.sharedData, from: defaults)
+        UserDefaultsPayloadStore.clear(forKey: Key.gradebookMessageSnapshot, from: defaults)
         ClassScheduleWidgetDataStore.clear()
         SessionScheduleWidgetDataStore.clear()
     }

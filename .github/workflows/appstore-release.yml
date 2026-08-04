@@ -30,11 +30,6 @@ env:
   TEAM_ID: Y85TSUMM4F
   BUNDLE_ID: com.OrDinaD.MyIIS
   DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
-  APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
-  APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
-  APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
-  IOS_SIGNING_CERTIFICATE_BASE64: ${{ secrets.IOS_SIGNING_CERTIFICATE_BASE64 }}
-  IOS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.IOS_SIGNING_CERTIFICATE_PASSWORD }}
 
 jobs:
   deploy:
@@ -57,6 +52,11 @@ jobs:
         shell: bash
         env:
           REQUESTED_UPLOAD: ${{ inputs.upload_to_testflight }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+          IOS_SIGNING_CERTIFICATE_BASE64: ${{ secrets.IOS_SIGNING_CERTIFICATE_BASE64 }}
+          IOS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.IOS_SIGNING_CERTIFICATE_PASSWORD }}
         run: |
           set -euo pipefail
 
@@ -87,6 +87,9 @@ jobs:
         id: asc_key
         if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_PRIVATE_KEY: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
         run: |
           set -euo pipefail
 
@@ -103,6 +106,8 @@ jobs:
         shell: bash
         env:
           REQUESTED_VERSION: ${{ inputs.release_version }}
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
         run: |
           set -euo pipefail
 
@@ -142,6 +147,9 @@ jobs:
         id: signing
         if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
+        env:
+          IOS_SIGNING_CERTIFICATE_BASE64: ${{ secrets.IOS_SIGNING_CERTIFICATE_BASE64 }}
+          IOS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.IOS_SIGNING_CERTIFICATE_PASSWORD }}
         run: |
           set -euo pipefail
 
@@ -240,6 +248,9 @@ jobs:
       - name: Upload to TestFlight
         if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
         run: |
           set -euo pipefail
 

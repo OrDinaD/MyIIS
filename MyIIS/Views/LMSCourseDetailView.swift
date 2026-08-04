@@ -229,6 +229,11 @@ struct LMSCourseDetailView: View {
             return
         }
 
+        if module.type == .url, let host = url.host, host != "lms.bsuir.by" {
+            UIApplication.shared.open(url)
+            return
+        }
+
         presentedLink = LMSPresentedLink(url: url)
     }
 
@@ -482,7 +487,7 @@ private struct LMSMaterialWebView: UIViewRepresentable {
         body, #page, #page-content { background-color: transparent !important; padding: 0 !important; margin: 0 !important; }
         """
         let jsString = "var style = document.createElement('style'); style.innerHTML = '\(cssString)'; document.head.appendChild(style);"
-        let script = WKUserScript(source: jsString, injectionTime: .atDocumentEnd, forMainFrameOnly: false)
+        let script = WKUserScript(source: jsString, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
         configuration.userContentController.addUserScript(script)
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
@@ -523,14 +528,19 @@ private struct LMSMaterialWebView: UIViewRepresentable {
             guard loadedURL != url else { return }
             loadedURL = url
 
-            syncCookies(to: webView) {
+            syncCookies(to: webView, targetURL: url) {
                 var request = URLRequest(url: url)
                 request.timeoutInterval = 60
                 webView.load(request)
             }
         }
 
-        private func syncCookies(to webView: WKWebView, completion: @escaping () -> Void) {
+        private func syncCookies(to webView: WKWebView, targetURL: URL, completion: @escaping () -> Void) {
+            guard targetURL.host == "lms.bsuir.by" else {
+                completion()
+                return
+            }
+
             let store = webView.configuration.websiteDataStore.httpCookieStore
             let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://lms.bsuir.by")!) ?? []
             guard !cookies.isEmpty else {

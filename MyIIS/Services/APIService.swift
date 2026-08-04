@@ -2,6 +2,7 @@ import Foundation
 
 // MARK: - API Service
 
+// swiftlint:disable:this type_body_length
 class APIService {
 
     static var isDemoMode = false
@@ -40,6 +41,7 @@ class APIService {
     static func clearResponseCache(in defaults: UserDefaults = .standard) {
         for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(responseCachePrefix) {
             defaults.removeObject(forKey: key)
+            UserDefaultsPayloadStore.clear(forKey: key, from: defaults)
         }
     }
 
@@ -456,10 +458,23 @@ extension APIService {
         logService.log("--- New Request ---")
         if let url = request.url?.absoluteString { logService.log("URL: \(url)") }
         if let method = request.httpMethod { logService.log("Method: \(method)") }
-        if let headers = request.allHTTPHeaderFields, !headers.isEmpty { logService.log("Headers: \(headers)") }
+        if let headers = request.allHTTPHeaderFields, !headers.isEmpty {
+            let sensitiveHeaderKeys: Set<String> = ["cookie", "authorization", "set-cookie", "x-auth-token"]
+            var sanitizedHeaders: [String: String] = [:]
+            for (key, value) in headers {
+                if sensitiveHeaderKeys.contains(key.lowercased()) {
+                    sanitizedHeaders[key] = "[REDACTED]"
+                } else {
+                    sanitizedHeaders[key] = value
+                }
+            }
+            logService.log("Headers: \(sanitizedHeaders)")
+        }
 
         if let body = request.httpBody, let bodyString = String(data: body, encoding: .utf8) {
-            let sanitizedBody = bodyString.contains("\"password\"") ? "[REDACTED]" : bodyString
+            let lowercased = bodyString.lowercased()
+            let containsSensitiveData = lowercased.contains("password") || lowercased.contains("token") || lowercased.contains("secret")
+            let sanitizedBody = containsSensitiveData ? "[REDACTED]" : bodyString
             logService.log("Body: \(sanitizedBody)")
         }
         logService.log("------------------")
