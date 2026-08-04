@@ -1,7 +1,7 @@
 import Foundation
 import UniformTypeIdentifiers
 
-protocol DormitoryServicing {
+protocol DormitoryServicing: Sendable {
     func fetchApplications() async throws -> [DormitoryQueueApplication]
     func fetchPrivilegeRecords() async throws -> [DormitoryPrivilegeRecord]
     func createApplication(documentURL: URL?) async throws -> DormitoryQueueApplication
@@ -33,7 +33,7 @@ enum DormitoryServiceError: Error, LocalizedError {
     }
 }
 
-final class DormitoryService: DormitoryServicing {
+final class DormitoryService: DormitoryServicing, Sendable {
     private let baseURL = URLFactory.require("https://iis.bsuir.by/api/v1")
     private let apiService: APIService
 

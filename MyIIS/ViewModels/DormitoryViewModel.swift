@@ -234,8 +234,10 @@ final class DormitoryViewModel: ObservableObject {
         isLoading = true
         let service = dormitoryService
         let task = Task { @MainActor in
-            let applications = try await service.fetchApplications()
-            let privilegeRecords = try await service.fetchPrivilegeRecords()
+            async let asyncApps = service.fetchApplications()
+            async let asyncPrivileges = service.fetchPrivilegeRecords()
+            let applications = try await asyncApps
+            let privilegeRecords = try await asyncPrivileges
             return LoadPayload(
                 applications: applications,
                 privilegeRecords: privilegeRecords
