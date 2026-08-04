@@ -18,9 +18,7 @@ struct ScheduleServiceView: View {
     @State private var isLocalScheduleEditorPresented = false
 
     private var loadingOverlayTitle: String {
-        viewModel.isDownloadingReport
-            ? NSLocalizedString("services_schedule_report_downloading", comment: "")
-            : NSLocalizedString("common_loading", comment: "")
+        NSLocalizedString("services_schedule_report_downloading", comment: "")
     }
 
     @State private var isSearchSheetPresented = false
@@ -28,232 +26,225 @@ struct ScheduleServiceView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 14) {
-                if viewModel.schedule != nil {
-                    LazyVStack(alignment: .leading, spacing: 14) {
-                            if viewModel.isShowingStaleDataWarning {
-                                StaleDataBanner(
-                                    lastUpdateTime: nil,
-                                    errorMessage: viewModel.staleErrorMessage
-                                ) {
-                                    await viewModel.refreshData()
-                                }
-                            }
+            LazyVStack(alignment: .leading, spacing: 14) {
+                if viewModel.isShowingStaleDataWarning {
+                    StaleDataBanner(
+                        lastUpdateTime: nil,
+                        errorMessage: viewModel.staleErrorMessage
+                    ) {
+                        await viewModel.refreshData()
+                    }
+                }
 
-                            ServiceEndpointSection(
-                                title: viewModel.scheduleHeaderTitle,
-                                subtitle: viewModel.scheduleHeaderSubtitle,
-                                icon: "graduationcap"
-                            ) {
-                                if viewModel.shouldShowWeekFilter {
-                                    Picker("", selection: $viewModel.weekFilter) {
-                                        ForEach(viewModel.weekFilters) { filter in
-                                            Text(filter.localizedTitle).tag(filter)
-                                        }
-                                    }
-                                    .pickerStyle(.segmented)
-                                }
-                            }
-
-                            if let employee = viewModel.selectedEmployee {
-                                ScheduleTeacherHeader(employee: employee)
-                            }
-
-                            switch viewModel.displayMode {
-                            case .continuous:
-                                if !viewModel.pastContinuousDays.isEmpty {
-                                    DisclosureGroup {
-                                        VStack(alignment: .leading, spacing: 14) {
-                                            ForEach(viewModel.pastContinuousDays) { day in
-                                                VStack(alignment: .leading, spacing: 10) {
-                                                    Text(viewModel.continuousDayTitle(for: day))
-                                                        .font(.title3.weight(.bold))
-                                                        .foregroundStyle(.secondary)
-
-                                                    ForEach(day.lessons) { lesson in
-                                                        ScheduleLessonCard(
-                                                            lesson: lesson,
-                                                            isCurrent: false,
-                                                            progress: nil,
-                                                            isPast: true,
-                                                            presentation: .sessionCompact,
-                                                            onTeacherTap: { teacher in
-                                                                Task { await viewModel.openTeacherSchedule(teacher) }
-                                                            },
-                                                            onGroupTap: { groupName in
-                                                                Task { await viewModel.openGroupSchedule(groupName) }
-                                                            },
-                                                            onDetailsTap: {
-                                                                selectedExamLesson = lesson
-                                                            }
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        .padding(.top, 10)
-                                    } label: {
-                                        Label(
-                                            NSLocalizedString("services_schedule_past_lessons", comment: "Прошедшие занятия"),
-                                            systemImage: "clock.arrow.circlepath"
-                                        )
-                                            .font(.headline)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(16)
-                                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                }
-
-                                if viewModel.pastContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) &&
-                                    !viewModel.upcomingContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) {
-                                    Text(NSLocalizedString("services_schedule_no_more_today", comment: "На сегодня занятий больше нет 🎉"))
-                                        .font(.subheadline.weight(.medium))
-                                        .foregroundStyle(.secondary)
-                                        .frame(maxWidth: .infinity, alignment: .center)
-                                        .padding(.vertical, 8)
-                                }
-
-                                ForEach(viewModel.upcomingContinuousDays) { day in
-                                    VStack(alignment: .leading, spacing: 10) {
-                                        Text(viewModel.continuousDayTitle(for: day))
-                                            .font(.title3.weight(.bold))
-                                            .foregroundStyle(.primary)
-
-                                        ForEach(day.lessons) { lesson in
-                                            ScheduleLessonCard(
-                                                lesson: lesson,
-                                                isCurrent: viewModel.isLessonCurrent(lesson, on: day.weekday, for: day.date),
-                                                progress: viewModel.currentLessonProgress(lesson, on: day.weekday, for: day.date),
-                                                isPast: false,
-                                                presentation: .sessionCompact,
-                                                onTeacherTap: { teacher in
-                                                    Task { await viewModel.openTeacherSchedule(teacher) }
-                                                },
-                                                onGroupTap: { groupName in
-                                                    Task { await viewModel.openGroupSchedule(groupName) }
-                                                },
-                                                onDetailsTap: {
-                                                    selectedExamLesson = lesson
-                                                }
-                                            )
-                                        }
-                                    }
-                                    .onAppear {
-                                        viewModel.loadMoreContinuousDaysIfNeeded(lastVisibleDayID: day.id)
-                                    }
-                                }
-                            case .byDay:
-                                ForEach(viewModel.displayedDays, id: \.weekday) { day in
-                                    VStack(alignment: .leading, spacing: 10) {
-                                        Text(viewModel.dayTitle(for: day))
-                                            .font(.title3.weight(.bold))
-                                            .foregroundStyle(.primary)
-
-                                        ForEach(day.lessons) { lesson in
-                                            ScheduleLessonCard(
-                                                lesson: lesson,
-                                                isCurrent: false,
-                                                progress: nil,
-                                                isPast: false,
-                                                presentation: .sessionCompact,
-                                                onTeacherTap: { teacher in
-                                                    Task { await viewModel.openTeacherSchedule(teacher) }
-                                                },
-                                                onGroupTap: { groupName in
-                                                    Task { await viewModel.openGroupSchedule(groupName) }
-                                                },
-                                                onDetailsTap: {
-                                                    selectedExamLesson = lesson
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            case .exams:
-                                if !viewModel.pastExamDays.isEmpty {
-                                    DisclosureGroup {
-                                        VStack(alignment: .leading, spacing: 14) {
-                                            ForEach(viewModel.pastExamDays) { day in
-                                                VStack(alignment: .leading, spacing: 10) {
-                                                    Text(viewModel.examDayTitle(for: day))
-                                                        .font(.title3.weight(.bold))
-                                                        .foregroundStyle(examDayTitleColor(for: day))
-
-                                                    ForEach(day.lessons) { exam in
-                                                        ScheduleLessonCard(
-                                                            lesson: exam,
-                                                            isCurrent: false,
-                                                            progress: nil,
-                                                            isPast: viewModel.isExamPast(exam, on: day.date),
-                                                            presentation: .sessionCompact,
-                                                            onTeacherTap: { teacher in
-                                                                Task { await viewModel.openTeacherSchedule(teacher) }
-                                                            },
-                                                            onGroupTap: { groupName in
-                                                                Task { await viewModel.openGroupSchedule(groupName) }
-                                                            },
-                                                            onDetailsTap: {
-                                                                selectedExamLesson = exam
-                                                            }
-                                                        )
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        .padding(.top, 10)
-                                    } label: {
-                                        Label(
-                                            NSLocalizedString("services_schedule_past_exams", comment: "Пройденные экзамены"),
-                                            systemImage: "clock.arrow.circlepath"
-                                        )
-                                            .font(.headline)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(16)
-                                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                }
-
-                                ForEach(viewModel.upcomingExamDays) { day in
-                                    VStack(alignment: .leading, spacing: 10) {
-                                        Text(viewModel.examDayTitle(for: day))
-                                            .font(.title3.weight(.bold))
-                                            .foregroundStyle(examDayTitleColor(for: day))
-
-                                        ForEach(day.lessons) { exam in
-                                            ScheduleLessonCard(
-                                                lesson: exam,
-                                                isCurrent: false,
-                                                progress: nil,
-                                                isPast: viewModel.isExamPast(exam, on: day.date),
-                                                presentation: .sessionCompact,
-                                                onTeacherTap: { teacher in
-                                                    Task { await viewModel.openTeacherSchedule(teacher) }
-                                                },
-                                                onGroupTap: { groupName in
-                                                    Task { await viewModel.openGroupSchedule(groupName) }
-                                                },
-                                                onDetailsTap: {
-                                                    selectedExamLesson = exam
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            if viewModel.isCurrentModeEmpty {
-                                scheduleUnavailableView
+                ServiceEndpointSection(
+                    title: viewModel.scheduleHeaderTitle,
+                    subtitle: viewModel.scheduleHeaderSubtitle,
+                    icon: "graduationcap"
+                ) {
+                    if viewModel.shouldShowWeekFilter {
+                        Picker(
+                            NSLocalizedString("services_schedule_week_filter", value: "Неделя", comment: ""),
+                            selection: $viewModel.weekFilter
+                        ) {
+                            ForEach(viewModel.weekFilters) { filter in
+                                Text(filter.localizedTitle).tag(filter)
                             }
                         }
-                    } else {
-                        ServiceEndpointSection(
-                            title: NSLocalizedString("services_schedule_empty_title", comment: ""),
-                            subtitle: NSLocalizedString("services_schedule_empty_subtitle", comment: ""),
-                            icon: "calendar.badge.exclamationmark"
-                        ) {
-                            ServiceEmptyState(text: NSLocalizedString("services_schedule_empty_hint", comment: ""))
+                        .pickerStyle(.segmented)
+                    }
+                }
+
+                if viewModel.schedule != nil {
+                    if let employee = viewModel.selectedEmployee {
+                        ScheduleTeacherHeader(employee: employee)
+                    }
+
+                    switch viewModel.displayMode {
+                    case .continuous:
+                        if !viewModel.pastContinuousDays.isEmpty {
+                            DisclosureGroup {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    ForEach(viewModel.pastContinuousDays) { day in
+                                        VStack(alignment: .leading, spacing: 10) {
+                                            Text(viewModel.continuousDayTitle(for: day))
+                                                .font(.title3.weight(.bold))
+                                                .foregroundStyle(.secondary)
+
+                                            ForEach(day.lessons) { lesson in
+                                                ScheduleLessonCard(
+                                                    lesson: lesson,
+                                                    isCurrent: false,
+                                                    progress: nil,
+                                                    isPast: true,
+                                                    presentation: .sessionCompact,
+                                                    onTeacherTap: { teacher in
+                                                        Task { await viewModel.openTeacherSchedule(teacher) }
+                                                    },
+                                                    onGroupTap: { groupName in
+                                                        Task { await viewModel.openGroupSchedule(groupName) }
+                                                    },
+                                                    onDetailsTap: {
+                                                        selectedExamLesson = lesson
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(.top, 10)
+                            } label: {
+                                Label(
+                                    NSLocalizedString("services_schedule_past_lessons", comment: "Прошедшие занятия"),
+                                    systemImage: "clock.arrow.circlepath"
+                                )
+                                    .font(.headline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(16)
+                            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        }
+
+                        if viewModel.pastContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) &&
+                            !viewModel.upcomingContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) {
+                            Text(NSLocalizedString("services_schedule_no_more_today", comment: "На сегодня занятий больше нет 🎉"))
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                .padding(.vertical, 8)
+                        }
+
+                        ForEach(viewModel.upcomingContinuousDays) { day in
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(viewModel.continuousDayTitle(for: day))
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(.primary)
+
+                                ForEach(day.lessons) { lesson in
+                                    ScheduleLessonCard(
+                                        lesson: lesson,
+                                        isCurrent: viewModel.isLessonCurrent(lesson, on: day.weekday, for: day.date),
+                                        progress: viewModel.currentLessonProgress(lesson, on: day.weekday, for: day.date),
+                                        isPast: false,
+                                        presentation: .sessionCompact,
+                                        onTeacherTap: { teacher in
+                                            Task { await viewModel.openTeacherSchedule(teacher) }
+                                        },
+                                        onGroupTap: { groupName in
+                                            Task { await viewModel.openGroupSchedule(groupName) }
+                                        },
+                                        onDetailsTap: {
+                                            selectedExamLesson = lesson
+                                        }
+                                    )
+                                }
+                            }
+                            .onAppear {
+                                viewModel.loadMoreContinuousDaysIfNeeded(lastVisibleDayID: day.id)
+                            }
+                        }
+                    case .byDay:
+                        ForEach(viewModel.displayedDays, id: \.weekday) { day in
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(viewModel.dayTitle(for: day))
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(.primary)
+
+                                ForEach(day.lessons) { lesson in
+                                    ScheduleLessonCard(
+                                        lesson: lesson,
+                                        isCurrent: false,
+                                        progress: nil,
+                                        isPast: false,
+                                        presentation: .sessionCompact,
+                                        onTeacherTap: { teacher in
+                                            Task { await viewModel.openTeacherSchedule(teacher) }
+                                        },
+                                        onGroupTap: { groupName in
+                                            Task { await viewModel.openGroupSchedule(groupName) }
+                                        },
+                                        onDetailsTap: {
+                                            selectedExamLesson = lesson
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    case .exams:
+                        if !viewModel.pastExamDays.isEmpty {
+                            DisclosureGroup {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    ForEach(viewModel.pastExamDays) { day in
+                                        VStack(alignment: .leading, spacing: 10) {
+                                            Text(viewModel.examDayTitle(for: day))
+                                                .font(.title3.weight(.bold))
+                                                .foregroundStyle(examDayTitleColor(for: day))
+
+                                            ForEach(day.lessons) { exam in
+                                                ScheduleLessonCard(
+                                                    lesson: exam,
+                                                    isCurrent: false,
+                                                    progress: nil,
+                                                    isPast: viewModel.isExamPast(exam, on: day.date),
+                                                    presentation: .sessionCompact,
+                                                    onTeacherTap: { teacher in
+                                                        Task { await viewModel.openTeacherSchedule(teacher) }
+                                                    },
+                                                    onGroupTap: { groupName in
+                                                        Task { await viewModel.openGroupSchedule(groupName) }
+                                                    },
+                                                    onDetailsTap: {
+                                                        selectedExamLesson = exam
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                .padding(.top, 10)
+                            } label: {
+                                Label(
+                                    NSLocalizedString("services_schedule_past_exams", comment: "Пройденные экзамены"),
+                                    systemImage: "clock.arrow.circlepath"
+                                )
+                                    .font(.headline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(16)
+                            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        }
+
+                        ForEach(viewModel.upcomingExamDays) { day in
+                            VStack(alignment: .leading, spacing: 10) {
+                                Text(viewModel.examDayTitle(for: day))
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(examDayTitleColor(for: day))
+
+                                ForEach(day.lessons) { exam in
+                                    ScheduleLessonCard(
+                                        lesson: exam,
+                                        isCurrent: false,
+                                        progress: nil,
+                                        isPast: viewModel.isExamPast(exam, on: day.date),
+                                        presentation: .sessionCompact,
+                                        onTeacherTap: { teacher in
+                                            Task { await viewModel.openTeacherSchedule(teacher) }
+                                        },
+                                        onGroupTap: { groupName in
+                                            Task { await viewModel.openGroupSchedule(groupName) }
+                                        },
+                                        onDetailsTap: {
+                                            selectedExamLesson = exam
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
+
+                    if viewModel.isCurrentModeEmpty {
+                        scheduleUnavailableView
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
@@ -280,7 +271,14 @@ struct ScheduleServiceView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        Picker("Источник данных", selection: $viewModel.dataSource) {
+                        Picker(
+                            NSLocalizedString(
+                                "services_schedule_data_source",
+                                value: "Источник данных",
+                                comment: ""
+                            ),
+                            selection: $viewModel.dataSource
+                        ) {
                             ForEach(ScheduleDataSource.allCases) { source in
                                 Label(source.localizedTitle, systemImage: source.icon).tag(source)
                             }
@@ -344,7 +342,7 @@ struct ScheduleServiceView: View {
             }
         }
         .overlay {
-            if (viewModel.isLoading && viewModel.schedule == nil) || viewModel.isDownloadingReport {
+            if viewModel.isDownloadingReport {
                 ProgressView(loadingOverlayTitle)
                     .padding(20)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -403,7 +401,9 @@ struct ScheduleServiceView: View {
         .sheet(isPresented: $isSearchSheetPresented) {
             NavigationStack {
                 ScrollView {
-                    searchBlock(inSheet: true)
+                    searchControls
+                        .padding(14)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .padding()
                 }
                 .background(Color(uiColor: .systemGroupedBackground))
@@ -450,7 +450,10 @@ struct ScheduleServiceView: View {
     }
 
     private func applyLocalSchedule() {
-        guard let document = localScheduleViewModel.document else { return }
+        guard let document = localScheduleViewModel.document else {
+            viewModel.clearLocalSchedule()
+            return
+        }
         viewModel.applyLocalSchedule(document)
     }
 
@@ -466,44 +469,16 @@ struct ScheduleServiceView: View {
         }
     }
 
-    @ViewBuilder
-    private func searchBlock(inSheet: Bool = false) -> some View {
-        if inSheet {
-            searchControls(showTextField: false)
-                .padding(14)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-        } else {
-            ServiceEndpointSection(
-                title: NSLocalizedString("services_schedule_title", comment: ""),
-                subtitle: NSLocalizedString("services_schedule_subtitle", comment: ""),
-                icon: "calendar"
-            ) {
-                searchControls(showTextField: true)
-            }
-        }
-    }
-
-    private func searchControls(showTextField: Bool) -> some View {
+    private var searchControls: some View {
         VStack(spacing: 12) {
-            Picker("", selection: $viewModel.mode) {
+            Picker(
+                NSLocalizedString("services_schedule_search_title", value: "Поиск расписания", comment: ""),
+                selection: $viewModel.mode
+            ) {
                 Text(NSLocalizedString("services_schedule_mode_group", comment: "")).tag(ScheduleLookupMode.group)
                 Text(NSLocalizedString("services_schedule_mode_teacher", comment: "")).tag(ScheduleLookupMode.teacher)
             }
             .pickerStyle(.segmented)
-
-            if showTextField {
-                TextField(viewModel.searchPlaceholder, text: $viewModel.query)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 13, style: .continuous)
-                            .fill(Color(uiColor: .secondarySystemGroupedBackground))
-                    )
-                    .onSubmit {
-                        Task { await viewModel.loadByQuery() }
-                    }
-            }
 
             if viewModel.mode == .group {
                 ScheduleSuggestionsView(
@@ -758,15 +733,15 @@ private struct ScheduleLessonCard: View {
                 Text(compactTitle)
                     .font(.headline.weight(.bold))
                     .foregroundStyle(cardPrimaryForeground)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 if let compactSubtitle {
                     Text(compactSubtitle)
                         .font(.subheadline.weight(.regular))
                         .foregroundStyle(cardSecondaryForeground)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -849,6 +824,18 @@ private struct ScheduleLessonCard: View {
         }
         .buttonStyle(.plain)
         .disabled(onDetailsTap == nil)
+        .accessibilityLabel(
+            Text(
+                String(
+                    format: NSLocalizedString(
+                        "services_schedule_show_details",
+                        value: "Подробности занятия: %@",
+                        comment: ""
+                    ),
+                    lesson.title
+                )
+            )
+        )
     }
 
     private func teacherAvatar(size: CGFloat) -> some View {
@@ -891,7 +878,7 @@ private struct ScheduleLessonCard: View {
 
     private var cardBackground: LinearGradient {
         let colors = isPast
-            ? [Color(uiColor: .systemGray3), Color(uiColor: .systemGray4)]
+            ? [Color(uiColor: .secondarySystemBackground), Color(uiColor: .tertiarySystemBackground)]
             : [Color(red: 0.11, green: 0.12, blue: 0.16), Color(red: 0.13, green: 0.14, blue: 0.18)]
         return LinearGradient(
             colors: colors,
@@ -900,12 +887,14 @@ private struct ScheduleLessonCard: View {
         )
     }
 
-    private var cardPrimaryForeground: Color { isPast ? Color.white.opacity(0.78) : .white }
+    private var cardPrimaryForeground: Color { isPast ? .primary : .white }
 
-    private var cardSecondaryForeground: Color { isPast ? Color.white.opacity(0.58) : Color.white.opacity(0.75) }
+    private var cardSecondaryForeground: Color { isPast ? .secondary : Color.white.opacity(0.75) }
 
     private var compactTitle: String {
-        if lesson.isAnnouncement { return "📣 Объявление" }
+        if lesson.isAnnouncement {
+            return "📣 \(NSLocalizedString("local_schedule_type_announcement", comment: ""))"
+        }
         return lesson.subject.nilIfBlank ?? lesson.lessonTypeAbbrev.nilIfBlank ?? lesson.title
     }
 
@@ -921,7 +910,7 @@ private struct ScheduleLessonCard: View {
 
     private var accentColor: Color {
         if isPast {
-            return Color.white.opacity(0.45)
+            return Color.secondary.opacity(0.65)
         }
         let type = lesson.lessonTypeAbbrev.lowercased()
         if type.contains("экзам") {

@@ -89,16 +89,101 @@ final class LocalScheduleDocumentTests: XCTestCase {
         XCTAssertEqual(document.apiSchedule().exams.count, 3)
     }
 
-    func testScheduleDefaultsToLocalPreviewForExistingInstallations() {
+    func testFreshScheduleDefaultsToAPISource() {
         let suiteName = "LocalScheduleDocumentTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
-        defaults.set(ScheduleDataSource.api.rawValue, forKey: "services.schedule.dataSource")
+
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+
+        XCTAssertEqual(viewModel.dataSource, .api)
+    }
+
+    func testSavedLocalScheduleSourceIsPreserved() {
+        let suiteName = "LocalScheduleDocumentTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(ScheduleDataSource.localJSON.rawValue, forKey: "services.schedule.dataSource")
 
         let viewModel = ScheduleServiceViewModel(defaults: defaults)
 
         XCTAssertEqual(viewModel.dataSource, .localJSON)
-        XCTAssertTrue(defaults.bool(forKey: "services.schedule.localPreview.default.2026-07-28"))
+    }
+
+    func testPreparingAlreadyActiveAPISourceKeepsDisplayedSchedule() {
+        let suiteName = "LocalScheduleDocumentTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(ScheduleDataSource.api.rawValue, forKey: "services.schedule.dataSource")
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        viewModel.schedule = makeDocument(events: [makeEvent(id: "visible")]).apiSchedule()
+
+        viewModel.prepareForAPISource()
+
+        XCTAssertNotNil(viewModel.schedule)
+    }
+
+    func testSwitchingFromLocalScheduleToAPISourceClearsLocalContent() {
+        let suiteName = "LocalScheduleDocumentTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        viewModel.applyLocalSchedule(makeDocument(events: [makeEvent(id: "local")]))
+        viewModel.dataSource = .api
+
+        viewModel.prepareForAPISource()
+
+        XCTAssertNil(viewModel.schedule)
+    }
+
+    func testValidationRejectsUnsupportedSchemaAndInvalidTimeZone() {
+        var document = makeDocument(events: [])
+        document.schemaVersion = LocalScheduleDocument.currentSchemaVersion + 1
+
+        XCTAssertThrowsError(try document.validated()) { error in
+            XCTAssertEqual(error as? LocalScheduleValidationError, .unsupportedSchema(2))
+        }
+
+        document.schemaVersion = LocalScheduleDocument.currentSchemaVersion
+        document.timeZone = "Invalid/TimeZone"
+
+        XCTAssertThrowsError(try document.validated()) { error in
+            XCTAssertEqual(
+                error as? LocalScheduleValidationError,
+                .invalidTimeZone("Invalid/TimeZone")
+            )
+        }
+    }
+
+    func testValidationRejectsMissingMetadataAndMalformedEvent() {
+        var document = makeDocument(events: [])
+        document.id = " "
+        XCTAssertThrowsError(try document.validated()) { error in
+            XCTAssertEqual(error as? LocalScheduleValidationError, .missingDocumentID)
+        }
+
+        document.id = "schedule"
+        document.title = "\n"
+        XCTAssertThrowsError(try document.validated()) { error in
+            XCTAssertEqual(error as? LocalScheduleValidationError, .missingTitle)
+        }
+
+        var event = makeEvent(id: " ")
+        document.title = "Расписание"
+        document.events = [event]
+        XCTAssertThrowsError(try document.validated()) { error in
+            XCTAssertEqual(error as? LocalScheduleValidationError, .missingEventID)
+        }
+
+        event.id = "broken"
+        event.date = "2026-99-99"
+        document.events = [event]
+        XCTAssertThrowsError(try document.validated()) { error in
+            XCTAssertEqual(
+                error as? LocalScheduleValidationError,
+                .invalidDate("2026-99-99")
+            )
+        }
     }
 
     func testAPIScheduleUsesExactDateAndRealTeacherMetadata() throws {

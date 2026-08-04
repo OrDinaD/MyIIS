@@ -129,7 +129,7 @@ final class ScheduleServiceViewModel: ObservableObject {
             }
         }
     }
-    @Published var dataSource: ScheduleDataSource = .localJSON {
+    @Published var dataSource: ScheduleDataSource = .api {
         didSet {
             defaults.set(dataSource.rawValue, forKey: Self.dataSourceDefaultsKey)
         }
@@ -167,6 +167,8 @@ final class ScheduleServiceViewModel: ObservableObject {
     private let defaults: UserDefaults
     private var hasLoadedInitialData = false
     private var shouldResetQueryOnModeChange = true
+    private var isDirectoryLoading = false
+    private var activeScheduleRequestID: UUID?
     private var continuousCursorDate: Date?
     private var isContinuousEndReached = false
     private var isLoadingContinuousChunk = false
@@ -175,7 +177,6 @@ final class ScheduleServiceViewModel: ObservableObject {
 
     private static let displayModeDefaultsKey = "services.schedule.displayMode"
     private static let dataSourceDefaultsKey = "services.schedule.dataSource"
-    private static let localPreviewDefaultDefaultsKey = "services.schedule.localPreview.default.2026-07-28"
     private static let subgroupFilterDefaultsKey = "services.schedule.subgroupFilter"
     private static let selectedModeDefaultsKey = "services.schedule.selectedMode"
     private static let lastGroupDefaultsKey = "services.schedule.lastGroup"
@@ -187,6 +188,8 @@ final class ScheduleServiceViewModel: ObservableObject {
     private static var cachedSnapshot: Snapshot?
 
     private struct Snapshot {
+        let dataSource: ScheduleDataSource
+        let accountGroupName: String?
         let mode: ScheduleLookupMode
         let query: String
         let schedule: PublicScheduleResponse
@@ -211,11 +214,8 @@ final class ScheduleServiceViewModel: ObservableObject {
             displayMode = restoredMode
         }
 
-        if !defaults.bool(forKey: Self.localPreviewDefaultDefaultsKey) {
-            dataSource = .localJSON
-            defaults.set(true, forKey: Self.localPreviewDefaultDefaultsKey)
-        } else if let dataSourceRaw = defaults.string(forKey: Self.dataSourceDefaultsKey),
-                  let restoredDataSource = ScheduleDataSource(rawValue: dataSourceRaw) {
+        if let dataSourceRaw = defaults.string(forKey: Self.dataSourceDefaultsKey),
+           let restoredDataSource = ScheduleDataSource(rawValue: dataSourceRaw) {
             dataSource = restoredDataSource
         }
 
@@ -244,7 +244,13 @@ final class ScheduleServiceViewModel: ObservableObject {
 
     @discardableResult
     private func applyCachedSnapshotIfAvailable() -> Bool {
-        guard let snapshot = Self.cachedSnapshot else { return false }
+        guard let snapshot = Self.cachedSnapshot,
+              snapshot.dataSource == dataSource else {
+            return false
+        }
+        if dataSource == .api, snapshot.accountGroupName != accountGroupName {
+            return false
+        }
         shouldResetQueryOnModeChange = false
         mode = snapshot.mode
         shouldResetQueryOnModeChange = true
@@ -315,6 +321,8 @@ final class ScheduleServiceViewModel: ObservableObject {
     private func saveSnapshot() {
         guard let schedule else { return }
         Self.cachedSnapshot = Snapshot(
+            dataSource: dataSource,
+            accountGroupName: accountGroupName,
             mode: mode,
             query: query,
             schedule: schedule,
@@ -373,8 +381,11 @@ final class ScheduleServiceViewModel: ObservableObject {
                 await loadGroup(selectedGroup)
             }
         case .teacher:
-            if let urlId = schedule?.employee?.urlId.nilIfBlank {
-                let name = schedule?.employee?.fullName ?? defaults.string(forKey: Self.lastTeacherNameDefaultsKey) ?? urlId
+            if let urlId = schedule?.employee?.urlId.nilIfBlank ?? selectedEmployee?.urlId?.nilIfBlank {
+                let name = schedule?.employee?.fullName
+                    ?? selectedEmployee?.displayName
+                    ?? defaults.string(forKey: Self.lastTeacherNameDefaultsKey)
+                    ?? urlId
                 let restored = ScheduleEmployeeDirectoryEntry(
                     firstName: nil,
                     lastName: nil,
@@ -414,7 +425,7 @@ final class ScheduleServiceViewModel: ObservableObject {
     }
 
     func prepareForAPISource() {
-        guard dataSource == .api else { return }
+        guard dataSource == .api, localScheduleDocument != nil else { return }
         localScheduleDocument = nil
         selectedEmployee = nil
         schedule = nil
@@ -446,6 +457,22 @@ final class ScheduleServiceViewModel: ObservableObject {
         updateSessionScheduleWidgetSnapshot(from: response)
     }
 
+    func clearLocalSchedule() {
+        guard dataSource == .localJSON else { return }
+        localScheduleDocument = nil
+        selectedEmployee = nil
+        schedule = nil
+        currentWeekNumber = nil
+        continuousTimelineDays = []
+        continuousCursorDate = nil
+        isContinuousEndReached = false
+        errorMessage = nil
+        clearStaleDataWarning()
+        if Self.cachedSnapshot?.dataSource == .localJSON {
+            Self.cachedSnapshot = nil
+        }
+    }
+
     private func applyLocalTeacherSchedule(_ teacher: DisciplineEmployee) {
         guard let document = localScheduleDocument,
               let employee = document.teacherDirectoryEntry(id: teacher.id) else {
@@ -468,26 +495,35 @@ final class ScheduleServiceViewModel: ObservableObject {
     }
 
     func loadGroup(_ groupNumber: String) async {
-        if isLoading { return }
+        let requestID = UUID()
+        activeScheduleRequestID = requestID
+        updateLoadingState()
 
         selectedEmployee = nil
+        setMode(.group, preservingQuery: groupNumber)
         let cachedSchedule = api.cachedGroupSchedule(groupNumber: groupNumber)
         let restoredCachedSchedule = cachedSchedule != nil
         if let cachedSchedule {
             applyGroupSchedule(cachedSchedule, week: nil, groupNumber: groupNumber)
         }
 
-        isLoading = true
-        defer { isLoading = false }
+        defer {
+            if activeScheduleRequestID == requestID {
+                activeScheduleRequestID = nil
+                updateLoadingState()
+            }
+        }
 
         do {
             let scheduleResponse = try await api.fetchGroupSchedule(groupNumber: groupNumber)
             let week = try? await api.fetchCurrentWeek()
+            guard activeScheduleRequestID == requestID else { return }
             applyGroupSchedule(scheduleResponse, week: week, groupNumber: groupNumber)
             clearStaleDataWarning()
         } catch is CancellationError {
             return
         } catch {
+            guard activeScheduleRequestID == requestID else { return }
             handleScheduleLoadFailure(error, hasCachedSchedule: restoredCachedSchedule)
         }
     }
@@ -497,26 +533,36 @@ final class ScheduleServiceViewModel: ObservableObject {
             errorMessage = NSLocalizedString("services_schedule_teacher_missing_urlid", comment: "")
             return
         }
-        if isLoading { return }
+
+        let requestID = UUID()
+        activeScheduleRequestID = requestID
+        updateLoadingState()
 
         selectedEmployee = employee
+        setMode(.teacher, preservingQuery: employee.displayName)
         let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId)
         let restoredCachedSchedule = cachedSchedule != nil
         if let cachedSchedule {
             applyEmployeeSchedule(cachedSchedule, week: nil, employee: employee, urlId: urlId)
         }
 
-        isLoading = true
-        defer { isLoading = false }
+        defer {
+            if activeScheduleRequestID == requestID {
+                activeScheduleRequestID = nil
+                updateLoadingState()
+            }
+        }
 
         do {
             let scheduleResponse = try await api.fetchEmployeeSchedule(urlId: urlId)
             let week = try? await api.fetchCurrentWeek()
+            guard activeScheduleRequestID == requestID else { return }
             applyEmployeeSchedule(scheduleResponse, week: week, employee: employee, urlId: urlId)
             clearStaleDataWarning()
         } catch is CancellationError {
             return
         } catch {
+            guard activeScheduleRequestID == requestID else { return }
             handleScheduleLoadFailure(error, hasCachedSchedule: restoredCachedSchedule)
         }
     }
@@ -531,6 +577,7 @@ final class ScheduleServiceViewModel: ObservableObject {
             staleErrorMessage = nil
             isShowingStaleDataWarning = false
             rebuildContinuousTimeline(reset: true)
+            saveSnapshot()
             return
         }
 
@@ -805,13 +852,14 @@ final class ScheduleServiceViewModel: ObservableObject {
             .filter(shouldKeepLesson)
             .filter { $0.weekNumbers.isEmpty || $0.weekNumbers.contains(weekNumber) }
 
-        let dated = weekScoped.filter { $0.isScheduled(on: date) }
-        if !dated.isEmpty {
-            return dated
-        }
+        return weekScoped.filter { Self.isLessonScheduledOnContinuousDay($0, date: date) }
+    }
 
-        // If API date ranges are stale or missing, keep a rolling weekly ribbon.
-        return weekScoped
+    static func isLessonScheduledOnContinuousDay(_ lesson: DisciplineSchedule, date: Date) -> Bool {
+        let hasExplicitDateConstraint = lesson.lessonDate != nil
+            || lesson.startLessonDate != nil
+            || lesson.endLessonDate != nil
+        return !hasExplicitDateConstraint || lesson.isScheduled(on: date)
     }
 
     private func preferExamDisplayIfNeeded(for scheduleResponse: PublicScheduleResponse) {
@@ -946,7 +994,7 @@ final class ScheduleServiceViewModel: ObservableObject {
             return
         }
 
-        if isLoading { return }
+        guard !isDirectoryLoading else { return }
 
         if shouldLoadGroups, let cachedGroups = api.cachedStudentGroups() {
             groups = cachedGroups.sorted { $0.name < $1.name }
@@ -955,9 +1003,11 @@ final class ScheduleServiceViewModel: ObservableObject {
             employees = Self.filteredEmployeeDirectory(cachedEmployees)
         }
 
-        isLoading = (shouldLoadGroups && groups.isEmpty) || (shouldLoadEmployees && employees.isEmpty)
+        isDirectoryLoading = true
+        updateLoadingState()
         defer {
-            isLoading = false
+            isDirectoryLoading = false
+            updateLoadingState()
             hasLoadedInitialData = true
         }
 
@@ -975,6 +1025,10 @@ final class ScheduleServiceViewModel: ObservableObject {
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
         }
+    }
+
+    private func updateLoadingState() {
+        isLoading = isDirectoryLoading || activeScheduleRequestID != nil
     }
 
     private static func filteredEmployeeDirectory(
