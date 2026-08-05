@@ -132,6 +132,7 @@ private extension OthersTabView {
                 mobileServicesContent
             }
             .listStyle(.insetGrouped)
+            .animation(.smooth(duration: 0.35), value: authService.currentUser?.isHeadmanOrNoteAllowed)
             .navigationTitle(NSLocalizedString("tab_services", comment: ""))
             .navigationBarTitleDisplayMode(.large)
             .navigationDestination(for: AppSection.self) { section in
@@ -195,6 +196,7 @@ private extension OthersTabView {
                     serviceRow(for: .headman)
                 }
                 .accessibilityLabel(NSLocalizedString("services_item_headman", comment: ""))
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
 
             NavigationLink(value: AppSection.group) {
