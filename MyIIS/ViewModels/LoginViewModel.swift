@@ -20,13 +20,11 @@ class LoginViewModel: ObservableObject {
 
         authService.$isLoading
             .receive(on: RunLoop.main)
-            .assign(to: \.isLoading, on: self)
-            .store(in: &cancellables)
+            .assign(to: &$isLoading)
 
         authService.$errorMessage
             .receive(on: RunLoop.main)
-            .assign(to: \.errorMessage, on: self)
-            .store(in: &cancellables)
+            .assign(to: &$errorMessage)
 
         checkServerStatus()
     }

@@ -55,10 +55,7 @@ class APIService {
     }
 
     static func clearResponseCache(in defaults: UserDefaults = .standard) {
-        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(responseCachePrefix) {
-            defaults.removeObject(forKey: key)
-            UserDefaultsPayloadStore.clear(forKey: key, from: defaults)
-        }
+        UserDefaultsPayloadStore.clear(prefix: responseCachePrefix, from: defaults)
     }
 
     /// Аутентификация пользователя

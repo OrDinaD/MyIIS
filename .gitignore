@@ -146,3 +146,19 @@ task.md
 
 # Local Antigravity CLI context
 GEMINI.md
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+check_all_words.py
+skarnik_check.py
+
+# Context Link
+.context-link.db
+
+

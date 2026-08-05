@@ -18,6 +18,12 @@
 - Не используй shell, filesystem API, Python, `sed`, `perl` или `apply_patch` для кода, ресурсов, тестов, entitlements, Info.plist, String Catalogs и файлов Xcode-проекта.
 - Допустимые локальные исключения: Git, SwiftLint/Periphery и другие явно выбранные анализаторы, а также конфигурация вне Project Navigator (`AGENTS.md`, `.agents/`, `.gitignore`). Исключение не разрешает менять production-файлы в обход Xcode MCP.
 
+## Поиск и семантический анализ кода
+
+- Для смыслового и контекстного поиска по кодовой базе в первую очередь используй `context-link`.
+- В Swift-коде обязательно используй `swift-sourcekit` (`swift-mcp-server`) для получения точных определений, ссылок (references), типов, реализаций протоколов и диагностики компилятора через SourceKit-LSP.
+- Перед изменением Swift-символов проверяй их области применения и зависимости через `context-link` и `swift-sourcekit`.
+
 ## Apple API, UI и архитектура
 
 - Перед новым или незнакомым API SwiftUI, UIKit, WidgetKit, App Intents, Observation, Swift Concurrency, AVFoundation и других Apple frameworks используй `DocumentationSearch`.

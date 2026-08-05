@@ -56,6 +56,19 @@ enum UserDefaultsPayloadStore {
         }
     }
 
+    static func clear(prefix: String, from defaults: UserDefaults = .standard) {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(prefix) {
+            defaults.removeObject(forKey: key)
+        }
+        guard let cacheDir = cacheDirectory() else { return }
+        let safePrefix = prefix.replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: ":", with: "_")
+        if let files = try? FileManager.default.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: nil) {
+            for file in files where file.lastPathComponent.hasPrefix(safePrefix) {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
+    }
+
     static func clearAll(in defaults: UserDefaults = .standard) {
         guard let cacheDir = cacheDirectory() else { return }
         if let files = try? FileManager.default.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: nil) {

@@ -19,7 +19,9 @@ description: "Работать с MyIIS, Xcode, Swift, SwiftUI, UIKit и Apple S
 
 ## Работать с проектом
 
-- Навигация: сначала `XcodeGlob`/`XcodeGrep`, затем точечный `XcodeRead`; для открытого файла использовать `XcodeGetCurrentFile`.
+- Поиск по смыслу: для смыслового и контекстного поиска по коду в первую очередь используй `context-link`.
+- Точность Swift: в Swift-коде обязательно используй `swift-sourcekit` (`swift-mcp-server`) для точных определений, ссылок (references), типов, реализаций протоколов и диагностики через SourceKit-LSP.
+- Навигация по Xcode: `XcodeGlob`/`XcodeGrep` для прямого поиска по точному тексту/файлам, затем точечный `XcodeRead`; для открытого файла — `XcodeGetCurrentFile`.
 - Правки: предпочитать `XcodeUpdate`; перед `XcodeWrite` прочитать существующий файл; перед `XcodeRM` найти зависимости; перемещения выполнять `XcodeMV`.
 - Не менять project files, resources, tests, catalogs, plist и entitlements через filesystem, shell или `apply_patch`.
 - Разрешить filesystem только для конфигурации вне Project Navigator (`AGENTS.md`, `.agents/`, `.gitignore`), Git и внешних анализаторов. Не расширять это исключение на production-код.
