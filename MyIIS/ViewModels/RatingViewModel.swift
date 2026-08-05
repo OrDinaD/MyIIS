@@ -1,24 +1,25 @@
 import Combine
 import Foundation
 
+@Observable
 @MainActor
-final class RatingViewModel: ObservableObject {
+final class RatingViewModel {
 
-    @Published private(set) var isLoading: Bool = false
-    @Published private(set) var errorMessage: String?
-    @Published private(set) var isLoadingSubjects: Bool = false
-    @Published private(set) var isGradebookUnavailable: Bool = false
-    @Published private(set) var isRatingPendingForNewSemester: Bool = false
-    @Published private(set) var isUsingScheduleFallback: Bool = false
-    @Published private(set) var isShowingStaleDataWarning: Bool = false
-    @Published private(set) var lastUpdateTime: Date?
-    @Published private(set) var students: [StudentRating] = []
-    @Published private(set) var checkpointNumbers: [Int] = []
-    @Published private(set) var summary: RatingSummary?
-    @Published private(set) var disciplines: [GradebookDiscipline] = []
-    @Published private(set) var subjectOmissions: [String: Int] = [:]
-    @Published private(set) var userCheckpoints: [RatingCheckpoint] = []
-    @Published private(set) var gradebookAverage: Double?
+    private(set) var isLoading: Bool = false
+    private(set) var errorMessage: String?
+    private(set) var isLoadingSubjects: Bool = false
+    private(set) var isGradebookUnavailable: Bool = false
+    private(set) var isRatingPendingForNewSemester: Bool = false
+    private(set) var isUsingScheduleFallback: Bool = false
+    private(set) var isShowingStaleDataWarning: Bool = false
+    private(set) var lastUpdateTime: Date?
+    private(set) var students: [StudentRating] = []
+    private(set) var checkpointNumbers: [Int] = []
+    private(set) var summary: RatingSummary?
+    private(set) var disciplines: [GradebookDiscipline] = []
+    private(set) var subjectOmissions: [String: Int] = [:]
+    private(set) var userCheckpoints: [RatingCheckpoint] = []
+    private(set) var gradebookAverage: Double?
 
     private let apiService: APIService
     private let userDefaults: UserDefaults

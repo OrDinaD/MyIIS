@@ -6,19 +6,19 @@ struct RatingView: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.requestReview) private var requestReview
-    @StateObject var viewModel: RatingViewModel
+    @State var viewModel: RatingViewModel
     @State private var expandedDisciplineIDs: Set<String> = []
     @State private var hasRevealedContent = false
     @AppStorage("rating_view_open_count") private var ratingViewOpenCount = 0
 
     @MainActor
     init() {
-        _viewModel = StateObject(wrappedValue: RatingViewModel())
+        _viewModel = State(initialValue: RatingViewModel())
     }
 
     @MainActor
     init(viewModel: RatingViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+        _viewModel = State(initialValue: viewModel)
     }
 
     private var ratingAnimation: Animation? {
