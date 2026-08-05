@@ -12,8 +12,9 @@ enum AccountSettingsImagePolicy {
     static let jpegCompressionQuality: CGFloat = 0.86
 }
 
+@Observable
 @MainActor
-final class AccountSettingsViewModel: ObservableObject {
+final class AccountSettingsViewModel {
     struct AlertMessage: Identifiable {
         let id = UUID()
         let title: String
@@ -40,40 +41,40 @@ final class AccountSettingsViewModel: ObservableObject {
 
     private static var cachedSnapshot: Snapshot?
 
-    @Published var selectedTab: AccountSettingsTab = .password
-    @Published var isLoading = false
-    @Published var alert: AlertMessage?
+    var selectedTab: AccountSettingsTab = .password
+    var isLoading = false
+    var alert: AlertMessage?
 
-    @Published var lastPasswordChangeDate: String = "—"
-    @Published var passwordAttemptsLeft: Int = 0
-    @Published var passwordBanExpiredTime: String?
+    var lastPasswordChangeDate: String = "—"
+    var passwordAttemptsLeft: Int = 0
+    var passwordBanExpiredTime: String?
 
-    @Published var oldPassword = ""
-    @Published var newPassword = ""
-    @Published var confirmPassword = ""
-    @Published var isChangingPassword = false
+    var oldPassword = ""
+    var newPassword = ""
+    var confirmPassword = ""
+    var isChangingPassword = false
 
-    @Published var phoneValue = ""
-    @Published var phoneConfirmed = false
-    @Published var emailValue = ""
-    @Published var emailConfirmed = false
-    @Published var mobileAttempts = 0
-    @Published var emailAttempts = 0
-    @Published var contactBanExpiredTime: String?
-    @Published var isUpdatingContact = false
+    var phoneValue = ""
+    var phoneConfirmed = false
+    var emailValue = ""
+    var emailConfirmed = false
+    var mobileAttempts = 0
+    var emailAttempts = 0
+    var contactBanExpiredTime: String?
+    var isUpdatingContact = false
 
-    @Published var isConfirmSheetPresented = false
-    @Published var confirmationCode = ""
-    @Published var confirmationTargetDescription = ""
-    @Published var isSendingCode = false
-    @Published var isConfirmingCode = false
+    var isConfirmSheetPresented = false
+    var confirmationCode = ""
+    var confirmationTargetDescription = ""
+    var isSendingCode = false
+    var isConfirmingCode = false
 
-    @Published var photoImage: UIImage?
-    @Published var photoURL: URL?
-    @Published var showPhoto = false
-    @Published var isUploadingPhoto = false
-    @Published var isUpdatingShowPhoto = false
-    @Published var canEditContacts = true // Default to true, or add logic here if needed
+    var photoImage: UIImage?
+    var photoURL: URL?
+    var showPhoto = false
+    var isUploadingPhoto = false
+    var isUpdatingShowPhoto = false
+    var canEditContacts = true // Default to true, or add logic here if needed
 
     private let service: AccountSettingsService
     let authService: AuthenticationService

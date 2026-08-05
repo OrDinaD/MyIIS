@@ -22,7 +22,7 @@ private struct PasswordRequirementState: Identifiable {
 }
 
 struct AccountSettingsView: View {
-    @StateObject private var viewModel = AccountSettingsViewModel()
+    @State private var viewModel = AccountSettingsViewModel()
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showingImageSourceDialog = false
     @State private var showingCamera = false
