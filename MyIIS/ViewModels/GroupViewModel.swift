@@ -1,15 +1,16 @@
 import Combine
 import Foundation
 
+@Observable
 @MainActor
-final class GroupViewModel: ObservableObject {
-    @Published var groupInfo: UserGroupInfoResponse?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published var lastUpdateTime: Date?
-    @Published var isShowingStaleDataWarning = false
-    @Published var isDownloadingReport = false
-    @Published var downloadedReportURL: URL?
+final class GroupViewModel {
+    var groupInfo: UserGroupInfoResponse?
+    var isLoading = false
+    var errorMessage: String?
+    var lastUpdateTime: Date?
+    var isShowingStaleDataWarning = false
+    var isDownloadingReport = false
+    var downloadedReportURL: URL?
 
     private let apiService: APIService
     private let authService: AuthenticationService

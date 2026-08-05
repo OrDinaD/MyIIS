@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 struct GroupView: View {
-    @StateObject private var viewModel = GroupViewModel()
+    @State private var viewModel = GroupViewModel()
     @Environment(\.openURL) var openURL
     @State private var sharePayload: SharePayload?
 
