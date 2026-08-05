@@ -76,6 +76,11 @@ struct User: Codable, Identifiable, Equatable {
     let settings: UserSettings
 
     let isHeadman: Bool
+    let canStudentNote: Bool
+
+    var isHeadmanOrNoteAllowed: Bool {
+        isHeadman || canStudentNote
+    }
 
     /// Полное имя для отображения
     var fullName: String {
@@ -121,7 +126,8 @@ extension User {
             skills: skills,
             references: references,
             settings: settings,
-            isHeadman: isHeadman
+            isHeadman: isHeadman,
+            canStudentNote: canStudentNote
         )
     }
 }
@@ -164,7 +170,8 @@ extension User {
             isSearchJob: true,
             isShowRating: true
         ),
-        isHeadman: true
+        isHeadman: true,
+        canStudentNote: true
     )
 }
 #endif
