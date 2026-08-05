@@ -123,17 +123,12 @@ struct EmployeeProfileView: View {
     @ViewBuilder
     private func profileImage(url: URL?) -> some View {
         if let url {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                case .failure, .empty:
-                    profileImagePlaceholder
-                @unknown default:
-                    profileImagePlaceholder
-                }
+            CachedAsyncImage(url: url, maxPixelSize: 360) { image in
+                image
+                    .resizable()
+                    .scaledToFill()
+            } placeholder: {
+                profileImagePlaceholder
             }
             .frame(width: 88, height: 88)
             .clipShape(Circle())

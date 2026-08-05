@@ -117,17 +117,12 @@ struct DepartmentDetailView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack(alignment: .top, spacing: 12) {
                                     if let url = emp.photoLink {
-                                        AsyncImage(url: url) { phase in
-                                            switch phase {
-                                            case .success(let image):
-                                                image.resizable().scaledToFill()
-                                            case .failure, .empty:
-                                                Image(systemName: "person.circle.fill")
-                                                    .resizable()
-                                                    .foregroundStyle(.gray)
-                                            @unknown default:
-                                                EmptyView()
-                                            }
+                                        CachedAsyncImage(url: url, maxPixelSize: 180) { image in
+                                            image.resizable().scaledToFill()
+                                        } placeholder: {
+                                            Image(systemName: "person.circle.fill")
+                                                .resizable()
+                                                .foregroundStyle(.gray)
                                         }
                                         .frame(width: 48, height: 48)
                                         .clipShape(Circle())
