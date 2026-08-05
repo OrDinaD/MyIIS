@@ -91,7 +91,7 @@ private struct ApplicationsSection: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 20)
             } else {
-                VStack(spacing: 12) {
+                LazyVStack(spacing: 12) {
                     ForEach(applications) { application in
                         ApplicationRow(application: application)
                     }
@@ -287,7 +287,7 @@ private struct CertificatesSection: View {
             } else if certificates.isEmpty {
                 EmptyStateView(message: NSLocalizedString("attendance_no_certificates", comment: ""), action: onRetry)
             } else {
-                VStack(spacing: 12) {
+                LazyVStack(spacing: 12) {
                     ForEach(groupedCertificates, id: \.0) { term, items in
                         VStack(alignment: .leading, spacing: 8) {
                             Text(String(format: NSLocalizedString("attendance_term_format", comment: ""), Int(term) ?? 0))

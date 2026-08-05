@@ -63,7 +63,7 @@ struct ScheduleServiceView: View {
                     case .continuous:
                         if !viewModel.pastContinuousDays.isEmpty {
                             DisclosureGroup {
-                                VStack(alignment: .leading, spacing: 14) {
+                                LazyVStack(alignment: .leading, spacing: 14) {
                                     ForEach(viewModel.pastContinuousDays) { day in
                                         VStack(alignment: .leading, spacing: 10) {
                                             Text(viewModel.continuousDayTitle(for: day))
