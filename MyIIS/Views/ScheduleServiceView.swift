@@ -10,7 +10,7 @@ import SwiftUI
 // swiftlint:disable type_body_length
 @MainActor
 struct ScheduleServiceView: View {
-    @StateObject private var viewModel = ScheduleServiceViewModel()
+    @State private var viewModel = ScheduleServiceViewModel()
     @StateObject private var localScheduleViewModel = LocalScheduleViewModel()
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @State private var scheduleReportURL: URL?

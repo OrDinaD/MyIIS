@@ -115,10 +115,11 @@ struct ExamScheduleDay: Identifiable {
     }
 }
 
+@Observable
 @MainActor
 // swiftlint:disable:next type_body_length
-final class ScheduleServiceViewModel: ObservableObject {
-    @Published var mode: ScheduleLookupMode = .group {
+final class ScheduleServiceViewModel {
+    var mode: ScheduleLookupMode = .group {
         didSet {
             if oldValue != mode {
                 defaults.set(mode.rawValue, forKey: Self.selectedModeDefaultsKey)
@@ -129,38 +130,38 @@ final class ScheduleServiceViewModel: ObservableObject {
             }
         }
     }
-    @Published var dataSource: ScheduleDataSource = .api {
+    var dataSource: ScheduleDataSource = .api {
         didSet {
             defaults.set(dataSource.rawValue, forKey: Self.dataSourceDefaultsKey)
         }
     }
-    @Published var query = "" {
+    var query = "" {
         didSet { scheduleDebouncedSearchUpdate() }
     }
-    @Published private var debouncedQuery = ""
-    @Published var groups: [StudyGroup] = []
-    @Published var employees: [ScheduleEmployeeDirectoryEntry] = []
-    @Published var schedule: PublicScheduleResponse?
-    @Published private(set) var selectedEmployee: ScheduleEmployeeDirectoryEntry?
-    @Published var currentWeekNumber: Int?
-    @Published var weekFilter: StudyWeekFilter = .all
-    @Published var displayMode: ScheduleDisplayMode = .byDay {
+    private var debouncedQuery = ""
+    var groups: [StudyGroup] = []
+    var employees: [ScheduleEmployeeDirectoryEntry] = []
+    var schedule: PublicScheduleResponse?
+    private(set) var selectedEmployee: ScheduleEmployeeDirectoryEntry?
+    var currentWeekNumber: Int?
+    var weekFilter: StudyWeekFilter = .all
+    var displayMode: ScheduleDisplayMode = .byDay {
         didSet { persistDisplayMode() }
     }
-    @Published var subgroupFilter: ScheduleSubgroupFilter = .all {
+    var subgroupFilter: ScheduleSubgroupFilter = .all {
         didSet {
             persistSubgroupFilter()
             rebuildContinuousTimeline(reset: true)
         }
     }
-    @Published var isLoading = false
-    @Published var isDownloadingReport = false
-    @Published var errorMessage: String?
-    @Published var noticeMessage: String?
-    @Published private(set) var isShowingStaleDataWarning = false
-    @Published private(set) var staleErrorMessage: String?
-    @Published private(set) var continuousTimelineDays: [ScheduleContinuousDay] = []
-    @Published private(set) var pinnedGroupNames: [String] = []
+    var isLoading = false
+    var isDownloadingReport = false
+    var errorMessage: String?
+    var noticeMessage: String?
+    private(set) var isShowingStaleDataWarning = false
+    private(set) var staleErrorMessage: String?
+    private(set) var continuousTimelineDays: [ScheduleContinuousDay] = []
+    private(set) var pinnedGroupNames: [String] = []
 
     private let api: ServiceEndpointsAPI
     private let authService: AuthenticationService
