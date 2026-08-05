@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AttendanceView: View {
-    @StateObject private var viewModel = AttendanceViewModel()
+    @State private var viewModel = AttendanceViewModel()
 
     var body: some View {
         NavigationStack {

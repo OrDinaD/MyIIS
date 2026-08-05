@@ -12,29 +12,30 @@ struct AttendanceCacheModel: Codable {
     let lastUpdateTime: Date
 }
 
+@Observable
 @MainActor
-class AttendanceViewModel: ObservableObject {
+final class AttendanceViewModel {
     enum Section: Hashable {
         case applications
         case summary
         case certificates
     }
 
-    @Published var applications: [OmissionApplication] = []
-    @Published var certificates: [OmissionCertificate] = [] {
+    var applications: [OmissionApplication] = []
+    var certificates: [OmissionCertificate] = [] {
         didSet {
             updateGroupedCertificates()
         }
     }
-    @Published private(set) var groupedCertificates: [(String, [OmissionCertificate])] = []
-    @Published var monthlyCounts: [MonthlyOmissionCount] = []
-    @Published var faculty: String?
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published private(set) var sectionErrors: [Section: String] = [:]
+    private(set) var groupedCertificates: [(String, [OmissionCertificate])] = []
+    var monthlyCounts: [MonthlyOmissionCount] = []
+    var faculty: String?
+    var isLoading: Bool = false
+    var errorMessage: String?
+    private(set) var sectionErrors: [Section: String] = [:]
 
-    @Published var lastUpdateTime: Date?
-    @Published var isShowingStaleDataWarning: Bool = false
+    var lastUpdateTime: Date?
+    var isShowingStaleDataWarning: Bool = false
 
     private let apiService: APIService
     private var hasLoadedOnce = false
