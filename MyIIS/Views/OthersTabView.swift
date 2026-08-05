@@ -197,11 +197,6 @@ private extension OthersTabView {
                 .accessibilityLabel(NSLocalizedString("services_item_headman", comment: ""))
             }
 
-            NavigationLink(value: AppSection.diploma) {
-                serviceRow(for: .diploma)
-            }
-            .accessibilityLabel(NSLocalizedString("services_item_diploma", comment: ""))
-
             NavigationLink(value: AppSection.group) {
                 serviceRow(for: .group)
             }
@@ -393,7 +388,7 @@ private extension OthersTabView {
         if authService.currentUser?.isHeadman == true {
             values.append(.headman)
         }
-        values.append(contentsOf: [.diploma, .group])
+        values.append(.group)
         return values
     }
 
