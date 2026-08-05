@@ -21,7 +21,12 @@ class AttendanceViewModel: ObservableObject {
     }
 
     @Published var applications: [OmissionApplication] = []
-    @Published var certificates: [OmissionCertificate] = []
+    @Published var certificates: [OmissionCertificate] = [] {
+        didSet {
+            updateGroupedCertificates()
+        }
+    }
+    @Published private(set) var groupedCertificates: [(String, [OmissionCertificate])] = []
     @Published var monthlyCounts: [MonthlyOmissionCount] = []
     @Published var faculty: String?
     @Published var isLoading: Bool = false
@@ -55,6 +60,17 @@ class AttendanceViewModel: ObservableObject {
         self.monthlyCounts = cache.monthlyCounts
         self.faculty = cache.faculty
         self.lastUpdateTime = cache.lastUpdateTime
+        self.updateGroupedCertificates()
+    }
+
+    private func updateGroupedCertificates() {
+        let grouped = Dictionary(grouping: certificates) { $0.term }
+        let sortedTerms = grouped.keys.sorted { (lhs, rhs) -> Bool in
+            (Int(lhs) ?? 0) > (Int(rhs) ?? 0)
+        }
+        self.groupedCertificates = sortedTerms.map { term in
+            (term, grouped[term, default: []].sorted { $0.dateFrom > $1.dateFrom })
+        }
     }
 
     private func saveCache() {

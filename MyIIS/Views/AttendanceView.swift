@@ -49,6 +49,7 @@ struct AttendanceView: View {
 
             CertificatesSection(
                 certificates: viewModel.certificates,
+                groupedCertificates: viewModel.groupedCertificates,
                 faculty: viewModel.faculty,
                 isLoading: viewModel.isLoading,
                 errorMessage: viewModel.sectionErrors[.certificates],
@@ -263,6 +264,7 @@ private struct MonthlyBarRow: View {
 
 private struct CertificatesSection: View {
     let certificates: [OmissionCertificate]
+    let groupedCertificates: [(String, [OmissionCertificate])]
     let faculty: String?
     let isLoading: Bool
     let errorMessage: String?
@@ -286,7 +288,7 @@ private struct CertificatesSection: View {
                 EmptyStateView(message: NSLocalizedString("attendance_no_certificates", comment: ""), action: onRetry)
             } else {
                 VStack(spacing: 12) {
-                    ForEach(groupedCertificates(), id: \.0) { term, items in
+                    ForEach(groupedCertificates, id: \.0) { term, items in
                         VStack(alignment: .leading, spacing: 8) {
                             Text(String(format: NSLocalizedString("attendance_term_format", comment: ""), Int(term) ?? 0))
                                 .font(.subheadline.weight(.semibold))
@@ -299,17 +301,6 @@ private struct CertificatesSection: View {
                     }
                 }
             }
-        }
-    }
-
-    private func groupedCertificates() -> [(String, [OmissionCertificate])] {
-        let grouped = Dictionary(grouping: certificates) { $0.term }
-        let sortedTerms = grouped.keys.sorted { (lhs, rhs) -> Bool in
-            (Int(lhs) ?? 0) > (Int(rhs) ?? 0)
-        }
-
-        return sortedTerms.map { term in
-            (term, grouped[term, default: []].sorted { $0.dateFrom > $1.dateFrom })
         }
     }
 }
