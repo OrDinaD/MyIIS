@@ -27,20 +27,21 @@ struct DormitorySettlementReveal: Identifiable, Equatable {
     )
 }
 
+@Observable
 @MainActor
-final class DormitoryViewModel: ObservableObject {
-    @Published private(set) var applications: [DormitoryQueueApplication]
-    @Published private(set) var privilegeRecords: [DormitoryPrivilegeRecord]
-    @Published private(set) var announcement: DormitoryAnnouncement?
-    @Published var isLoading: Bool
-    @Published var isSubmittingApplication: Bool
-    @Published var isDownloadingFile: Bool
-    @Published var errorMessage: String?
-    @Published var actionErrorMessage: String?
-    @Published var lastUpdateTime: Date?
-    @Published var isShowingStaleDataWarning = false
-    @Published private(set) var settlementReveal: DormitorySettlementReveal?
-    @Published private(set) var pendingSettlementApplicationID: Int?
+final class DormitoryViewModel {
+    private(set) var applications: [DormitoryQueueApplication]
+    private(set) var privilegeRecords: [DormitoryPrivilegeRecord]
+    private(set) var announcement: DormitoryAnnouncement?
+    var isLoading: Bool
+    var isSubmittingApplication: Bool
+    var isDownloadingFile: Bool
+    var errorMessage: String?
+    var actionErrorMessage: String?
+    var lastUpdateTime: Date?
+    var isShowingStaleDataWarning = false
+    private(set) var settlementReveal: DormitorySettlementReveal?
+    private(set) var pendingSettlementApplicationID: Int?
 
     private let dormitoryService: DormitoryServicing
     private let userDefaults: UserDefaults

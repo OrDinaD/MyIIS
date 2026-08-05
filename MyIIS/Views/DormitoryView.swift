@@ -2,13 +2,13 @@ import QuickLook
 import SwiftUI
 
 struct DormitoryView: View {
-    @StateObject private var viewModel: DormitoryViewModel
+    @State private var viewModel: DormitoryViewModel
     @State private var previewURL: URL?
     @State private var editorContext: DormitoryApplicationEditorContext?
 
     @MainActor
     init(viewModel: DormitoryViewModel? = nil) {
-        _viewModel = StateObject(wrappedValue: viewModel ?? DormitoryViewModel())
+        _viewModel = State(initialValue: viewModel ?? DormitoryViewModel())
     }
 
     var body: some View {
