@@ -1,18 +1,19 @@
 import Combine
 import Foundation
 
+@Observable
 @MainActor
-final class GradebookViewModel: ObservableObject {
+final class GradebookViewModel {
 
-    @Published var markbook: MarkbookResponse?
-    @Published var semesterKeys: [String] = []
-    @Published var selectedSemesterKey: String?
-    @Published var currentCourse: Int?
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var lastUpdateTime: Date?
-    @Published var isShowingStaleDataWarning = false
-    @Published var isCheckingForUpdates = false
+    var markbook: MarkbookResponse?
+    var semesterKeys: [String] = []
+    var selectedSemesterKey: String?
+    var currentCourse: Int?
+    var isLoading: Bool = false
+    var errorMessage: String?
+    var lastUpdateTime: Date?
+    var isShowingStaleDataWarning = false
+    var isCheckingForUpdates = false
 
     private let apiService: APIService
     private var hasLoadedOnce = false

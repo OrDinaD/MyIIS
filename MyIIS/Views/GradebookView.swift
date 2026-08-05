@@ -2,7 +2,7 @@ import SwiftUI
 
 struct GradebookView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @StateObject private var viewModel: GradebookViewModel
+    @State private var viewModel: GradebookViewModel
     @State private var expandedSubjectId: MarkbookMark.ID?
     @State private var sharePayload: GradebookShareImagePayload?
     @State private var shareErrorMessage: String?
@@ -10,12 +10,12 @@ struct GradebookView: View {
 
     @MainActor
     init() {
-        _viewModel = StateObject(wrappedValue: GradebookViewModel())
+        _viewModel = State(initialValue: GradebookViewModel())
     }
 
     @MainActor
     init(viewModel: GradebookViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+        _viewModel = State(initialValue: viewModel)
     }
 
     private var isCurrentSemesterSelected: Bool {
