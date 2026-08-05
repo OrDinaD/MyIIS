@@ -143,13 +143,21 @@ struct DormitoryApplicationAvailability: View {
 
 struct DormitoryHistorySection: View {
     let applications: [DormitoryQueueApplication]
+    let isDownloadingFile: Bool
+    let onOpenDocument: (DormitoryQueueApplication) -> Void
+    let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
     @State private var isExpanded = false
 
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
-            VStack(spacing: 12) {
+            LazyVStack(spacing: 12) {
                 ForEach(applications) { application in
-                    DormitoryHistoryRow(application: application)
+                    DormitoryHistoryRow(
+                        application: application,
+                        isDownloadingFile: isDownloadingFile,
+                        onOpenDocument: { onOpenDocument(application) },
+                        onDownloadApplicationForm: { onDownloadApplicationForm(application) }
+                    )
                 }
             }
             .padding(.top, 12)
@@ -181,6 +189,9 @@ struct DormitoryHistorySection: View {
 
 private struct DormitoryHistoryRow: View {
     let application: DormitoryQueueApplication
+    let isDownloadingFile: Bool
+    let onOpenDocument: () -> Void
+    let onDownloadApplicationForm: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -256,6 +267,14 @@ private struct DormitoryHistoryRow: View {
                     )
                 }
             }
+
+            DormitoryApplicationActions(
+                application: application,
+                isDownloadingFile: isDownloadingFile,
+                onOpenDocument: onOpenDocument,
+                onEditApplication: {},
+                onDownloadApplicationForm: onDownloadApplicationForm
+            )
         }
         .padding(16)
         .background(

@@ -59,7 +59,12 @@ struct DormitoryApplicationsDashboard: View {
             }
 
             if !historyApplications.isEmpty {
-                DormitoryHistorySection(applications: historyApplications)
+                DormitoryHistorySection(
+                    applications: historyApplications,
+                    isDownloadingFile: isDownloadingFile,
+                    onOpenDocument: onOpenDocument,
+                    onDownloadApplicationForm: onDownloadApplicationForm
+                )
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
