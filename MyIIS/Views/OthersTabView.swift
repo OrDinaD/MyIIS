@@ -190,12 +190,10 @@ private extension OthersTabView {
             .accessibilityLabel(NSLocalizedString("services_item_schedule", comment: ""))
             .accessibilityIdentifier("serviceLink_schedule")
 
-            if authService.currentUser?.isHeadman == true {
-                NavigationLink(value: AppSection.headman) {
-                    serviceRow(for: .headman)
-                }
-                .accessibilityLabel(NSLocalizedString("services_item_headman", comment: ""))
+            NavigationLink(value: AppSection.headman) {
+                serviceRow(for: .headman)
             }
+            .accessibilityLabel(NSLocalizedString("services_item_headman", comment: ""))
 
             NavigationLink(value: AppSection.group) {
                 serviceRow(for: .group)
@@ -384,12 +382,7 @@ private extension OthersTabView {
     }
 
     private var studyDestinations: [ServicesDestination] {
-        var values: [ServicesDestination] = [.gradebook, .study, .schedule]
-        if authService.currentUser?.isHeadman == true {
-            values.append(.headman)
-        }
-        values.append(.group)
-        return values
+        [.gradebook, .study, .schedule, .headman, .group]
     }
 
     private var resourceDestinations: [ServicesDestination] {
