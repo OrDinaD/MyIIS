@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+import time
 import hashlib
 import zipfile
 import subprocess
@@ -12,9 +13,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 PORT = 8080
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CERTS_DIR = os.path.join(BASE_DIR, "certs")
-
-# Минимальная бинарная прозрачная 1x1 PNG иконка на случай отсутствия
-DUMMY_PNG = bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c63000100000500010d0a2d4b0000000049454e44ae426082")
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
 
 class PassHandler(BaseHTTPRequestHandler):
     def _send_cors_headers(self):
@@ -45,12 +44,14 @@ class PassHandler(BaseHTTPRequestHandler):
             dorm_num = data.get("dormitoryNumber", "5")
             room_num = data.get("roomNumber", "2002А")
 
+            timestamp = int(time.time())
+
             pass_json = {
                 "formatVersion": 1,
                 "passTypeIdentifier": "pass.by.bsuir.myiis.dormitory",
-                "serialNumber": f"DORM-{dorm_num}-{room_num}-{last_name}",
+                "serialNumber": f"DORM-{dorm_num}-{room_num}-{timestamp}",
                 "teamIdentifier": "Y85TSUMM4F",
-                "organizationName": "БГУИР MyIIS",
+                "organizationName": "БГУИР",
                 "description": "Пропуск в общежитие БГУИР",
                 "logoText": f"Общежитие № {dorm_num}",
                 "foregroundColor": "rgb(0, 0, 0)",
@@ -95,14 +96,17 @@ class PassHandler(BaseHTTPRequestHandler):
 
             pass_json_bytes = json.dumps(pass_json, ensure_ascii=False, indent=2).encode('utf-8')
 
-            # Формируем словарь элементов архива
             file_map = {
-                "pass.json": pass_json_bytes,
-                "icon.png": DUMMY_PNG,
-                "icon@2x.png": DUMMY_PNG,
-                "logo.png": DUMMY_PNG,
-                "logo@2x.png": DUMMY_PNG
+                "pass.json": pass_json_bytes
             }
+
+            # Читаем валидные иконки из ASSETS_DIR
+            asset_files = ["icon.png", "icon@2x.png", "icon@3x.png", "logo.png", "logo@2x.png"]
+            for a_name in asset_files:
+                a_path = os.path.join(ASSETS_DIR, a_name)
+                if os.path.exists(a_path):
+                    with open(a_path, "rb") as f:
+                        file_map[a_name] = f.read()
 
             # Создаем manifest.json со всеми SHA-1 хешами
             manifest = {}
@@ -112,12 +116,11 @@ class PassHandler(BaseHTTPRequestHandler):
             manifest_bytes = json.dumps(manifest, ensure_ascii=False, indent=2).encode('utf-8')
             file_map["manifest.json"] = manifest_bytes
 
-            # Подписываем manifest.json через OpenSSL и создаем signature
+            # Подписываем manifest.json через OpenSSL
             signature_bytes = self.sign_manifest(manifest_bytes)
             if signature_bytes:
                 file_map["signature"] = signature_bytes
 
-            # Упаковываем в .pkpass zip архив
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
                 for name, content in file_map.items():
