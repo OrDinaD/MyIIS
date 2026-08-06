@@ -2,11 +2,19 @@
 import os
 import sys
 import json
+import hashlib
 import zipfile
+import subprocess
+import tempfile
 import io
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 PORT = 8080
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CERTS_DIR = os.path.join(BASE_DIR, "certs")
+
+# Минимальная бинарная прозрачная 1x1 PNG иконка на случай отсутствия
+DUMMY_PNG = bytes.fromhex("89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c63000100000500010d0a2d4b0000000049454e44ae426082")
 
 class PassHandler(BaseHTTPRequestHandler):
     def _send_cors_headers(self):
@@ -41,10 +49,8 @@ class PassHandler(BaseHTTPRequestHandler):
                 "formatVersion": 1,
                 "passTypeIdentifier": "pass.by.bsuir.myiis.dormitory",
                 "serialNumber": f"DORM-{dorm_num}-{room_num}-{last_name}",
-                "teamIdentifier": "BSUIRMYIIS",
-                "webServiceURL": "https://iis.bsuir.by",
-                "authenticationToken": "secrettoken123",
-                "organizationName": "MyIIS БГУИР",
+                "teamIdentifier": "Y85TSUMM4F",
+                "organizationName": "БГУИР MyIIS",
                 "description": "Пропуск в общежитие БГУИР",
                 "logoText": f"Общежитие № {dorm_num}",
                 "foregroundColor": "rgb(0, 0, 0)",
@@ -87,11 +93,35 @@ class PassHandler(BaseHTTPRequestHandler):
                 }
             }
 
+            pass_json_bytes = json.dumps(pass_json, ensure_ascii=False, indent=2).encode('utf-8')
+
+            # Формируем словарь элементов архива
+            file_map = {
+                "pass.json": pass_json_bytes,
+                "icon.png": DUMMY_PNG,
+                "icon@2x.png": DUMMY_PNG,
+                "logo.png": DUMMY_PNG,
+                "logo@2x.png": DUMMY_PNG
+            }
+
+            # Создаем manifest.json со всеми SHA-1 хешами
+            manifest = {}
+            for name, content in file_map.items():
+                manifest[name] = hashlib.sha1(content).hexdigest()
+
+            manifest_bytes = json.dumps(manifest, ensure_ascii=False, indent=2).encode('utf-8')
+            file_map["manifest.json"] = manifest_bytes
+
+            # Подписываем manifest.json через OpenSSL и создаем signature
+            signature_bytes = self.sign_manifest(manifest_bytes)
+            if signature_bytes:
+                file_map["signature"] = signature_bytes
+
+            # Упаковываем в .pkpass zip архив
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-                zf.writestr("pass.json", json.dumps(pass_json, ensure_ascii=False, indent=2))
-                manifest = {"pass.json": "sample_hash"}
-                zf.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
+                for name, content in file_map.items():
+                    zf.writestr(name, content)
 
             pkpass_data = zip_buffer.getvalue()
 
@@ -105,13 +135,59 @@ class PassHandler(BaseHTTPRequestHandler):
         else:
             self.send_error(404, "Not Found")
 
+    def sign_manifest(self, manifest_bytes):
+        pass_cert = os.path.join(CERTS_DIR, "pass_cert.pem")
+        pass_key = os.path.join(CERTS_DIR, "pass_key.pem")
+        wwdr_cert = os.path.join(CERTS_DIR, "wwdr.pem")
+
+        if not (os.path.exists(pass_cert) and os.path.exists(pass_key) and os.path.exists(wwdr_cert)):
+            print("⚠️ Ошибка: Сертификаты не найдены в server/certs")
+            return None
+
+        with tempfile.NamedTemporaryFile(delete=False) as m_file:
+            m_file.write(manifest_bytes)
+            m_path = m_file.name
+
+        sig_path = m_path + ".sig"
+
+        cmd = [
+            "openssl", "smime", "-sign",
+            "-signer", pass_cert,
+            "-inkey", pass_key,
+            "-certfile", wwdr_cert,
+            "-in", m_path,
+            "-out", sig_path,
+            "-outform", "DER",
+            "-binary",
+            "-nodetach"
+        ]
+
+        try:
+            res = subprocess.run(cmd, capture_output=True)
+            if res.returncode == 0 and os.path.exists(sig_path):
+                with open(sig_path, "rb") as s_file:
+                    sig_data = s_file.read()
+                os.unlink(m_path)
+                os.unlink(sig_path)
+                return sig_data
+            else:
+                print(f"⚠️ Ошибка выполнения OpenSSL: {res.stderr.decode('utf-8')}")
+        except Exception as e:
+            print(f"⚠️ Исключение при подписи: {e}")
+
+        if os.path.exists(m_path):
+            os.unlink(m_path)
+        if os.path.exists(sig_path):
+            os.unlink(sig_path)
+        return None
+
     def do_GET(self):
         if self.path in ["/", "/health", "/api/pass"]:
             self.send_response(200)
             self._send_cors_headers()
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps({"status": "ok", "service": "MyIIS Pass Backend", "port": PORT}).encode('utf-8'))
+            self.wfile.write(json.dumps({"status": "ok", "service": "MyIIS Signed Pass Backend", "port": PORT}).encode('utf-8'))
         else:
             self.send_error(404, "Not Found")
 
