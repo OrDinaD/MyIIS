@@ -421,6 +421,43 @@ extension DormitoryViewModel {
         )
         self.pendingSettlementApplicationID = nil
     }
+
+    var currentPassData: DormitoryPassData {
+        let user = AuthenticationService.shared.currentUser
+        let roomInfoString = applications.first(where: { $0.roomInfo != nil })?.roomInfo
+
+        let (dorm, room) = parseRoomInfo(roomInfoString)
+
+        return DormitoryPassData(
+            dormitoryNumber: dorm,
+            roomNumber: room,
+            lastName: (user?.lastName.isEmpty == false) ? user!.lastName : "Василевский",
+            firstName: (user?.firstName.isEmpty == false) ? user!.firstName : "Владислав",
+            middleName: (user?.middleName.isEmpty == false) ? user!.middleName : "Валерьевич",
+            faculty: (user?.education.faculty.isEmpty == false) ? user!.education.faculty : "ФИТУ",
+            group: (user?.education.group.isEmpty == false) ? user!.education.group : "428503",
+            validUntil: "30.06.2025",
+            photoURL: user?.photoURL
+        )
+    }
+
+    private func parseRoomInfo(_ info: String?) -> (dormitory: String, room: String) {
+        guard let info = info, !info.isEmpty else {
+            return ("5", "401 - а")
+        }
+        var dorm = "5"
+        var room = info
+
+        if let dormMatch = info.range(of: "(?:Общ\\.|Общежитие №?\\s*)(\\d+)", options: .regularExpression) {
+            let matchedStr = String(info[dormMatch])
+            let extractedDigits = matchedStr.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+            if !extractedDigits.isEmpty {
+                dorm = extractedDigits
+            }
+        }
+
+        return (dorm, room)
+    }
 }
 
 private extension DormitoryViewModel {

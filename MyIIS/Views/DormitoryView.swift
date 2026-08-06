@@ -1,3 +1,4 @@
+import PassKit
 import QuickLook
 import SwiftUI
 
@@ -5,6 +6,10 @@ struct DormitoryView: View {
     @State private var viewModel: DormitoryViewModel
     @State private var previewURL: URL?
     @State private var editorContext: DormitoryApplicationEditorContext?
+    @State private var passToPresent: PKPass?
+    @State private var isShowingPassSheet = false
+    @State private var walletNoticeMessage: String?
+    @State private var isShowingWalletNotice = false
 
     @MainActor
     init(viewModel: DormitoryViewModel? = nil) {
@@ -83,11 +88,32 @@ struct DormitoryView: View {
         } message: {
             Text(viewModel.actionErrorMessage ?? "")
         }
+        .sheet(isPresented: $isShowingPassSheet) {
+            if let pass = passToPresent {
+                PKAddPassesViewControllerRepresentable(pass: pass) {
+                    isShowingPassSheet = false
+                }
+            }
+        }
+        .alert("Добавление в Apple Wallet", isPresented: $isShowingWalletNotice) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(walletNoticeMessage ?? "")
+        }
     }
 
     @ViewBuilder
     private var dormitoryContent: some View {
         VStack(spacing: 16) {
+            DormitoryPassCardView(
+                passData: viewModel.currentPassData,
+                onAddToWallet: {
+                    Task {
+                        await handleAddToWallet()
+                    }
+                }
+            )
+
             if viewModel.isShowingStaleDataWarning {
                 StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
                     await viewModel.reload()
@@ -144,6 +170,17 @@ struct DormitoryView: View {
     private func downloadApplicationForm(for application: DormitoryQueueApplication) async {
         if let fileURL = await viewModel.downloadApplicationForm(for: application) {
             previewURL = fileURL
+        }
+    }
+
+    private func handleAddToWallet() async {
+        do {
+            let pass = try await DormitoryWalletPassManager.shared.fetchWalletPass(for: viewModel.currentPassData)
+            passToPresent = pass
+            isShowingPassSheet = true
+        } catch {
+            walletNoticeMessage = error.localizedDescription
+            isShowingWalletNotice = true
         }
     }
 }
