@@ -45,6 +45,7 @@ class PassHandler(BaseHTTPRequestHandler):
             room_num = data.get("roomNumber", "2002А")
 
             timestamp = int(time.time())
+            print(f"📥 [SERVER_LOG] Получен запрос на пропуск для: {last_name} {first_name} ({faculty}, гр. {group})")
 
             pass_json = {
                 "formatVersion": 1,
@@ -100,7 +101,6 @@ class PassHandler(BaseHTTPRequestHandler):
                 "pass.json": pass_json_bytes
             }
 
-            # Читаем валидные иконки из ASSETS_DIR
             asset_files = ["icon.png", "icon@2x.png", "icon@3x.png", "logo.png", "logo@2x.png"]
             for a_name in asset_files:
                 a_path = os.path.join(ASSETS_DIR, a_name)
@@ -108,7 +108,6 @@ class PassHandler(BaseHTTPRequestHandler):
                     with open(a_path, "rb") as f:
                         file_map[a_name] = f.read()
 
-            # Создаем manifest.json со всеми SHA-1 хешами
             manifest = {}
             for name, content in file_map.items():
                 manifest[name] = hashlib.sha1(content).hexdigest()
@@ -116,10 +115,12 @@ class PassHandler(BaseHTTPRequestHandler):
             manifest_bytes = json.dumps(manifest, ensure_ascii=False, indent=2).encode('utf-8')
             file_map["manifest.json"] = manifest_bytes
 
-            # Подписываем manifest.json через OpenSSL
             signature_bytes = self.sign_manifest(manifest_bytes)
             if signature_bytes:
                 file_map["signature"] = signature_bytes
+                print(f"🔒 [SERVER_LOG] Успешно подделана подпись OpenSSL PKCS7 на базе Apple Developer Certificate ({len(signature_bytes)} байт)")
+            else:
+                print("❌ [SERVER_LOG] Ошибка создания подписи!")
 
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
@@ -135,6 +136,7 @@ class PassHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(pkpass_data)))
             self.end_headers()
             self.wfile.write(pkpass_data)
+            print(f"✅ [SERVER_LOG] Отправлен сгенерированный .pkpass архив (размер: {len(pkpass_data)} байт)\n")
         else:
             self.send_error(404, "Not Found")
 
@@ -144,7 +146,7 @@ class PassHandler(BaseHTTPRequestHandler):
         wwdr_cert = os.path.join(CERTS_DIR, "wwdr.pem")
 
         if not (os.path.exists(pass_cert) and os.path.exists(pass_key) and os.path.exists(wwdr_cert)):
-            print("⚠️ Ошибка: Сертификаты не найдены в server/certs")
+            print("⚠️ Ошибка: Файлы сертификатов не найдены в server/certs")
             return None
 
         with tempfile.NamedTemporaryFile(delete=False) as m_file:
@@ -197,7 +199,7 @@ class PassHandler(BaseHTTPRequestHandler):
 def run():
     server_address = ('0.0.0.0', PORT)
     httpd = HTTPServer(server_address, PassHandler)
-    print(f"🚀 Локальный сервер подписи Wallet карт запущен на http://localhost:{PORT}")
+    print(f"🚀 [SERVER_LOG] Сервер подписи Wallet карт БГУИР запущен на http://localhost:{PORT}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
