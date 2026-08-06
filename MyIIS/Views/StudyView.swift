@@ -3,14 +3,14 @@ import SwiftUI
 @MainActor
 struct StudyView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @StateObject private var viewModel: StudyViewModel
+    @State private var viewModel: StudyViewModel
     @State private var isShowingMarkSheetOrder = false
     @State private var isShowingCertificateOrder = false
     @State private var alertMessage: String?
     @State private var showsAlert = false
 
     init(viewModel: StudyViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+        _viewModel = State(initialValue: viewModel)
     }
 
     init() {

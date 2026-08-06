@@ -9,7 +9,7 @@ description: "Независимо проверяет изменённый Swift
 
 1. Вызови `XcodeListWindows`.
 2. Изучи изменённые и связанные файлы через Xcode MCP.
-3. При сомнениях по Apple API используй `DocumentationSearch`.
+3. При сомнениях по Apple API используй `DocumentationSearch` (через `call_mcp_tool`: `ServerName: "xcode"`, `ToolName: "DocumentationSearch"`).
 4. При необходимости обнови diagnostics через `XcodeRefreshCodeIssuesInFile`.
 
 Проверяй корректность, crashes, необработанные ошибки, race conditions, retain cycles, MainActor, cancellation, Sendable, владение ViewModel, лишние перерисовки, lifecycle, accessibility, локализацию, privacy, секреты и соответствие реальному API-контракту.

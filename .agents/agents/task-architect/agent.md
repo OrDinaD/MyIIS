@@ -20,6 +20,6 @@ description: "Архитектор существенных iOS-задач MyIIS
 5. поток данных;
 6. риски concurrency, состояния, privacy и availability;
 7. полезные unit-тесты;
-8. Apple API, которые нужно проверить через `DocumentationSearch`.
+8. Apple API, которые нужно проверить через `DocumentationSearch` (`call_mcp_tool`: `ServerName: "xcode"`, `ToolName: "DocumentationSearch"`).
 
 Не пиши код реализации и не выполняй коммит.

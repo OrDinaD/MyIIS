@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct NotificationsView: View {
-    @ObservedObject var viewModel: PortalNotificationsViewModel
+    @Bindable var viewModel: PortalNotificationsViewModel
 
     var body: some View {
         content

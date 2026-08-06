@@ -1,8 +1,10 @@
 import Combine
 import Foundation
+import Observation
 
 @MainActor
-final class PortalNotificationsViewModel: ObservableObject {
+@Observable
+final class PortalNotificationsViewModel {
     enum State: Equatable {
         case idle
         case loading
@@ -10,12 +12,12 @@ final class PortalNotificationsViewModel: ObservableObject {
         case loadingMore
     }
 
-    @Published private(set) var notifications: [PortalNotification] = []
-    @Published private(set) var unreadCount = 0
-    @Published private(set) var totalElements = 0
-    @Published private(set) var state: State = .idle
-    @Published private(set) var errorMessage: String?
-    @Published private(set) var isMarkingRead = false
+    private(set) var notifications: [PortalNotification] = []
+    private(set) var unreadCount = 0
+    private(set) var totalElements = 0
+    private(set) var state: State = .idle
+    private(set) var errorMessage: String?
+    private(set) var isMarkingRead = false
 
     private let service: PortalNotificationsServicing
     private let pageSize: Int

@@ -1,9 +1,11 @@
 import Combine
 import Foundation
+import Observation
 import SwiftUI
 
 @MainActor
-final class HeadmanViewModel: ObservableObject {
+@Observable
+final class HeadmanViewModel {
     enum Mode: String, CaseIterable, Identifiable {
         case byDate
         case summary
@@ -22,31 +24,31 @@ final class HeadmanViewModel: ObservableObject {
         }
     }
 
-    @Published var mode: Mode = .byDate
-    @Published var selectedDate: Date = Date()
-    @Published var selectedWeekAnchorDate: Date = Date()
-    @Published var isLoadingAccess = false
-    @Published var isLoadingLessons = false
-    @Published var isLoadingSummary = false
-    @Published var isLoadingWeekly = false
-    @Published var isSaving = false
-    @Published var errorMessage: String?
-    @Published var successMessage: String?
-    @Published var lastUpdateTime: Date?
-    @Published var isShowingStaleDataWarning = false
-    @Published var hasAccess = false
-    @Published var isGroupHead = false
-    @Published var currentStudentId: Int?
-    @Published var students: [HeadmanStudent] = []
-    @Published var responsibleStudentIDs: Set<Int> = []
-    @Published var lessonsByDate: [HeadmanLesson] = []
-    @Published var subjectOptions: [HeadmanSubjectOption] = []
-    @Published var selectedSubjectID: Int?
-    @Published var selectedSubgroup: Int = 0
-    @Published var summaryStudents: [HeadmanSummaryStudent] = []
-    @Published var weeklyStudents: [HeadmanWeeklyStudentSummary] = []
-    @Published private(set) var pendingOmissions: [Int: [Int: Int]] = [:]
-    @Published private(set) var updatingResponsibleIDs: Set<Int> = []
+    var mode: Mode = .byDate
+    var selectedDate: Date = Date()
+    var selectedWeekAnchorDate: Date = Date()
+    var isLoadingAccess = false
+    var isLoadingLessons = false
+    var isLoadingSummary = false
+    var isLoadingWeekly = false
+    var isSaving = false
+    var errorMessage: String?
+    var successMessage: String?
+    var lastUpdateTime: Date?
+    var isShowingStaleDataWarning = false
+    var hasAccess = false
+    var isGroupHead = false
+    var currentStudentId: Int?
+    var students: [HeadmanStudent] = []
+    var responsibleStudentIDs: Set<Int> = []
+    var lessonsByDate: [HeadmanLesson] = []
+    var subjectOptions: [HeadmanSubjectOption] = []
+    var selectedSubjectID: Int?
+    var selectedSubgroup: Int = 0
+    var summaryStudents: [HeadmanSummaryStudent] = []
+    var weeklyStudents: [HeadmanWeeklyStudentSummary] = []
+    private(set) var pendingOmissions: [Int: [Int: Int]] = [:]
+    private(set) var updatingResponsibleIDs: Set<Int> = []
 
     private let apiService: APIService
     private let authService: AuthenticationService

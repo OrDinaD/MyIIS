@@ -1,12 +1,14 @@
 import Combine
 import Foundation
+import Observation
 
 @MainActor
-final class DiplomaViewModel: ObservableObject {
+@Observable
+final class DiplomaViewModel {
 
-    @Published private(set) var isLoading: Bool = false
-    @Published private(set) var errorMessage: String?
-    @Published private(set) var progress: DiplomaProgress?
+    private(set) var isLoading: Bool = false
+    private(set) var errorMessage: String?
+    private(set) var progress: DiplomaProgress?
 
     private let diplomaService: DiplomaServicing
     private let logService = LogService.shared

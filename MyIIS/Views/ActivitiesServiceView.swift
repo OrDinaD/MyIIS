@@ -1,8 +1,9 @@
 import Combine
+import Observation
 import SwiftUI
 
 struct ActivitiesServiceView: View {
-    @StateObject private var viewModel = ActivitiesServiceViewModel()
+    @State private var viewModel = ActivitiesServiceViewModel()
 
     var body: some View {
         ScrollView {
@@ -91,16 +92,17 @@ struct ActivitiesServiceView: View {
 }
 
 @MainActor
-private final class ActivitiesServiceViewModel: ObservableObject {
-    @Published var isBRSM: Bool?
-    @Published var isProfCom: Bool?
-    @Published var socialWork: [ServiceJSONObject] = []
-    @Published var researchWork: [ServiceJSONObject] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published private(set) var isShowingStaleDataWarning = false
-    @Published private(set) var lastUpdateTime: Date?
-    @Published private(set) var staleErrorMessage: String?
+@Observable
+private final class ActivitiesServiceViewModel {
+    var isBRSM: Bool?
+    var isProfCom: Bool?
+    var socialWork: [ServiceJSONObject] = []
+    var researchWork: [ServiceJSONObject] = []
+    var isLoading = false
+    var errorMessage: String?
+    private(set) var isShowingStaleDataWarning = false
+    private(set) var lastUpdateTime: Date?
+    private(set) var staleErrorMessage: String?
 
     private let api = ServiceEndpointsAPI()
     private var hasLoadedOnce = false

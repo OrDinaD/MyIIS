@@ -1,16 +1,18 @@
 import Combine
 import Foundation
+import Observation
 import SwiftUI
 
 @MainActor
-class LoginViewModel: ObservableObject {
+@Observable
+final class LoginViewModel {
 
-    @Published var username: String = ""
-    @Published var password: String = ""
+    var username: String = ""
+    var password: String = ""
 
-    @Published var isLoading: Bool = false
-    @Published var errorMessage: String?
-    @Published var isServerActive: Bool?
+    var isLoading: Bool = false
+    var errorMessage: String?
+    var isServerActive: Bool?
 
     private var authService: AuthenticationService
     private var cancellables = Set<AnyCancellable>()
@@ -20,11 +22,13 @@ class LoginViewModel: ObservableObject {
 
         authService.$isLoading
             .receive(on: RunLoop.main)
-            .assign(to: &$isLoading)
+            .sink { [weak self] val in self?.isLoading = val }
+            .store(in: &cancellables)
 
         authService.$errorMessage
             .receive(on: RunLoop.main)
-            .assign(to: &$errorMessage)
+            .sink { [weak self] msg in self?.errorMessage = msg }
+            .store(in: &cancellables)
 
         checkServerStatus()
     }

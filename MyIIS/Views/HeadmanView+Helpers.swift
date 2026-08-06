@@ -30,7 +30,7 @@ extension SummaryTable {
 
 struct ResponsibleStudentRow: View {
     let student: HeadmanStudent
-    @ObservedObject var viewModel: HeadmanViewModel
+    @Bindable var viewModel: HeadmanViewModel
 
     var body: some View {
         HStack(spacing: 12) {

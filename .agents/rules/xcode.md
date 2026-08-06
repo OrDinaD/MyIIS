@@ -6,11 +6,11 @@ description: "Обязательная политика работы с MyIIS ч
 
 Для любых задач с Xcode, Swift, SwiftUI, UIKit и Apple SDK используй skill `xcode`.
 
-Первым вызовом в задаче должен быть `mcp__xcode.XcodeListWindows`. После этого используй полученный `tabIdentifier` проекта MyIIS.
+Первым вызовом в задаче должен быть `XcodeListWindows` (через `call_mcp_tool` с `ServerName: "xcode"`). После этого используй полученный `tabIdentifier` проекта MyIIS.
 
-Чтение, поиск, создание и изменение файлов Xcode-проекта выполняй через `mcp__xcode`, когда подходящий инструмент доступен. Shell допустим только для Git, SwiftLint и файлов, недоступных в Project Navigator.
+Чтение, поиск, создание и изменение файлов Xcode-проекта выполняй через MCP сервер `xcode`, когда подходящий инструмент доступен. Shell допустим только для Git, SwiftLint и файлов, недоступных в Project Navigator.
 
-Перед новым или незнакомым Apple API используй `mcp__xcode.DocumentationSearch`.
+Перед новым или незнакомым Apple API используй `DocumentationSearch` (`call_mcp_tool` с `ServerName: "xcode"`, `ToolName: "DocumentationSearch"`, `Arguments`: `{"query": "...", "frameworks": ["FrameworkName"]}`).
 
 После существенных изменений:
 

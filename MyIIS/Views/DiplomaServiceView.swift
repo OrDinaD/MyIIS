@@ -2,7 +2,7 @@ import SwiftUI
 
 @MainActor
 struct DiplomaServiceView: View {
-    @StateObject private var viewModel = DiplomaApplicationViewModel()
+    @State private var viewModel = DiplomaApplicationViewModel()
     @State private var isRequestFormPresented = false
     @State private var applicationToDelete: DiplomaApplication?
 
@@ -334,7 +334,7 @@ private struct InfoLine: View {
 }
 
 private struct DiplomaRequestFormView: View {
-    @ObservedObject var viewModel: DiplomaApplicationViewModel
+    @Bindable var viewModel: DiplomaApplicationViewModel
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {

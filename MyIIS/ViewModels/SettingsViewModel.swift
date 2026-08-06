@@ -4,22 +4,24 @@
 //
 import Combine
 import Foundation
+import Observation
 
 @MainActor
-final class SettingsViewModel: ObservableObject {
-    @Published var isPublicProfile: Bool
-    @Published var isJobSearchEnabled: Bool
-    @Published var isRatingVisible: Bool
-    @Published var isTwoFactorEnabled: Bool
-    @Published var academicNotificationsEnabled: Bool
-    @Published var eventNotificationsEnabled: Bool
+@Observable
+final class SettingsViewModel {
+    var isPublicProfile: Bool
+    var isJobSearchEnabled: Bool
+    var isRatingVisible: Bool
+    var isTwoFactorEnabled: Bool
+    var academicNotificationsEnabled: Bool
+    var eventNotificationsEnabled: Bool
 
-    @Published var isSaving: Bool = false
-    @Published var isProcessingPasswordChange: Bool = false
-    @Published var hasPendingChanges: Bool = false
-    @Published var isPresentingChangePasswordSheet: Bool = false
-    @Published var alert: AlertItem?
-    @Published var didLogout: Bool = false
+    var isSaving: Bool = false
+    var isProcessingPasswordChange: Bool = false
+    var hasPendingChanges: Bool = false
+    var isPresentingChangePasswordSheet: Bool = false
+    var alert: AlertItem?
+    var didLogout: Bool = false
 
     private let service: SettingsServiceProtocol
     private var originalUserSettings: UserSettings

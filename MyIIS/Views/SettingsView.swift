@@ -7,10 +7,10 @@ import SwiftUI
 @MainActor
 struct SettingsView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @StateObject private var viewModel: SettingsViewModel
+    @State private var viewModel: SettingsViewModel
 
     init(viewModel: SettingsViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+        _viewModel = State(initialValue: viewModel)
     }
 
     init() {
@@ -241,7 +241,7 @@ struct SettingsView: View {
 }
 
 private struct ChangePasswordSheet: View {
-    @ObservedObject var viewModel: SettingsViewModel
+    @Bindable var viewModel: SettingsViewModel
     @State private var currentPassword: String = ""
     @State private var newPassword: String = ""
     @State private var confirmPassword: String = ""

@@ -1,18 +1,20 @@
 import Combine
 import Foundation
+import Observation
 
 @MainActor
-final class StudyViewModel: ObservableObject {
-    @Published private(set) var dashboard: StudyDashboard
-    @Published private(set) var markSheetEmployees: [MarkSheetEmployee] = []
-    @Published var isLoading = false
-    @Published var isLoadingEmployees = false
-    @Published var isSubmitting = false
-    @Published var errorMessage: String?
-    @Published var toastMessage: String?
+@Observable
+final class StudyViewModel {
+    private(set) var dashboard: StudyDashboard
+    private(set) var markSheetEmployees: [MarkSheetEmployee] = []
+    var isLoading = false
+    var isLoadingEmployees = false
+    var isSubmitting = false
+    var errorMessage: String?
+    var toastMessage: String?
 
-    @Published var lastUpdateTime: Date?
-    @Published var isShowingStaleDataWarning = false
+    var lastUpdateTime: Date?
+    var isShowingStaleDataWarning = false
 
     private let service: StudyServiceProtocol
     private let userDefaults: UserDefaults

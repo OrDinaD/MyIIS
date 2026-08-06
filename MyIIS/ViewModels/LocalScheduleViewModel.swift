@@ -1,11 +1,13 @@
 import Combine
 import Foundation
+import Observation
 
 @MainActor
-final class LocalScheduleViewModel: ObservableObject {
-    @Published private(set) var document: LocalScheduleDocument?
-    @Published var errorMessage: String?
-    @Published var noticeMessage: String?
+@Observable
+final class LocalScheduleViewModel {
+    private(set) var document: LocalScheduleDocument?
+    var errorMessage: String?
+    var noticeMessage: String?
 
     private let defaults: UserDefaults
     private static let installedFixtureDefaultsKey = "local.schedule.fixture.2026-07-28"

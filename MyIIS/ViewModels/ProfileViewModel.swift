@@ -1,8 +1,10 @@
 import Combine
 import Foundation
+import Observation
 
 @MainActor
-class ProfileViewModel: ObservableObject {
+@Observable
+final class ProfileViewModel {
 
     private let authService: AuthenticationService
 

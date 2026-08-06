@@ -1,4 +1,5 @@
 import Combine
+import Observation
 import SwiftUI
 
 struct ServiceEndpointSnapshot<Value: Codable>: Codable {
@@ -30,7 +31,7 @@ enum ServiceEndpointCache {
 
 @MainActor
 struct LibraryServiceView: View {
-    @StateObject private var viewModel = LibraryServiceViewModel()
+    @State private var viewModel = LibraryServiceViewModel()
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -124,14 +125,15 @@ struct LibraryServiceView: View {
     }
 }
 @MainActor
-private final class LibraryServiceViewModel: ObservableObject {
-    @Published var books: [ServiceJSONObject] = []
-    @Published var news: [LibraryNewsEntry] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published private(set) var isShowingStaleDataWarning = false
-    @Published private(set) var lastUpdateTime: Date?
-    @Published private(set) var staleErrorMessage: String?
+@Observable
+private final class LibraryServiceViewModel {
+    var books: [ServiceJSONObject] = []
+    var news: [LibraryNewsEntry] = []
+    var isLoading = false
+    var errorMessage: String?
+    private(set) var isShowingStaleDataWarning = false
+    private(set) var lastUpdateTime: Date?
+    private(set) var staleErrorMessage: String?
 
     private let api = ServiceEndpointsAPI()
     private var hasLoadedOnce = false
@@ -259,7 +261,7 @@ private final class LibraryServiceViewModel: ObservableObject {
 
 @MainActor
 struct AnnouncementsServiceView: View {
-    @StateObject private var viewModel = AnnouncementsServiceViewModel()
+    @State private var viewModel = AnnouncementsServiceViewModel()
 
     var body: some View {
         ScrollView {
@@ -316,13 +318,14 @@ struct AnnouncementsServiceView: View {
 }
 
 @MainActor
-private final class AnnouncementsServiceViewModel: ObservableObject {
-    @Published var items: [ServiceJSONObject] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published private(set) var isShowingStaleDataWarning = false
-    @Published private(set) var lastUpdateTime: Date?
-    @Published private(set) var staleErrorMessage: String?
+@Observable
+private final class AnnouncementsServiceViewModel {
+    var items: [ServiceJSONObject] = []
+    var isLoading = false
+    var errorMessage: String?
+    private(set) var isShowingStaleDataWarning = false
+    private(set) var lastUpdateTime: Date?
+    private(set) var staleErrorMessage: String?
 
     private let api = ServiceEndpointsAPI()
     private var hasLoadedOnce = false
@@ -387,7 +390,7 @@ private final class AnnouncementsServiceViewModel: ObservableObject {
 
 @MainActor
 struct PenaltiesServiceView: View {
-    @StateObject private var viewModel = PenaltiesServiceViewModel()
+    @State private var viewModel = PenaltiesServiceViewModel()
 
     var body: some View {
         ScrollView {
@@ -444,13 +447,14 @@ struct PenaltiesServiceView: View {
 }
 
 @MainActor
-private final class PenaltiesServiceViewModel: ObservableObject {
-    @Published var items: [ServiceJSONObject] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published private(set) var isShowingStaleDataWarning = false
-    @Published private(set) var lastUpdateTime: Date?
-    @Published private(set) var staleErrorMessage: String?
+@Observable
+private final class PenaltiesServiceViewModel {
+    var items: [ServiceJSONObject] = []
+    var isLoading = false
+    var errorMessage: String?
+    private(set) var isShowingStaleDataWarning = false
+    private(set) var lastUpdateTime: Date?
+    private(set) var staleErrorMessage: String?
 
     private let api = ServiceEndpointsAPI()
     private var hasLoadedOnce = false

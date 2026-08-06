@@ -1,28 +1,30 @@
 import Combine
 import Foundation
+import Observation
 
 @MainActor
-final class DiplomaApplicationViewModel: ObservableObject {
-    @Published private(set) var personalInformation: DiplomaPersonalInformation?
-    @Published private(set) var applications: [DiplomaApplication] = []
-    @Published private(set) var supervisors: [DiplomaSupervisor] = []
-    @Published private(set) var employeeTopics: [DiplomaEmployeeTopic] = []
-    @Published private(set) var downloadedApplicationURL: URL?
-    @Published private(set) var isLoading = false
-    @Published private(set) var isSearching = false
-    @Published private(set) var isSubmitting = false
-    @Published private(set) var isDownloading = false
-    @Published private(set) var isShowingStaleDataWarning = false
-    @Published private(set) var lastUpdateTime: Date?
-    @Published private(set) var staleErrorMessage: String?
-    @Published var errorMessage: String?
-    @Published var successMessage: String?
-    @Published var supervisorQuery = ""
-    @Published var selectedSupervisor: DiplomaSupervisor?
-    @Published var selectedTopic: DiplomaEmployeeTopic?
-    @Published var topicName = ""
-    @Published var localizedTopicName = ""
-    @Published var justification = ""
+@Observable
+final class DiplomaApplicationViewModel {
+    private(set) var personalInformation: DiplomaPersonalInformation?
+    private(set) var applications: [DiplomaApplication] = []
+    private(set) var supervisors: [DiplomaSupervisor] = []
+    private(set) var employeeTopics: [DiplomaEmployeeTopic] = []
+    private(set) var downloadedApplicationURL: URL?
+    private(set) var isLoading = false
+    private(set) var isSearching = false
+    private(set) var isSubmitting = false
+    private(set) var isDownloading = false
+    private(set) var isShowingStaleDataWarning = false
+    private(set) var lastUpdateTime: Date?
+    private(set) var staleErrorMessage: String?
+    var errorMessage: String?
+    var successMessage: String?
+    var supervisorQuery = ""
+    var selectedSupervisor: DiplomaSupervisor?
+    var selectedTopic: DiplomaEmployeeTopic?
+    var topicName = ""
+    var localizedTopicName = ""
+    var justification = ""
 
     private let service: DiplomaApplicationServicing
     private let userDefaults: UserDefaults

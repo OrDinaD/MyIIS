@@ -11,7 +11,7 @@ import SwiftUI
 @MainActor
 struct ScheduleServiceView: View {
     @State private var viewModel = ScheduleServiceViewModel()
-    @StateObject private var localScheduleViewModel = LocalScheduleViewModel()
+    @State private var localScheduleViewModel = LocalScheduleViewModel()
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @State private var scheduleReportURL: URL?
     @State private var selectedExamLesson: DisciplineSchedule?
@@ -508,7 +508,7 @@ struct ScheduleServiceView: View {
 
 private struct LocalScheduleEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject var viewModel: LocalScheduleViewModel
+    @Bindable var viewModel: LocalScheduleViewModel
 
     var body: some View {
         NavigationStack {

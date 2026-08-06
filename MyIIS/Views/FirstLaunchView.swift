@@ -6,7 +6,7 @@ struct FirstLaunchView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var colorScheme
-    @StateObject private var loginViewModel = LoginViewModel()
+    @State private var loginViewModel = LoginViewModel()
     @State private var stage: Stage = .choices
     @State private var introPhase: IntroPhase
     @FocusState private var focusedField: LoginField?

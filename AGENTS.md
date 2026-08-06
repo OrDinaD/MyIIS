@@ -1,10 +1,10 @@
 # MyIIS: обязательная политика работы
 
-Проект — iOS-приложение на Swift/SwiftUI. Для любой работы с проектом обязательно используй живой `mcp__xcode` (Xcode Tools). Если `mcp__xcode` недоступен, `XcodeListWindows` не видит `/Users/vlad/MyIIS/MyIIS.xcodeproj` или нужная операция стабильно завершается ошибкой, сообщи точную проблему и приостанови изменения проекта. Не обходи отказ Xcode MCP через shell, Python или прямую запись файлов.
+Проект — iOS-приложение на Swift/SwiftUI. Для любой работы с проектом обязательно используй живой MCP сервер `xcode` (Xcode Tools через `call_mcp_tool` с `ServerName: "xcode"`). Если MCP сервер `xcode` недоступен, `XcodeListWindows` не видит `/Users/vlad/MyIIS/MyIIS.xcodeproj` или нужная операция стабильно завершается ошибкой, сообщи точную проблему и приостанови изменения проекта. Не обходи отказ Xcode MCP через shell, Python или прямую запись файлов.
 
 ## Обязательное начало каждой задачи
 
-1. Вызови `mcp__xcode.XcodeListWindows`.
+1. Вызови `call_mcp_tool` (`ServerName: "xcode"`, `ToolName: "XcodeListWindows"`).
 2. Найди `/Users/vlad/MyIIS/MyIIS.xcodeproj` и сохрани его `tabIdentifier`.
 3. Проверь активные scheme и destination через `XcodeListSchemes` и `XcodeListRunDestinations`, когда они влияют на результат.
 4. Не полагайся на записанные номера Xcode, Swift, SDK, iOS или моделей устройств: текущую среду определяй живыми инструментами.
@@ -12,7 +12,7 @@
 
 ## Единственный путь к файлам проекта
 
-- Читай, ищи, создавай, перемещай, переименовывай и изменяй файлы, видимые в Project Navigator, только через `mcp__xcode`: `XcodeRead`, `XcodeLS`, `XcodeGlob`, `XcodeGrep`, `XcodeUpdate`, `XcodeWrite`, `XcodeMakeDir`, `XcodeMV`, `XcodeRM`.
+- Читай, ищи, создавай, перемещай, переименовывай и изменяй файлы, видимые в Project Navigator, только через MCP сервер `xcode`: `XcodeRead`, `XcodeLS`, `XcodeGlob`, `XcodeGrep`, `XcodeUpdate`, `XcodeWrite`, `XcodeMakeDir`, `XcodeMV`, `XcodeRM`.
 - Пути Xcode MCP — пути в структуре Project Navigator, а не абсолютные filesystem paths.
 - Для текущего открытого файла или selection используй `XcodeGetCurrentFile`.
 - Не используй shell, filesystem API, Python, `sed`, `perl` или `apply_patch` для кода, ресурсов, тестов, entitlements, Info.plist, String Catalogs и файлов Xcode-проекта.
@@ -26,7 +26,7 @@
 
 ## Apple API, UI и архитектура
 
-- Перед новым или незнакомым API SwiftUI, UIKit, WidgetKit, App Intents, Observation, Swift Concurrency, AVFoundation и других Apple frameworks используй `DocumentationSearch`.
+- Перед новым или незнакомым API SwiftUI, UIKit, WidgetKit, App Intents, Observation, Swift Concurrency, AVFoundation и других Apple frameworks используй `DocumentationSearch` (через `call_mcp_tool`: `ServerName: "xcode"`, `ToolName: "DocumentationSearch"`, `Arguments`: `{"query": "...", "frameworks": ["FrameworkName"]}`).
 - Для beta SDK обязательно подтверждай API, availability и ограничения найденной Apple Documentation; номер OS сам по себе ничего не доказывает.
 - Для View/MVVM проверяй Apple HIG, Dynamic Type, VoiceOver, Reduce Motion, контраст, локализацию, состояния загрузки/ошибки/пустых данных и адаптацию iPhone/iPad.
 - Переиспользуй существующие View, ViewModel, модели, сервисы, роутинг, локализацию и API-клиенты. Не создавай второй источник истины и не помещай бизнес-логику в `body`.

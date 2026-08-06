@@ -49,7 +49,7 @@
 
 ### Apple Documentation, snippet и Preview
 
-- `DocumentationSearch` — семантический поиск Apple Documentation; точные символы дают лучший результат, availability не угадывать.
+- `DocumentationSearch` — семантический поиск Apple Documentation через `call_mcp_tool` (`ServerName: "xcode"`, `ToolName: "DocumentationSearch"`). Аргументы: `query` (строка, обязательно), `frameworks` (массив строк, опционально, например `["SwiftUI"]`). Точные символы дают лучший результат, availability не угадывать.
 - `RunCodeSnippet` — выполнить изолированный Swift snippet в контексте файла; `purpose` не должен содержать слово `test`; не заменяет tests/build.
 - `RenderPreview` — собрать SwiftUI Preview, вернуть snapshot, destination, localization/variant controls и errors.
 

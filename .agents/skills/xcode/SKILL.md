@@ -5,7 +5,7 @@ description: "Работать с MyIIS, Xcode, Swift, SwiftUI, UIKit и Apple S
 
 # Xcode workflow для MyIIS
 
-Использовать `mcp__xcode` как единственный интерфейс к файлам Xcode-проекта. Если MCP не видит проект или нужная операция стабильно не работает, остановить изменения и сообщить точную ошибку; не обходить её прямой записью production-файлов.
+Использовать MCP сервер `xcode` (через `call_mcp_tool` с `ServerName: "xcode"`) как единственный интерфейс к файлам Xcode-проекта. Если MCP не видит проект или нужная операция стабильно не работает, остановить изменения и сообщить точную ошибку; не обходить её прямой записью production-файлов.
 
 ## Начать задачу
 
@@ -28,7 +28,7 @@ description: "Работать с MyIIS, Xcode, Swift, SwiftUI, UIKit и Apple S
 
 ## Проверить Apple API и UX
 
-- Перед новым или незнакомым Apple API вызвать `DocumentationSearch` с точным символом/framework и отдельным запросом по сценарию.
+- Перед новым или незнакомым Apple API вызвать `DocumentationSearch` (`call_mcp_tool`: `ServerName: "xcode"`, `ToolName: "DocumentationSearch"`, `Arguments`: `{"query": "...", "frameworks": ["FrameworkName"]}`).
 - Для HIG/accessibility при необходимости искать без framework-фильтра.
 - Указывать availability только при явном подтверждении Apple Documentation или compiler diagnostics.
 - Проверять Dynamic Type, VoiceOver, Reduce Motion, контраст, локализацию, loading/empty/error/offline/stale/unauthorized состояния, iPhone/iPad и затронутые extensions.

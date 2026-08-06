@@ -6,7 +6,7 @@ import SwiftUI
 
 struct LoginView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @StateObject private var viewModel = LoginViewModel()
+    @State private var viewModel = LoginViewModel()
     @State private var isPasswordVisible = false
     @FocusState private var focusedField: Field?
 

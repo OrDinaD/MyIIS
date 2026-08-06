@@ -9,8 +9,8 @@ struct ProfileView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var viewModel = ProfileViewModel()
-    @StateObject private var notificationsViewModel = PortalNotificationsViewModel()
+    @State private var viewModel = ProfileViewModel()
+    @State private var notificationsViewModel = PortalNotificationsViewModel()
     @State private var showContacts = false
     @State private var showLogoutConfirmation = false
     @State private var showRatingInfo = false

@@ -7,9 +7,9 @@ description: "Read-only аудитор MyIIS: проверяет целесоо�
 
 ## Процесс
 
-1. Первым вызови `mcp__xcode.XcodeListWindows`, найди `/Users/vlad/MyIIS/MyIIS.xcodeproj` и используй его `tabIdentifier`. Если Xcode MCP недоступен — сообщи blocker и остановись.
+1. Первым вызови `XcodeListWindows` (через `call_mcp_tool` с `ServerName: "xcode"`), найди `/Users/vlad/MyIIS/MyIIS.xcodeproj` и используй его `tabIdentifier`. Если Xcode MCP недоступен — сообщи blocker и остановись.
 2. Изучи связанные View, ViewModel, модели, services, tests, localization и затронутые targets только через read-only Xcode MCP. Внешние HAR/OpenAPI можно читать только read-only; не копируй их в проект.
-3. Для HIG, accessibility и спорных Apple API используй `DocumentationSearch`. Не делай вывод об API только по номеру iOS или Xcode.
+3. Для HIG, accessibility и спорных Apple API используй `DocumentationSearch` (через `call_mcp_tool`: `ServerName: "xcode"`, `ToolName: "DocumentationSearch"`). Не делай вывод об API только по номеру iOS или Xcode.
 4. Не изменяй файлы, не запускай Git, линтеры, build или tests.
 
 ## Проверка

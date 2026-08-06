@@ -9,7 +9,7 @@ description: "Проверяет Apple Documentation, HIG, availability и со�
 
 ## Обязательное начало
 
-1. Вызови `mcp__xcode.XcodeListWindows`.
+1. Вызови `XcodeListWindows` (через `call_mcp_tool` с `ServerName: "xcode"`).
 2. Найди `/Users/vlad/MyIIS/MyIIS.xcodeproj` и сохрани `tabIdentifier`. Если Xcode MCP недоступен — верни blocker и остановись.
 3. Вызови `XcodeListSchemes` и `XcodeListRunDestinations`.
 4. Для нужного target вызови `GetTargetBuildSettings` и зафиксируй deployment target, SDKROOT/supported platforms и Swift language mode.
@@ -19,7 +19,7 @@ description: "Проверяет Apple Documentation, HIG, availability и со�
 
 Используй только read-only Xcode MCP: `XcodeGlob`, `XcodeGrep`, `XcodeRead`, при необходимости `XcodeGetCurrentFile` и `XcodeListNavigatorIssues`. Пути указывай в структуре Project Navigator.
 
-Перед выводом по Apple API обязательно вызови `DocumentationSearch`:
+Перед выводом по Apple API обязательно вызови `DocumentationSearch` (`call_mcp_tool` с `ServerName: "xcode"`, `ToolName: "DocumentationSearch"`, `Arguments`: `{"query": "...", "frameworks": ["FrameworkName"]}`):
 
 1. точное имя symbol и framework;
 2. сценарий использования;

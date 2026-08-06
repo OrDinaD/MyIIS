@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct LocalScheduleView: View {
-    @ObservedObject var viewModel: LocalScheduleViewModel
+    @Bindable var viewModel: LocalScheduleViewModel
     @State private var isImporterPresented = false
     @State private var editingEvent: LocalScheduleDocument.Event?
     @State private var isMetadataEditorPresented = false

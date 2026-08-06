@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MarkSheetOrderSheet: View {
-    @ObservedObject var viewModel: StudyViewModel
+    var viewModel: StudyViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSubjectID = -1
     @State private var selectedLessonTypeID = ""
@@ -160,7 +160,7 @@ struct MarkSheetOrderSheet: View {
 }
 
 struct CertificateOrderSheet: View {
-    @ObservedObject var viewModel: StudyViewModel
+    var viewModel: StudyViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var selectedPlaceID = -1
     @State private var printType: CertificatePrintType = .ordinary

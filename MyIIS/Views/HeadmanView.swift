@@ -1,16 +1,16 @@
 import SwiftUI
 
 struct HeadmanView: View {
-    @StateObject private var viewModel: HeadmanViewModel
+    @State private var viewModel: HeadmanViewModel
 
     @MainActor
     init() {
-        _viewModel = StateObject(wrappedValue: HeadmanViewModel())
+        _viewModel = State(initialValue: HeadmanViewModel())
     }
 
     @MainActor
     init(viewModel: HeadmanViewModel) {
-        _viewModel = StateObject(wrappedValue: viewModel)
+        _viewModel = State(initialValue: viewModel)
     }
 
     private var availableModes: [HeadmanViewModel.Mode] {
@@ -266,7 +266,7 @@ struct HeadmanView: View {
 
 private struct LessonDisclosureRow: View {
     let lesson: HeadmanLesson
-    @ObservedObject var viewModel: HeadmanViewModel
+    @Bindable var viewModel: HeadmanViewModel
 
     var body: some View {
         DisclosureGroup {
@@ -332,7 +332,7 @@ private struct LessonDisclosureRow: View {
 private struct OmissionStudentRow: View {
     let lesson: HeadmanLesson
     let student: HeadmanLessonStudent
-    @ObservedObject var viewModel: HeadmanViewModel
+    @Bindable var viewModel: HeadmanViewModel
 
     private var lessonHours: Int {
         max(lesson.lessonPeriod?.lessonPeriodHours ?? 2, 1)
