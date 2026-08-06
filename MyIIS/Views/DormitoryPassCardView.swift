@@ -17,13 +17,13 @@ struct DormitoryPassData: Equatable {
     static var defaultSample: DormitoryPassData {
         DormitoryPassData(
             dormitoryNumber: "5",
-            roomNumber: "401 - а",
+            roomNumber: "2002А",
             lastName: "Василевский",
             firstName: "Владислав",
             middleName: "Валерьевич",
             faculty: "ФИТУ",
             group: "428503",
-            validUntil: "30.06.2025",
+            validUntil: "30.06.2027",
             photoURL: nil
         )
     }
@@ -114,8 +114,9 @@ struct DormitoryPassCardView: View {
                 Spacer()
             }
 
-            // Корпус карт-бланка пропуска в общежитие
-            ZStack {
+            // Корпус пропуска в общежитие
+            ZStack(alignment: .center) {
+                // Желтый бумажный бланк пропуска
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(Color(red: 0.96, green: 0.92, blue: 0.62))
                     .overlay(
@@ -124,61 +125,14 @@ struct DormitoryPassCardView: View {
                     )
                     .shadow(color: .black.opacity(0.12), radius: 6, x: 0, y: 3)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    // Заголовок и комната
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("ОБЩЕЖИТИЕ № \(passData.dormitoryNumber)")
-                            .font(.custom(timesNewRomanFontName, size: 20).weight(.bold))
-                            .foregroundStyle(.black)
-
-                        Text("КОМНАТА № \(passData.roomNumber)")
-                            .font(.custom(timesNewRomanFontName, size: 18).weight(.bold))
-                            .foregroundStyle(.black)
-                    }
-
-                    // ФИО
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Ф. \(passData.lastName)")
-                            .font(.custom(timesNewRomanFontName, size: 17).weight(.bold))
-                            .foregroundStyle(.black)
-
-                        Text("И. \(passData.firstName)")
-                            .font(.custom(timesNewRomanFontName, size: 17).weight(.bold))
-                            .foregroundStyle(.black)
-
-                        Text("О. \(passData.middleName)")
-                            .font(.custom(timesNewRomanFontName, size: 17).weight(.bold))
-                            .foregroundStyle(.black)
-                    }
-                    .padding(.top, 2)
-
-                    // Факультет и Группа
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("ФАКУЛЬТЕТ \(passData.faculty.uppercased())")
-                            .font(.custom(timesNewRomanFontName, size: 16).weight(.bold))
-                            .foregroundStyle(.black)
-
-                        Text("ГРУППА \(passData.group)")
-                            .font(.custom(timesNewRomanFontName, size: 16).weight(.bold))
-                            .foregroundStyle(.black)
-                    }
-                    .padding(.top, 2)
-
-                    // Срок действия
-                    Text("ДЕЙСТВИТЕЛЬНО ДО \(passData.validUntil)")
-                        .font(.custom(timesNewRomanFontName, size: 15).weight(.bold))
-                        .foregroundStyle(.black)
-                        .padding(.top, 2)
-
-                    Spacer(minLength: 12)
-
-                    // Подпись и штамп
-                    HStack(alignment: .bottom) {
-                        // Фото студента
+                VStack(alignment: .leading, spacing: 10) {
+                    // Верхний блок: Слева ФОТО, Справа ТЕКСТ
+                    HStack(alignment: .top, spacing: 14) {
+                        // Фото студента вверху слева
                         ZStack {
                             Rectangle()
                                 .fill(Color.white)
-                                .frame(width: 92, height: 112)
+                                .frame(width: 98, height: 120)
                                 .overlay(Rectangle().stroke(Color.black, lineWidth: 1.2))
 
                             if let photoURL = passData.photoURL {
@@ -188,56 +142,112 @@ struct DormitoryPassCardView: View {
                                         image
                                             .resizable()
                                             .scaledToFill()
-                                            .frame(width: 90, height: 110)
+                                            .frame(width: 96, height: 118)
                                             .clipped()
                                     default:
                                         Image(systemName: "person.fill")
-                                            .font(.system(size: 42))
+                                            .font(.system(size: 44))
                                             .foregroundStyle(.gray)
                                     }
                                 }
                             } else {
                                 Image(systemName: "person.fill")
-                                    .font(.system(size: 42))
+                                    .font(.system(size: 44))
                                     .foregroundStyle(.gray)
                             }
                         }
 
+                        // Основной текст пропуска справа
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("ОБЩЕЖИТИЕ № \(passData.dormitoryNumber)")
+                                .font(.custom(timesNewRomanFontName, size: 17).weight(.bold))
+                                .foregroundStyle(.black)
+
+                            Text("КОМНАТА № \(passData.roomNumber)")
+                                .font(.custom(timesNewRomanFontName, size: 16).weight(.bold))
+                                .foregroundStyle(.black)
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Ф. \(passData.lastName)")
+                                    .font(.custom(timesNewRomanFontName, size: 15).weight(.bold))
+                                    .foregroundStyle(.black)
+
+                                Text("И. \(passData.firstName)")
+                                    .font(.custom(timesNewRomanFontName, size: 15).weight(.bold))
+                                    .foregroundStyle(.black)
+
+                                Text("О. \(passData.middleName)")
+                                    .font(.custom(timesNewRomanFontName, size: 15).weight(.bold))
+                                    .foregroundStyle(.black)
+                            }
+                            .padding(.top, 2)
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("ФАКУЛЬТЕТ \(passData.faculty.uppercased())")
+                                    .font(.custom(timesNewRomanFontName, size: 14).weight(.bold))
+                                    .foregroundStyle(.black)
+
+                                Text("ГРУППА \(passData.group)")
+                                    .font(.custom(timesNewRomanFontName, size: 14).weight(.bold))
+                                    .foregroundStyle(.black)
+                            }
+                            .padding(.top, 2)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
+                    Spacer(minLength: 12)
+
+                    // Нижняя часть: Срок действия слева с переносом, Приложение MyIIS и М.П. справа
+                    HStack(alignment: .bottom) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("ДЕЙСТВИТЕЛЬНО")
+                                .font(.custom(timesNewRomanFontName, size: 14).weight(.bold))
+                                .foregroundStyle(.black)
+
+                            Text("ДО \(passData.validUntil)")
+                                .font(.custom(timesNewRomanFontName, size: 14).weight(.bold))
+                                .foregroundStyle(.black)
+                        }
+
                         Spacer()
 
-                        // Печать М.П. и подпись начальника студгородка
-                        VStack(alignment: .trailing, spacing: 4) {
-                            ZStack(alignment: .bottomTrailing) {
-                                // Сине-фиолетовый штамп "Студенческий городок"
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(Color(red: 0.15, green: 0.25, blue: 0.70).opacity(0.75), lineWidth: 1.5)
-                                    .frame(width: 116, height: 38)
-                                    .overlay(
-                                        VStack(spacing: 1) {
-                                            Text("СТУДЕНЧЕСКИЙ")
-                                                .font(.custom(timesNewRomanFontName, size: 9).weight(.bold))
-                                            Text("ГОРОДОК")
-                                                .font(.custom(timesNewRomanFontName, size: 8).weight(.bold))
-                                        }
-                                        .foregroundStyle(Color(red: 0.15, green: 0.25, blue: 0.70).opacity(0.8))
-                                    )
-                                    .rotationEffect(.degrees(-7))
-                                    .offset(x: -8, y: -10)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("М.П.")
+                                .font(.custom(timesNewRomanFontName, size: 14).weight(.bold))
+                                .foregroundStyle(.black)
 
-                                VStack(alignment: .trailing, spacing: 2) {
-                                    Text("М.П.")
-                                        .font(.custom(timesNewRomanFontName, size: 14).weight(.bold))
-                                        .foregroundStyle(.black)
-
-                                    Text("Начальник студгородка")
-                                        .font(.custom(timesNewRomanFontName, size: 13).weight(.bold))
-                                        .foregroundStyle(.black)
-                                }
-                            }
+                            Text("Приложение «MyIIS»")
+                                .font(.custom(timesNewRomanFontName, size: 13).weight(.bold))
+                                .foregroundStyle(.black)
                         }
                     }
                 }
                 .padding(16)
+
+                // Круглый сине-фиолетовый водяной знак / печать посередине
+                ZStack {
+                    Circle()
+                        .stroke(Color(red: 0.15, green: 0.22, blue: 0.68).opacity(0.60), lineWidth: 2.2)
+                        .frame(width: 104, height: 104)
+
+                    Circle()
+                        .stroke(Color(red: 0.15, green: 0.22, blue: 0.68).opacity(0.60), lineWidth: 1.0)
+                        .frame(width: 96, height: 96)
+
+                    VStack(spacing: 2) {
+                        Text("БГУИР")
+                            .font(.custom(timesNewRomanFontName, size: 10).weight(.bold))
+                        Text("MyIIS")
+                            .font(.custom(timesNewRomanFontName, size: 18).weight(.bold))
+                        Text("ПРОПУСК")
+                            .font(.custom(timesNewRomanFontName, size: 9).weight(.bold))
+                    }
+                    .foregroundStyle(Color(red: 0.15, green: 0.22, blue: 0.68).opacity(0.68))
+                }
+                .rotationEffect(.degrees(-14))
+                .offset(x: -20, y: 10)
+                .allowsHitTesting(false)
             }
             .frame(maxWidth: .infinity)
             .aspectRatio(0.72, contentMode: .fit)

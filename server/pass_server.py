@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import sys
 import json
 import zipfile
 import io
@@ -8,13 +9,23 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 PORT = 8080
 
 class PassHandler(BaseHTTPRequestHandler):
+    def _send_cors_headers(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self._send_cors_headers()
+        self.end_headers()
+
     def do_POST(self):
-        if self.path in ["/api/pass", "/pass.pkpass"]:
+        if self.path in ["/api/pass", "/pass.pkpass", "/"]:
             content_length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(content_length)
+            body = self.rfile.read(content_length) if content_length > 0 else b"{}"
             
             try:
-                data = json.loads(body) if body else {}
+                data = json.loads(body.decode('utf-8'))
             except Exception:
                 data = {}
 
@@ -24,9 +35,8 @@ class PassHandler(BaseHTTPRequestHandler):
             faculty = data.get("faculty", "ФИТУ")
             group = data.get("group", "428503")
             dorm_num = data.get("dormitoryNumber", "5")
-            room_num = data.get("roomNumber", "401 - а")
+            room_num = data.get("roomNumber", "2002А")
 
-            # Формируем pass.json для Apple Wallet
             pass_json = {
                 "formatVersion": 1,
                 "passTypeIdentifier": "pass.by.bsuir.myiis.dormitory",
@@ -34,12 +44,12 @@ class PassHandler(BaseHTTPRequestHandler):
                 "teamIdentifier": "BSUIRMYIIS",
                 "webServiceURL": "https://iis.bsuir.by",
                 "authenticationToken": "secrettoken123",
-                "organizationName": "БГУИР",
+                "organizationName": "MyIIS БГУИР",
                 "description": "Пропуск в общежитие БГУИР",
                 "logoText": f"Общежитие № {dorm_num}",
                 "foregroundColor": "rgb(0, 0, 0)",
                 "backgroundColor": "rgb(246, 237, 171)",
-                "labelColor": "rgb(60, 60, 60)",
+                "labelColor": "rgb(40, 40, 40)",
                 "generic": {
                     "headerFields": [
                         {
@@ -71,23 +81,22 @@ class PassHandler(BaseHTTPRequestHandler):
                         {
                             "key": "validUntil",
                             "label": "ДЕЙСТВИТЕЛЬНО ДО",
-                            "value": "30.06.2025"
+                            "value": "30.06.2027"
                         }
                     ]
                 }
             }
 
-            # Генерируем zip архив .pkpass
             zip_buffer = io.BytesIO()
             with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
                 zf.writestr("pass.json", json.dumps(pass_json, ensure_ascii=False, indent=2))
-                # Добавляем пустой манифест для тестирования структуры
-                manifest = {"pass.json": "test_hash"}
-                zf.writestr("manifest.json", json.dumps(manifest))
+                manifest = {"pass.json": "sample_hash"}
+                zf.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False, indent=2))
 
             pkpass_data = zip_buffer.getvalue()
 
             self.send_response(200)
+            self._send_cors_headers()
             self.send_header("Content-Type", "application/vnd.apple.pkpass")
             self.send_header("Content-Disposition", 'attachment; filename="dormitory.pkpass"')
             self.send_header("Content-Length", str(len(pkpass_data)))
@@ -97,22 +106,24 @@ class PassHandler(BaseHTTPRequestHandler):
             self.send_error(404, "Not Found")
 
     def do_GET(self):
-        if self.path in ["/", "/health"]:
+        if self.path in ["/", "/health", "/api/pass"]:
             self.send_response(200)
+            self._send_cors_headers()
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(json.dumps({"status": "ok", "service": "MyIIS Pass Backend"}).encode('utf-8'))
+            self.wfile.write(json.dumps({"status": "ok", "service": "MyIIS Pass Backend", "port": PORT}).encode('utf-8'))
         else:
             self.send_error(404, "Not Found")
 
 def run():
-    server_address = ('', PORT)
+    server_address = ('0.0.0.0', PORT)
     httpd = HTTPServer(server_address, PassHandler)
     print(f"🚀 Локальный сервер подписи Wallet карт запущен на http://localhost:{PORT}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         print("\nСервер остановлен.")
+        sys.exit(0)
 
 if __name__ == "__main__":
     run()

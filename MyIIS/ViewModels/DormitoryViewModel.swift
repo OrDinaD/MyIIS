@@ -436,24 +436,39 @@ extension DormitoryViewModel {
             middleName: (user?.middleName.isEmpty == false) ? user!.middleName : "Валерьевич",
             faculty: (user?.education.faculty.isEmpty == false) ? user!.education.faculty : "ФИТУ",
             group: (user?.education.group.isEmpty == false) ? user!.education.group : "428503",
-            validUntil: "30.06.2025",
+            validUntil: "30.06.2027",
             photoURL: user?.photoURL
         )
     }
 
     private func parseRoomInfo(_ info: String?) -> (dormitory: String, room: String) {
         guard let info = info, !info.isEmpty else {
-            return ("5", "401 - а")
+            return ("5", "2002А")
         }
         var dorm = "5"
         var room = info
 
-        if let dormMatch = info.range(of: "(?:Общ\\.|Общежитие №?\\s*)(\\d+)", options: .regularExpression) {
+        if let dormMatch = info.range(of: "(?:Общ\\.|общ|Общежитие №?\\s*)(\\d+|пять)", options: [.regularExpression, .caseInsensitive]) {
             let matchedStr = String(info[dormMatch])
-            let extractedDigits = matchedStr.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
-            if !extractedDigits.isEmpty {
-                dorm = extractedDigits
+            if matchedStr.lowercased().contains("пять") {
+                dorm = "5"
+            } else {
+                let extractedDigits = matchedStr.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+                if !extractedDigits.isEmpty {
+                    dorm = extractedDigits
+                }
             }
+        }
+
+        // Очищаем номер комнаты от запятой и упоминаний общежития
+        if let commaIndex = room.firstIndex(of: ",") {
+            room = String(room[..<commaIndex])
+        }
+        room = room.replacingOccurrences(of: "(?i)общ.*", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if room.isEmpty {
+            room = "2002А"
         }
 
         return (dorm, room)
