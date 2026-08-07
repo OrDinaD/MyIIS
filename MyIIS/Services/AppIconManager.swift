@@ -1,50 +1,38 @@
 import UIKit
 
 enum AppIconOption: String, CaseIterable, Identifiable {
-    case defaultIcon = "Default"
-    case retro1964 = "1964"
-    case ksis = "KSIS"
-    case bright = "bright"
-    case pink = "pink"
-    case purple = "purple"
+    case logoCopy5 = "logo copy 5"
+    case logo = "logo"
+    case logoCopy = "logo copy"
+    case logoCopy2 = "logo copy 2"
+    case logoCopy3 = "logo copy 3"
+    case logoCopy4 = "logo copy 4"
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .defaultIcon:
-            return NSLocalizedString("plus_icon_name_default", comment: "")
-        case .retro1964:
-            return NSLocalizedString("plus_icon_name_1964", comment: "")
-        case .ksis:
-            return NSLocalizedString("plus_icon_name_ksis", comment: "")
-        case .bright:
-            return NSLocalizedString("plus_icon_name_bright", comment: "")
-        case .pink:
-            return NSLocalizedString("plus_icon_name_pink", comment: "")
-        case .purple:
-            return NSLocalizedString("plus_icon_name_purple", comment: "")
+        case .logoCopy5: return "Основная"
+        case .logo: return "Лого 1"
+        case .logoCopy: return "Лого 2"
+        case .logoCopy2: return "Лого 3"
+        case .logoCopy3: return "Лого 4"
+        case .logoCopy4: return "Лого 5"
         }
     }
 
     var iconName: String? {
-        self == .defaultIcon ? nil : rawValue
+        self == .logoCopy5 ? nil : rawValue
     }
 
     var previewAssetName: String {
         switch self {
-        case .defaultIcon:
-            return "AppIconPreviewDefault"
-        case .retro1964:
-            return "AppIconPreview1964"
-        case .ksis:
-            return "AppIconPreviewKSIS"
-        case .bright:
-            return "AppIconPreviewBright"
-        case .pink:
-            return "AppIconPreviewPink"
-        case .purple:
-            return "AppIconPreviewPurple"
+        case .logoCopy5: return "AppIconPreviewLogoCopy5"
+        case .logo: return "AppIconPreviewLogo"
+        case .logoCopy: return "AppIconPreviewLogoCopy"
+        case .logoCopy2: return "AppIconPreviewLogoCopy2"
+        case .logoCopy3: return "AppIconPreviewLogoCopy3"
+        case .logoCopy4: return "AppIconPreviewLogoCopy4"
         }
     }
 }
@@ -56,10 +44,10 @@ enum AppIconManager {
 
     static var currentIcon: AppIconOption {
         guard let current = UIApplication.shared.alternateIconName else {
-            return .defaultIcon
+            return .logoCopy5
         }
 
-        return AppIconOption(rawValue: current) ?? .defaultIcon
+        return AppIconOption(rawValue: current) ?? .logoCopy5
     }
 
     @MainActor
