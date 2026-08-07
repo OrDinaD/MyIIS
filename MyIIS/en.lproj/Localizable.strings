@@ -406,6 +406,12 @@
 "about_section_app_icon" = "App Icon";
 "about_app_icon_error_message" = "Could not change the app icon.";
 "about_app_icon_accessibility_hint" = "Changes the app icon to the selected option.";
+"plus_icon_name_default" = "Default";
+"plus_icon_name_1964" = "1964";
+"plus_icon_name_ksis" = "KSIS";
+"plus_icon_name_bright" = "Bright";
+"plus_icon_name_pink" = "Pink";
+"plus_icon_name_purple" = "Purple";
 "services_placeholder_description" = "Select a service in the list on the left";
 "common_enabled" = "Enabled";
 "common_disabled" = "Disabled";

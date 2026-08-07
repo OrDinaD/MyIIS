@@ -401,6 +401,12 @@
 "about_section_app_icon" = "Іконка застосунку";
 "about_app_icon_error_message" = "Не вдалося змінити іконку застосунку.";
 "about_app_icon_accessibility_hint" = "Змінює іконку застосунку на вибраний варіант.";
+"plus_icon_name_default" = "Основна";
+"plus_icon_name_1964" = "1964";
+"plus_icon_name_ksis" = "КСІС";
+"plus_icon_name_bright" = "Світла";
+"plus_icon_name_pink" = "Рожева";
+"plus_icon_name_purple" = "Фіолетова";
 "services_placeholder_description" = "Виберіть сервіс у списку ліворуч";
 "common_enabled" = "Увімкнено";
 "common_disabled" = "Вимкнено";

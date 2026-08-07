@@ -401,6 +401,12 @@
 "about_section_app_icon" = "Іконка праграмы";
 "about_app_icon_error_message" = "Не ўдалося змяніць іконку праграмы.";
 "about_app_icon_accessibility_hint" = "Мяняе іконку праграмы на выбраны варыянт.";
+"plus_icon_name_default" = "Асноўная";
+"plus_icon_name_1964" = "1964";
+"plus_icon_name_ksis" = "КСІС";
+"plus_icon_name_bright" = "Светлая";
+"plus_icon_name_pink" = "Ружовая";
+"plus_icon_name_purple" = "Фіялетавая";
 "services_placeholder_description" = "Абярыце сэрвіс у спісе злева";
 "common_enabled" = "Уключана";
 "common_disabled" = "Выключана";

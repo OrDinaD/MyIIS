@@ -406,6 +406,12 @@
 "about_section_app_icon" = "Иконка приложения";
 "about_app_icon_error_message" = "Не удалось изменить иконку приложения.";
 "about_app_icon_accessibility_hint" = "Меняет иконку приложения на выбранный вариант.";
+"plus_icon_name_default" = "Основная";
+"plus_icon_name_1964" = "1964";
+"plus_icon_name_ksis" = "КСИС";
+"plus_icon_name_bright" = "Светлая";
+"plus_icon_name_pink" = "Розовая";
+"plus_icon_name_purple" = "Фиолетовая";
 "services_placeholder_description" = "Выберите сервис в списке слева";
 "common_enabled" = "Включено";
 "common_disabled" = "Выключено";
