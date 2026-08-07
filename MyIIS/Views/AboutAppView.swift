@@ -20,7 +20,7 @@ struct AboutAppView: View {
                 versionSection
                 languageSection
                 academicNotificationsSection
-                // supportSection
+                supportSection
                 linksSection
                 documentsSection
                 if AppIconManager.supportsAlternateIcons && enableBetaSections {

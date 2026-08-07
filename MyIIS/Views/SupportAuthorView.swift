@@ -2,18 +2,24 @@
 //  SupportAuthorView.swift
 //  MyIIS
 //
-import StoreKit
 import SwiftUI
+
+enum DonationConfiguration {
+    /// Ссылка или deep link для перевода добровольного пожертвования через Беларусбанк.
+    /// TODO: Заменить nil на реальную ссылку или deep link Беларусбанка (М-Банкинг / ERIP / QR / перевод на карту), когда реквизиты будут получены.
+    static let belarusbankURL: URL? = nil
+}
 
 struct SupportAuthorView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var productState: SupportAuthorProductState = .loading
+    @Environment(\.openURL) private var openURL
+    @State private var showNoticeAlert = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 header
-                productSection
+                actionSection
                 footer
             }
             .padding(.horizontal, 16)
@@ -30,8 +36,10 @@ struct SupportAuthorView: View {
                 }
             }
         }
-        .task {
-            await loadProducts()
+        .alert(NSLocalizedString("support_author_title", comment: ""), isPresented: $showNoticeAlert) {
+            Button(NSLocalizedString("common_ok", comment: ""), role: .cancel) { }
+        } message: {
+            Text(NSLocalizedString("support_author_belarusbank_notice", comment: ""))
         }
     }
 
@@ -57,64 +65,34 @@ struct SupportAuthorView: View {
         .overlay(cardShape.stroke(Color.white.opacity(0.08), lineWidth: 1))
     }
 
-    @ViewBuilder
-    private var productSection: some View {
+    private var actionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(NSLocalizedString("support_author_products_title", comment: ""))
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .padding(.leading, 4)
+            Button {
+                if let url = DonationConfiguration.belarusbankURL {
+                    openURL(url)
+                } else {
+                    showNoticeAlert = true
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "building.columns.fill")
+                        .font(.title3.weight(.medium))
+                        .foregroundStyle(.white)
 
-            switch productState {
-            case .loading:
-                loadingProductsView
-            case .available:
-                StoreView(ids: SupportAuthorProduct.allProductIDs)
-                    .productViewStyle(.regular)
-                    .padding(.vertical, 6)
-                    .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
-                    .overlay(cardShape.stroke(Color.white.opacity(0.08), lineWidth: 1))
-            case .unavailable:
-                pendingProductsView
+                    Text(NSLocalizedString("support_author_belarusbank_button", comment: ""))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
+                .padding(.vertical, 16)
+                .padding(.horizontal, 20)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.green)
+                )
             }
+            .buttonStyle(.plain)
         }
-    }
-
-    private var loadingProductsView: some View {
-        HStack(spacing: 12) {
-            ProgressView()
-                .controlSize(.regular)
-
-            Text(NSLocalizedString("support_author_loading_message", comment: ""))
-                .font(.body)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
-        .overlay(cardShape.stroke(Color.white.opacity(0.08), lineWidth: 1))
-    }
-
-    private var pendingProductsView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label {
-                Text(NSLocalizedString("support_author_pending_title", comment: ""))
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.primary)
-            } icon: {
-                Image(systemName: "cup.and.saucer.fill")
-                    .foregroundStyle(.pink)
-            }
-
-            Text(NSLocalizedString("support_author_pending_message", comment: ""))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
-        .overlay(cardShape.stroke(Color.white.opacity(0.08), lineWidth: 1))
     }
 
     private var footer: some View {
@@ -124,41 +102,14 @@ struct SupportAuthorView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         } icon: {
-            Image(systemName: "checkmark.seal.fill")
-                .foregroundStyle(.green)
+            Image(systemName: "info.circle.fill")
+                .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 4)
     }
 
-    private func loadProducts() async {
-        productState = .loading
-
-        do {
-            let products = try await Product.products(for: SupportAuthorProduct.allProductIDs)
-            productState = products.isEmpty ? .unavailable : .available
-        } catch {
-            productState = .unavailable
-        }
-    }
-
     private var cardShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: 24, style: .continuous)
-    }
-}
-
-private enum SupportAuthorProductState {
-    case loading
-    case available
-    case unavailable
-}
-
-private enum SupportAuthorProduct: String, CaseIterable {
-    case coffee = "myiis.tip.coffee"
-    case lunch = "myiis.tip.lunch"
-    case generous = "myiis.tip.generous"
-
-    static var allProductIDs: [String] {
-        allCases.map(\.rawValue)
     }
 }
 
