@@ -4,9 +4,9 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     case defaultIcon = "Default"
     case retro1964 = "1964"
     case ksis = "KSIS"
-    case bright
-    case pink
-    case purple
+    case seal = "Seal"
+    case pink = "Pink"
+    case bright = "Bright"
 
     var id: String { rawValue }
 
@@ -18,12 +18,12 @@ enum AppIconOption: String, CaseIterable, Identifiable {
             return NSLocalizedString("plus_icon_name_1964", comment: "")
         case .ksis:
             return NSLocalizedString("plus_icon_name_ksis", comment: "")
-        case .bright:
-            return NSLocalizedString("plus_icon_name_bright", comment: "")
+        case .seal:
+            return NSLocalizedString("plus_icon_name_seal", comment: "")
         case .pink:
             return NSLocalizedString("plus_icon_name_pink", comment: "")
-        case .purple:
-            return NSLocalizedString("plus_icon_name_purple", comment: "")
+        case .bright:
+            return NSLocalizedString("plus_icon_name_bright", comment: "")
         }
     }
 
@@ -34,17 +34,17 @@ enum AppIconOption: String, CaseIterable, Identifiable {
     var previewAssetName: String {
         switch self {
         case .defaultIcon:
-            return "AppIconPreviewLogoCopy5"
+            return "AppIconPreviewDefault"
         case .retro1964:
-            return "AppIconPreviewLogo"
+            return "AppIconPreview1964"
         case .ksis:
-            return "AppIconPreviewLogoCopy"
-        case .bright:
-            return "AppIconPreviewLogoCopy2"
+            return "AppIconPreviewKSIS"
+        case .seal:
+            return "AppIconPreviewSeal"
         case .pink:
-            return "AppIconPreviewLogoCopy3"
-        case .purple:
-            return "AppIconPreviewLogoCopy4"
+            return "AppIconPreviewPink"
+        case .bright:
+            return "AppIconPreviewBright"
         }
     }
 }

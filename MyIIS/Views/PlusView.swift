@@ -10,7 +10,6 @@ struct PlusView: View {
     @State private var updatingIcon: AppIconOption?
     @State private var isPurchasing = false
     @State private var isRestoring = false
-    @State private var isSupportSheetPresented = false
     @State private var alert: PlusAlert?
 
     private var hasPlusAccess: Bool {
@@ -24,7 +23,6 @@ struct PlusView: View {
                 purchaseCard
                 featuresSection
                 iconSection
-                supportSection
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -34,14 +32,24 @@ struct PlusView: View {
         .navigationTitle(NSLocalizedString("plus_title", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .hiddenNavigationBarBackground()
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Task { await restorePurchases() }
+                } label: {
+                    if isRestoring {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text(NSLocalizedString("plus_restore", comment: ""))
+                    }
+                }
+                .disabled(isPurchasing || isRestoring)
+            }
+        }
         .task {
             await purchaseManager.prepare()
             selectedIcon = AppIconManager.currentIcon
-        }
-        .sheet(isPresented: $isSupportSheetPresented) {
-            NavigationStack {
-                SupportAuthorView()
-            }
         }
         .alert(item: $alert) { alert in
             Alert(
@@ -62,10 +70,10 @@ private extension PlusView {
         HStack(alignment: .top, spacing: 16) {
             ZStack {
                 Circle()
-                    .fill(.white.opacity(0.17))
+                    .fill(hasPlusAccess ? .white.opacity(0.2) : Color.blue.opacity(0.15))
                 Image(systemName: "sparkles")
                     .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(hasPlusAccess ? .white : .blue)
             }
             .frame(width: 58, height: 58)
             .accessibilityHidden(true)
@@ -73,11 +81,11 @@ private extension PlusView {
             VStack(alignment: .leading, spacing: 8) {
                 Text("MyIIS Plus")
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(hasPlusAccess ? .white : .primary)
 
                 Text(NSLocalizedString("plus_hero_subtitle", comment: ""))
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.86))
+                    .foregroundStyle(hasPlusAccess ? .white.opacity(0.88) : .secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 Label(
@@ -85,21 +93,30 @@ private extension PlusView {
                     systemImage: "infinity"
                 )
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.92))
+                .foregroundStyle(hasPlusAccess ? .white.opacity(0.92) : .secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(20)
-        .background(
-            LinearGradient(
-                colors: [.indigo, .purple, .pink.opacity(0.86)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            ),
-            in: cardShape
+        .background {
+            if hasPlusAccess {
+                AnimatedIridescentCardBackground()
+                    .clipShape(cardShape)
+            } else {
+                cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground))
+            }
+        }
+        .overlay(
+            cardShape.stroke(
+                hasPlusAccess ? .white.opacity(0.2) : cardBorderColor,
+                lineWidth: 1
+            )
         )
-        .overlay(cardShape.stroke(.white.opacity(0.18), lineWidth: 1))
-        .shadow(color: .purple.opacity(0.18), radius: 18, y: 10)
+        .shadow(
+            color: hasPlusAccess ? .blue.opacity(0.18) : .black.opacity(0.04),
+            radius: 18,
+            y: 10
+        )
         .accessibilityElement(children: .combine)
     }
 
@@ -173,21 +190,6 @@ private extension PlusView {
                 .disabled(purchaseManager.isLoading)
             }
 
-            if !purchaseManager.hasPlus {
-                Button {
-                    Task { await restorePurchases() }
-                } label: {
-                    if isRestoring {
-                        ProgressView()
-                            .controlSize(.small)
-                    } else {
-                        Text(NSLocalizedString("plus_restore", comment: ""))
-                    }
-                }
-                .font(.subheadline.weight(.semibold))
-                .disabled(isPurchasing || isRestoring)
-            }
-
             Text(NSLocalizedString("plus_purchase_note", comment: ""))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -198,7 +200,6 @@ private extension PlusView {
         .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
         .overlay(cardShape.stroke(cardBorderColor, lineWidth: 1))
     }
-
 }
 
 private extension PlusView {
@@ -261,39 +262,6 @@ private extension PlusView {
                 .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
             }
         }
-    }
-
-    private var supportSection: some View {
-        Button {
-            isSupportSheetPresented = true
-        } label: {
-            HStack(spacing: 12) {
-                Image(systemName: "heart.fill")
-                    .font(.title3)
-                    .foregroundStyle(.pink)
-                    .frame(width: 30)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(NSLocalizedString("plus_support_title", comment: ""))
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(.primary)
-                    Text(NSLocalizedString("plus_support_subtitle", comment: ""))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-            }
-            .padding(16)
-            .contentShape(cardShape)
-        }
-        .buttonStyle(.plain)
-        .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
-        .overlay(cardShape.stroke(cardBorderColor, lineWidth: 1))
-        .accessibilityHint(NSLocalizedString("plus_support_hint", comment: ""))
     }
 
     private func accessStatus(
@@ -574,6 +542,32 @@ private struct PlusAlert: Identifiable {
     let id = UUID()
     let title: String
     let message: String
+}
+
+private struct AnimatedIridescentCardBackground: View {
+    var body: some View {
+        TimelineView(.animation(paused: false)) { timeline in
+            let time = timeline.date.timeIntervalSince1970
+            let angle = Angle(radians: time.truncatingRemainder(dividingBy: 8.0) / 8.0 * .pi * 2)
+
+            LinearGradient(
+                colors: [
+                    Color(red: 0.12, green: 0.32, blue: 0.85),
+                    Color(red: 0.38, green: 0.18, blue: 0.78),
+                    Color(red: 0.15, green: 0.52, blue: 0.76),
+                    Color(red: 0.48, green: 0.16, blue: 0.65)
+                ],
+                startPoint: UnitPoint(
+                    x: 0.5 + 0.5 * cos(angle.radians),
+                    y: 0.5 + 0.5 * sin(angle.radians)
+                ),
+                endPoint: UnitPoint(
+                    x: 0.5 - 0.5 * cos(angle.radians),
+                    y: 0.5 - 0.5 * sin(angle.radians)
+                )
+            )
+        }
+    }
 }
 
 #Preview {

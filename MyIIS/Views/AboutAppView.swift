@@ -9,12 +9,14 @@ struct AboutAppView: View {
     @Environment(\.openURL) private var openURL
     @State private var alert: AboutAlert?
     @State private var isUpdatingAcademicNotifications = false
+    @State private var isSupportSheetPresented = false
     @AppStorage(AcademicChangeNotificationService.enabledDefaultsKey) private var academicChangeNotificationsEnabled = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
                 plusSection
+                supportSection
                 versionSection
                 languageSection
                 academicNotificationsSection
@@ -32,6 +34,11 @@ struct AboutAppView: View {
         .navigationTitle(NSLocalizedString("about_title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
+        .sheet(isPresented: $isSupportSheetPresented) {
+            NavigationStack {
+                SupportAuthorView()
+            }
+        }
         .alert(item: $alert) { alert in
             Alert(
                 title: Text(alert.title),
@@ -48,6 +55,21 @@ struct AboutAppView: View {
             AboutPlusCard()
         }
         .buttonStyle(.plain)
+    }
+
+    private var supportSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("plus_support_title", comment: ""))
+
+            cardContainer {
+                linkRow(
+                    icon: "heart.fill",
+                    title: NSLocalizedString("plus_support_subtitle", comment: "")
+                ) {
+                    isSupportSheetPresented = true
+                }
+            }
+        }
     }
 
     private var versionSection: some View {
@@ -285,55 +307,57 @@ struct AboutAppView: View {
 }
 
 private struct AboutPlusCard: View {
+    @State private var purchaseManager = PurchaseManager.shared
+    @AppStorage("enable_beta_sections") private var enableBetaSections = false
+
+    private var hasPlusAccess: Bool {
+        purchaseManager.hasPlus || enableBetaSections
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [.indigo, .purple, .pink.opacity(0.9)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                Circle()
+                    .fill(hasPlusAccess ? .white.opacity(0.2) : Color.blue.opacity(0.12))
 
                 Image(systemName: "sparkles")
                     .font(.title2.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(hasPlusAccess ? .white : .blue)
             }
-            .frame(width: 56, height: 56)
+            .frame(width: 52, height: 52)
             .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("MyIIS Plus")
                     .font(.headline)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(hasPlusAccess ? .white : .primary)
 
                 Text(NSLocalizedString("plus_entry_subtitle", comment: ""))
                     .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(hasPlusAccess ? .white.opacity(0.88) : .secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(hasPlusAccess ? .white.opacity(0.7) : Color.secondary.opacity(0.5))
         }
         .padding(16)
         .background {
-            ZStack {
+            if hasPlusAccess {
+                AnimatedIridescentCardBackground()
+                    .clipShape(cardShape)
+            } else {
                 cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground))
-                cardShape.fill(
-                    LinearGradient(
-                        colors: [.indigo.opacity(0.12), .purple.opacity(0.06)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
             }
         }
-        .overlay(cardShape.stroke(Color.indigo.opacity(0.22), lineWidth: 1))
+        .overlay(
+            cardShape.stroke(
+                hasPlusAccess ? .white.opacity(0.2) : Color.blue.opacity(0.15),
+                lineWidth: 1
+            )
+        )
         .contentShape(cardShape)
         .accessibilityElement(children: .combine)
         .accessibilityHint(NSLocalizedString("plus_entry_hint", comment: ""))
@@ -341,6 +365,32 @@ private struct AboutPlusCard: View {
 
     private var cardShape: RoundedRectangle {
         RoundedRectangle(cornerRadius: 24, style: .continuous)
+    }
+}
+
+private struct AnimatedIridescentCardBackground: View {
+    var body: some View {
+        TimelineView(.animation(paused: false)) { timeline in
+            let time = timeline.date.timeIntervalSince1970
+            let angle = Angle(radians: time.truncatingRemainder(dividingBy: 8.0) / 8.0 * .pi * 2)
+
+            LinearGradient(
+                colors: [
+                    Color(red: 0.12, green: 0.32, blue: 0.85),
+                    Color(red: 0.38, green: 0.18, blue: 0.78),
+                    Color(red: 0.15, green: 0.52, blue: 0.76),
+                    Color(red: 0.48, green: 0.16, blue: 0.65)
+                ],
+                startPoint: UnitPoint(
+                    x: 0.5 + 0.5 * cos(angle.radians),
+                    y: 0.5 + 0.5 * sin(angle.radians)
+                ),
+                endPoint: UnitPoint(
+                    x: 0.5 - 0.5 * cos(angle.radians),
+                    y: 0.5 - 0.5 * sin(angle.radians)
+                )
+            )
+        }
     }
 }
 

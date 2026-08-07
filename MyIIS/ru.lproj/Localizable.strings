@@ -407,11 +407,11 @@
 "about_app_icon_error_message" = "Не удалось изменить иконку приложения.";
 "about_app_icon_accessibility_hint" = "Меняет иконку приложения на выбранный вариант.";
 "plus_icon_name_default" = "Основная";
-"plus_icon_name_1964" = "1964";
-"plus_icon_name_ksis" = "КСИС";
-"plus_icon_name_bright" = "Светлая";
-"plus_icon_name_pink" = "Розовая";
-"plus_icon_name_purple" = "Фиолетовая";
+"plus_icon_name_1964" = "Ретро 1964";
+"plus_icon_name_ksis" = "Факультет КСиС";
+"plus_icon_name_seal" = "Печать БГУИР";
+"plus_icon_name_pink" = "Розовый БГУИР";
+"plus_icon_name_bright" = "Вспышка";
 
 "plus_title" = "MyIIS Plus";
 "plus_entry_subtitle" = "Иконки, виджеты и персонализация в одном месте.";

@@ -402,11 +402,11 @@
 "about_app_icon_error_message" = "Не вдалося змінити іконку застосунку.";
 "about_app_icon_accessibility_hint" = "Змінює іконку застосунку на вибраний варіант.";
 "plus_icon_name_default" = "Основна";
-"plus_icon_name_1964" = "1964";
-"plus_icon_name_ksis" = "КСІС";
-"plus_icon_name_bright" = "Світла";
-"plus_icon_name_pink" = "Рожева";
-"plus_icon_name_purple" = "Фіолетова";
+"plus_icon_name_1964" = "Ретро 1964";
+"plus_icon_name_ksis" = "Факультет КСІС";
+"plus_icon_name_seal" = "Печатка БДУІР";
+"plus_icon_name_pink" = "Рожевий БДУІР";
+"plus_icon_name_bright" = "Спалах";
 
 "plus_title" = "MyIIS Plus";
 "plus_entry_subtitle" = "Іконки, віджети та персоналізація в одному місці.";
