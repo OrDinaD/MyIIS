@@ -102,9 +102,16 @@ Config/TestCredentials.swift
 .env.production
 .env.*.local
 !.env.example
-*.pem
+# Apple Wallet Certificates, Keys & Passes
+*.cer
 *.p12
-*.mobileprovision
+*.pem
+*.crt
+*.key
+*.csr
+*.certSigningRequest
+server/certs/
+*.pkpass
 
 # API Keys
 APIKeys.swift
