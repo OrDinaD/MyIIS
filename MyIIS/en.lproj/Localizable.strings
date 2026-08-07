@@ -407,11 +407,11 @@
 "about_app_icon_error_message" = "Could not change the app icon.";
 "about_app_icon_accessibility_hint" = "Changes the app icon to the selected option.";
 "plus_icon_name_default" = "Default";
-"plus_icon_name_1964" = "Retro 1964";
-"plus_icon_name_ksis" = "KSIS Faculty";
-"plus_icon_name_seal" = "BSUIR Seal";
-"plus_icon_name_pink" = "Neon Pink";
-"plus_icon_name_bright" = "Spark";
+"plus_icon_name_1964" = "1964";
+"plus_icon_name_ksis" = "KSIS";
+"plus_icon_name_bright" = "Bright";
+"plus_icon_name_pink" = "Pink";
+"plus_icon_name_purple" = "Purple";
 
 "plus_title" = "MyIIS Plus";
 "plus_entry_subtitle" = "Icons, widgets, and personalization in one place.";
