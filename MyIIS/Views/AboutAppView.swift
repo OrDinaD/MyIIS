@@ -7,25 +7,19 @@ import UIKit
 
 struct AboutAppView: View {
     @Environment(\.openURL) private var openURL
-    @State private var selectedIcon = AppIconManager.currentIcon
-    @State private var iconAlert: IconAlert?
-    @State private var isSupportSheetPresented = false
+    @State private var alert: AboutAlert?
     @State private var isUpdatingAcademicNotifications = false
-    @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @AppStorage(AcademicChangeNotificationService.enabledDefaultsKey) private var academicChangeNotificationsEnabled = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 26) {
+                plusSection
                 versionSection
                 languageSection
                 academicNotificationsSection
-                // supportSection
                 linksSection
                 documentsSection
-                if AppIconManager.supportsAlternateIcons && enableBetaSections {
-                    appIconSection
-                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 12)
@@ -38,18 +32,22 @@ struct AboutAppView: View {
         .navigationTitle(NSLocalizedString("about_title", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
-        .sheet(isPresented: $isSupportSheetPresented) {
-            NavigationStack {
-                SupportAuthorView()
-            }
-        }
-        .alert(item: $iconAlert) { alert in
+        .alert(item: $alert) { alert in
             Alert(
                 title: Text(alert.title),
                 message: Text(alert.message),
                 dismissButton: .default(Text(NSLocalizedString("common_ok", comment: "")))
             )
         }
+    }
+
+    private var plusSection: some View {
+        NavigationLink {
+            PlusView()
+        } label: {
+            AboutPlusCard()
+        }
+        .buttonStyle(.plain)
     }
 
     private var versionSection: some View {
@@ -129,15 +127,6 @@ struct AboutAppView: View {
         }
     }
 
-    private var supportSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle(NSLocalizedString("about_section_support", comment: ""))
-            AboutSupportCard {
-                isSupportSheetPresented = true
-            }
-        }
-    }
-
     private var linksSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionTitle(NSLocalizedString("about_section_links", comment: ""))
@@ -200,22 +189,6 @@ struct AboutAppView: View {
         }
     }
 
-    private var appIconSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            sectionTitle(NSLocalizedString("about_section_app_icon", comment: ""))
-
-            LazyVGrid(columns: iconColumns, spacing: 12) {
-                ForEach(AppIconOption.allCases) { option in
-                    appIconButton(for: option)
-                }
-            }
-        }
-    }
-
-    private var iconColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 92), spacing: 12)]
-    }
-
     private var academicNotificationsBinding: Binding<Bool> {
         Binding(
             get: { academicChangeNotificationsEnabled },
@@ -271,42 +244,6 @@ struct AboutAppView: View {
         .buttonStyle(.plain)
     }
 
-    private func appIconButton(for option: AppIconOption) -> some View {
-        Button {
-            Task { await applyIcon(option) }
-        } label: {
-            VStack(spacing: 8) {
-                AppIconPreview(option: option)
-                    .frame(width: 62, height: 62)
-
-                Text(option.displayName)
-                    .font(.caption.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .foregroundStyle(.primary)
-
-                Image(systemName: option == selectedIcon ? "checkmark.circle.fill" : "circle")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(option == selectedIcon ? Color.green : Color.secondary.opacity(0.45))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 8)
-            .background(cardShape.fill(cardBackgroundColor))
-            .overlay(
-                cardShape.stroke(
-                    option == selectedIcon ? Color.green.opacity(0.45) : cardBorderColor,
-                    lineWidth: option == selectedIcon ? 1.5 : 1
-                )
-            )
-            .contentShape(cardShape)
-        }
-        .buttonStyle(.plain)
-        .disabled(option == selectedIcon)
-        .accessibilityLabel(option.displayName)
-        .accessibilityHint(NSLocalizedString("about_app_icon_accessibility_hint", comment: ""))
-    }
-
     private func setAcademicNotificationsEnabled(_ enabled: Bool) async {
         guard enabled != academicChangeNotificationsEnabled else { return }
         isUpdatingAcademicNotifications = true
@@ -317,7 +254,7 @@ struct AboutAppView: View {
             academicChangeNotificationsEnabled = didEnable
 
             if !didEnable {
-                iconAlert = IconAlert(
+                alert = AboutAlert(
                     title: NSLocalizedString("about_academic_notifications_denied_title", comment: ""),
                     message: NSLocalizedString("about_academic_notifications_denied_message", comment: "")
                 )
@@ -325,20 +262,6 @@ struct AboutAppView: View {
         } else {
             AcademicChangeNotificationService.shared.disableFromUserAction()
             academicChangeNotificationsEnabled = false
-        }
-    }
-
-    private func applyIcon(_ option: AppIconOption) async {
-        guard option != selectedIcon else { return }
-
-        do {
-            try await AppIconManager.setIcon(option)
-            selectedIcon = option
-        } catch {
-            iconAlert = IconAlert(
-                title: NSLocalizedString("common_error", comment: ""),
-                message: NSLocalizedString("about_app_icon_error_message", comment: "")
-            )
         }
     }
 
@@ -361,41 +284,59 @@ struct AboutAppView: View {
     }
 }
 
-private struct AboutSupportCard: View {
-    let action: () -> Void
-
+private struct AboutPlusCard: View {
     var body: some View {
-        Button(action: action) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "heart.fill")
-                    .font(.title3)
-                    .foregroundStyle(.pink)
-                    .frame(width: 28)
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [.indigo, .purple, .pink.opacity(0.9)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(NSLocalizedString("about_support_title", comment: ""))
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
-
-                    Text(NSLocalizedString("about_support_subtitle", comment: ""))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                Image(systemName: "sparkles")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(.white)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 20)
-            .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .frame(width: 56, height: 56)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("MyIIS Plus")
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
+                Text(NSLocalizedString("plus_entry_subtitle", comment: ""))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
         }
-        .buttonStyle(.plain)
-        .background(cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground)))
-        .overlay(cardShape.stroke(Color.white.opacity(0.08), lineWidth: 1))
-        .accessibilityHint(NSLocalizedString("about_support_accessibility_hint", comment: ""))
+        .padding(16)
+        .background {
+            ZStack {
+                cardShape.fill(Color(uiColor: .secondarySystemGroupedBackground))
+                cardShape.fill(
+                    LinearGradient(
+                        colors: [.indigo.opacity(0.12), .purple.opacity(0.06)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+            }
+        }
+        .overlay(cardShape.stroke(Color.indigo.opacity(0.22), lineWidth: 1))
+        .contentShape(cardShape)
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(NSLocalizedString("plus_entry_hint", comment: ""))
     }
 
     private var cardShape: RoundedRectangle {
@@ -403,23 +344,7 @@ private struct AboutSupportCard: View {
     }
 }
 
-private struct AppIconPreview: View {
-    let option: AppIconOption
-
-    var body: some View {
-        Image(option.previewAssetName)
-            .resizable()
-            .scaledToFill()
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(.white.opacity(0.18), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.12), radius: 10, y: 6)
-    }
-}
-
-private struct IconAlert: Identifiable {
+private struct AboutAlert: Identifiable {
     let id = UUID()
     let title: String
     let message: String
