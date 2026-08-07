@@ -43,7 +43,8 @@ final class ProfileViewModelTests: XCTestCase {
             skills: [],
             references: [],
             settings: UserSettings.default,
-            isHeadman: false
+            isHeadman: false,
+            canStudentNote: false
         )
 
         authService.currentUser = user
@@ -75,7 +76,8 @@ final class ProfileViewModelTests: XCTestCase {
             skills: [],
             references: [],
             settings: UserSettings.default,
-            isHeadman: false
+            isHeadman: false,
+            canStudentNote: false
         )
         authService.currentUser = user
         XCTAssertNotNil(viewModel.user)

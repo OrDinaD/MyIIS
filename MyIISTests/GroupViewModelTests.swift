@@ -291,7 +291,8 @@ final class GroupViewModelTests: XCTestCase {
             skills: [],
             references: [],
             settings: .default,
-            isHeadman: false
+            isHeadman: false,
+            canStudentNote: false
         )
     }
 }
