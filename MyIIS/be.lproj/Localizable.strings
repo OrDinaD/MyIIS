@@ -781,7 +781,7 @@
 "first_launch_sign_in" = "Увайсці ва ўліковы запіс";
 "first_launch_continue_guest" = "Працягнуць без уваходу";
 "first_launch_server_retry" = "Праверыць яшчэ раз";
-"first_launch_server_available" = "Серверы БДУІР даступныя";
+"first_launch_server_available" = "ІІС даступны";
 "first_launch_server_unavailable" = "Серверы БДУІР недаступныя";
 "first_launch_server_checking" = "Правяраем серверы БДУІР";
 "first_launch_server_unavailable_message" = "Серверы БДУІР зараз не адказваюць, таму ўвайсці пакуль не атрымаецца. Можна працягнуць без уліковага запісу.";

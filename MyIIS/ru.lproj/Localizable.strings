@@ -581,7 +581,7 @@
 "first_launch_sign_in" = "Войти в аккаунт";
 "first_launch_continue_guest" = "Продолжить без входа";
 "first_launch_server_retry" = "Проверить ещё раз";
-"first_launch_server_available" = "Серверы БГУИР доступны";
+"first_launch_server_available" = "ИИС доступен";
 "first_launch_server_unavailable" = "Серверы БГУИР недоступны";
 "first_launch_server_checking" = "Проверяем серверы БГУИР";
 "first_launch_server_unavailable_message" = "Серверы БГУИР сейчас не отвечают, поэтому войти пока не получится. Можно продолжить без аккаунта.";

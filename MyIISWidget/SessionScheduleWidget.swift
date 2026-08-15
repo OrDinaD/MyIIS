@@ -3,7 +3,6 @@
 //  MyIISWidgetExtension
 //
 // swiftlint:disable file_length
-import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -59,17 +58,6 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
         ],
         updatedAt: Date()
     )
-}
-
-struct RefreshClassScheduleWidgetIntent: AppIntent {
-    static let title: LocalizedStringResource = "Обновить расписание"
-    static let description = IntentDescription("Перечитать локальное расписание и обновить виджет «Пары».")
-    static let openAppWhenRun = false
-
-    func perform() async throws -> some IntentResult {
-        _ = ClassScheduleWidgetDataStore.refreshFromLocalSchedule()
-        return .result()
-    }
 }
 
 struct SessionScheduleWidgetProvider: TimelineProvider {
@@ -214,7 +202,9 @@ struct SessionScheduleWidgetView: View {
 
     var body: some View {
         Group {
-            if family == .accessoryRectangular {
+            if family == .accessoryInline {
+                accessoryInlineContent
+            } else if family == .accessoryRectangular {
                 accessoryContent
             } else if entry.snapshot == nil {
                 emptyContent
@@ -228,21 +218,6 @@ struct SessionScheduleWidgetView: View {
         }
         .dynamicTypeSize(.medium ... .large)
         .applySessionWidgetBackground(isFilled: style == .session)
-        .overlay(alignment: .topTrailing) {
-            if style == .classes, family != .accessoryRectangular {
-                Button(intent: RefreshClassScheduleWidgetIntent()) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.caption.weight(.bold))
-                        .frame(width: 30, height: 30)
-                        .background(Color.black.opacity(0.22), in: Circle())
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.white)
-                .contentShape(Circle())
-                .accessibilityLabel("Обновить расписание")
-                .padding(10)
-            }
-        }
         .widgetURL(URL(string: "myiis://section/schedule"))
     }
 
@@ -272,154 +247,219 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var classContent: some View {
+        VStack(spacing: 0) {
+            header
+                .layoutPriority(10)
+
+            VStack(spacing: family == .systemLarge ? 8 : 6) {
+                ForEach(visibleEvents) { event in
+                    classEventTile(for: event)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, contentHorizontalPadding)
+            .padding(.top, family == .systemLarge ? 10 : 7)
+            .padding(.bottom, family == .systemLarge ? 12 : 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        }
+    }
+
+    private var accessoryInlineContent: some View {
         Group {
             if let event = visibleEvents.first {
-                VStack(spacing: classVerticalSpacing) {
-                    Text(classTimeText(for: event))
-                        .font(.system(size: classTimeFontSize, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.8)
-                        .padding(.horizontal, 36)
+                let status = SessionScheduleWidgetPresentation.accessoryStatus(for: event, at: entry.date)
+                let location = SessionScheduleWidgetPresentation.accessorySubtitle(for: event)
 
-                    Spacer(minLength: 0)
-
-                    HStack(spacing: 10) {
-                        minimalProgressStrip(for: event)
-
-                        VStack(spacing: 4) {
-                            Image(systemName: classTypeIcon(for: event))
-                                .font(.system(size: classIconSize, weight: .semibold))
-                                .foregroundStyle(classAccentColor(for: event))
-                                .widgetAccentable()
-
-                            Text(event.title)
-                                .font(.system(size: classTitleFontSize, weight: .bold, design: .rounded))
-                                .foregroundStyle(.primary)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(family == .systemLarge ? 2 : 1)
-                                .minimumScaleFactor(0.62)
-                                .privacySensitive()
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-
-                    Spacer(minLength: 0)
-
-                    Text(classLocationText(for: event))
-                        .font(.system(size: classLocationFontSize, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
-                        .privacySensitive()
+                ViewThatFits(in: .horizontal) {
+                    inlineLabel("\(status) · \(event.title) · \(location)")
+                    inlineLabel("\(status) · \(event.title)")
+                    Text(verbatim: "\(status) · \(event.title)")
+                    Text(verbatim: status)
                 }
-                .padding(.horizontal, contentHorizontalPadding)
-                .padding(.vertical, family == .systemLarge ? 18 : 14)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .lineLimit(1)
+                .privacySensitive()
             } else {
-                noUpcomingContent
+                Label("Нет пар", systemImage: "checkmark.circle")
+                    .lineLimit(1)
             }
+        }
+        .widgetAccentable()
+    }
+
+    private func inlineLabel(_ title: String) -> some View {
+        Label {
+            Text(verbatim: title)
+        } icon: {
+            Image(systemName: "calendar")
         }
     }
 
     private var accessoryContent: some View {
-        ZStack(alignment: .leading) {
-            AccessoryWidgetBackground()
-
+        Group {
             if let event = visibleEvents.first {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "calendar")
-                            .font(.caption2.weight(.semibold))
-                        Text(accessoryStatus(for: event))
-                            .font(.caption2.weight(.semibold))
-                            .monospacedDigit()
-                            .lineLimit(1)
-                    }
-                    .foregroundStyle(.secondary)
-                    .widgetAccentable()
+                HStack(spacing: 8) {
+                    Capsule()
+                        .fill(classAccentColor(for: event))
+                        .frame(width: 4)
+                        .widgetAccentable()
 
-                    Text(event.title)
-                        .font(.headline.weight(.semibold))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
-                        .privacySensitive()
-
-                    Text(accessorySubtitle(for: event))
-                        .font(.caption.weight(.medium))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.72)
+                    VStack(alignment: .leading, spacing: 1) {
+                        HStack(spacing: 4) {
+                            Image(systemName: event.isActive(at: entry.date) ? "clock.fill" : "calendar")
+                                .font(.caption2.weight(.semibold))
+                            Text(SessionScheduleWidgetPresentation.accessoryStatus(for: event, at: entry.date))
+                                .font(.caption2.weight(.semibold))
+                                .monospacedDigit()
+                                .lineLimit(1)
+                        }
                         .foregroundStyle(.secondary)
-                        .privacySensitive()
+                        .widgetAccentable()
+
+                        Text(event.title)
+                            .font(.headline.weight(.semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.74)
+                            .privacySensitive()
+
+                        Text(SessionScheduleWidgetPresentation.accessorySubtitle(for: event))
+                            .font(.caption.weight(.medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .foregroundStyle(.secondary)
+                            .privacySensitive()
+                    }
                 }
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 4)
             } else {
-                Text("Нет ближайших событий")
+                Label("Нет пар", systemImage: "checkmark.circle")
                     .font(.headline.weight(.semibold))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.78)
-                    .padding(.horizontal, 6)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .padding(.horizontal, 4)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
-    private var classVerticalSpacing: CGFloat {
-        family == .systemLarge ? 10 : 8
-    }
+    private func classEventTile(for event: SessionScheduleWidgetSnapshot.Event) -> some View {
+        let accent = classAccentColor(for: event)
+        let isActive = event.isActive(at: entry.date)
 
-    private var classTimeFontSize: CGFloat {
-        family == .systemLarge ? 18 : 15
-    }
+        return HStack(spacing: family == .systemLarge ? 11 : 9) {
+            classTimeColumn(for: event)
+            classProgressBar(for: event, accent: accent, isActive: isActive)
+            classDetails(for: event, accent: accent)
 
-    private var classTitleFontSize: CGFloat {
-        family == .systemLarge ? 25 : 21
-    }
-
-    private var classLocationFontSize: CGFloat {
-        family == .systemLarge ? 17 : 14
-    }
-
-    private var classIconSize: CGFloat {
-        family == .systemLarge ? 24 : 20
-    }
-
-    private func classTimeText(for event: SessionScheduleWidgetSnapshot.Event) -> String {
-        if event.isActive(at: entry.date) {
-            return String(
-                format: String(localized: "Сейчас до %@"),
-                event.endTime
-            )
+            if isActive {
+                classCurrentBadge(accent: accent)
+            }
         }
-        return "\(event.startTime)-\(event.endTime)"
+        .padding(.horizontal, family == .systemLarge ? 12 : 10)
+        .padding(.vertical, family == .systemLarge ? 8 : 6)
+        .frame(maxWidth: .infinity, minHeight: family == .systemLarge ? 60 : 52, alignment: .leading)
+        .background(classTileBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(isActive ? accent.opacity(0.7) : .clear, lineWidth: 1.5)
+        }
     }
 
-    private func classLocationText(for event: SessionScheduleWidgetSnapshot.Event) -> String {
-        let source = nonEmpty(event.location)
-            ?? nonEmpty(event.subtitle)
-            ?? String(localized: "Аудитория не указана")
-        return source
-            .replacingOccurrences(of: " к.", with: "")
-            .replacingOccurrences(of: " к", with: "")
-            .replacingOccurrences(of: " корпус", with: "")
-            .replacingOccurrences(of: "Корпус ", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+    private func classTimeColumn(for event: SessionScheduleWidgetSnapshot.Event) -> some View {
+        VStack(spacing: 1) {
+            Text(event.startTime)
+                .fontWeight(.semibold)
+                .foregroundStyle(.white)
+            Text(event.endTime)
+                .foregroundStyle(.white.opacity(0.72))
+        }
+        .font(.system(
+            size: family == .systemLarge ? 14 : 13,
+            weight: .regular,
+            design: .monospaced
+        ))
+        .lineLimit(1)
+        .minimumScaleFactor(0.8)
+        .frame(width: family == .systemLarge ? 52 : 48)
     }
 
-    private func minimalProgressStrip(for event: SessionScheduleWidgetSnapshot.Event) -> some View {
+    private func classProgressBar(
+        for event: SessionScheduleWidgetSnapshot.Event,
+        accent: Color,
+        isActive: Bool
+    ) -> some View {
         GeometryReader { proxy in
-            let progress = event.isActive(at: entry.date) ? (event.progress(at: entry.date) ?? 0) : 0
+            let progress = isActive ? (event.progress(at: entry.date) ?? 0) : 0
 
             ZStack(alignment: .top) {
                 Capsule()
-                    .fill(classAccentColor(for: event).opacity(0.22))
-
+                    .fill(accent.opacity(0.2))
                 Capsule()
-                    .fill(classAccentColor(for: event))
-                    .frame(height: max(6, proxy.size.height * progress))
+                    .fill(accent)
+                    .frame(height: isActive ? max(6, proxy.size.height * progress) : proxy.size.height)
             }
-            .widgetAccentable()
         }
-        .frame(width: 5, height: family == .systemLarge ? 76 : 58)
+        .frame(width: 5)
+        .widgetAccentable()
+    }
+
+    private func classDetails(
+        for event: SessionScheduleWidgetSnapshot.Event,
+        accent: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Image(systemName: classTypeIcon(for: event))
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(accent)
+                    .widgetAccentable()
+
+                Text(event.title)
+                    .font(.system(
+                        size: family == .systemLarge ? 17 : 16,
+                        weight: .bold,
+                        design: .rounded
+                    ))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.68)
+                    .privacySensitive()
+            }
+
+            Text(classLocationText(for: event))
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.white.opacity(0.72))
+                .lineLimit(1)
+                .minimumScaleFactor(0.76)
+                .privacySensitive()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func classCurrentBadge(accent: Color) -> some View {
+        Text("Сейчас")
+            .font(.caption2.weight(.bold))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(accent.opacity(0.3), in: Capsule())
+            .widgetAccentable()
+    }
+
+    private var classTileBackground: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color(red: 0.11, green: 0.12, blue: 0.16),
+                Color(red: 0.13, green: 0.14, blue: 0.18)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private func classLocationText(for event: SessionScheduleWidgetSnapshot.Event) -> String {
+        SessionScheduleWidgetPresentation.normalizedLocation(event.location)
+            ?? nonEmpty(event.lessonType)
+            ?? String(localized: "Аудитория не указана")
     }
 
     private func classTypeIcon(for event: SessionScheduleWidgetSnapshot.Event) -> String {
@@ -440,35 +480,16 @@ struct SessionScheduleWidgetView: View {
         if event.kind == .exam || type.contains("экзам") { return Color(red: 1.0, green: 0.34, blue: 0.24) }
         if event.kind == .consultation || type.contains("конс") { return Color(red: 0.56, green: 0.32, blue: 0.92) }
         if type.contains("лр") || type.contains("лаб") || type.contains("lab") {
-            return Color(red: 0.10, green: 0.72, blue: 0.44)
+            return .red
         }
         if type.contains("пз") || type.contains("практ") || type.contains("practice") {
-            return Color(red: 0.98, green: 0.63, blue: 0.18)
+            return .yellow
         }
         if type.contains("лк") || type.contains("лек") || type.contains("lecture") {
-            return Color(red: 0.16, green: 0.48, blue: 0.96)
+            return .green
         }
         if event.kind == .announcement { return Color(red: 0.96, green: 0.72, blue: 0.22) }
         return Color(red: 0.24, green: 0.72, blue: 0.86)
-    }
-
-    private func accessoryStatus(for event: SessionScheduleWidgetSnapshot.Event) -> String {
-        if event.isActive(at: entry.date) {
-            return String(
-                format: String(localized: "Сейчас до %@"),
-                event.endTime
-            )
-        }
-        return String(
-            format: String(localized: "Следующая в %@"),
-            event.startTime
-        )
-    }
-
-    private func accessorySubtitle(for event: SessionScheduleWidgetSnapshot.Event) -> String {
-        let chunks = [nonEmpty(event.location), nonEmpty(event.subtitle)].compactMap { $0 }
-        let value = chunks.joined(separator: " • ")
-        return nonEmpty(value) ?? event.endTime
     }
 
     private func nonEmpty(_ value: String?) -> String? {
@@ -534,7 +555,6 @@ struct SessionScheduleWidgetView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
                     .allowsTightening(true)
-                    .padding(.trailing, style == .classes ? 34 : 0)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, family == .systemLarge ? 16 : 14)
@@ -587,7 +607,7 @@ struct SessionScheduleWidgetView: View {
         widgetMessageContent(
             icon: "calendar.badge.exclamationmark",
             title: String(localized: "Расписание не загружено"),
-            subtitle: String(localized: "Нажмите ↻ или откройте расписание в приложении.")
+            subtitle: String(localized: "Откройте расписание в приложении, чтобы загрузить данные.")
         )
     }
 
@@ -780,10 +800,10 @@ struct ClassScheduleWidget: Widget {
             SessionScheduleWidgetView(entry: entry, style: .classes)
         }
         .configurationDisplayName("Пары")
-        .description("Показывает ближайшую пару вашей группы: время, предмет и аудиторию.")
-        .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular])
+        .description("Показывает ближайшие пары вашей группы плитками: время, предмет и аудиторию.")
+        .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
         .contentMarginsDisabled()
-        .containerBackgroundRemovable(false)
+        .containerBackgroundRemovable()
     }
 }
 
@@ -796,7 +816,7 @@ struct SessionScheduleWidget: Widget {
         .description("Показывает ближайшие экзамены, консультации и объявления вашей группы.")
         .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular])
         .contentMarginsDisabled()
-        .containerBackgroundRemovable(false)
+        .containerBackgroundRemovable()
     }
 }
 
@@ -824,7 +844,19 @@ struct SessionScheduleWidget: Widget {
 #Preview("Пары Lock Screen", as: .accessoryRectangular) {
     ClassScheduleWidget()
 } timeline: {
-    SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
+    SessionScheduleWidgetEntry(
+        date: SessionScheduleWidgetEntry.placeholderSnapshot.startDate ?? .now,
+        snapshot: SessionScheduleWidgetEntry.placeholderSnapshot
+    )
+}
+
+#Preview("Пары над временем", as: .accessoryInline) {
+    ClassScheduleWidget()
+} timeline: {
+    SessionScheduleWidgetEntry(
+        date: SessionScheduleWidgetEntry.placeholderSnapshot.startDate ?? .now,
+        snapshot: SessionScheduleWidgetEntry.placeholderSnapshot
+    )
 }
 
 private extension View {

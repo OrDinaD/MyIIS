@@ -2,14 +2,10 @@ import SwiftUI
 
 struct ScheduleLessonDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var showsTeacherPhoto = false
+    @State private var photoTeacher: DisciplineEmployee?
 
     let lesson: DisciplineSchedule
     let onTeacherScheduleTap: (DisciplineEmployee) -> Void
-
-    private var teacher: DisciplineEmployee? {
-        lesson.employees.first
-    }
 
     var body: some View {
         ScrollView {
@@ -23,7 +19,7 @@ struct ScheduleLessonDetailSheet: View {
             .padding(.bottom, 28)
         }
         .background(Color(uiColor: .systemGroupedBackground))
-        .fullScreenCover(isPresented: $showsTeacherPhoto) {
+        .fullScreenCover(item: $photoTeacher) { teacher in
             TeacherPhotoPreview(teacher: teacher)
         }
     }
@@ -55,40 +51,52 @@ struct ScheduleLessonDetailSheet: View {
                 .font(.title2.bold())
                 .foregroundStyle(.secondary)
 
-            if let teacher {
-                HStack(spacing: 14) {
-                    Button {
-                        showsTeacherPhoto = true
-                    } label: {
-                        ZStack(alignment: .bottomTrailing) {
-                            TeacherAvatarView(teacher: teacher, size: 72)
-                            Image(systemName: "magnifyingglass")
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundStyle(.white)
-                                .frame(width: 26, height: 26)
-                                .background(Color.black.opacity(0.55), in: Circle())
+            if !lesson.employees.isEmpty {
+                ForEach(lesson.employees) { teacher in
+                    HStack(spacing: 14) {
+                        Button {
+                            photoTeacher = teacher
+                        } label: {
+                            ZStack(alignment: .bottomTrailing) {
+                                TeacherAvatarView(teacher: teacher, size: 72)
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(width: 26, height: 26)
+                                    .background(Color.black.opacity(0.55), in: Circle())
+                            }
                         }
-                    }
-                    .buttonStyle(.plain)
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(
+                            String(
+                                format: String(localized: "Открыть фотографию %@"),
+                                teacher.fullName
+                            )
+                        )
 
-                    Button {
-                        onTeacherScheduleTap(teacher)
-                    } label: {
-                        HStack(spacing: 10) {
-                            Text(teacher.fullName)
-                                .font(.title3.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .lineLimit(2)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Image(systemName: "chevron.right")
-                                .font(.title3.weight(.semibold))
-                                .foregroundStyle(.secondary)
+                        Button {
+                            onTeacherScheduleTap(teacher)
+                        } label: {
+                            HStack(spacing: 10) {
+                                Text(teacher.fullName)
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(2)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Image(systemName: "chevron.right")
+                                    .font(.title3.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(String(localized: "Открывает расписание преподавателя"))
                     }
-                    .buttonStyle(.plain)
+                    .padding(14)
+                    .background(
+                        Color(uiColor: .secondarySystemGroupedBackground),
+                        in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    )
                 }
-                .padding(14)
-                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
             } else {
                 Text("Не указан")
                     .font(.body.weight(.medium))

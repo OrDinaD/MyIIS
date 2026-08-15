@@ -389,24 +389,28 @@ private extension FirstLaunchView {
             HStack(spacing: 10) {
                 Image(systemName: serverStatusIcon)
                     .foregroundStyle(serverStatusColor)
-                    .symbolEffect(.pulse, isActive: loginViewModel.isServerActive == nil)
+                    .symbolEffect(.pulse, isActive: loginViewModel.isServerActive != false)
                     .accessibilityHidden(true)
 
                 Text(serverStatusTitle)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
 
                 Spacer(minLength: 8)
 
-                Button {
-                    loginViewModel.checkServerStatus()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .frame(width: 32, height: 32)
+                if loginViewModel.isServerActive != true {
+                    Button {
+                        loginViewModel.checkServerStatus()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .frame(width: 32, height: 32)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(NSLocalizedString("first_launch_server_retry", comment: ""))
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .accessibilityLabel(NSLocalizedString("first_launch_server_retry", comment: ""))
             }
 
             if loginViewModel.isServerActive == false {
@@ -448,7 +452,7 @@ private extension FirstLaunchView {
     private var serverStatusIcon: String {
         switch loginViewModel.isServerActive {
         case true:
-            return "checkmark.circle.fill"
+            return "network"
         case false:
             return "xmark.circle.fill"
         case nil:

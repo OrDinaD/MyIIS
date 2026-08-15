@@ -687,13 +687,14 @@ private struct ScheduleLessonCard: View {
                                 .lineLimit(2)
                         }
 
-                        if let teacher = lesson.employees.first, !teacher.fullName.isEmpty {
+                        ForEach(displayedTeachers) { teacher in
                             Button {
                                 onTeacherTap(teacher)
                             } label: {
                                 Label(teacher.fullName, systemImage: "person.fill")
                                     .font(.subheadline.weight(.medium))
                                     .foregroundStyle(cardSecondaryForeground)
+                                    .lineLimit(1)
                             }
                             .buttonStyle(.plain)
                         }
@@ -820,7 +821,7 @@ private struct ScheduleLessonCard: View {
         Button {
             onDetailsTap?()
         } label: {
-            teacherAvatar(size: size)
+            teacherAvatarStack(size: size)
         }
         .buttonStyle(.plain)
         .disabled(onDetailsTap == nil)
@@ -836,11 +837,39 @@ private struct ScheduleLessonCard: View {
                 )
             )
         )
+        .accessibilityValue(displayedTeachers.map(\.fullName).joined(separator: ", "))
     }
 
-    private func teacherAvatar(size: CGFloat) -> some View {
+    @ViewBuilder
+    private func teacherAvatarStack(size: CGFloat) -> some View {
+        if displayedTeachers.isEmpty {
+            teacherAvatar(nil, size: size)
+        } else {
+            HStack(spacing: -(size * 0.3)) {
+                ForEach(Array(displayedTeachers.prefix(3).enumerated()), id: \.element.id) { index, teacher in
+                    teacherAvatar(teacher, size: size)
+                        .overlay {
+                            Circle()
+                                .strokeBorder(cardPrimaryForeground.opacity(0.72), lineWidth: 1.5)
+                        }
+                        .zIndex(Double(3 - index))
+                }
+
+                if displayedTeachers.count > 3 {
+                    Text("+\(displayedTeachers.count - 3)")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(cardPrimaryForeground)
+                        .frame(width: size, height: size)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+            }
+            .fixedSize()
+        }
+    }
+
+    private func teacherAvatar(_ teacher: DisciplineEmployee?, size: CGFloat) -> some View {
         Group {
-            if let url = teacherPhotoURL {
+            if let url = teacherPhotoURL(for: teacher) {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
@@ -860,12 +889,16 @@ private struct ScheduleLessonCard: View {
         .opacity(isPast ? 0.7 : 1)
     }
 
-    private var teacherPhotoURL: URL? {
-        guard let link = lesson.employees.first?.photoLink.nilIfBlank else { return nil }
+    private func teacherPhotoURL(for teacher: DisciplineEmployee?) -> URL? {
+        guard let link = teacher?.photoLink.nilIfBlank else { return nil }
         let normalized = link
             .replacingOccurrences(of: "http://", with: "https://")
             .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")
         return URL(string: normalized)
+    }
+
+    private var displayedTeachers: [DisciplineEmployee] {
+        lesson.employees.filter { !$0.fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
     @ViewBuilder
@@ -920,13 +953,13 @@ private struct ScheduleLessonCard: View {
             return .purple
         }
         if type.contains("лр") {
-            return .green
+            return .red
         }
         if type.contains("пз") {
             return .yellow
         }
         if type.contains("лк") {
-            return .blue
+            return .green
         }
         return .mint
     }

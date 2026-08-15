@@ -426,8 +426,11 @@ struct DisciplineSummary: Identifiable, Equatable {
             if !lesson.lessonTypeAbbrev.isEmpty {
                 lessonTypes.insert(lesson.lessonTypeAbbrev)
             }
-            if let name = lesson.employees.first?.fullName, !name.isEmpty {
-                teachers.insert(name)
+            for employee in lesson.employees {
+                let name = employee.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !name.isEmpty {
+                    teachers.insert(name)
+                }
             }
             weeks.formUnion(lesson.weekNumbers)
         }
