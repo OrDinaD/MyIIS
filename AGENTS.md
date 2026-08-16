@@ -63,6 +63,9 @@ Sanitizers, Thread Performance Checker, Main Thread Checker, code coverage, Inst
 - `apple-platform-reviewer`: Apple Documentation, HIG, stable/beta availability и accessibility; только read-only аудит.
 - `ios-quality-auditor`: lint, compiler diagnostics, tests, sanitizers, performance, coverage, dead code и privacy; ничего не включает скрытно.
 - `product-integrity-auditor`: целесообразность, UX/HIG, state flow, локализация и соответствие реальным API/HAR/fixtures; только read-only аудит.
+- `macos-developer`: Mac Catalyst и macOS: Sidebar, Toolbar, шорткаты, контекстные меню, окна и сборка под Catalyst.
+- `watchos-developer`: watchOS: Watch App, Complications, Smart Stack Widgets, WCSession / WatchConnectivity и автономность на часах.
+- `har-parity-auditor`: аудит паритета с реальным сайтом ИИС БГУИР на основе HAR-дампов; строгая проверка полей DTO и покрытия запросов без додумок.
 - Дополнительные роли: `task-architect`, `code-reviewer` и `unit-test-writer`; их границы заданы в собственных `agent.md`.
 
-Все субагенты сначала вызывают `XcodeListWindows`. Три аудитора работают read-only; `unit-test-writer` может менять только unit tests через Xcode MCP. Основной агент принимает production-решения, выполняет изменения через Xcode MCP и отвечает за финальную сборку и Git.
+Все субагенты сначала вызывают `XcodeListWindows`. Аудиторы работают read-only; `unit-test-writer`, `macos-developer` и `watchos-developer` могут выполнять изменения в своей зоне ответственности через Xcode MCP. Основной агент принимает production-решения, выполняет интеграцию через Xcode MCP и отвечает за финальную сборку и Git.

@@ -65,11 +65,22 @@ struct UnauthorizedHomeView: View {
     private var publicSections: some View {
         Section(NSLocalizedString("unauthorized_available_without_sign_in", comment: "")) {
             NavigationLink {
+                ScheduleServiceView()
+            } label: {
+                HomeServiceRow(
+                    icon: "calendar",
+                    tint: .blue,
+                    title: NSLocalizedString("services_item_schedule", comment: ""),
+                    subtitle: NSLocalizedString("services_schedule_subtitle", comment: "")
+                )
+            }
+
+            NavigationLink {
                 UnauthorizedRatingView()
             } label: {
                 HomeServiceRow(
                     icon: "chart.bar.fill",
-                    tint: .blue,
+                    tint: .purple,
                     title: NSLocalizedString("unauthorized_rating_title", comment: ""),
                     subtitle: NSLocalizedString("unauthorized_rating_subtitle", comment: "")
                 )
@@ -112,7 +123,6 @@ struct UnauthorizedHomeView: View {
 
     private var accountSections: some View {
         Section(NSLocalizedString("unauthorized_after_sign_in", comment: "")) {
-            lockedRow(icon: "calendar", title: NSLocalizedString("services_item_schedule", comment: ""))
             lockedRow(icon: "book.closed.fill", title: NSLocalizedString("services_item_markbook", comment: ""))
             lockedRow(icon: "person.2", title: NSLocalizedString("services_item_group", comment: ""))
         }

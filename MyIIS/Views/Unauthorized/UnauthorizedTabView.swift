@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
-    case home
+    case schedule
     case rating
     case services
 
@@ -9,7 +9,7 @@ enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
-        case .home: return "house.fill"
+        case .schedule: return "calendar"
         case .rating: return "chart.bar.fill"
         case .services: return "square.grid.2x2.fill"
         }
@@ -17,7 +17,7 @@ enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .home: return NSLocalizedString("tab_home", comment: "")
+        case .schedule: return NSLocalizedString("tab_schedule", comment: "")
         case .rating: return NSLocalizedString("unauthorized_rating_title", comment: "")
         case .services: return NSLocalizedString("tab_services", comment: "")
         }
@@ -25,7 +25,7 @@ enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
 }
 
 struct UnauthorizedTabView: View {
-    @State private var selectedTab: UnauthorizedAppTab = .home
+    @State private var selectedTab: UnauthorizedAppTab = .schedule
 
     var body: some View {
         if #available(iOS 18.0, *) {
@@ -38,9 +38,9 @@ struct UnauthorizedTabView: View {
 
     private var baseTabView: some View {
         TabView(selection: $selectedTab) {
-            UnauthorizedHomeView()
-                .tag(UnauthorizedAppTab.home)
-                .tabItem { Label(UnauthorizedAppTab.home.title, systemImage: UnauthorizedAppTab.home.icon) }
+            ScheduleServiceView()
+                .tag(UnauthorizedAppTab.schedule)
+                .tabItem { Label(UnauthorizedAppTab.schedule.title, systemImage: UnauthorizedAppTab.schedule.icon) }
 
             UnauthorizedRatingView()
                 .tag(UnauthorizedAppTab.rating)

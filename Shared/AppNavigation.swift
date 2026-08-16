@@ -58,22 +58,38 @@ class AppRouter: ObservableObject {
     @Published var servicesPath: NavigationPath
 
     static let shared = AppRouter()
+    private static let startupTabKey = "initial_startup_tab"
+    private static let startupMigrationKey = "initial_startup_tab_migration_v2"
 
     private init() {
+        Self.performStartupMigrationIfNeeded()
         let initialState = AppRouter.initialState()
         self.selectedTab = initialState.tab
         self.servicesPath = initialState.path
     }
 
+    static func performStartupMigrationIfNeeded() {
+        let defaults = UserDefaults.standard
+        if !defaults.bool(forKey: startupMigrationKey) {
+            defaults.set(true, forKey: startupMigrationKey)
+            let existing = defaults.string(forKey: startupTabKey)
+            if existing == nil || existing == "profile" || existing == "home" {
+                defaults.set("schedule", forKey: startupTabKey)
+            }
+        }
+    }
+
     static func isSectionOrTabEnabled(_ rawValue: String) -> Bool {
         let isBeta = UserDefaults.standard.bool(forKey: "enable_beta_sections")
         switch rawValue {
-        case "home", "lms", "headman":
-            return isBeta
         case "schedule":
             return true
+        case "services", "others":
+            return true
+        case "home", "lms", "headman":
+            return isBeta
         case "profile":
-            return UserDefaults.standard.object(forKey: "show_tab_profile") == nil ? true : UserDefaults.standard.bool(forKey: "show_tab_profile")
+            return UserDefaults.standard.bool(forKey: "show_tab_profile")
         case "attendance":
             return UserDefaults.standard.object(forKey: "show_tab_attendance") == nil ? true : UserDefaults.standard.bool(forKey: "show_tab_attendance")
         case "rating":
@@ -84,10 +100,11 @@ class AppRouter: ObservableObject {
     }
 
     private static func initialState() -> (tab: AppTab, path: NavigationPath) {
-        let initialRaw = UserDefaults.standard.string(forKey: "initial_startup_tab") ?? "profile"
+        performStartupMigrationIfNeeded()
+        let initialRaw = UserDefaults.standard.string(forKey: startupTabKey) ?? "schedule"
 
         guard isSectionOrTabEnabled(initialRaw) else {
-            return (.others, NavigationPath()) // Fallback
+            return (.schedule, NavigationPath())
         }
 
         var path = NavigationPath()
@@ -95,13 +112,20 @@ class AppRouter: ObservableObject {
 
         if let section = AppSection(rawValue: initialRaw) {
             switch section {
-            case .home: tab = .home
-            case .profile: tab = .profile
-            case .attendance: tab = .attendance
-            case .rating: tab = .rating
-            case .services: tab = .others
+            case .schedule:
+                tab = .schedule
+            case .home:
+                tab = .home
+            case .profile:
+                tab = isSectionOrTabEnabled("profile") ? .profile : .schedule
+            case .attendance:
+                tab = .attendance
+            case .rating:
+                tab = .rating
+            case .services:
+                tab = .others
             case .gradebook, .study, .diploma, .group, .headman, .dormitory,
-                 .library, .lms, .schedule, .disciplines, .studyWeeks,
+                 .library, .lms, .disciplines, .studyWeeks,
                  .departments, .directory, .support:
                 tab = .others
                 path.append(section)
@@ -109,7 +133,7 @@ class AppRouter: ObservableObject {
         } else if let rawTab = AppTab(rawValue: initialRaw) {
             tab = rawTab
         } else {
-            tab = .profile
+            tab = .schedule
         }
 
         return (tab, path)
@@ -120,24 +144,30 @@ class AppRouter: ObservableObject {
         servicesPath = NavigationPath()
 
         switch section {
+        case .schedule:
+            selectedTab = .schedule
         case .home:
-            selectedTab = .home
+            selectedTab = Self.isSectionOrTabEnabled("home") ? .home : .others
         case .profile:
-            selectedTab = .profile
+            if Self.isSectionOrTabEnabled("profile") {
+                selectedTab = .profile
+            } else {
+                selectedTab = .others
+            }
         case .attendance:
             selectedTab = .attendance
         case .rating:
             selectedTab = .rating
         case .services:
             selectedTab = .others
-        case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .schedule, .disciplines, .studyWeeks, .departments, .directory, .support:
+        case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .disciplines, .studyWeeks, .departments, .directory, .support:
             selectedTab = .others
             servicesPath.append(section)
         }
     }
 
     func resetForLogout() {
-        selectedTab = .profile
+        selectedTab = .schedule
         servicesPath = NavigationPath()
     }
 
@@ -148,6 +178,8 @@ class AppRouter: ObservableObject {
         if let section = AppSection(rawValue: path) {
             navigate(to: section)
         } else if url.host == "section", let section = AppSection(rawValue: url.lastPathComponent) {
+            navigate(to: section)
+        } else if let host = url.host, let section = AppSection(rawValue: host) {
             navigate(to: section)
         }
     }

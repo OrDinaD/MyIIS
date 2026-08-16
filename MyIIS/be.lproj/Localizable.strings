@@ -776,6 +776,11 @@
 "Заявка отменена." = "Заяўка скасавана.";
 "Заявление сформировано." = "Заява сфарміравана.";
 
+/* Schedule display */
+"settings_schedule_section" = "Расклад";
+"settings_schedule_breaks_title" = "Пяціхвілінныя перапынкі";
+"settings_schedule_breaks_subtitle" = "Паказваць перапынак у сярэдзіне пары ў раскладзе і віджэтах";
+
 /* First launch */
 "first_launch_app_icon" = "Значок праграмы MyIIS";
 "first_launch_sign_in" = "Увайсці ва ўліковы запіс";
@@ -785,3 +790,40 @@
 "first_launch_server_unavailable" = "Серверы БДУІР недаступныя";
 "first_launch_server_checking" = "Правяраем серверы БДУІР";
 "first_launch_server_unavailable_message" = "Серверы БДУІР зараз не адказваюць, таму ўвайсці пакуль не атрымаецца. Можна працягнуць без уліковага запісу.";
+
+/* Schedule First */
+"tab_schedule" = "Расклад";
+"schedule_settings_title" = "Налады раскладу";
+"schedule_settings_display_header" = "Адлюстраванне";
+"schedule_hide_past_title" = "Хаваць мінулыя заняткі";
+"schedule_hide_past_subtitle" = "Згортваць завершаныя пары на працягу дня";
+"schedule_density_title" = "Шчыльнасць картак";
+"schedule_density_regular" = "Стандартная";
+"schedule_density_compact" = "Кампактная";
+"schedule_settings_subgroup_header" = "Падгрупы";
+"schedule_other_subgroup_title" = "Іншая падгрупа";
+"schedule_other_subgroup_full" = "Паказваць цалкам";
+"schedule_other_subgroup_compact" = "Паказваць кампактна";
+"schedule_other_subgroup_hidden" = "Хаваць";
+"schedule_colors_header" = "Колеры тыпаў заняткаў";
+"schedule_colors_footer" = "Абраныя колеры прымяняюцца ў раскладзе і віджэтах.";
+"schedule_colors_reset" = "Скінуць колеры па змаўчанні";
+"schedule_startup_header" = "Запуск праграмы";
+"schedule_startup_tab_title" = "Адкрываць пры запуску";
+"schedule_settings_reset_all" = "Скінуць усе налады раскладу";
+"schedule_pinned_header" = "Замацаваныя";
+"schedule_recents_header" = "Нядаўнія";
+"schedule_all_groups_header" = "Групы";
+"schedule_pin" = "Замацаваць";
+"schedule_unpin" = "Адмацаваць";
+"schedule_choose_date" = "Абярыце дату";
+"schedule_jump_to_date" = "Перайсці да даты";
+"schedule_today_action" = "Сёння";
+"schedule_empty_cta_title" = "Абярыце расклад";
+"schedule_empty_cta_subtitle" = "Знайдзіце групу або выкладчыка, каб праглядаць заняткі і экзамены";
+"lesson_type_lecture" = "Лекцыя";
+"lesson_type_practice" = "Практычны занятак";
+"lesson_type_laboratory" = "Лабараторная праца";
+"lesson_type_consultation" = "Кансультацыя";
+"lesson_type_exam" = "Экзамен / Залік";
+"lesson_type_other" = "Іншае / Мерапрыемства";

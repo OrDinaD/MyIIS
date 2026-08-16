@@ -22,6 +22,10 @@ private struct PasswordRequirementState: Identifiable {
 }
 
 struct AccountSettingsView: View {
+    @AppStorage(
+        ScheduleDisplayPreferences.showsMidPairBreaksKey,
+        store: ScheduleDisplayPreferences.defaults
+    ) private var showsMidPairBreaks = false
     @State private var viewModel = AccountSettingsViewModel()
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var showingImageSourceDialog = false
@@ -95,6 +99,7 @@ struct AccountSettingsView: View {
             }
 
             tabContent
+            scheduleDisplaySection
         }
         .scrollDismissesKeyboard(.interactively)
         .scrollContentBackground(.hidden)
@@ -114,6 +119,7 @@ struct AccountSettingsView: View {
         } detail: {
             Form {
                 tabContent
+                scheduleDisplaySection
             }
             .scrollDismissesKeyboard(.interactively)
             .scrollContentBackground(.hidden)
@@ -332,6 +338,30 @@ struct AccountSettingsView: View {
 }
 
 private extension AccountSettingsView {
+    var scheduleDisplaySection: some View {
+        Section {
+            Toggle(isOn: $showsMidPairBreaks) {
+                Label {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(NSLocalizedString("settings_schedule_breaks_title", comment: ""))
+                            .fontWeight(.medium)
+                        Text(NSLocalizedString("settings_schedule_breaks_subtitle", comment: ""))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "cup.and.saucer.fill")
+                        .foregroundStyle(.purple)
+                }
+            }
+            .onChange(of: showsMidPairBreaks) {
+                ScheduleDisplayPreferences.reloadClassScheduleWidget()
+            }
+        } header: {
+            Text(NSLocalizedString("settings_schedule_section", comment: ""))
+        }
+    }
+
     var confirmationSheet: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(NSLocalizedString("settings_confirm_title", comment: ""))

@@ -564,6 +564,11 @@
 "about_app_language_subtitle" = "Відкрити системні налаштування мови MyIIS";
 "about_app_language_hint" = "Відкриває налаштування MyIIS, де можна вибрати мову застосунку.";
 
+/* Schedule display */
+"settings_schedule_section" = "Розклад";
+"settings_schedule_breaks_title" = "П’ятихвилинні перерви";
+"settings_schedule_breaks_subtitle" = "Показувати перерву всередині пари в розкладі та віджетах";
+
 /* First launch */
 "first_launch_app_icon" = "Іконка застосунку MyIIS";
 "first_launch_sign_in" = "Увійти в обліковий запис";
@@ -573,3 +578,40 @@
 "first_launch_server_unavailable" = "Сервери БДУІР недоступні";
 "first_launch_server_checking" = "Перевіряємо сервери БДУІР";
 "first_launch_server_unavailable_message" = "Сервери БДУІР зараз не відповідають, тому увійти поки не вийде. Можна продовжити без облікового запису.";
+
+/* Schedule First */
+"tab_schedule" = "Розклад";
+"schedule_settings_title" = "Налаштування розкладу";
+"schedule_settings_display_header" = "Відображення";
+"schedule_hide_past_title" = "Ховати минулі заняття";
+"schedule_hide_past_subtitle" = "Згортати завершені пари протягом дня";
+"schedule_density_title" = "Щільність карток";
+"schedule_density_regular" = "Стандартна";
+"schedule_density_compact" = "Компактна";
+"schedule_settings_subgroup_header" = "Підгрупи";
+"schedule_other_subgroup_title" = "Інша підгрупа";
+"schedule_other_subgroup_full" = "Показувати повністю";
+"schedule_other_subgroup_compact" = "Показувати компактно";
+"schedule_other_subgroup_hidden" = "Ховати";
+"schedule_colors_header" = "Кольори типів занять";
+"schedule_colors_footer" = "Вибрані кольори застосовуються в розкладі та віджетах.";
+"schedule_colors_reset" = "Скинути кольори за замовчуванням";
+"schedule_startup_header" = "Запуск програми";
+"schedule_startup_tab_title" = "Відкривати під час запуску";
+"schedule_settings_reset_all" = "Скинути всі налаштування розкладу";
+"schedule_pinned_header" = "Закріплені";
+"schedule_recents_header" = "Нещодавні";
+"schedule_all_groups_header" = "Групи";
+"schedule_pin" = "Закріпити";
+"schedule_unpin" = "Відкріпити";
+"schedule_choose_date" = "Оберіть дату";
+"schedule_jump_to_date" = "Перейти до дати";
+"schedule_today_action" = "Сьогодні";
+"schedule_empty_cta_title" = "Оберіть розклад";
+"schedule_empty_cta_subtitle" = "Знайдіть групу або викладача, щоб переглядати заняття та іспити";
+"lesson_type_lecture" = "Лекція";
+"lesson_type_practice" = "Практичне заняття";
+"lesson_type_laboratory" = "Лабораторна робота";
+"lesson_type_consultation" = "Консультація";
+"lesson_type_exam" = "Іспит / Залік";
+"lesson_type_other" = "Інше / Захід";

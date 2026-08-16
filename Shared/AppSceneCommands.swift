@@ -7,23 +7,25 @@ struct AppSceneCommands: Commands {
         SidebarCommands()
 
         CommandMenu("Навигация") {
-            if AppRouter.isSectionOrTabEnabled(AppTab.home.rawValue) {
-                tabButton(for: .home, key: "1")
-            }
-
-            if AppRouter.isSectionOrTabEnabled(AppTab.profile.rawValue) {
-                tabButton(for: .profile, key: "2")
-            }
+            tabButton(for: .schedule, key: "1")
 
             if AppRouter.isSectionOrTabEnabled(AppTab.attendance.rawValue) {
-                tabButton(for: .attendance, key: "3")
+                tabButton(for: .attendance, key: "2")
             }
 
             if AppRouter.isSectionOrTabEnabled(AppTab.rating.rawValue) {
-                tabButton(for: .rating, key: "4")
+                tabButton(for: .rating, key: "3")
             }
 
-            tabButton(for: .others, key: "5")
+            if AppRouter.isSectionOrTabEnabled(AppTab.profile.rawValue) {
+                tabButton(for: .profile, key: "4")
+            }
+
+            if AppRouter.isSectionOrTabEnabled(AppTab.home.rawValue) {
+                tabButton(for: .home, key: "5")
+            }
+
+            tabButton(for: .others, key: "0")
         }
     }
 

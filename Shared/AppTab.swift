@@ -5,6 +5,7 @@
 import Foundation
 
 enum AppTab: String, CaseIterable, Identifiable {
+    case schedule
     case home
     case profile
     case attendance
@@ -15,6 +16,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var icon: String {
         switch self {
+        case .schedule: return "calendar"
         case .home: return "house.fill"
         case .profile: return "person.crop.circle"
         case .attendance: return "calendar.badge.clock"
@@ -25,6 +27,7 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
+        case .schedule: return NSLocalizedString("tab_schedule", comment: "")
         case .home: return "СЭО"
         case .profile: return NSLocalizedString("tab_profile", comment: "")
         case .attendance: return NSLocalizedString("tab_attendance", comment: "")

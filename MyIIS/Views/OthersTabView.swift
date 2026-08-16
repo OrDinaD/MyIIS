@@ -2,14 +2,17 @@
 //  OthersTabView.swift
 //  MyIIS
 //
+// swiftlint:disable file_length
 import SwiftUI
 import UIKit
 
-private enum ServicesDestination: String, Identifiable, Hashable {
+private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
+    case profile
     case gradebook
     case study
     case schedule
     case headman
+    case lms
     case diploma
     case group
     case dormitory
@@ -28,6 +31,8 @@ private enum ServicesDestination: String, Identifiable, Hashable {
 
     var title: String {
         switch self {
+        case .profile:
+            return NSLocalizedString("tab_profile", comment: "")
         case .gradebook:
             return NSLocalizedString("services_item_markbook", comment: "")
         case .study:
@@ -36,6 +41,8 @@ private enum ServicesDestination: String, Identifiable, Hashable {
             return NSLocalizedString("services_item_schedule", comment: "")
         case .headman:
             return NSLocalizedString("services_item_headman", comment: "")
+        case .lms:
+            return NSLocalizedString("services_item_lms", value: "СЭО (LMS)", comment: "")
         case .diploma:
             return NSLocalizedString("services_item_diploma", comment: "")
         case .group:
@@ -62,6 +69,8 @@ private enum ServicesDestination: String, Identifiable, Hashable {
 
     var icon: String {
         switch self {
+        case .profile:
+            return "person.crop.circle"
         case .gradebook:
             return "book.closed.fill"
         case .study:
@@ -70,6 +79,8 @@ private enum ServicesDestination: String, Identifiable, Hashable {
             return "calendar"
         case .headman:
             return "crown.fill"
+        case .lms:
+            return "graduationcap"
         case .diploma:
             return "studentdesk"
         case .group:
@@ -99,6 +110,7 @@ struct OthersTabView: View {
     @ObservedObject private var router = AppRouter.shared
     @EnvironmentObject private var authService: AuthenticationService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @State private var desktopSelection: ServicesDestination?
     @State private var showLogin = false
     @State private var isGuestAccountServicesExpanded = false
@@ -137,14 +149,25 @@ private extension OthersTabView {
             .navigationBarTitleDisplayMode(.large)
             .navigationDestination(for: AppSection.self) { section in
                 switch section {
+                case .profile: ProfileView()
                 case .gradebook: GradebookView()
                 case .study: StudyView()
                 case .diploma: DiplomaServiceView()
                 case .group: GroupView()
-                case .headman: HeadmanView()
+                case .headman:
+                    if enableBetaSections && authService.currentUser?.isHeadmanOrNoteAllowed == true {
+                        HeadmanView()
+                    } else {
+                        EmptyView()
+                    }
                 case .dormitory: DormitoryView()
                 case .library: LibraryServiceView()
-                case .lms: LMSLoginView()
+                case .lms:
+                    if enableBetaSections {
+                        SEOHomeView()
+                    } else {
+                        EmptyView()
+                    }
                 case .schedule: ScheduleServiceView()
                 case .disciplines: UnauthorizedDisciplinesView()
                 case .studyWeeks: UnauthorizedStudyWeeksView()
@@ -160,6 +183,7 @@ private extension OthersTabView {
     @ViewBuilder
     private var mobileServicesContent: some View {
         if isAuthenticated {
+            mobileProfileSection
             mobileAccountServicesSections
             mobileOpenServicesSection
             mobileAboutSection
@@ -167,6 +191,36 @@ private extension OthersTabView {
             mobileOpenServicesSection
             mobileSignInSection
             mobileLockedServicesSection
+            mobileAboutSection
+        }
+    }
+
+    private var mobileProfileSection: some View {
+        Section {
+            NavigationLink {
+                ProfileView()
+            } label: {
+                HStack(spacing: 14) {
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 38))
+                        .foregroundStyle(Color.accentColor)
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(authService.currentUser?.fullName ?? NSLocalizedString("tab_profile", comment: ""))
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.primary)
+
+                        if let group = authService.currentUser?.education.group.nilIfBlank {
+                            Text(String(format: NSLocalizedString("services_schedule_group_format", value: "Группа %@", comment: ""), group))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            .accessibilityLabel(NSLocalizedString("tab_profile", comment: ""))
+            .accessibilityIdentifier("serviceLink_profile")
         }
     }
 
@@ -191,12 +245,19 @@ private extension OthersTabView {
             .accessibilityLabel(NSLocalizedString("services_item_schedule", comment: ""))
             .accessibilityIdentifier("serviceLink_schedule")
 
-            if authService.currentUser?.isHeadmanOrNoteAllowed == true {
+            if enableBetaSections && authService.currentUser?.isHeadmanOrNoteAllowed == true {
                 NavigationLink(value: AppSection.headman) {
                     serviceRow(for: .headman)
                 }
                 .accessibilityLabel(NSLocalizedString("services_item_headman", comment: ""))
                 .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            if enableBetaSections {
+                NavigationLink(value: AppSection.lms) {
+                    serviceRow(for: .lms)
+                }
+                .accessibilityLabel(NSLocalizedString("services_item_lms", value: "СЭО (LMS)", comment: ""))
             }
 
             NavigationLink(value: AppSection.group) {
@@ -317,6 +378,10 @@ private extension OthersTabView {
     @ViewBuilder
     private var desktopServicesContent: some View {
         if isAuthenticated {
+            Section {
+                serviceRow(for: .profile)
+                    .tag(ServicesDestination.profile)
+            }
             desktopAccountServicesSections
             desktopOpenServicesSection
             Section {
@@ -335,6 +400,10 @@ private extension OthersTabView {
                 .tag(nil as ServicesDestination?)
             }
             desktopLockedServicesSection
+            Section {
+                serviceRow(for: .about)
+                    .tag(ServicesDestination.about)
+            }
         }
     }
 
@@ -387,8 +456,11 @@ private extension OthersTabView {
 
     private var studyDestinations: [ServicesDestination] {
         var values: [ServicesDestination] = [.gradebook, .study, .schedule]
-        if authService.currentUser?.isHeadmanOrNoteAllowed == true {
+        if enableBetaSections && authService.currentUser?.isHeadmanOrNoteAllowed == true {
             values.append(.headman)
+        }
+        if enableBetaSections {
+            values.append(.lms)
         }
         values.append(.group)
         return values
@@ -407,12 +479,20 @@ private extension OthersTabView {
     }
 
     private var lockedDestinations: [ServicesDestination] {
-        studyDestinations + resourceDestinations + infoDestinations + [.about]
+        studyDestinations + resourceDestinations + infoDestinations
     }
 
     @ViewBuilder
     private func destinationView(for destination: ServicesDestination) -> some View {
         switch destination {
+        case .profile:
+            ProfileView()
+        case .lms:
+            if enableBetaSections {
+                SEOHomeView()
+            } else {
+                EmptyView()
+            }
         case .announcements, .penalties, .activities, .about:
             infoDestinationView(for: destination)
         case .disciplines, .studyWeeks, .departments, .directory, .support:
@@ -450,7 +530,11 @@ private extension OthersTabView {
         case .schedule:
             ScheduleServiceView()
         case .headman:
-            HeadmanView()
+            if enableBetaSections && authService.currentUser?.isHeadmanOrNoteAllowed == true {
+                HeadmanView()
+            } else {
+                EmptyView()
+            }
         case .diploma:
             DiplomaServiceView()
         case .group:

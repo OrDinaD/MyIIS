@@ -572,6 +572,11 @@
 "about_app_language_subtitle" = "Open the system language settings for MyIIS";
 "about_app_language_hint" = "Opens MyIIS settings, where you can choose the app language.";
 
+/* Schedule display */
+"settings_schedule_section" = "Schedule";
+"settings_schedule_breaks_title" = "Five-minute breaks";
+"settings_schedule_breaks_subtitle" = "Show the mid-class break in the schedule and widgets";
+
 /* First launch */
 "first_launch_app_icon" = "MyIIS app icon";
 "first_launch_sign_in" = "Sign in to your account";
@@ -581,3 +586,40 @@
 "first_launch_server_unavailable" = "BSUIR servers are unavailable";
 "first_launch_server_checking" = "Checking BSUIR servers";
 "first_launch_server_unavailable_message" = "BSUIR servers are not responding, so signing in is temporarily unavailable. You can continue without an account.";
+
+/* Schedule First */
+"tab_schedule" = "Schedule";
+"schedule_settings_title" = "Schedule Settings";
+"schedule_settings_display_header" = "Display";
+"schedule_hide_past_title" = "Hide past lessons";
+"schedule_hide_past_subtitle" = "Collapse finished lessons during the day";
+"schedule_density_title" = "Card density";
+"schedule_density_regular" = "Regular";
+"schedule_density_compact" = "Compact";
+"schedule_settings_subgroup_header" = "Subgroups";
+"schedule_other_subgroup_title" = "Other subgroup";
+"schedule_other_subgroup_full" = "Show fully";
+"schedule_other_subgroup_compact" = "Show compact";
+"schedule_other_subgroup_hidden" = "Hide";
+"schedule_colors_header" = "Lesson type colors";
+"schedule_colors_footer" = "Chosen colors apply to schedule and widgets.";
+"schedule_colors_reset" = "Reset default colors";
+"schedule_startup_header" = "Startup";
+"schedule_startup_tab_title" = "Open on launch";
+"schedule_settings_reset_all" = "Reset all schedule settings";
+"schedule_pinned_header" = "Pinned";
+"schedule_recents_header" = "Recent";
+"schedule_all_groups_header" = "Groups";
+"schedule_pin" = "Pin";
+"schedule_unpin" = "Unpin";
+"schedule_choose_date" = "Choose date";
+"schedule_jump_to_date" = "Jump to date";
+"schedule_today_action" = "Today";
+"schedule_empty_cta_title" = "Select a schedule";
+"schedule_empty_cta_subtitle" = "Search for a group or teacher to view lessons and exams";
+"lesson_type_lecture" = "Lecture";
+"lesson_type_practice" = "Practice";
+"lesson_type_laboratory" = "Laboratory";
+"lesson_type_consultation" = "Consultation";
+"lesson_type_exam" = "Exam / Credit";
+"lesson_type_other" = "Other / Event";

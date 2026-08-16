@@ -1,33 +1,38 @@
+//
+//  ScheduleServiceViewModel.swift
+//  MyIIS
+//
 // swiftlint:disable file_length
 import Combine
+import Foundation
 import SwiftUI
 
-enum ScheduleLookupMode: String, CaseIterable {
-    case group
-    case teacher
+public struct PinnedTeacher: Codable, Identifiable, Hashable, Sendable {
+    public let urlId: String
+    public let name: String
+    public let photoLink: String?
+
+    public var id: String { urlId }
+
+    public init(urlId: String, name: String, photoLink: String? = nil) {
+        self.urlId = urlId
+        self.name = name
+        self.photoLink = photoLink
+    }
 }
 
-enum ScheduleDataSource: String, CaseIterable, Identifiable {
-    case api
-    case localJSON
+enum ScheduleLookupMode: String, CaseIterable, Identifiable {
+    case group
+    case teacher
 
     var id: String { rawValue }
 
-    var localizedTitle: String {
+    var title: String {
         switch self {
-        case .api:
-            return NSLocalizedString("local_schedule_source_api", comment: "")
-        case .localJSON:
-            return NSLocalizedString("local_schedule_source_json", comment: "")
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .api:
-            return "network"
-        case .localJSON:
-            return "curlybraces.square"
+        case .group:
+            return NSLocalizedString("services_schedule_mode_group", value: "Группа", comment: "")
+        case .teacher:
+            return NSLocalizedString("services_schedule_mode_teacher", value: "Преподаватель", comment: "")
         }
     }
 }
@@ -39,25 +44,30 @@ enum ScheduleDisplayMode: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var localizedTitle: String {
+    var title: String {
         switch self {
         case .continuous:
-            return NSLocalizedString("services_schedule_display_continuous", comment: "")
+            return NSLocalizedString("services_schedule_display_continuous", value: "Поток дней", comment: "")
         case .byDay:
-            return NSLocalizedString("services_schedule_display_day", comment: "")
+            return NSLocalizedString("services_schedule_display_by_day", value: "По дням", comment: "")
         case .exams:
-            return NSLocalizedString("services_schedule_display_exams", comment: "")
+            return NSLocalizedString("services_schedule_display_exams", value: "Экзамены", comment: "")
         }
     }
+}
 
-    var icon: String {
+enum ScheduleDataSource: String, CaseIterable, Identifiable {
+    case api
+    case localJSON
+
+    var id: String { rawValue }
+
+    var title: String {
         switch self {
-        case .continuous:
-            return "calendar.day.timeline.leading"
-        case .byDay:
-            return "calendar"
-        case .exams:
-            return "graduationcap"
+        case .api:
+            return NSLocalizedString("services_schedule_source_api", value: "ИИС БГУИР", comment: "")
+        case .localJSON:
+            return NSLocalizedString("services_schedule_source_local_json", value: "Локальный JSON", comment: "")
         }
     }
 }
@@ -68,50 +78,48 @@ enum ScheduleSubgroupFilter: Hashable, Identifiable {
 
     var id: String {
         switch self {
-        case .all:
-            return "all"
-        case .subgroup(let value):
-            return "subgroup-\(value)"
+        case .all: return "all"
+        case .subgroup(let value): return "subgroup_\(value)"
         }
     }
 
     var localizedTitle: String {
         switch self {
         case .all:
-            return NSLocalizedString("services_schedule_subgroup_all", comment: "")
+            return NSLocalizedString("services_schedule_subgroup_all", value: "Все подгруппы", comment: "")
         case .subgroup(let value):
-            return String(format: NSLocalizedString("services_schedule_subgroup_number", comment: ""), value)
+            return String(format: NSLocalizedString("services_schedule_subgroup_format", value: "%d подгруппа", comment: ""), value)
         }
     }
 
-    var localizedCompactTitle: String {
+    var shortTitle: String {
         switch self {
         case .all:
-            return NSLocalizedString("services_schedule_subgroup_short_all", comment: "")
+            return NSLocalizedString("services_schedule_subgroup_short_all", value: "Все", comment: "")
         case .subgroup(let value):
-            return String(format: NSLocalizedString("services_schedule_subgroup_short_number", comment: ""), value)
+            return "\(value)"
         }
     }
 }
 
-struct ScheduleContinuousDay: Identifiable {
+struct ScheduleContinuousDay: Identifiable, Sendable {
     let date: Date
     let weekday: StudyWeekday
     let weekNumber: Int
     let lessons: [DisciplineSchedule]
 
     var id: String {
-        String(Int(date.timeIntervalSince1970))
+        "\(weekday.rawValue)|\(date.timeIntervalSince1970)|\(weekNumber)"
     }
 }
 
-struct ExamScheduleDay: Identifiable {
+struct ExamScheduleDay: Identifiable, Sendable {
     let date: Date
     let weekday: StudyWeekday?
     let lessons: [DisciplineSchedule]
 
     var id: String {
-        String(Int(date.timeIntervalSince1970))
+        "\(date.timeIntervalSince1970)"
     }
 }
 
@@ -145,7 +153,7 @@ final class ScheduleServiceViewModel {
     private(set) var selectedEmployee: ScheduleEmployeeDirectoryEntry?
     var currentWeekNumber: Int?
     var weekFilter: StudyWeekFilter = .all
-    var displayMode: ScheduleDisplayMode = .byDay {
+    var displayMode: ScheduleDisplayMode = .continuous {
         didSet { persistDisplayMode() }
     }
     var subgroupFilter: ScheduleSubgroupFilter = .all {
@@ -162,6 +170,9 @@ final class ScheduleServiceViewModel {
     private(set) var staleErrorMessage: String?
     private(set) var continuousTimelineDays: [ScheduleContinuousDay] = []
     private(set) var pinnedGroupNames: [String] = []
+    private(set) var pinnedTeachers: [PinnedTeacher] = []
+    private(set) var recentGroupNames: [String] = []
+    private(set) var recentTeachers: [PinnedTeacher] = []
 
     private let api: ServiceEndpointsAPI
     private let authService: AuthenticationService
@@ -184,6 +195,9 @@ final class ScheduleServiceViewModel {
     private static let lastTeacherURLIDDefaultsKey = "services.schedule.lastTeacherURLID"
     private static let lastTeacherNameDefaultsKey = "services.schedule.lastTeacherName"
     private static let pinnedGroupsDefaultsKey = "services.schedule.pinnedGroups"
+    private static let pinnedTeachersDefaultsKey = "services.schedule.pinnedTeachers"
+    private static let recentGroupsDefaultsKey = "services.schedule.recentGroups"
+    private static let recentTeachersDefaultsKey = "services.schedule.recentTeachers"
     private static let continuousChunkSizeDays = 28
     private static let continuousFallbackHorizonDays = 120
     private static var cachedSnapshot: Snapshot?
@@ -201,39 +215,52 @@ final class ScheduleServiceViewModel {
         let continuousTimelineDays: [ScheduleContinuousDay]
     }
 
+    static func isPublicationPendingError(_ error: Error) -> Bool {
+        guard let apiError = error as? APIError else { return false }
+        switch apiError {
+        case .serverError(_, let message), .serviceUnavailable(let message):
+            return message.localizedCaseInsensitiveContains("формирование")
+        default:
+            return false
+        }
+    }
+
     init(
         api: ServiceEndpointsAPI? = nil,
         authService: AuthenticationService? = nil,
-        defaults: UserDefaults = .standard
+        defaults: UserDefaults? = nil
     ) {
         self.api = api ?? ServiceEndpointsAPI()
         self.authService = authService ?? .shared
-        self.defaults = defaults
+        self.defaults = defaults ?? (UserDefaults(suiteName: AppGroup.identifier) ?? .standard)
 
-        if let modeRaw = defaults.string(forKey: Self.displayModeDefaultsKey),
+        if let modeRaw = self.defaults.string(forKey: Self.displayModeDefaultsKey),
            let restoredMode = ScheduleDisplayMode(rawValue: modeRaw) {
             displayMode = restoredMode
         }
 
-        if let dataSourceRaw = defaults.string(forKey: Self.dataSourceDefaultsKey),
+        if let dataSourceRaw = self.defaults.string(forKey: Self.dataSourceDefaultsKey),
            let restoredDataSource = ScheduleDataSource(rawValue: dataSourceRaw) {
             dataSource = restoredDataSource
         }
 
-        if let selectedModeRaw = defaults.string(forKey: Self.selectedModeDefaultsKey),
+        if let selectedModeRaw = self.defaults.string(forKey: Self.selectedModeDefaultsKey),
            let selectedMode = ScheduleLookupMode(rawValue: selectedModeRaw) {
             mode = selectedMode
         }
 
-        if let savedValue = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
+        if let savedValue = self.defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
             subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
         }
 
-        pinnedGroupNames = defaults.stringArray(forKey: Self.pinnedGroupsDefaultsKey) ?? []
+        pinnedGroupNames = self.defaults.stringArray(forKey: Self.pinnedGroupsDefaultsKey) ?? []
+        recentGroupNames = self.defaults.stringArray(forKey: Self.recentGroupsDefaultsKey) ?? []
+        pinnedTeachers = Self.loadStoredTeachers(forKey: Self.pinnedTeachersDefaultsKey, from: self.defaults)
+        recentTeachers = Self.loadStoredTeachers(forKey: Self.recentTeachersDefaultsKey, from: self.defaults)
 
-        if mode == .group, let lastGroup = defaults.string(forKey: Self.lastGroupDefaultsKey) {
+        if mode == .group, let lastGroup = self.defaults.string(forKey: Self.lastGroupDefaultsKey) {
             query = lastGroup
-        } else if mode == .teacher, let lastTeacherName = defaults.string(forKey: Self.lastTeacherNameDefaultsKey) {
+        } else if mode == .teacher, let lastTeacherName = self.defaults.string(forKey: Self.lastTeacherNameDefaultsKey) {
             query = lastTeacherName
         }
 
@@ -241,6 +268,17 @@ final class ScheduleServiceViewModel {
             restorePersistedScheduleIfAvailable()
         }
         debouncedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func loadStoredTeachers(forKey key: String, from defaults: UserDefaults) -> [PinnedTeacher] {
+        guard let data = defaults.data(forKey: key) else { return [] }
+        return (try? JSONDecoder().decode([PinnedTeacher].self, from: data)) ?? []
+    }
+
+    private static func saveStoredTeachers(_ teachers: [PinnedTeacher], forKey key: String, in defaults: UserDefaults) {
+        if let data = try? JSONEncoder().encode(teachers) {
+            defaults.set(data, forKey: key)
+        }
     }
 
     @discardableResult
@@ -267,31 +305,48 @@ final class ScheduleServiceViewModel {
     }
 
     private func restorePersistedScheduleIfAvailable() {
-        if let group = accountGroupName ?? defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank,
+        // 1. Explicit last group selection
+        if mode == .group,
+           let group = defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank,
            let cachedSchedule = api.cachedGroupSchedule(groupNumber: group) {
             applyRestoredGroupSchedule(cachedSchedule, groupNumber: group)
             return
         }
 
-        guard mode == .teacher,
-              let urlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank,
-              let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId) else {
+        // 2. Explicit last teacher selection
+        if mode == .teacher,
+           let urlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank,
+           let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId) {
+            let displayName = defaults.string(forKey: Self.lastTeacherNameDefaultsKey) ?? urlId
+            let restored = ScheduleEmployeeDirectoryEntry(
+                firstName: nil,
+                lastName: nil,
+                middleName: nil,
+                degree: nil,
+                rank: nil,
+                photoLink: nil,
+                calendarId: nil,
+                id: Int.min,
+                urlId: urlId,
+                fio: displayName
+            )
+            applyEmployeeSchedule(cachedSchedule, week: nil, employee: restored, urlId: urlId)
             return
         }
-        let displayName = defaults.string(forKey: Self.lastTeacherNameDefaultsKey) ?? urlId
-        let restored = ScheduleEmployeeDirectoryEntry(
-            firstName: nil,
-            lastName: nil,
-            middleName: nil,
-            degree: nil,
-            rank: nil,
-            photoLink: nil,
-            calendarId: nil,
-            id: Int.min,
-            urlId: urlId,
-            fio: displayName
-        )
-        applyEmployeeSchedule(cachedSchedule, week: nil, employee: restored, urlId: urlId)
+
+        // 3. First pinned group
+        if let firstPinned = pinnedGroupNames.first,
+           let cachedSchedule = api.cachedGroupSchedule(groupNumber: firstPinned) {
+            applyRestoredGroupSchedule(cachedSchedule, groupNumber: firstPinned)
+            return
+        }
+
+        // 4. Account group (if logged in)
+        if let accountGroup = accountGroupName,
+           let cachedSchedule = api.cachedGroupSchedule(groupNumber: accountGroup) {
+            applyRestoredGroupSchedule(cachedSchedule, groupNumber: accountGroup)
+            return
+        }
     }
 
     private func applyRestoredGroupSchedule(_ scheduleResponse: PublicScheduleResponse, groupNumber: String) {
@@ -313,200 +368,84 @@ final class ScheduleServiceViewModel {
         searchDebounceTask?.cancel()
         let value = query.trimmingCharacters(in: .whitespacesAndNewlines)
         searchDebounceTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(180))
+            try? await Task.sleep(for: .milliseconds(150))
             guard !Task.isCancelled else { return }
             debouncedQuery = value
         }
     }
 
-    private func saveSnapshot() {
-        guard let schedule else { return }
-        Self.cachedSnapshot = Snapshot(
-            dataSource: dataSource,
-            accountGroupName: accountGroupName,
-            mode: mode,
-            query: query,
-            schedule: schedule,
-            currentWeekNumber: currentWeekNumber,
-            weekFilter: weekFilter,
-            displayMode: displayMode,
-            subgroupFilter: subgroupFilter,
-            continuousTimelineDays: continuousTimelineDays
-        )
-    }
-
-    func loadInitialDataIfNeeded() async {
-        guard dataSource == .api else { return }
+    func loadInitialData() async {
         guard !hasLoadedInitialData else { return }
+        if dataSource == .localJSON {
+            loadLocalSchedule()
+            hasLoadedInitialData = true
+            return
+        }
+
+        await loadDirectoryIfNeeded(force: false)
+
+        if schedule == nil {
+            if mode == .group, let group = defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank ?? pinnedGroupNames.first ?? accountGroupName {
+                await loadGroup(group)
+            } else if mode == .teacher, let urlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank ?? pinnedTeachers.first?.urlId {
+                if let employee = employees.first(where: { $0.urlId == urlId }) {
+                    await loadEmployee(employee)
+                } else {
+                    let fallback = ScheduleEmployeeDirectoryEntry(
+                        firstName: nil,
+                        lastName: nil,
+                        middleName: nil,
+                        degree: nil,
+                        rank: nil,
+                        photoLink: nil,
+                        calendarId: nil,
+                        id: Int.min,
+                        urlId: urlId,
+                        fio: defaults.string(forKey: Self.lastTeacherNameDefaultsKey) ?? urlId
+                    )
+                    await loadEmployee(fallback)
+                }
+            }
+        }
+
         hasLoadedInitialData = true
-
-        if let group = accountGroupName {
-            await loadGroup(group)
-            return
-        }
-
-        if mode == .group, let lastGroup = defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank {
-            await loadGroup(lastGroup)
-            return
-        }
-
-        if mode == .teacher,
-           let lastTeacherURLID = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank {
-            let restored = ScheduleEmployeeDirectoryEntry(
-                firstName: nil,
-                lastName: nil,
-                middleName: nil,
-                degree: nil,
-                rank: nil,
-                photoLink: nil,
-                calendarId: nil,
-                id: Int.min,
-                urlId: lastTeacherURLID,
-                fio: defaults.string(forKey: Self.lastTeacherNameDefaultsKey)
-            )
-            await loadEmployee(restored)
-        }
-    }
-
-    func reloadDirectory() async {
-        await loadDirectoryIfNeeded(force: true)
     }
 
     func refreshData() async {
-        guard dataSource == .api else { return }
+        clearStaleDataWarning()
+        if dataSource == .localJSON {
+            loadLocalSchedule()
+            return
+        }
         await loadDirectoryIfNeeded(force: true)
-
         switch mode {
         case .group:
-            if let selectedGroup = schedule?.group?.name.nilIfBlank ?? query.nilIfBlank {
-                await loadGroup(selectedGroup)
+            let targetGroup = schedule?.group?.name.nilIfBlank
+                ?? defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank
+                ?? pinnedGroupNames.first
+                ?? accountGroupName
+            if let targetGroup {
+                await loadGroup(targetGroup)
             }
         case .teacher:
-            if let urlId = schedule?.employee?.urlId.nilIfBlank ?? selectedEmployee?.urlId?.nilIfBlank {
-                let name = schedule?.employee?.fullName
-                    ?? selectedEmployee?.displayName
-                    ?? defaults.string(forKey: Self.lastTeacherNameDefaultsKey)
-                    ?? urlId
-                let restored = ScheduleEmployeeDirectoryEntry(
-                    firstName: nil,
-                    lastName: nil,
-                    middleName: nil,
-                    degree: nil,
-                    rank: nil,
-                    photoLink: nil,
-                    calendarId: nil,
-                    id: Int.min,
-                    urlId: urlId,
-                    fio: name
-                )
-                await loadEmployee(restored)
+            if let employee = selectedEmployee {
+                await loadEmployee(employee)
+            } else if let urlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank ?? pinnedTeachers.first?.urlId {
+                if let found = employees.first(where: { $0.urlId == urlId }) {
+                    await loadEmployee(found)
+                }
             }
         }
     }
 
-    func loadByQuery() async {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            errorMessage = NSLocalizedString("services_schedule_query_required", comment: "")
-            return
-        }
+    func loadGroup(_ groupName: String) async {
+        let trimmed = groupName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
 
-        switch mode {
-        case .group:
-            await loadGroup(trimmed)
-        case .teacher:
-            if let direct = matchingEmployees(for: trimmed, limit: 12).first(where: {
-                $0.urlId == trimmed || $0.displayName.compare(trimmed, options: .caseInsensitive) == .orderedSame
-            }) ?? matchingEmployees(for: trimmed, limit: 1).first {
-                await loadEmployee(direct)
-            } else {
-                errorMessage = NSLocalizedString("services_schedule_teacher_pick_hint", comment: "")
-            }
-        }
-    }
-
-    func prepareForAPISource() {
-        guard dataSource == .api, localScheduleDocument != nil else { return }
-        localScheduleDocument = nil
-        selectedEmployee = nil
-        schedule = nil
-        currentWeekNumber = nil
-        continuousTimelineDays = []
-        continuousCursorDate = nil
-        isContinuousEndReached = false
-        hasLoadedInitialData = false
-        clearStaleDataWarning()
-    }
-
-    func applyLocalSchedule(_ document: LocalScheduleDocument) {
-        localScheduleDocument = document
-        selectedEmployee = nil
-        let response = document.apiSchedule()
-        schedule = response
-        currentWeekNumber = resolveCurrentWeekNumber(
-            backendValue: nil,
-            termStartDate: response.startDate
-        )
-        displayMode = .continuous
-        weekFilter = .all
-        subgroupFilter = .all
-        rebuildContinuousTimeline(reset: true)
-        setMode(.group, preservingQuery: document.groupName?.nilIfBlank ?? document.title)
-        saveSnapshot()
-        clearStaleDataWarning()
-        updateClassScheduleWidgetSnapshot(from: response)
-        updateSessionScheduleWidgetSnapshot(from: response)
-    }
-
-    func clearLocalSchedule() {
-        guard dataSource == .localJSON else { return }
-        localScheduleDocument = nil
-        selectedEmployee = nil
-        schedule = nil
-        currentWeekNumber = nil
-        continuousTimelineDays = []
-        continuousCursorDate = nil
-        isContinuousEndReached = false
-        errorMessage = nil
-        clearStaleDataWarning()
-        if Self.cachedSnapshot?.dataSource == .localJSON {
-            Self.cachedSnapshot = nil
-        }
-    }
-
-    private func applyLocalTeacherSchedule(_ teacher: DisciplineEmployee) {
-        guard let document = localScheduleDocument,
-              let employee = document.teacherDirectoryEntry(id: teacher.id) else {
-            return
-        }
-        let response = document.apiSchedule(teacherID: teacher.id)
-        schedule = response
-        selectedEmployee = employee
-        currentWeekNumber = resolveCurrentWeekNumber(
-            backendValue: nil,
-            termStartDate: response.startDate
-        )
-        displayMode = .continuous
-        weekFilter = .all
-        subgroupFilter = .all
-        rebuildContinuousTimeline(reset: true)
-        setMode(.teacher, preservingQuery: employee.displayName)
-        saveSnapshot()
-        clearStaleDataWarning()
-    }
-
-    func loadGroup(_ groupNumber: String) async {
         let requestID = UUID()
         activeScheduleRequestID = requestID
         updateLoadingState()
-
-        selectedEmployee = nil
-        setMode(.group, preservingQuery: groupNumber)
-        let cachedSchedule = api.cachedGroupSchedule(groupNumber: groupNumber)
-        let restoredCachedSchedule = cachedSchedule != nil
-        if let cachedSchedule {
-            applyGroupSchedule(cachedSchedule, week: nil, groupNumber: groupNumber)
-        }
+        recordRecentGroup(trimmed)
 
         defer {
             if activeScheduleRequestID == requestID {
@@ -516,36 +455,36 @@ final class ScheduleServiceViewModel {
         }
 
         do {
-            let scheduleResponse = try await api.fetchGroupSchedule(groupNumber: groupNumber)
+            let response = try await api.fetchGroupSchedule(groupNumber: trimmed)
+            guard activeScheduleRequestID == requestID else { return }
             let week = try? await api.fetchCurrentWeek()
             guard activeScheduleRequestID == requestID else { return }
-            applyGroupSchedule(scheduleResponse, week: week, groupNumber: groupNumber)
-            clearStaleDataWarning()
+            applyGroupSchedule(response, week: week, groupNumber: trimmed)
         } catch is CancellationError {
             return
         } catch {
             guard activeScheduleRequestID == requestID else { return }
-            handleScheduleLoadFailure(error, hasCachedSchedule: restoredCachedSchedule)
+            handleScheduleLoadError(
+                error,
+                fallbackSchedule: api.cachedGroupSchedule(groupNumber: trimmed),
+                applyFallback: { [weak self] cached in
+                    self?.applyGroupSchedule(cached, week: nil, groupNumber: trimmed)
+                }
+            )
         }
     }
 
     func loadEmployee(_ employee: ScheduleEmployeeDirectoryEntry) async {
         guard let urlId = employee.urlId, !urlId.isEmpty else {
-            errorMessage = NSLocalizedString("services_schedule_teacher_missing_urlid", comment: "")
+            errorMessage = NSLocalizedString("services_schedule_teacher_not_found", comment: "")
             return
         }
 
         let requestID = UUID()
         activeScheduleRequestID = requestID
         updateLoadingState()
-
         selectedEmployee = employee
-        setMode(.teacher, preservingQuery: employee.displayName)
-        let cachedSchedule = api.cachedEmployeeSchedule(urlId: urlId)
-        let restoredCachedSchedule = cachedSchedule != nil
-        if let cachedSchedule {
-            applyEmployeeSchedule(cachedSchedule, week: nil, employee: employee, urlId: urlId)
-        }
+        recordRecentTeacher(employee)
 
         defer {
             if activeScheduleRequestID == requestID {
@@ -555,55 +494,52 @@ final class ScheduleServiceViewModel {
         }
 
         do {
-            let scheduleResponse = try await api.fetchEmployeeSchedule(urlId: urlId)
+            let response = try await api.fetchEmployeeSchedule(urlId: urlId)
+            guard activeScheduleRequestID == requestID else { return }
             let week = try? await api.fetchCurrentWeek()
             guard activeScheduleRequestID == requestID else { return }
-            applyEmployeeSchedule(scheduleResponse, week: week, employee: employee, urlId: urlId)
-            clearStaleDataWarning()
+            applyEmployeeSchedule(response, week: week, employee: employee, urlId: urlId)
         } catch is CancellationError {
             return
         } catch {
             guard activeScheduleRequestID == requestID else { return }
-            handleScheduleLoadFailure(error, hasCachedSchedule: restoredCachedSchedule)
+            handleScheduleLoadError(
+                error,
+                fallbackSchedule: api.cachedEmployeeSchedule(urlId: urlId),
+                applyFallback: { [weak self] cached in
+                    self?.applyEmployeeSchedule(cached, week: nil, employee: employee, urlId: urlId)
+                }
+            )
         }
     }
 
-    private func handleScheduleLoadFailure(_ error: Error, hasCachedSchedule: Bool) {
-        let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-
-        if !hasCachedSchedule, Self.isPublicationPendingError(error) {
-            schedule = .publicationPending
-            currentWeekNumber = nil
+    private func handleScheduleLoadError(
+        _ error: Error,
+        fallbackSchedule: PublicScheduleResponse?,
+        applyFallback: (PublicScheduleResponse) -> Void
+    ) {
+        if let fallbackSchedule {
+            applyFallback(fallbackSchedule)
+            staleErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            isShowingStaleDataWarning = true
             errorMessage = nil
-            staleErrorMessage = nil
-            isShowingStaleDataWarning = false
-            rebuildContinuousTimeline(reset: true)
-            saveSnapshot()
             return
         }
 
-        guard hasCachedSchedule else {
-            errorMessage = message
-            return
+        let description = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        if isScheduleMissingMessage(description) {
+            errorMessage = NSLocalizedString("services_schedule_publication_pending", comment: "")
+        } else {
+            errorMessage = description
         }
-
-        errorMessage = nil
-        staleErrorMessage = message
-        isShowingStaleDataWarning = true
     }
 
-    static func isPublicationPendingError(_ error: Error) -> Bool {
-        guard let apiError = error as? APIError,
-              case .serverError(let statusCode, let message) = apiError,
-              statusCode == 503 else {
-            return false
-        }
-
-        let normalizedMessage = message.lowercased()
-        return normalizedMessage.contains("распис")
-            || normalizedMessage.contains("schedule")
-            || normalizedMessage.contains("расклад")
-            || normalizedMessage.contains("розклад")
+    private func isScheduleMissingMessage(_ message: String) -> Bool {
+        let normalized = message.lowercased()
+        return normalized.contains("распис")
+            || normalized.contains("schedule")
+            || normalized.contains("расклад")
+            || normalized.contains("розклад")
     }
 
     private func clearStaleDataWarning() {
@@ -696,18 +632,67 @@ final class ScheduleServiceViewModel {
         defaults.set(displayName, forKey: Self.lastTeacherNameDefaultsKey)
     }
 
-    func togglePinnedGroup(_ group: StudyGroup) {
-        let name = group.name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
+    // MARK: - Pinned & Recent Management
 
-        if pinnedGroupNames.contains(name) {
-            pinnedGroupNames.removeAll { $0 == name }
+    func isGroupPinned(_ name: String) -> Bool {
+        pinnedGroupNames.contains(name.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
+
+    func togglePinnedGroup(_ group: StudyGroup) {
+        togglePinnedGroupName(group.name)
+    }
+
+    func togglePinnedGroupName(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        if pinnedGroupNames.contains(trimmed) {
+            pinnedGroupNames.removeAll { $0 == trimmed }
         } else {
-            pinnedGroupNames.insert(name, at: 0)
+            pinnedGroupNames.insert(trimmed, at: 0)
         }
 
         defaults.set(Array(pinnedGroupNames.prefix(12)), forKey: Self.pinnedGroupsDefaultsKey)
     }
+
+    func isTeacherPinned(_ urlId: String) -> Bool {
+        pinnedTeachers.contains(where: { $0.urlId == urlId })
+    }
+
+    func togglePinnedTeacher(_ employee: ScheduleEmployeeDirectoryEntry) {
+        guard let urlId = employee.urlId, !urlId.isEmpty else { return }
+        togglePinnedTeacher(PinnedTeacher(urlId: urlId, name: employee.displayName, photoLink: employee.photoLink))
+    }
+
+    func togglePinnedTeacher(_ teacher: PinnedTeacher) {
+        if let idx = pinnedTeachers.firstIndex(where: { $0.urlId == teacher.urlId }) {
+            pinnedTeachers.remove(at: idx)
+        } else {
+            pinnedTeachers.insert(teacher, at: 0)
+        }
+        pinnedTeachers = Array(pinnedTeachers.prefix(12))
+        Self.saveStoredTeachers(pinnedTeachers, forKey: Self.pinnedTeachersDefaultsKey, in: defaults)
+    }
+
+    func recordRecentGroup(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        recentGroupNames.removeAll { $0 == trimmed }
+        recentGroupNames.insert(trimmed, at: 0)
+        recentGroupNames = Array(recentGroupNames.prefix(6))
+        defaults.set(recentGroupNames, forKey: Self.recentGroupsDefaultsKey)
+    }
+
+    func recordRecentTeacher(_ employee: ScheduleEmployeeDirectoryEntry) {
+        guard let urlId = employee.urlId, !urlId.isEmpty else { return }
+        let teacher = PinnedTeacher(urlId: urlId, name: employee.displayName, photoLink: employee.photoLink)
+        recentTeachers.removeAll { $0.urlId == urlId }
+        recentTeachers.insert(teacher, at: 0)
+        recentTeachers = Array(recentTeachers.prefix(6))
+        Self.saveStoredTeachers(recentTeachers, forKey: Self.recentTeachersDefaultsKey, in: defaults)
+    }
+
+    // MARK: - Apply Schedules
 
     func applyGroupSchedule(_ scheduleResponse: PublicScheduleResponse, week: Int?, groupNumber: String) {
         schedule = scheduleResponse
@@ -1102,6 +1087,27 @@ final class ScheduleServiceViewModel {
         return formatter
     }()
 
+    private static let dayDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM"
+        return formatter
+    }()
+
+    private static let examDayDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM yy 'г.'"
+        return formatter
+    }()
+
+    private static let examPeriodFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "d MMMM yyyy 'г.'"
+        return formatter
+    }()
+
     private func resolveCurrentWeekNumber(backendValue: Int?, termStartDate: Date?) -> Int? {
         if let backendValue, (1 ... 4).contains(backendValue) {
             return backendValue
@@ -1151,13 +1157,6 @@ final class ScheduleServiceViewModel {
         return calendar.date(from: components)
     }
 
-    private var selectedWeekNumber: Int? {
-        if case .week(let number) = weekFilter {
-            return number
-        }
-        return nil
-    }
-
     private var currentStudyWeekday: StudyWeekday? {
         studyWeekday(for: Date())
     }
@@ -1176,38 +1175,6 @@ final class ScheduleServiceViewModel {
         }
     }
 
-    private func date(for weekday: StudyWeekday, selectedWeekNumber: Int) -> Date? {
-        guard let currentWeekNumber, let currentWeekday = currentStudyWeekday else {
-            return nil
-        }
-
-        let weekDelta = selectedWeekNumber - currentWeekNumber
-        let dayDelta = weekday.displayIndex - currentWeekday.displayIndex
-        let totalDays = weekDelta * 7 + dayDelta
-        return Calendar.current.date(byAdding: .day, value: totalDays, to: Date())
-    }
-
-    private static let dayDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "d MMMM"
-        return formatter
-    }()
-
-    private static let examDayDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "d MMMM yy 'г.'"
-        return formatter
-    }()
-
-    private static let examPeriodFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "d MMMM yyyy 'г.'"
-        return formatter
-    }()
-
     private static func examSortingComparator(lhs: DisciplineSchedule, rhs: DisciplineSchedule) -> Bool {
         let leftDate = calendarDay(for: lhs) ?? Date.distantFuture
         let rightDate = calendarDay(for: rhs) ?? Date.distantFuture
@@ -1225,13 +1192,95 @@ final class ScheduleServiceViewModel {
     private func calendarDay(for exam: DisciplineSchedule) -> Date? {
         Self.calendarDay(for: exam)
     }
+
+    private func saveSnapshot() {
+        guard let schedule else { return }
+        Self.cachedSnapshot = Snapshot(
+            dataSource: dataSource,
+            accountGroupName: accountGroupName,
+            mode: mode,
+            query: query,
+            schedule: schedule,
+            currentWeekNumber: currentWeekNumber,
+            weekFilter: weekFilter,
+            displayMode: displayMode,
+            subgroupFilter: subgroupFilter,
+            continuousTimelineDays: continuousTimelineDays
+        )
+    }
+
+    // MARK: - Local JSON Support
+
+    func prepareForAPISource() {
+        if localScheduleDocument != nil {
+            clearLocalSchedule()
+        }
+    }
+
+    func clearLocalSchedule() {
+        localScheduleDocument = nil
+        schedule = nil
+        selectedEmployee = nil
+        currentWeekNumber = nil
+        errorMessage = nil
+        continuousTimelineDays = []
+        rebuildContinuousTimeline(reset: true)
+    }
+
+    private func loadLocalSchedule() {
+        guard let document = localScheduleDocument ?? (try? LocalScheduleStore.loadBundledExample()) else {
+            errorMessage = NSLocalizedString("services_schedule_local_not_found", comment: "")
+            return
+        }
+        localScheduleDocument = document
+        applyLocalSchedule(document)
+    }
+
+    func applyLocalSchedule(_ document: LocalScheduleDocument) {
+        localScheduleDocument = document
+        let apiSchedule = document.apiSchedule()
+        schedule = apiSchedule
+        currentWeekNumber = 1
+        preferExamDisplayIfNeeded(for: apiSchedule)
+        applyDefaultWeekFilter()
+        sanitizeSubgroupFilter()
+        rebuildContinuousTimeline(reset: true)
+        setMode(.group, preservingQuery: document.groupName ?? document.title)
+        saveSnapshot()
+        errorMessage = nil
+    }
+
+    func applyLocalTeacherSchedule(_ teacher: DisciplineEmployee) {
+        guard let document = localScheduleDocument else { return }
+        let teacherSchedule = document.apiSchedule(teacherID: teacher.id)
+        let entry = document.teacherDirectoryEntry(id: teacher.id) ?? ScheduleEmployeeDirectoryEntry(
+            firstName: teacher.firstName,
+            lastName: teacher.lastName,
+            middleName: teacher.middleName,
+            degree: teacher.degree,
+            rank: teacher.rank,
+            photoLink: teacher.photoLink,
+            calendarId: teacher.calendarId,
+            id: teacher.id,
+            urlId: teacher.urlId ?? "",
+            fio: teacher.fullName
+        )
+        schedule = teacherSchedule
+        currentWeekNumber = 1
+        applyDefaultWeekFilter()
+        sanitizeSubgroupFilter()
+        rebuildContinuousTimeline(reset: true)
+        setMode(.teacher, preservingQuery: entry.displayName)
+        saveSnapshot()
+        errorMessage = nil
+    }
 }
 
 extension StudyWeekFilter {
     var localizedTitle: String {
         switch self {
         case .all:
-            return NSLocalizedString("services_schedule_subgroup_short_all", comment: "")
+            return NSLocalizedString("services_schedule_subgroup_short_all", value: "Все", comment: "")
         case .week(let value):
             return "\(value)"
         }
@@ -1253,16 +1302,47 @@ extension ScheduleServiceViewModel {
     }
 
     var filteredGroups: [StudyGroup] {
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let activeQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let needle = activeQuery.isEmpty ? debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines) : activeQuery
         guard !needle.isEmpty else {
             return prioritizedGroups(groups)
         }
 
-        let matched = groups.filter { group in
-            group.name.localizedCaseInsensitiveContains(needle)
-            || (group.specialityName?.localizedCaseInsensitiveContains(needle) ?? false)
+        let normalizedNeedle = Self.normalizeSearchString(needle)
+        let scored = groups.compactMap { group -> (group: StudyGroup, rank: Int)? in
+            let normalizedName = Self.normalizeSearchString(group.name)
+            let normalizedSpec = Self.normalizeSearchString(group.specialityName ?? "")
+
+            let isExact = normalizedName == normalizedNeedle
+            let isPrefix = normalizedName.hasPrefix(normalizedNeedle)
+            let isSubstring = normalizedName.contains(normalizedNeedle) || normalizedSpec.contains(normalizedNeedle)
+            let isFuzzy = Self.isFuzzyMatch(needle: normalizedNeedle, text: normalizedName)
+
+            guard isExact || isPrefix || isSubstring || isFuzzy else {
+                return nil
+            }
+
+            var rank = 10
+            if isExact {
+                rank = 0
+            } else if isPrefix {
+                rank = group.name == accountGroupName ? 1 : (pinnedGroupNames.contains(group.name) ? 2 : 3)
+            } else if isSubstring {
+                rank = group.name == accountGroupName ? 4 : (pinnedGroupNames.contains(group.name) ? 5 : 6)
+            } else if isFuzzy {
+                rank = 7
+            }
+
+            return (group, rank)
         }
-        return prioritizedGroups(matched)
+
+        return scored
+            .sorted { lhs, rhs in
+                if lhs.rank != rhs.rank { return lhs.rank < rhs.rank }
+                return lhs.group.name < rhs.group.name
+            }
+            .prefix(35)
+            .map(\.group)
     }
 
     private func prioritizedGroups(_ source: [StudyGroup], limit: Int = 30) -> [StudyGroup] {
@@ -1280,6 +1360,9 @@ extension ScheduleServiceViewModel {
         for name in pinnedGroupNames {
             append(source.first { $0.name == name })
         }
+        for name in recentGroupNames {
+            append(source.first { $0.name == name })
+        }
         for group in source {
             append(group)
             if result.count >= limit { break }
@@ -1290,44 +1373,158 @@ extension ScheduleServiceViewModel {
     var filteredEmployees: [ScheduleEmployeeDirectoryEntry] {
         let needle = debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard needle.count >= 2 else {
-            return recentEmployeeSuggestions
+            return recentAndPinnedEmployeeSuggestions
         }
-        return matchingEmployees(for: needle, limit: 10)
+        return matchingEmployees(for: needle, limit: 15)
     }
 
-    private var recentEmployeeSuggestions: [ScheduleEmployeeDirectoryEntry] {
-        guard let urlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank else {
-            return []
+    var recentAndPinnedEmployeeSuggestions: [ScheduleEmployeeDirectoryEntry] {
+        var result: [ScheduleEmployeeDirectoryEntry] = []
+        var seen: Set<String> = []
+
+        func append(urlId: String?, displayName: String) {
+            guard let urlId, !urlId.isEmpty, seen.insert(urlId).inserted else { return }
+            if let found = employees.first(where: { $0.urlId == urlId }) {
+                result.append(found)
+            } else {
+                result.append(
+                    ScheduleEmployeeDirectoryEntry(
+                        firstName: nil,
+                        lastName: nil,
+                        middleName: nil,
+                        degree: nil,
+                        rank: nil,
+                        photoLink: nil,
+                        calendarId: nil,
+                        id: Int.min,
+                        urlId: urlId,
+                        fio: displayName
+                    )
+                )
+            }
         }
-        return employees.filter { $0.urlId == urlId }.prefix(2).map { $0 }
+
+        for teacher in pinnedTeachers {
+            append(urlId: teacher.urlId, displayName: teacher.name)
+        }
+        for teacher in recentTeachers {
+            append(urlId: teacher.urlId, displayName: teacher.name)
+        }
+        if let lastUrlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank {
+            let lastName = defaults.string(forKey: Self.lastTeacherNameDefaultsKey) ?? lastUrlId
+            append(urlId: lastUrlId, displayName: lastName)
+        }
+
+        return Array(result.prefix(8))
     }
 
     private func matchingEmployees(for query: String, limit: Int) -> [ScheduleEmployeeDirectoryEntry] {
         let tokens = normalizedSearchTokens(from: query)
         guard !tokens.isEmpty else { return [] }
 
-        var matches: [ScheduleEmployeeDirectoryEntry] = []
-        matches.reserveCapacity(limit)
+        let scored = employees.compactMap { employee -> (employee: ScheduleEmployeeDirectoryEntry, rank: Int)? in
+            let normalizedFio = Self.normalizeSearchString(employee.displayName)
+            let employeeTokens = Self.tokens(from: normalizedFio)
 
-        for employee in employees where employee.matchesSearchTokens(tokens) {
-            matches.append(employee)
-            if matches.count >= limit { break }
+            // Exact match
+            if tokens.count == 1 && (normalizedFio == tokens[0] || employee.urlId == tokens[0]) {
+                return (employee, 0)
+            }
+
+            // All search tokens are prefixes of words in FIO
+            let allTokensMatch = tokens.allSatisfy { token in
+                employeeTokens.contains { $0.hasPrefix(token) }
+            }
+            if allTokensMatch {
+                let rank = isTeacherPinned(employee.urlId ?? "") ? 1 : 2
+                return (employee, rank)
+            }
+
+            // Any token substring match
+            let substringMatch = tokens.allSatisfy { normalizedFio.contains($0) }
+            if substringMatch {
+                let rank = isTeacherPinned(employee.urlId ?? "") ? 3 : 4
+                return (employee, rank)
+            }
+
+            // Fuzzy match
+            if tokens.allSatisfy({ token in
+                employeeTokens.contains { Self.isFuzzyMatch(needle: token, text: $0) }
+            }) {
+                return (employee, 5)
+            }
+
+            return nil
         }
-        return matches
+
+        return scored
+            .sorted { lhs, rhs in
+                if lhs.rank != rhs.rank { return lhs.rank < rhs.rank }
+                return lhs.employee.displayName.localizedCaseInsensitiveCompare(rhs.employee.displayName) == .orderedAscending
+            }
+            .prefix(limit)
+            .map(\.employee)
     }
 
     private func normalizedSearchTokens(from query: String) -> [String] {
         query
             .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-            .split(whereSeparator: { $0.isWhitespace || $0 == "." || $0 == "," })
+            .split(whereSeparator: { $0.isWhitespace || $0 == "." || $0 == "," || $0 == "-" })
+            .map(String.init)
+            .map(Self.normalizeSearchString)
+            .filter { !$0.isEmpty }
+    }
+
+    private static func normalizeSearchString(_ string: String) -> String {
+        string
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func tokens(from string: String) -> [String] {
+        string
+            .split(whereSeparator: { $0.isWhitespace || $0 == "." || $0 == "," || $0 == "-" })
             .map(String.init)
             .filter { !$0.isEmpty }
+    }
+
+    private static func isFuzzyMatch(needle: String, text: String) -> Bool {
+        guard needle.count >= 3 else { return false }
+        if text.contains(needle) { return true }
+        let distance = levenshteinDistance(needle, String(text.prefix(needle.count + 1)))
+        return distance <= 1
+    }
+
+    private static func levenshteinDistance(_ source: String, _ target: String) -> Int {
+        let sourceChars = Array(source)
+        let targetChars = Array(target)
+        let sourceLength = sourceChars.count
+        let targetLength = targetChars.count
+        var distances = Array(repeating: Array(repeating: 0, count: targetLength + 1), count: sourceLength + 1)
+
+        for sourceIndex in 0...sourceLength { distances[sourceIndex][0] = sourceIndex }
+        for targetIndex in 0...targetLength { distances[0][targetIndex] = targetIndex }
+
+        for sourceIndex in 1...sourceLength {
+            for targetIndex in 1...targetLength {
+                if sourceChars[sourceIndex - 1] == targetChars[targetIndex - 1] {
+                    distances[sourceIndex][targetIndex] = distances[sourceIndex - 1][targetIndex - 1]
+                } else {
+                    let insertionCost = distances[sourceIndex][targetIndex - 1]
+                    let deletionCost = distances[sourceIndex - 1][targetIndex]
+                    let substitutionCost = distances[sourceIndex - 1][targetIndex - 1]
+                    distances[sourceIndex][targetIndex] = 1 + min(insertionCost, deletionCost, substitutionCost)
+                }
+            }
+        }
+        return distances[sourceLength][targetLength]
     }
 
     var isTeacherSearchQueryTooShort: Bool {
         mode == .teacher
             && query.trimmingCharacters(in: .whitespacesAndNewlines).count < 2
-            && recentEmployeeSuggestions.isEmpty
+            && recentAndPinnedEmployeeSuggestions.isEmpty
     }
 
     var weekFilters: [StudyWeekFilter] {
@@ -1494,7 +1691,7 @@ extension ScheduleServiceViewModel {
     }
 
     func dayTitle(for day: StudyDaySchedule) -> String {
-        return day.weekday.rawValue
+        day.weekday.rawValue
     }
 
     func continuousDayTitle(for day: ScheduleContinuousDay) -> String {
@@ -1611,16 +1808,6 @@ private extension ScheduleServiceViewModel {
         let rangeEnd = schedule.endExamsDate
         guard let rangeStart, let rangeEnd else { return nil }
         return "\(Self.examPeriodFormatter.string(from: rangeStart)) – \(Self.examPeriodFormatter.string(from: rangeEnd))"
-    }
-}
-
-private extension ScheduleEmployeeDirectoryEntry {
-    func matchesSearchTokens(_ tokens: [String]) -> Bool {
-        let searchIndex = [displayName.nilIfBlank, urlId?.nilIfBlank]
-            .compactMap { $0 }
-            .joined(separator: " ")
-            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        return tokens.allSatisfy { searchIndex.contains($0) }
     }
 }
 

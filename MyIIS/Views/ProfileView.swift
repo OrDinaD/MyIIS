@@ -99,7 +99,14 @@ private extension ProfileView {
 
     @ToolbarContentBuilder
     var profileToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItemGroup(placement: .topBarTrailing) {
+            NavigationLink {
+                AccountSettingsView()
+            } label: {
+                Image(systemName: "gearshape.fill")
+            }
+            .accessibilityLabel(NSLocalizedString("settings_title", comment: ""))
+
             NavigationLink {
                 NotificationsView(viewModel: notificationsViewModel)
             } label: {

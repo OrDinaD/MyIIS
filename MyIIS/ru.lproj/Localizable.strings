@@ -576,6 +576,11 @@
 "about_app_language_subtitle" = "Открыть системные настройки языка MyIIS";
 "about_app_language_hint" = "Открывает настройки MyIIS, где можно выбрать язык приложения.";
 
+/* Schedule display */
+"settings_schedule_section" = "Расписание";
+"settings_schedule_breaks_title" = "Пятиминутные перерывы";
+"settings_schedule_breaks_subtitle" = "Показывать внутрипарный перерыв в расписании и виджетах";
+
 /* First launch */
 "first_launch_app_icon" = "Иконка приложения MyIIS";
 "first_launch_sign_in" = "Войти в аккаунт";
@@ -585,3 +590,40 @@
 "first_launch_server_unavailable" = "Серверы БГУИР недоступны";
 "first_launch_server_checking" = "Проверяем серверы БГУИР";
 "first_launch_server_unavailable_message" = "Серверы БГУИР сейчас не отвечают, поэтому войти пока не получится. Можно продолжить без аккаунта.";
+
+/* Schedule First */
+"tab_schedule" = "Расписание";
+"schedule_settings_title" = "Настройки расписания";
+"schedule_settings_display_header" = "Отображение";
+"schedule_hide_past_title" = "Скрывать прошедшие занятия";
+"schedule_hide_past_subtitle" = "Сворачивать завершённые пары в течение дня";
+"schedule_density_title" = "Плотность карточек";
+"schedule_density_regular" = "Стандартная";
+"schedule_density_compact" = "Компактная";
+"schedule_settings_subgroup_header" = "Подгруппы";
+"schedule_other_subgroup_title" = "Другая подгруппа";
+"schedule_other_subgroup_full" = "Показывать полностью";
+"schedule_other_subgroup_compact" = "Показывать компактно";
+"schedule_other_subgroup_hidden" = "Скрывать";
+"schedule_colors_header" = "Цвета типов занятий";
+"schedule_colors_footer" = "Выбранные цвета применяются в расписании и виджетах.";
+"schedule_colors_reset" = "Сбросить цвета по умолчанию";
+"schedule_startup_header" = "Запуск приложения";
+"schedule_startup_tab_title" = "Открывать при запуске";
+"schedule_settings_reset_all" = "Сбросить все настройки расписания";
+"schedule_pinned_header" = "Закреплённые";
+"schedule_recents_header" = "Недавние";
+"schedule_all_groups_header" = "Группы";
+"schedule_pin" = "Закрепить";
+"schedule_unpin" = "Открепить";
+"schedule_choose_date" = "Выберите дату";
+"schedule_jump_to_date" = "Перейти к дате";
+"schedule_today_action" = "Сегодня";
+"schedule_empty_cta_title" = "Выберите расписание";
+"schedule_empty_cta_subtitle" = "Найдите группу или преподавателя, чтобы просматривать занятия и экзамены";
+"lesson_type_lecture" = "Лекция";
+"lesson_type_practice" = "Практическое занятие";
+"lesson_type_laboratory" = "Лабораторная работа";
+"lesson_type_consultation" = "Консультация";
+"lesson_type_exam" = "Экзамен / Зачёт";
+"lesson_type_other" = "Прочее / Мероприятие";

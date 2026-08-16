@@ -103,6 +103,67 @@ final class SessionScheduleWidgetTests: XCTestCase {
 
         XCTAssertEqual(SessionScheduleWidgetPresentation.accessorySubtitle(for: event), "409-1")
     }
+
+    func testCurrentBSUIRPairResolvesFiveMinuteBreak() {
+        XCTAssertEqual(
+            ScheduleMidPairBreakCalculator.resolve(startTime: "13:35", endTime: "15:00"),
+            ScheduleMidPairBreak(startTime: "14:15", endTime: "14:20")
+        )
+    }
+
+    func testLegacyNinetyFiveMinutePairStillResolvesFiveMinuteBreak() {
+        XCTAssertEqual(
+            ScheduleMidPairBreakCalculator.resolve(startTime: "09:00", endTime: "10:35"),
+            ScheduleMidPairBreak(startTime: "09:45", endTime: "09:50")
+        )
+    }
+
+    func testNonPairIntervalDoesNotInventBreak() {
+        XCTAssertNil(ScheduleMidPairBreakCalculator.resolve(startTime: "12:00", endTime: "13:30"))
+        XCTAssertNil(ScheduleMidPairBreakCalculator.resolve(startTime: "invalid", endTime: "15:00"))
+    }
+
+    @MainActor
+    func testGroupScheduleFallsBackToPersistentCacheWithoutNetwork() async throws {
+        let baseURL = URL(string: "https://offline-cache-\(UUID().uuidString).example/api/v1")!
+        let endpoint = baseURL.appendingPathComponent("schedule")
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)!
+        components.queryItems = [URLQueryItem(name: "studentGroup", value: "420603")]
+        let requestURL = try XCTUnwrap(components.url)
+        let cacheKey = "ServiceEndpointsAPI.cache."
+            + Data("GET|\(requestURL.absoluteString)".utf8).base64EncodedString()
+        defer {
+            UserDefaultsPayloadStore.clear(forKey: cacheKey, from: .standard)
+            MockURLProtocol.mockData = nil
+            MockURLProtocol.mockResponse = nil
+            MockURLProtocol.mockError = nil
+            MockURLProtocol.requestHandler = nil
+        }
+
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let api = ServiceEndpointsAPI(
+            baseURL: baseURL,
+            session: URLSession(configuration: configuration)
+        )
+        let payload = Data(#"{"startDate":"01.09.2026","schedules":{}}"#.utf8)
+        MockURLProtocol.mockData = payload
+        MockURLProtocol.mockResponse = HTTPURLResponse(
+            url: requestURL,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: nil
+        )
+
+        let online = try await api.fetchGroupSchedule(groupNumber: "420603")
+        MockURLProtocol.mockData = nil
+        MockURLProtocol.mockResponse = nil
+        MockURLProtocol.mockError = URLError(.notConnectedToInternet)
+        let offline = try await api.fetchGroupSchedule(groupNumber: "420603")
+
+        XCTAssertEqual(online.startDate, offline.startDate)
+        XCTAssertNotNil(offline.startDate)
+    }
 }
 
 @MainActor

@@ -42,6 +42,127 @@ enum ClassScheduleWidgetConstants {
     static let kind = "com.OrDinaD.MyIIS.classSchedule"
 }
 
+struct ScheduleMidPairBreak: Equatable, Sendable {
+    let startTime: String
+    let endTime: String
+
+    var compactText: String {
+        "\(startTime)–\(endTime)"
+    }
+}
+
+enum ScheduleMidPairBreakCalculator {
+    nonisolated static func resolve(startTime: String, endTime: String) -> ScheduleMidPairBreak? {
+        guard let startMinutes = minutes(from: startTime),
+              let endMinutes = minutes(from: endTime),
+              endMinutes > startMinutes else {
+            return nil
+        }
+
+        let duration = endMinutes - startMinutes
+        let teachingMinutes = duration - 5
+        guard teachingMinutes > 0,
+              teachingMinutes.isMultiple(of: 2) else {
+            return nil
+        }
+
+        let academicHour = teachingMinutes / 2
+        guard academicHour == 40 || academicHour == 45 else { return nil }
+
+        let breakStart = startMinutes + academicHour
+        return ScheduleMidPairBreak(
+            startTime: formatted(minutes: breakStart),
+            endTime: formatted(minutes: breakStart + 5)
+        )
+    }
+
+    private nonisolated static func minutes(from value: String) -> Int? {
+        let components = value.split(separator: ":")
+        guard components.count == 2,
+              let hours = Int(components[0]),
+              let minutes = Int(components[1]),
+              (0 ... 23).contains(hours),
+              (0 ... 59).contains(minutes) else {
+            return nil
+        }
+        return hours * 60 + minutes
+    }
+
+    private nonisolated static func formatted(minutes: Int) -> String {
+        String(format: "%02d:%02d", minutes / 60, minutes % 60)
+    }
+}
+
+public enum ScheduleCardDensity: String, CaseIterable, Identifiable, Codable, Sendable {
+    case regular
+    case compact
+
+    public var id: String { rawValue }
+
+    public var localizedTitle: String {
+        switch self {
+        case .regular: return NSLocalizedString("schedule_density_regular", value: "Стандартная", comment: "")
+        case .compact: return NSLocalizedString("schedule_density_compact", value: "Компактная", comment: "")
+        }
+    }
+}
+
+public enum ScheduleOtherSubgroupDisplay: String, CaseIterable, Identifiable, Codable, Sendable {
+    case full
+    case compact
+    case hidden
+
+    public var id: String { rawValue }
+
+    public var localizedTitle: String {
+        switch self {
+        case .full: return NSLocalizedString("schedule_other_subgroup_full", value: "Показывать полностью", comment: "")
+        case .compact: return NSLocalizedString("schedule_other_subgroup_compact", value: "Показывать компактно", comment: "")
+        case .hidden: return NSLocalizedString("schedule_other_subgroup_hidden", value: "Скрывать", comment: "")
+        }
+    }
+}
+
+enum ScheduleDisplayPreferences {
+    static let showsMidPairBreaksKey = "schedule.display.showsMidPairBreaks"
+    static let hidePastLessonsKey = "schedule.display.hidePastLessons"
+    static let cardDensityKey = "schedule.display.cardDensity"
+    static let otherSubgroupDisplayKey = "schedule.display.otherSubgroup"
+
+    static var defaults: UserDefaults {
+        UserDefaults(suiteName: AppGroup.identifier) ?? .standard
+    }
+
+    static var showsMidPairBreaks: Bool {
+        defaults.bool(forKey: showsMidPairBreaksKey)
+    }
+
+    static var hidePastLessons: Bool {
+        defaults.bool(forKey: hidePastLessonsKey)
+    }
+
+    static var cardDensity: ScheduleCardDensity {
+        if let raw = defaults.string(forKey: cardDensityKey), let density = ScheduleCardDensity(rawValue: raw) {
+            return density
+        }
+        return .regular
+    }
+
+    static var otherSubgroupDisplay: ScheduleOtherSubgroupDisplay {
+        if let raw = defaults.string(forKey: otherSubgroupDisplayKey), let option = ScheduleOtherSubgroupDisplay(rawValue: raw) {
+            return option
+        }
+        return .compact
+    }
+
+    static func reloadClassScheduleWidget() {
+#if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: ClassScheduleWidgetConstants.kind)
+        WidgetCenter.shared.reloadTimelines(ofKind: SessionScheduleWidgetConstants.kind)
+#endif
+    }
+}
+
 enum SessionScheduleWidgetDateFormatting {
     nonisolated static func numericDateText(from date: Date) -> String {
         let formatter = DateFormatter()

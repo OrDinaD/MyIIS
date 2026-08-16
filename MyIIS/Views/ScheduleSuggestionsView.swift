@@ -2,50 +2,113 @@ import SwiftUI
 
 struct ScheduleSuggestionsView: View {
     let groups: [StudyGroup]
+    let pinnedGroupNames: [String]
+    let recentGroupNames: [String]
     let accountGroupName: String?
     let showsAllGroups: Bool
     let onSelect: (StudyGroup) -> Void
+    let onTogglePin: (StudyGroup) -> Void
     let onShowAllGroups: () -> Void
 
     var body: some View {
         if groups.isEmpty {
             ServiceEmptyState(text: NSLocalizedString("services_schedule_groups_empty", comment: ""))
         } else {
-            VStack(spacing: 8) {
-                ForEach(visibleGroups, id: \.name) { group in
-                    Button {
-                        onSelect(group)
-                    } label: {
-                        groupRow(group)
+            VStack(spacing: 12) {
+                if !pinnedGroups.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        sectionLabel(NSLocalizedString("schedule_pinned_header", value: "Закреплённые", comment: ""), icon: "pin.fill")
+                        ForEach(pinnedGroups, id: \.name) { group in
+                            groupRowButton(group, isPinned: true)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
 
-                if !showsAllGroups, groups.count > visibleGroups.count {
-                    Button {
-                        onShowAllGroups()
-                    } label: {
-                        Label(
-                            NSLocalizedString("services_schedule_show_more_groups", value: "Показать другие группы", comment: ""),
-                            systemImage: "person.2"
-                        )
-                        .frame(maxWidth: .infinity, minHeight: 44)
+                if !recentGroups.isEmpty && !showsAllGroups {
+                    VStack(alignment: .leading, spacing: 6) {
+                        sectionLabel(NSLocalizedString("schedule_recents_header", value: "Недавние", comment: ""), icon: "clock.arrow.circlepath")
+                        ForEach(recentGroups, id: \.name) { group in
+                            groupRowButton(group, isPinned: pinnedGroupNames.contains(group.name))
+                        }
                     }
-                    .buttonStyle(.bordered)
+                }
+
+                VStack(alignment: .leading, spacing: 6) {
+                    if !pinnedGroups.isEmpty || !recentGroups.isEmpty {
+                        sectionLabel(NSLocalizedString("schedule_all_groups_header", value: "Группы", comment: ""), icon: "person.2.fill")
+                    }
+
+                    ForEach(visibleGroups, id: \.name) { group in
+                        groupRowButton(group, isPinned: pinnedGroupNames.contains(group.name))
+                    }
+
+                    if !showsAllGroups, groups.count > visibleGroups.count {
+                        Button {
+                            onShowAllGroups()
+                        } label: {
+                            Label(
+                                NSLocalizedString("services_schedule_show_more_groups", value: "Показать другие группы", comment: ""),
+                                systemImage: "person.2"
+                            )
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                        }
+                        .buttonStyle(.bordered)
+                        .padding(.top, 4)
+                    }
                 }
             }
         }
     }
 
-    private var visibleGroups: ArraySlice<StudyGroup> {
-        groups.prefix(showsAllGroups ? 30 : 1)
+    private var pinnedGroups: [StudyGroup] {
+        pinnedGroupNames.compactMap { name in groups.first { $0.name == name } }
     }
 
-    private func groupRow(_ group: StudyGroup) -> some View {
+    private var recentGroups: [StudyGroup] {
+        recentGroupNames
+            .filter { !pinnedGroupNames.contains($0) }
+            .compactMap { name in groups.first { $0.name == name } }
+    }
+
+    private var visibleGroups: [StudyGroup] {
+        let exclude = Set(pinnedGroups.map(\.name) + recentGroups.map(\.name))
+        let remaining = groups.filter { !exclude.contains($0.name) }
+        return Array(remaining.prefix(showsAllGroups ? 35 : 5))
+    }
+
+    private func sectionLabel(_ text: String, icon: String) -> some View {
+        Label(text, systemImage: icon)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 4)
+    }
+
+    private func groupRowButton(_ group: StudyGroup, isPinned: Bool) -> some View {
+        Button {
+            onSelect(group)
+        } label: {
+            groupRow(group, isPinned: isPinned)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                onTogglePin(group)
+            } label: {
+                Label(
+                    isPinned
+                        ? NSLocalizedString("schedule_unpin", value: "Открепить", comment: "")
+                        : NSLocalizedString("schedule_pin", value: "Закрепить", comment: ""),
+                    systemImage: isPinned ? "pin.slash" : "pin"
+                )
+            }
+        }
+    }
+
+    private func groupRow(_ group: StudyGroup, isPinned: Bool) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: group.name == accountGroupName ? "person.crop.circle.badge.checkmark" : "person.2.fill")
+            Image(systemName: group.name == accountGroupName ? "person.crop.circle.badge.checkmark" : (isPinned ? "pin.fill" : "person.2.fill"))
                 .font(.title3.weight(.semibold))
-                .foregroundStyle(group.name == accountGroupName ? .green : .blue)
+                .foregroundStyle(group.name == accountGroupName ? .green : (isPinned ? .orange : .blue))
                 .frame(width: 28, height: 28)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -60,6 +123,12 @@ struct ScheduleSuggestionsView: View {
                             .font(.caption2.weight(.semibold))
                             .foregroundStyle(.green)
                     }
+
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.orange)
+                    }
                 }
 
                 Text(group.detailsText)
@@ -69,6 +138,17 @@ struct ScheduleSuggestionsView: View {
             }
 
             Spacer(minLength: 0)
+
+            Button {
+                onTogglePin(group)
+            } label: {
+                Image(systemName: isPinned ? "pin.fill" : "pin")
+                    .font(.subheadline)
+                    .foregroundStyle(isPinned ? Color.orange : Color(uiColor: .tertiaryLabel))
+                    .padding(6)
+            }
+            .buttonStyle(.plain)
+
             Image(systemName: "chevron.right")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.tertiary)
@@ -80,8 +160,11 @@ struct ScheduleSuggestionsView: View {
 
 struct ScheduleTeacherSuggestionsView: View {
     let employees: [ScheduleEmployeeDirectoryEntry]
+    let pinnedTeachers: [PinnedTeacher]
+    let recentTeachers: [PinnedTeacher]
     let isWaitingForQuery: Bool
     let onSelect: (ScheduleEmployeeDirectoryEntry) -> Void
+    let onTogglePin: (ScheduleEmployeeDirectoryEntry) -> Void
 
     var body: some View {
         if isWaitingForQuery {
@@ -90,17 +173,38 @@ struct ScheduleTeacherSuggestionsView: View {
             ServiceEmptyState(text: NSLocalizedString("services_schedule_employees_empty", comment: ""))
         } else {
             VStack(spacing: 8) {
-                ForEach(employees.prefix(10)) { employee in
+                ForEach(employees.prefix(15)) { employee in
+                    let isPinned = pinnedTeachers.contains(where: { $0.urlId == employee.urlId })
                     Button {
                         onSelect(employee)
                     } label: {
                         HStack(spacing: 12) {
                             teacherPhoto(for: employee)
-                            Text(employee.displayName)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .lineLimit(2)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(employee.displayName)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(2)
+
+                                if let degree = employee.degree?.nilIfBlank {
+                                    Text(degree)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                            Button {
+                                onTogglePin(employee)
+                            } label: {
+                                Image(systemName: isPinned ? "pin.fill" : "pin")
+                                    .font(.subheadline)
+                                    .foregroundStyle(isPinned ? Color.orange : Color(uiColor: .tertiaryLabel))
+                                    .padding(6)
+                            }
+                            .buttonStyle(.plain)
+
                             Image(systemName: "chevron.right")
                                 .font(.caption.weight(.bold))
                                 .foregroundStyle(.tertiary)
@@ -109,6 +213,18 @@ struct ScheduleTeacherSuggestionsView: View {
                         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     }
                     .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            onTogglePin(employee)
+                        } label: {
+                            Label(
+                                isPinned
+                                    ? NSLocalizedString("schedule_unpin", value: "Открепить", comment: "")
+                                    : NSLocalizedString("schedule_pin", value: "Закрепить", comment: ""),
+                                systemImage: isPinned ? "pin.slash" : "pin"
+                            )
+                        }
+                    }
                 }
             }
         }
