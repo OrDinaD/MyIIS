@@ -164,6 +164,60 @@ struct PortalGradeBookLesson: Decodable {
     let subGroup: Int
     let marks: [Int]
     let controlPoint: String
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case dateString
+        case gradebookOmissions
+        case gradeBookOmissions
+        case isRespectfulOmission
+        case lessonTypeId
+        case lessonTypeAbbrev
+        case lessonNameAbbrev
+        case subGroup
+        case marks
+        case controlPoint
+    }
+
+    init(
+        id: Int,
+        dateString: String,
+        gradeBookOmissions: Int,
+        isRespectfulOmission: Bool,
+        lessonTypeId: Int,
+        lessonTypeAbbrev: String,
+        lessonNameAbbrev: String,
+        subGroup: Int,
+        marks: [Int],
+        controlPoint: String
+    ) {
+        self.id = id
+        self.dateString = dateString
+        self.gradeBookOmissions = gradeBookOmissions
+        self.isRespectfulOmission = isRespectfulOmission
+        self.lessonTypeId = lessonTypeId
+        self.lessonTypeAbbrev = lessonTypeAbbrev
+        self.lessonNameAbbrev = lessonNameAbbrev
+        self.subGroup = subGroup
+        self.marks = marks
+        self.controlPoint = controlPoint
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = (try? container.decode(Int.self, forKey: .id)) ?? 0
+        self.dateString = (try? container.decode(String.self, forKey: .dateString)) ?? ""
+        let omissions = try? container.decodeIfPresent(Int.self, forKey: .gradebookOmissions)
+        let legacyOmissions = try? container.decodeIfPresent(Int.self, forKey: .gradeBookOmissions)
+        self.gradeBookOmissions = omissions ?? legacyOmissions ?? 0
+        self.isRespectfulOmission = (try? container.decode(Bool.self, forKey: .isRespectfulOmission)) ?? false
+        self.lessonTypeId = (try? container.decode(Int.self, forKey: .lessonTypeId)) ?? 0
+        self.lessonTypeAbbrev = (try? container.decode(String.self, forKey: .lessonTypeAbbrev)) ?? ""
+        self.lessonNameAbbrev = (try? container.decode(String.self, forKey: .lessonNameAbbrev)) ?? ""
+        self.subGroup = (try? container.decode(Int.self, forKey: .subGroup)) ?? 0
+        self.marks = (try? container.decode([Int].self, forKey: .marks)) ?? []
+        self.controlPoint = (try? container.decode(String.self, forKey: .controlPoint)) ?? ""
+    }
 }
 
 struct UserGroupInfoResponse: Codable {

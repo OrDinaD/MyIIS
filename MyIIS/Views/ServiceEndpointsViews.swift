@@ -59,14 +59,12 @@ struct LibraryServiceView: View {
                     }
                 }
 
-                ServiceEndpointSection(
-                    title: NSLocalizedString("services_library_news_title", comment: ""),
-                    subtitle: nil,
-                    icon: "newspaper.fill"
-                ) {
-                    if viewModel.news.isEmpty {
-                        ServiceEmptyState(text: NSLocalizedString("services_library_news_empty", comment: ""))
-                    } else {
+                if !viewModel.news.isEmpty {
+                    ServiceEndpointSection(
+                        title: NSLocalizedString("services_library_news_title", comment: ""),
+                        subtitle: nil,
+                        icon: "newspaper.fill"
+                    ) {
                         VStack(spacing: 10) {
                             ForEach(viewModel.news) { news in
                                 Button {
@@ -328,6 +326,7 @@ private final class AnnouncementsServiceViewModel {
     private(set) var staleErrorMessage: String?
 
     private let api = ServiceEndpointsAPI()
+    private let authService = AuthenticationService.shared
     private var hasLoadedOnce = false
     private static let cacheKey = "AnnouncementsServiceViewModel.snapshot"
 
@@ -348,8 +347,11 @@ private final class AnnouncementsServiceViewModel {
         isLoading = true
         defer { isLoading = false }
 
+        let groupNumber = authService.currentUser?.education.group.nilIfBlank
+            ?? MyIISDataStore.loadData()?.userGroup?.nilIfBlank
+
         do {
-            let fetchedItems = try await api.fetchAnnouncements()
+            let fetchedItems = try await api.fetchAnnouncements(groupNumber: groupNumber)
             apply(items: fetchedItems, updatedAt: ServiceEndpointCache.save(fetchedItems, for: Self.cacheKey))
             hasLoadedOnce = true
             isShowingStaleDataWarning = false

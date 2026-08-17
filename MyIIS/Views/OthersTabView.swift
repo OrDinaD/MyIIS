@@ -71,7 +71,7 @@ private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
         case .gradebook:
             return "book.closed.fill"
         case .study:
-            return "graduationcap.fill"
+            return "building.columns.fill"
         case .headman:
             return "crown.fill"
         case .lms:

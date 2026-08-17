@@ -120,9 +120,13 @@ Tests/Videos/
 /Screenshots/
 /Videos/
 /Har/
+/Har_new/
 /Hars/
 /HARS/
 /HarsWithoutLogin/
+har.new/
+Har_new/
+*.har
 *.log
 coverage.txt
 *.xcresult

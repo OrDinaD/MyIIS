@@ -5,15 +5,30 @@ struct ScheduleLessonDetailSheet: View {
     @State private var photoTeacher: DisciplineEmployee?
 
     let lesson: DisciplineSchedule
+    var currentGroupName: String? = nil
     let onTeacherScheduleTap: (DisciplineEmployee) -> Void
     var onGroupTap: ((String) -> Void)?
+
+    private var displayedStudentGroups: [DisciplineStudentGroup] {
+        guard let current = currentGroupName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !current.isEmpty else {
+            return lesson.studentGroups
+        }
+        return lesson.studentGroups.filter { group in
+            guard let name = group.name?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !name.isEmpty else {
+                return false
+            }
+            return name.caseInsensitiveCompare(current) != .orderedSame
+        }
+    }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header
                 teachersSection
-                if !lesson.studentGroups.isEmpty {
+                if !displayedStudentGroups.isEmpty {
                     groupsSection
                 }
                 detailsSection
@@ -119,7 +134,7 @@ struct ScheduleLessonDetailSheet: View {
                 .foregroundStyle(.secondary)
 
             VStack(spacing: 8) {
-                ForEach(lesson.studentGroups, id: \.name) { group in
+                ForEach(displayedStudentGroups, id: \.name) { group in
                     if let name = group.name, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Button {
                             onGroupTap?(name)

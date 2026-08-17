@@ -394,25 +394,18 @@ final class ServiceEndpointsAPI {
     }
 
     func fetchLibraryNews() async throws -> [LibraryNewsEntry] {
-        do {
-            let data = try await fetchData(path: "library/news")
-            return try JSONDecoder().decode([LibraryNewsEntry].self, from: data)
-        } catch let APIError.serverError(statusCode, _) where statusCode == 404 {
-            return []
-        }
+        return []
     }
 
-    func fetchAnnouncements() async throws -> [ServiceJSONObject] {
-        let data = try await fetchData(path: "announcements/students")
-
-        do {
-            return try JSONDecoder().decode(ServiceJSONObjectPage.self, from: data).content
-        } catch {
-            if let legacyArray = try? JSONDecoder().decode([ServiceJSONObject].self, from: data) {
-                return legacyArray
-            }
-            throw APIError.decodingError(error)
+    func fetchAnnouncements(groupNumber: String? = nil) async throws -> [ServiceJSONObject] {
+        guard let groupNumber = groupNumber?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !groupNumber.isEmpty else {
+            return []
         }
+        return try await decodeJSONArray(
+            path: "announcements/student-groups",
+            queryItems: [URLQueryItem(name: "name", value: groupNumber)]
+        )
     }
 
     func fetchPenalties() async throws -> [ServiceJSONObject] {
@@ -537,8 +530,8 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    private func decodeJSONArray(path: String) async throws -> [ServiceJSONObject] {
-        let data = try await fetchData(path: path)
+    private func decodeJSONArray(path: String, queryItems: [URLQueryItem]? = nil) async throws -> [ServiceJSONObject] {
+        let data = try await fetchData(path: path, queryItems: queryItems)
 
         if let objects = try? JSONDecoder().decode([ServiceJSONObject].self, from: data) {
             return objects

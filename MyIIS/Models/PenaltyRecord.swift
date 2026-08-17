@@ -157,6 +157,18 @@ extension PenaltyRecord {
     }
 }
 
+// MARK: - Directive DTO for premium-penalty
+
+struct DirectiveDto: Codable, Equatable {
+    let id: Int?
+    let number: String?
+    let date: String?
+    let type: String?
+    let typeName: String?
+    let eventType: String?
+    let eventTypeName: String?
+}
+
 // MARK: - Codable Support
 
 extension PenaltyRecord {
@@ -170,19 +182,97 @@ extension PenaltyRecord {
         case authority
         case status
         case note
+        case directiveDto
+        case reason
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        recordID = try container.decode(String.self, forKey: .recordID)
-        type = try container.decodeIfPresent(PenaltyType.self, forKey: .type) ?? .other
-        title = try container.decode(String.self, forKey: .title)
-        description = try container.decodeIfPresent(String.self, forKey: .description)
-        issuedAt = try container.decodeFlexibleDate(forKey: .issuedAt)
+
+        if let intID = try? container.decode(Int.self, forKey: .recordID) {
+            recordID = String(intID)
+        } else if let stringID = try? container.decode(String.self, forKey: .recordID) {
+            recordID = stringID
+        } else {
+            recordID = UUID().uuidString
+        }
+
+        let directive = try? container.decodeIfPresent(DirectiveDto.self, forKey: .directiveDto)
+        let reason = try? container.decodeIfPresent(String.self, forKey: .reason)
+        let noteValue = try? container.decodeIfPresent(String.self, forKey: .note)
+
+        // Type
+        if let directType = try? container.decodeIfPresent(PenaltyType.self, forKey: .type) {
+            type = directType
+        } else if let eventTypeName = directive?.eventTypeName?.uppercased() {
+            if eventTypeName.contains("PREMIUM") {
+                type = .other
+            } else if eventTypeName.contains("REPRIMAND") {
+                type = .reprimand
+            } else if eventTypeName.contains("WARNING") {
+                type = .warning
+            } else if eventTypeName.contains("DISMISSAL") {
+                type = .dismissal
+            } else {
+                type = .other
+            }
+        } else {
+            type = .other
+        }
+
+        // Title
+        if let directTitle = try? container.decodeIfPresent(String.self, forKey: .title), !directTitle.isEmpty {
+            title = directTitle
+        } else if let typeName = directive?.typeName, !typeName.isEmpty {
+            title = typeName
+        } else if let r = reason, !r.isEmpty {
+            title = r
+        } else {
+            title = "Поощрение / Взыскание"
+        }
+
+        // Description
+        if let directDesc = try? container.decodeIfPresent(String.self, forKey: .description) {
+            description = directDesc
+        } else {
+            description = reason
+        }
+
+        note = noteValue
+
+        // Authority
+        if let directAuth = try? container.decodeIfPresent(String.self, forKey: .authority) {
+            authority = directAuth
+        } else {
+            authority = directive?.type
+        }
+
+        // Status
+        if let directStatus = try? container.decodeIfPresent(Status.self, forKey: .status) {
+            status = directStatus
+        } else if let statusString = try? container.decodeIfPresent(String.self, forKey: .status) {
+            if statusString.localizedCaseInsensitiveContains("актив") {
+                status = .active
+            } else if statusString.localizedCaseInsensitiveContains("истек") || statusString.localizedCaseInsensitiveContains("снят") {
+                status = .expired
+            } else {
+                status = .resolved
+            }
+        } else {
+            status = .active
+        }
+
+        // Dates
+        if let directDate = try? container.decodeFlexibleDate(forKey: .issuedAt) {
+            issuedAt = directDate
+        } else if let dateStr = directive?.date,
+                  let parsed = DateFormatter.penaltiesDotDateFormatter.date(from: dateStr) {
+            issuedAt = parsed
+        } else {
+            issuedAt = Date()
+        }
+
         updatedAt = container.decodeFlexibleDateIfPresent(forKey: .updatedAt)
-        authority = try container.decodeIfPresent(String.self, forKey: .authority)
-        status = try container.decodeIfPresent(Status.self, forKey: .status) ?? .unknown
-        note = try container.decodeIfPresent(String.self, forKey: .note)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -254,6 +344,14 @@ private extension DateFormatter {
     static let penaltiesFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.locale = Locale(identifier: "ru_RU")
+        return formatter
+    }()
+
+    static let penaltiesDotDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd.MM.yyyy"
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.locale = Locale(identifier: "ru_RU")
         return formatter

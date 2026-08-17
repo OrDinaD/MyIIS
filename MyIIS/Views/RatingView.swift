@@ -118,11 +118,11 @@ struct RatingView: View {
             Group {
                 if dynamicTypeSize.isAccessibilitySize {
                     VStack(spacing: 10) {
-                        ratingHeaderMetrics
+                        ratingHeaderMetrics(user: user)
                     }
                 } else {
                     HStack(spacing: 10) {
-                        ratingHeaderMetrics
+                        ratingHeaderMetrics(user: user)
                     }
                 }
             }
@@ -134,7 +134,15 @@ struct RatingView: View {
     }
 
     @ViewBuilder
-    private var ratingHeaderMetrics: some View {
+    private func ratingHeaderMetrics(user: User) -> some View {
+        if user.displayRating > 0 {
+            RatingHeaderMetric(
+                title: NSLocalizedString("rating_place_in_course", comment: ""),
+                value: "№ \(user.displayRating)",
+                systemImage: "trophy.fill",
+                tint: .yellow
+            )
+        }
         RatingHeaderMetric(
             title: NSLocalizedString("rating_average_grade", comment: ""),
             value: formattedGrade(viewModel.gradebookAverage ?? viewModel.students.first?.averageGrade),
@@ -205,7 +213,7 @@ struct RatingView: View {
                 if viewModel.isRatingPendingForNewSemester {
                     ContentUnavailableView(
                         NSLocalizedString("rating_semester_completed_title", comment: ""),
-                        systemImage: "hourglass",
+                        systemImage: "sun.max.fill",
                         description: Text(NSLocalizedString("rating_semester_completed_desc", comment: ""))
                     )
                 } else if viewModel.isGradebookUnavailable {

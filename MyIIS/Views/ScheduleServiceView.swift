@@ -191,6 +191,7 @@ struct ScheduleServiceView: View {
         .sheet(item: $selectedExamLesson) { lesson in
             ScheduleLessonDetailSheet(
                 lesson: lesson,
+                currentGroupName: viewModel.mode == .group ? (viewModel.schedule?.group?.name ?? viewModel.query) : nil,
                 onTeacherScheduleTap: { teacher in
                     selectedExamLesson = nil
                     Task { await viewModel.openTeacherSchedule(teacher) }

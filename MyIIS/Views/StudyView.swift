@@ -24,7 +24,7 @@ struct StudyView: View {
 
             content
         }
-        .navigationTitle("Учеба")
+        .navigationTitle(NSLocalizedString("services_item_study", value: "Деканат", comment: ""))
         .navigationBarTitleDisplayMode(.large)
         .hiddenNavigationBarBackground()
         .sheet(isPresented: $isShowingMarkSheetOrder) {
@@ -91,7 +91,7 @@ struct StudyView: View {
     private var overviewCard: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top, spacing: 14) {
-                Image(systemName: "graduationcap.fill")
+                Image(systemName: "building.columns.fill")
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(.white)
                     .frame(width: 48, height: 48)
@@ -105,9 +105,9 @@ struct StudyView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Учебные сервисы")
+                    Text(NSLocalizedString("study_overview_title", value: "Сервисы деканата", comment: ""))
                         .font(.title2.bold())
-                    Text("Ведомостички, справки и заявки ДОТ в одном мобильном разделе.")
+                    Text(NSLocalizedString("study_overview_subtitle", value: "Справки, электронные ведомости и обращения в одном разделе.", comment: ""))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }

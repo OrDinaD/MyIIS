@@ -26,7 +26,9 @@ final class PenaltiesService: PenaltiesServicing {
     }
 
     func fetchPenalties() async throws -> [PenaltyRecord] {
-        let endpoint = baseURL.appendingPathComponent("student-discipline-penalties")
+        let endpoint = baseURL
+            .appendingPathComponent("dormitory-queue-application")
+            .appendingPathComponent("premium-penalty")
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
 
