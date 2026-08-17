@@ -47,17 +47,6 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep iphoneos
 
-      - name: Build release configuration
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcodebuild build \
-            -project "$PROJECT_PATH" \
-            -scheme "$SCHEME" \
-            -configuration "$CONFIGURATION" \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO
-
       - name: Verify upload credentials
         id: credentials
         shell: bash
@@ -255,8 +244,7 @@ jobs:
           plutil -insert signingStyle -string automatic build/ExportOptions-TestFlight.plist
           plutil -insert teamID -string "$TEAM_ID" build/ExportOptions-TestFlight.plist
           plutil -insert distributionBundleIdentifier -string "$BUNDLE_ID" build/ExportOptions-TestFlight.plist
-          # Preserve the explicit monotonic build number resolved above.
-          plutil -insert manageAppVersionAndBuildNumber -bool false build/ExportOptions-TestFlight.plist
+          plutil -insert manageAppVersionAndBuildNumber -bool true build/ExportOptions-TestFlight.plist
           plutil -insert stripSwiftSymbols -bool true build/ExportOptions-TestFlight.plist
           plutil -insert uploadSymbols -bool true build/ExportOptions-TestFlight.plist
 
@@ -285,7 +273,7 @@ jobs:
           name: testflight-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             build/ExportOptions-TestFlight.plist
-            build/TestFlightUpload/**/*.xcdistributionlogs
+            build/*.xcarchive
           if-no-files-found: ignore
           retention-days: 7
 
