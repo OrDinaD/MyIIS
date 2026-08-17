@@ -1762,7 +1762,7 @@ extension ScheduleServiceViewModel {
                         lesson.startLessonTime,
                         lesson.endLessonTime,
                         lesson.location,
-                        lesson.lessonTypeAbbrev ?? "",
+                        lesson.lessonTypeAbbrev,
                         String(lesson.subgroup),
                         lesson.employees.map(\.fullName).joined(separator: ",")
                     ].joined(separator: "|")
