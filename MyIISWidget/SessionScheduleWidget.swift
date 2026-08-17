@@ -341,8 +341,8 @@ struct SessionScheduleWidgetView: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
         .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .padding(.top, 3)
-        .padding(.bottom, 1)
+        .padding(.top, family == .systemLarge ? 10 : 8)
+        .padding(.bottom, 2)
     }
 
     private func daySeparatorText(for date: Date?) -> String {
@@ -391,11 +391,19 @@ struct SessionScheduleWidgetView: View {
                     classProgressBar(for: event, accent: accent, isActive: isActive)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(event.title)
-                            .font(.system(size: 17, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
+                        HStack(spacing: 4) {
+                            Text(event.title)
+                                .font(.system(size: 17, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+
+                            if let subgroup = event.subgroup, subgroup > 0 {
+                                Text("[\(subgroup)]")
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(.white.opacity(0.75))
+                            }
+                        }
 
                         Text("\(event.startTime)–\(event.endTime)")
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -589,16 +597,24 @@ struct SessionScheduleWidgetView: View {
         let midPairBreak = classBreak(for: event)
 
         return VStack(alignment: .leading, spacing: 1) {
-            Text(event.title)
-                .font(.system(
-                    size: family == .systemLarge ? 16 : 15,
-                    weight: .bold,
-                    design: .rounded
-                ))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.66)
-                .privacySensitive()
+            HStack(spacing: 4) {
+                Text(event.title)
+                    .font(.system(
+                        size: family == .systemLarge ? 16 : 15,
+                        weight: .bold,
+                        design: .rounded
+                    ))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.66)
+                    .privacySensitive()
+
+                if let subgroup = event.subgroup, subgroup > 0 {
+                    Text("[\(subgroup)]")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.75))
+                }
+            }
 
             HStack(spacing: 7) {
                 Text(classLocationText(for: event))

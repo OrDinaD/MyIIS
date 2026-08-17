@@ -16,7 +16,7 @@ struct ScheduleServiceView: View {
     @AppStorage(ScheduleDisplayPreferences.showsMidPairBreaksKey, store: ScheduleDisplayPreferences.defaults)
     private var showsMidPairBreaks = false
     @AppStorage(ScheduleDisplayPreferences.hidePastLessonsKey, store: ScheduleDisplayPreferences.defaults)
-    private var hidePastLessons = false
+    private var hidePastLessons = true
     @AppStorage(ScheduleDisplayPreferences.cardDensityKey, store: ScheduleDisplayPreferences.defaults)
     private var cardDensityRaw = ScheduleCardDensity.compact.rawValue
     @AppStorage(ScheduleDisplayPreferences.otherSubgroupDisplayKey, store: ScheduleDisplayPreferences.defaults)
@@ -83,6 +83,39 @@ struct ScheduleServiceView: View {
             .hiddenNavigationBarBackground()
             .toolbar {
                 toolbarContent
+            }
+            .toolbarTitleMenu {
+                if let accountGroup = viewModel.accountGroupName, !accountGroup.isEmpty {
+                    Button {
+                        Task { await viewModel.openGroupSchedule(accountGroup) }
+                    } label: {
+                        Label(accountGroup, systemImage: "person.crop.circle")
+                    }
+                }
+
+                if !viewModel.pinnedGroupNames.isEmpty {
+                    Section(NSLocalizedString("schedule_pinned_groups", value: "Закрепленные группы", comment: "")) {
+                        ForEach(viewModel.pinnedGroupNames, id: \.self) { group in
+                            Button {
+                                Task { await viewModel.openGroupSchedule(group) }
+                            } label: {
+                                Label(group, systemImage: "pin.fill")
+                            }
+                        }
+                    }
+                }
+
+                if !viewModel.pinnedTeachers.isEmpty {
+                    Section(NSLocalizedString("schedule_pinned_teachers", value: "Закрепленные преподаватели", comment: "")) {
+                        ForEach(viewModel.pinnedTeachers) { teacher in
+                            Button {
+                                Task { await viewModel.openPinnedTeacher(teacher) }
+                            } label: {
+                                Label(teacher.name, systemImage: "person.fill")
+                            }
+                        }
+                    }
+                }
             }
             .overlay {
                 if viewModel.isDownloadingReport {
@@ -186,59 +219,20 @@ struct ScheduleServiceView: View {
 
     // MARK: - Header Info Bar
 
+    @ViewBuilder
     private var scheduleHeaderInfoBar: some View {
-        VStack(spacing: 8) {
+        if let subtitle = viewModel.scheduleHeaderSubtitle {
             HStack(alignment: .center, spacing: 10) {
-                Text(viewModel.scheduleHeaderSubtitle)
+                Text(subtitle)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
 
                 Spacer(minLength: 4)
-
-                if viewModel.displayMode == .continuous {
-                    Button {
-                        isDatePickerPresented = true
-                    } label: {
-                        Label(
-                            NSLocalizedString("schedule_jump_to_date", value: "Перейти к дате", comment: ""),
-                            systemImage: "calendar"
-                        )
-                        .font(.footnote.weight(.semibold))
-                        .padding(.horizontal, 12)
-                        .frame(minHeight: 38)
-                        .background(Color(uiColor: .tertiarySystemGroupedBackground), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
             }
-
-            if viewModel.shouldShowWeekFilter {
-                Menu {
-                    ForEach(viewModel.weekFilters) { filter in
-                        Button {
-                            viewModel.weekFilter = filter
-                        } label: {
-                            HStack {
-                                Text(filter.localizedTitle)
-                                if viewModel.weekFilter == filter {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Label(
-                        "\(NSLocalizedString("services_schedule_week_filter", value: "Неделя", comment: "")): \(viewModel.weekFilter.localizedTitle)",
-                        systemImage: "calendar.badge.clock"
-                    )
-                    .font(.footnote.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
-                    .contentShape(Rectangle())
-                }
-            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 4)
         }
-        .padding(.vertical, 4)
     }
 
     // MARK: - Schedule Content
@@ -331,33 +325,62 @@ struct ScheduleServiceView: View {
     }
 
     private var byDayContent: some View {
-        ForEach(viewModel.displayedDays, id: \.weekday) { day in
-            VStack(alignment: .leading, spacing: 8) {
-                Text(viewModel.dayTitle(for: day))
-                    .font(.title3.weight(.bold))
-                    .foregroundStyle(.primary)
-
-                ForEach(day.lessons) { lesson in
-                    ScheduleLessonCard(
-                        lesson: lesson,
-                        isCurrent: false,
-                        progress: nil,
-                        isPast: false,
-                        isOtherSubgroup: viewModel.isOtherSubgroupLesson(lesson),
-                        isTeacherSchedule: viewModel.mode == .teacher,
-                        weeksText: ScheduleServiceViewModel.weeksBadgeText(for: lesson),
-                        cardDensity: lessonCardDensity(for: lesson),
-                        showsMidPairBreaks: showsMidPairBreaks,
-                        onTeacherTap: { teacher in
-                            Task { await viewModel.openTeacherSchedule(teacher) }
-                        },
-                        onGroupTap: { groupName in
-                            Task { await viewModel.openGroupSchedule(groupName) }
-                        },
-                        onDetailsTap: {
-                            selectedExamLesson = lesson
+        VStack(alignment: .leading, spacing: 20) {
+            if viewModel.shouldShowWeekFilter {
+                Menu {
+                    ForEach(viewModel.weekFilters) { filter in
+                        Button {
+                            viewModel.weekFilter = filter
+                        } label: {
+                            HStack {
+                                Text(filter.localizedTitle)
+                                if viewModel.weekFilter == filter {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
                         }
+                    }
+                } label: {
+                    Label(
+                        "\(NSLocalizedString("services_schedule_week_filter", value: "Неделя", comment: "")): \(viewModel.weekFilter.localizedTitle)",
+                        systemImage: "calendar.badge.clock"
                     )
+                    .font(.footnote.weight(.semibold))
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 36)
+                    .background(Color(uiColor: .tertiarySystemGroupedBackground), in: Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            ForEach(viewModel.displayedDays, id: \.weekday) { day in
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(viewModel.dayTitle(for: day))
+                        .font(.title3.weight(.bold))
+                        .foregroundStyle(.primary)
+
+                    ForEach(day.lessons) { lesson in
+                        ScheduleLessonCard(
+                            lesson: lesson,
+                            isCurrent: false,
+                            progress: nil,
+                            isPast: false,
+                            isOtherSubgroup: viewModel.isOtherSubgroupLesson(lesson),
+                            isTeacherSchedule: viewModel.mode == .teacher,
+                            weeksText: ScheduleServiceViewModel.weeksBadgeText(for: lesson),
+                            cardDensity: lessonCardDensity(for: lesson),
+                            showsMidPairBreaks: showsMidPairBreaks,
+                            onTeacherTap: { teacher in
+                                Task { await viewModel.openTeacherSchedule(teacher) }
+                            },
+                            onGroupTap: { groupName in
+                                Task { await viewModel.openGroupSchedule(groupName) }
+                            },
+                            onDetailsTap: {
+                                selectedExamLesson = lesson
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -500,6 +523,19 @@ struct ScheduleServiceView: View {
                         ForEach(viewModel.subgroupFilters) { filter in
                             Text(filter.localizedTitle).tag(filter)
                         }
+                    }
+                }
+
+                if viewModel.displayMode == .continuous {
+                    Divider()
+
+                    Button {
+                        isDatePickerPresented = true
+                    } label: {
+                        Label(
+                            NSLocalizedString("schedule_jump_to_date", value: "Перейти к дате", comment: ""),
+                            systemImage: "calendar"
+                        )
                     }
                 }
 
@@ -905,10 +941,59 @@ private struct ScheduleLessonCard: View {
         return .system(size: 15, weight: .semibold, design: .monospaced)
     }
 
+    @ViewBuilder
     private var cardContent: some View {
+        if isOtherSubgroup {
+            otherSubgroupCardContent
+        } else {
+            regularCardContent
+        }
+    }
+
+    private var otherSubgroupCardContent: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .trailing, spacing: 1) {
+                Text(lesson.startLessonTime)
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                Text(lesson.endLessonTime)
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.secondary.opacity(0.75))
+            }
+            .frame(width: 48, alignment: .trailing)
+
+            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                .fill(accentColor.opacity(0.65))
+                .frame(width: 3, height: 22)
+
+            Text(compactTitle)
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            if lesson.subgroup > 0 {
+                Text("[\(lesson.subgroup)]")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundStyle(.secondary.opacity(0.75))
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .secondarySystemGroupedBackground).opacity(0.35), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                .foregroundStyle(Color.secondary.opacity(0.35))
+        }
+    }
+
+    private var regularCardContent: some View {
         HStack(spacing: cardDensity == .compact ? 10 : 12) {
             timeColumn(font: timeFont)
-                .frame(width: cardDensity == .compact ? 62 : 66)
+                .frame(width: cardDensity == .compact ? 58 : 62, alignment: .trailing)
 
             accentBar(width: 7)
 
@@ -935,11 +1020,6 @@ private struct ScheduleLessonCard: View {
                 HStack(spacing: 6) {
                     if !lesson.location.isEmpty {
                         Text(lesson.location)
-                            .lineLimit(1)
-                    }
-
-                    if let lessonType = lesson.lessonTypeAbbrev.nilIfBlank, !lessonType.isEmpty {
-                        Text(lessonType)
                             .lineLimit(1)
                     }
 
@@ -1011,7 +1091,7 @@ private struct ScheduleLessonCard: View {
     }
 
     private func timeColumn(font: Font) -> some View {
-        VStack(spacing: 2) {
+        VStack(alignment: .trailing, spacing: 2) {
             Text(lesson.startLessonTime)
                 .font(font)
                 .foregroundStyle(cardPrimaryForeground)

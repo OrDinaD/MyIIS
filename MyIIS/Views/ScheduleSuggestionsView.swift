@@ -33,27 +33,18 @@ struct ScheduleSuggestionsView: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    if !pinnedGroups.isEmpty || !recentGroups.isEmpty {
-                        sectionLabel(NSLocalizedString("schedule_all_groups_header", value: "Группы", comment: ""), icon: "person.2.fill")
-                    }
-
-                    ForEach(visibleGroups, id: \.name) { group in
-                        groupRowButton(group, isPinned: pinnedGroupNames.contains(group.name))
-                    }
-
-                    if !showsAllGroups, groups.count > visibleGroups.count {
-                        Button {
-                            onShowAllGroups()
-                        } label: {
-                            Label(
-                                NSLocalizedString("services_schedule_show_more_groups", value: "Показать другие группы", comment: ""),
-                                systemImage: "person.2"
-                            )
-                            .frame(maxWidth: .infinity, minHeight: 44)
+                if pinnedGroups.isEmpty && recentGroups.isEmpty {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(visibleGroups, id: \.name) { group in
+                            groupRowButton(group, isPinned: pinnedGroupNames.contains(group.name))
                         }
-                        .buttonStyle(.bordered)
-                        .padding(.top, 4)
+                    }
+                } else if showsAllGroups {
+                    VStack(alignment: .leading, spacing: 6) {
+                        sectionLabel(NSLocalizedString("schedule_all_groups_header", value: "Группы", comment: ""), icon: "person.2.fill")
+                        ForEach(visibleGroups, id: \.name) { group in
+                            groupRowButton(group, isPinned: pinnedGroupNames.contains(group.name))
+                        }
                     }
                 }
             }

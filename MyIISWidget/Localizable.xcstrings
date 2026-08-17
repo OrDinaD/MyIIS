@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "ru",
   "strings" : {
+    "[%lld]" : {
+
+    },
     "%@ — endpoint вернул ошибку" : {
 
     },

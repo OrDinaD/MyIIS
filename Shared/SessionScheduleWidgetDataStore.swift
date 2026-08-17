@@ -139,7 +139,10 @@ enum ScheduleDisplayPreferences {
     }
 
     static var hidePastLessons: Bool {
-        defaults.bool(forKey: hidePastLessonsKey)
+        if defaults.object(forKey: hidePastLessonsKey) == nil {
+            return true
+        }
+        return defaults.bool(forKey: hidePastLessonsKey)
     }
 
     static var cardDensity: ScheduleCardDensity {

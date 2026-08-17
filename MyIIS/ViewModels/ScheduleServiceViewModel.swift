@@ -459,34 +459,33 @@ final class ScheduleServiceViewModel {
             ?? defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank
 
         if let primaryGroup {
-            shouldResetQueryOnModeChange = false
-            mode = .group
-            shouldResetQueryOnModeChange = true
-            selectedEmployee = nil
-            query = primaryGroup
-            await loadGroup(primaryGroup)
+            await openGroupSchedule(primaryGroup)
         } else if let firstPinnedTeacher = pinnedTeachers.first {
-            shouldResetQueryOnModeChange = false
-            mode = .teacher
-            shouldResetQueryOnModeChange = true
-            query = firstPinnedTeacher.name
-            if let employee = employees.first(where: { $0.urlId == firstPinnedTeacher.urlId }) {
-                await loadEmployee(employee)
-            } else {
-                let fallbackTeacher = ScheduleEmployeeDirectoryEntry(
-                    firstName: nil,
-                    lastName: nil,
-                    middleName: nil,
-                    degree: nil,
-                    rank: nil,
-                    photoLink: firstPinnedTeacher.photoLink,
-                    calendarId: nil,
-                    id: Int.min,
-                    urlId: firstPinnedTeacher.urlId,
-                    fio: firstPinnedTeacher.name
-                )
-                await loadEmployee(fallbackTeacher)
-            }
+            await openPinnedTeacher(firstPinnedTeacher)
+        }
+    }
+
+    func openPinnedTeacher(_ teacher: PinnedTeacher) async {
+        shouldResetQueryOnModeChange = false
+        mode = .teacher
+        shouldResetQueryOnModeChange = true
+        query = teacher.name
+        if let employee = employees.first(where: { $0.urlId == teacher.urlId }) {
+            await loadEmployee(employee)
+        } else {
+            let fallbackTeacher = ScheduleEmployeeDirectoryEntry(
+                firstName: nil,
+                lastName: nil,
+                middleName: nil,
+                degree: nil,
+                rank: nil,
+                photoLink: teacher.photoLink,
+                calendarId: nil,
+                id: Int.min,
+                urlId: teacher.urlId,
+                fio: teacher.name
+            )
+            await loadEmployee(fallbackTeacher)
         }
     }
 
@@ -645,7 +644,14 @@ final class ScheduleServiceViewModel {
             applyLocalSchedule(localScheduleDocument)
             return
         }
-        await loadGroup(groupName)
+        let trimmed = groupName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        shouldResetQueryOnModeChange = false
+        mode = .group
+        shouldResetQueryOnModeChange = true
+        selectedEmployee = nil
+        query = trimmed
+        await loadGroup(trimmed)
     }
 
     func downloadScheduleReport() async -> URL? {
@@ -795,6 +801,7 @@ final class ScheduleServiceViewModel {
             backendValue: week,
             termStartDate: scheduleResponse.startDate
         )
+        subgroupFilter = .all
         applyDefaultWeekFilter()
         sanitizeSubgroupFilter()
         rebuildContinuousTimeline(reset: true)
@@ -1853,7 +1860,7 @@ extension ScheduleServiceViewModel {
     }
 
     var showsSubgroupPicker: Bool {
-        displayMode != .exams && subgroupFilters.count > 1
+        mode != .teacher && displayMode != .exams && subgroupFilters.count > 1
     }
 
     var shouldShowWeekFilter: Bool {
@@ -1994,22 +2001,15 @@ extension ScheduleServiceViewModel {
         return NSLocalizedString("services_schedule_title", comment: "")
     }
 
-    var scheduleHeaderSubtitle: String {
+    var scheduleHeaderSubtitle: String? {
         if displayMode == .exams {
             let title = NSLocalizedString("services_schedule_exams_short", comment: "")
             if let examPeriodText {
-                return "🎓 \(title)\n\(examPeriodText)"
+                return "🎓 \(title) · \(examPeriodText)"
             }
             return "🎓 \(title)"
         }
-
-        if let currentWeekNumber {
-            return String(
-                format: NSLocalizedString("services_schedule_current_week", comment: ""),
-                currentWeekNumber
-            )
-        }
-        return periodText ?? NSLocalizedString("services_schedule_subtitle", comment: "")
+        return nil
     }
 }
 
