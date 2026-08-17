@@ -154,6 +154,10 @@ struct ScheduleServiceView: View {
                 onTeacherScheduleTap: { teacher in
                     selectedExamLesson = nil
                     Task { await viewModel.openTeacherSchedule(teacher) }
+                },
+                onGroupTap: { groupName in
+                    selectedExamLesson = nil
+                    Task { await viewModel.openGroupSchedule(groupName) }
                 }
             )
             .presentationDetents([.medium, .large])
@@ -180,12 +184,10 @@ struct ScheduleServiceView: View {
     private var scheduleHeaderInfoBar: some View {
         VStack(spacing: 8) {
             HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(viewModel.scheduleHeaderSubtitle)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
+                Text(viewModel.scheduleHeaderSubtitle)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
 
                 Spacer(minLength: 4)
 
@@ -194,42 +196,15 @@ struct ScheduleServiceView: View {
                         isDatePickerPresented = true
                     } label: {
                         Label(
-                            NSLocalizedString("schedule_jump_to_date", value: "Дата", comment: ""),
+                            NSLocalizedString("schedule_jump_to_date", value: "Перейти к дате", comment: ""),
                             systemImage: "calendar"
                         )
                         .font(.footnote.weight(.semibold))
-                        .padding(.horizontal, 10)
-                        .frame(minHeight: 44)
+                        .padding(.horizontal, 12)
+                        .frame(minHeight: 38)
                         .background(Color(uiColor: .tertiarySystemGroupedBackground), in: Capsule())
                     }
                     .buttonStyle(.plain)
-                }
-
-                if viewModel.showsSubgroupPicker {
-                    Menu {
-                        ForEach(viewModel.subgroupFilters) { filter in
-                            Button {
-                                viewModel.subgroupFilter = filter
-                            } label: {
-                                HStack {
-                                    Text(filter.localizedTitle)
-                                    if viewModel.subgroupFilter == filter {
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(viewModel.subgroupFilter.shortTitle)
-                                .font(.footnote.weight(.semibold))
-                            Image(systemName: "chevron.up.chevron.down")
-                                .font(.caption2)
-                        }
-                        .padding(.horizontal, 10)
-                        .frame(minHeight: 44)
-                        .background(Color(uiColor: .tertiarySystemGroupedBackground), in: Capsule())
-                    }
                 }
             }
 
@@ -253,7 +228,7 @@ struct ScheduleServiceView: View {
                         systemImage: "calendar.badge.clock"
                     )
                     .font(.footnote.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: 38, alignment: .leading)
                     .contentShape(Rectangle())
                 }
             }
@@ -332,6 +307,8 @@ struct ScheduleServiceView: View {
                     isCurrent: viewModel.isLessonCurrent(lesson, on: day.weekday, for: day.date),
                     progress: viewModel.currentLessonProgress(lesson, on: day.weekday, for: day.date),
                     isPast: isPast,
+                    isOtherSubgroup: viewModel.isOtherSubgroupLesson(lesson),
+                    isTeacherSchedule: viewModel.mode == .teacher,
                     cardDensity: lessonCardDensity(for: lesson),
                     showsMidPairBreaks: showsMidPairBreaks,
                     onTeacherTap: { teacher in
@@ -361,6 +338,9 @@ struct ScheduleServiceView: View {
                         isCurrent: false,
                         progress: nil,
                         isPast: false,
+                        isOtherSubgroup: viewModel.isOtherSubgroupLesson(lesson),
+                        isTeacherSchedule: viewModel.mode == .teacher,
+                        weeksText: ScheduleServiceViewModel.weeksBadgeText(for: lesson),
                         cardDensity: lessonCardDensity(for: lesson),
                         showsMidPairBreaks: showsMidPairBreaks,
                         onTeacherTap: { teacher in
@@ -418,6 +398,8 @@ struct ScheduleServiceView: View {
                     isCurrent: false,
                     progress: nil,
                     isPast: isPast || viewModel.isExamPast(exam, on: day.date),
+                    isOtherSubgroup: viewModel.isOtherSubgroupLesson(exam),
+                    isTeacherSchedule: viewModel.mode == .teacher,
                     cardDensity: cardDensity,
                     showsMidPairBreaks: showsMidPairBreaks,
                     onTeacherTap: { teacher in
@@ -503,6 +485,19 @@ struct ScheduleServiceView: View {
                     }
                 }
 
+                if viewModel.showsSubgroupPicker {
+                    Divider()
+
+                    Picker(
+                        NSLocalizedString("schedule_settings_subgroup_header", value: "Подгруппа", comment: ""),
+                        selection: $viewModel.subgroupFilter
+                    ) {
+                        ForEach(viewModel.subgroupFilters) { filter in
+                            Text(filter.localizedTitle).tag(filter)
+                        }
+                    }
+                }
+
                 Divider()
 
                 Button {
@@ -553,7 +548,7 @@ struct ScheduleServiceView: View {
             toggleCurrentSchedulePin()
         } label: {
             Image(systemName: isPinned ? "pin.fill" : "pin")
-                .foregroundStyle(isPinned ? .orange : .primary)
+                .foregroundStyle(isPinned ? .orange : .secondary)
         }
         .accessibilityLabel(
             isPinned
@@ -573,10 +568,13 @@ struct ScheduleServiceView: View {
     }
 
     private func toggleCurrentSchedulePin() {
-        if let group = viewModel.schedule?.group?.name {
-            viewModel.togglePinnedGroupName(group)
-        } else if let employee = viewModel.selectedEmployee {
-            viewModel.togglePinnedTeacher(employee)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+            if let group = viewModel.schedule?.group?.name {
+                viewModel.togglePinnedGroupName(group)
+            } else if let employee = viewModel.selectedEmployee {
+                viewModel.togglePinnedTeacher(employee)
+            }
         }
     }
 
@@ -879,6 +877,9 @@ private struct ScheduleLessonCard: View {
     let isCurrent: Bool
     let progress: Double?
     var isPast = false
+    var isOtherSubgroup = false
+    var isTeacherSchedule = false
+    var weeksText: String?
     var cardDensity: ScheduleCardDensity = .regular
     var showsMidPairBreaks = false
     let onTeacherTap: (DisciplineEmployee) -> Void
@@ -886,122 +887,131 @@ private struct ScheduleLessonCard: View {
     var onDetailsTap: (() -> Void)?
 
     var body: some View {
+        Button {
+            onDetailsTap?()
+        } label: {
+            cardContent
+        }
+        .buttonStyle(.plain)
+        .contentShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+    }
+
+    private var cardCornerRadius: CGFloat {
+        cardDensity == .compact || isOtherSubgroup ? 14 : 16
+    }
+
+    private var timeFont: Font {
         if cardDensity == .compact {
-            compactBody
-        } else {
-            regularBody
+            return .system(size: 14, weight: .medium, design: .monospaced)
         }
+        return .system(size: 15, weight: .semibold, design: .monospaced)
     }
 
-    private var regularBody: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 12) {
-                timeColumn(font: .system(.body, design: .monospaced))
-                    .frame(width: 66)
-
-                HStack(spacing: 10) {
-                    accentBar(width: 5)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Text(compactTitle)
-                                .font(.headline.weight(.semibold))
-                                .foregroundStyle(cardPrimaryForeground)
-                                .lineLimit(2)
-                            if isCurrent {
-                                currentBadge
-                            }
-                        }
-
-                        if !lesson.location.isEmpty {
-                            Text(lesson.location)
-                                .font(.subheadline)
-                                .foregroundStyle(cardSecondaryForeground)
-                        }
-
-                        if let note = lesson.note.nilIfBlank {
-                            Text(note)
-                                .font(.caption)
-                                .foregroundStyle(cardSecondaryForeground)
-                                .lineLimit(2)
-                        }
-
-                        ForEach(displayedTeachers) { teacher in
-                            Button {
-                                onTeacherTap(teacher)
-                            } label: {
-                                Label(teacher.fullName, systemImage: "person.fill")
-                                    .font(.caption.weight(.medium))
-                                    .foregroundStyle(cardSecondaryForeground)
-                                    .lineLimit(1)
-                            }
-                            .buttonStyle(.plain)
-                        }
-
-                        if let groupName = firstGroupName {
-                            Button {
-                                onGroupTap(groupName)
-                            } label: {
-                                Label(groupName, systemImage: "person.2")
-                                    .font(.caption.weight(.medium))
-                                    .foregroundStyle(cardSecondaryForeground)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
-                    Spacer(minLength: 6)
-                    teacherAvatarButton(size: 42)
-                }
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackgroundColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay { cardBorder(cornerRadius: 16) }
-    }
-
-    private var compactBody: some View {
-        HStack(spacing: 10) {
-            timeColumn(font: .system(size: 15, weight: .medium, design: .monospaced))
-                .frame(width: 64)
+    private var cardContent: some View {
+        HStack(spacing: cardDensity == .compact ? 10 : 12) {
+            timeColumn(font: timeFont)
+                .frame(width: cardDensity == .compact ? 62 : 66)
 
             accentBar(width: 5)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: cardDensity == .compact ? 2 : 4) {
                 HStack(spacing: 6) {
                     Text(compactTitle)
-                        .font(.subheadline.weight(.bold))
+                        .font((cardDensity == .compact ? Font.subheadline : Font.headline).weight(.semibold))
                         .foregroundStyle(cardPrimaryForeground)
                         .lineLimit(2)
+
                     if isCurrent {
                         currentBadge
                     }
+
+                    if lesson.subgroup > 0 {
+                        subgroupBadge
+                    }
+
+                    if let weeksText, !weeksText.isEmpty {
+                        weeksBadge(weeksText)
+                    }
                 }
 
-                if let compactSubtitle {
-                    Text(compactSubtitle)
-                        .font(.caption)
-                        .foregroundStyle(cardSecondaryForeground)
-                        .lineLimit(2)
+                HStack(spacing: 6) {
+                    if !lesson.location.isEmpty {
+                        Text(lesson.location)
+                            .lineLimit(1)
+                    }
+
+                    if let lessonType = lesson.lessonTypeAbbrev.nilIfBlank, !lessonType.isEmpty {
+                        Text(lessonType)
+                            .lineLimit(1)
+                    }
+
+                    if let note = lesson.note.nilIfBlank, !note.isEmpty {
+                        Text(note)
+                            .lineLimit(1)
+                    }
                 }
+                .font(.footnote)
+                .foregroundStyle(cardSecondaryForeground)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            teacherAvatarButton(size: 38)
+            rightTrailingElement
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, cardDensity == .compact ? 12 : 14)
+        .padding(.vertical, cardDensity == .compact ? 8 : 10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackgroundColor, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay { cardBorder(cornerRadius: 14) }
+        .background(cardBackgroundColor, in: RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+        .overlay { cardBorder }
+    }
+
+    @ViewBuilder
+    private var rightTrailingElement: some View {
+        if isTeacherSchedule {
+            if let groupsText = studentGroupsText {
+                Text(groupsText)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(accentColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(accentColor.opacity(0.12), in: Capsule())
+                    .lineLimit(1)
+            }
+        } else if !displayedTeachers.isEmpty {
+            teacherAvatarStack(size: cardDensity == .compact ? 36 : 40)
+        }
+    }
+
+    private var studentGroupsText: String? {
+        let names = lesson.studentGroups.compactMap(\.name).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !names.isEmpty else { return nil }
+        if names.count <= 2 {
+            return names.joined(separator: " · ")
+        }
+        return "\(names[0]) +\(names.count - 1)"
+    }
+
+    private var subgroupBadge: some View {
+        Text("\(lesson.subgroup) подгр.")
+            .font(.system(size: 10, weight: .bold))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(Color.blue.opacity(0.15), in: Capsule())
+            .foregroundStyle(.blue)
+    }
+
+    private func weeksBadge(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 10, weight: .semibold))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(Color(uiColor: .tertiarySystemGroupedBackground), in: Capsule())
+            .foregroundStyle(cardSecondaryForeground)
     }
 
     private func timeColumn(font: Font) -> some View {
         VStack(spacing: 2) {
             Text(lesson.startLessonTime)
-                .font(font.weight(.semibold))
+                .font(font)
                 .foregroundStyle(cardPrimaryForeground)
 
             if let breakTime = calculateBreakTime() {
@@ -1046,21 +1056,10 @@ private struct ScheduleLessonCard: View {
             .foregroundStyle(accentColor)
     }
 
-    private func teacherAvatarButton(size: CGFloat) -> some View {
-        Button {
-            onDetailsTap?()
-        } label: {
-            teacherAvatarStack(size: size)
-        }
-        .buttonStyle(.plain)
-        .disabled(onDetailsTap == nil)
-        .accessibilityLabel(lesson.title)
-    }
-
     @ViewBuilder
     private func teacherAvatarStack(size: CGFloat) -> some View {
         if displayedTeachers.isEmpty {
-            teacherAvatar(nil, size: size)
+            EmptyView()
         } else {
             HStack(spacing: -(size * 0.3)) {
                 ForEach(Array(displayedTeachers.prefix(2).enumerated()), id: \.element.id) { index, teacher in
@@ -1083,7 +1082,7 @@ private struct ScheduleLessonCard: View {
         }
     }
 
-    private func teacherAvatar(_ teacher: DisciplineEmployee?, size: CGFloat) -> some View {
+    private func teacherAvatar(_ teacher: DisciplineEmployee, size: CGFloat) -> some View {
         Group {
             if let url = teacherPhotoURL(for: teacher) {
                 CachedAsyncImage(url: url) { image in
@@ -1118,15 +1117,22 @@ private struct ScheduleLessonCard: View {
     }
 
     @ViewBuilder
-    private func cardBorder(cornerRadius: CGFloat) -> some View {
+    private var cardBorder: some View {
         if isCurrent {
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
                 .strokeBorder(accentColor, lineWidth: 1.5)
+        } else if isOtherSubgroup {
+            RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous)
+                .strokeBorder(style: StrokeStyle(lineWidth: 1.2, dash: [5, 4]))
+                .foregroundStyle(Color.secondary.opacity(0.45))
         }
     }
 
     private var cardBackgroundColor: Color {
-        Color(uiColor: .secondarySystemGroupedBackground)
+        if isOtherSubgroup {
+            return Color(uiColor: .secondarySystemGroupedBackground).opacity(0.55)
+        }
+        return Color(uiColor: .secondarySystemGroupedBackground)
     }
 
     private var cardPrimaryForeground: Color {
@@ -1144,27 +1150,11 @@ private struct ScheduleLessonCard: View {
         return lesson.subject.nilIfBlank ?? lesson.lessonTypeAbbrev.nilIfBlank ?? lesson.title
     }
 
-    private var compactSubtitle: String? {
-        if lesson.isAnnouncement {
-            return [lesson.location.nilIfBlank, lesson.note.nilIfBlank]
-                .compactMap { $0 }
-                .joined(separator: ", ")
-                .nilIfBlank
-        }
-        return lesson.location.nilIfBlank
-    }
-
     private var accentColor: Color {
         if isPast {
             return Color.secondary.opacity(0.65)
         }
         return ScheduleColorPreferences.color(for: lesson.lessonTypeAbbrev)
-    }
-
-    private var firstGroupName: String? {
-        lesson.studentGroups
-            .compactMap(\.name)
-            .first(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
     }
 }
 

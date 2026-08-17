@@ -299,21 +299,146 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var classContent: some View {
-        VStack(spacing: 0) {
-            header
-                .layoutPriority(10)
+        Group {
+            if family == .systemSmall {
+                classSmallContent
+            } else {
+                VStack(spacing: 0) {
+                    header
+                        .layoutPriority(10)
 
-            VStack(spacing: 0) {
-                ForEach(visibleEvents) { event in
-                    classEventTile(for: event)
+                    VStack(spacing: 0) {
+                        ForEach(groupedVisibleEvents) { day in
+                            if day.id != groupedVisibleEvents.first?.id {
+                                classDaySeparator(for: day.date)
+                            }
+
+                            ForEach(day.events) { event in
+                                classEventTile(for: event)
+                            }
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, family == .systemLarge ? 14 : 12)
+                    .padding(.top, family == .systemLarge ? 5 : 3)
+                    .padding(.bottom, family == .systemLarge ? 7 : 4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
-                Spacer(minLength: 0)
             }
-            .padding(.horizontal, family == .systemLarge ? 14 : 12)
-            .padding(.top, family == .systemLarge ? 5 : 3)
-            .padding(.bottom, family == .systemLarge ? 7 : 4)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+    }
+
+    private func classDaySeparator(for date: Date?) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "calendar")
+                .font(.system(size: 10, weight: .bold))
+            Text(daySeparatorText(for: date).uppercased())
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .lineLimit(1)
+            Spacer(minLength: 4)
+        }
+        .foregroundStyle(Color.white.opacity(0.85))
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .padding(.top, 4)
+        .padding(.bottom, 2)
+    }
+
+    private func daySeparatorText(for date: Date?) -> String {
+        guard let date else { return "" }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "E, d MMMM"
+        return formatter.string(from: date)
+    }
+
+    private var classSmallContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(entry.groupName)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                Spacer(minLength: 2)
+
+                if let event = visibleEvents.first {
+                    if event.isActive(at: entry.date) {
+                        Text("СЕЙЧАС")
+                            .font(.system(size: 8, weight: .bold))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(classAccentColor(for: event).opacity(0.35), in: Capsule())
+                            .foregroundStyle(classAccentColor(for: event))
+                    } else {
+                        Text(event.startTime)
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.7))
+                    }
+                }
+            }
+            .padding(.bottom, 6)
+
+            if let event = visibleEvents.first {
+                let accent = classAccentColor(for: event)
+                let isActive = event.isActive(at: entry.date)
+
+                HStack(spacing: 8) {
+                    classProgressBar(for: event, accent: accent, isActive: isActive)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(event.title)
+                                .font(.system(size: 17, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+
+                            if let subgroup = event.subgroup, subgroup > 0 {
+                                Text("\(subgroup) подгр.")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .padding(.horizontal, 3)
+                                    .padding(.vertical, 1)
+                                    .background(Color.blue.opacity(0.25), in: Capsule())
+                                    .foregroundStyle(.cyan)
+                            }
+                        }
+
+                        Text("\(event.startTime)–\(event.endTime)")
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.75))
+
+                        Text(classLocationText(for: event))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.65))
+                            .lineLimit(1)
+                    }
+                }
+
+                if let nextEvent = visibleEvents.dropFirst().first {
+                    Spacer(minLength: 2)
+                    HStack(spacing: 4) {
+                        Text("Далее:")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.5))
+                        Text("\(nextEvent.startTime) \(nextEvent.title)")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .lineLimit(1)
+                    }
+                    .padding(.top, 2)
+                }
+            } else {
+                Spacer()
+                Text("Занятий нет")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.6))
+                Spacer()
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var accessoryInlineContent: some View {
@@ -471,16 +596,27 @@ struct SessionScheduleWidgetView: View {
         let midPairBreak = classBreak(for: event)
 
         return VStack(alignment: .leading, spacing: 1) {
-            Text(event.title)
-                .font(.system(
-                    size: family == .systemLarge ? 16 : 15,
-                    weight: .bold,
-                    design: .rounded
-                ))
-                .foregroundStyle(.white)
-                .lineLimit(1)
-                .minimumScaleFactor(0.66)
-                .privacySensitive()
+            HStack(spacing: 4) {
+                Text(event.title)
+                    .font(.system(
+                        size: family == .systemLarge ? 16 : 15,
+                        weight: .bold,
+                        design: .rounded
+                    ))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.66)
+                    .privacySensitive()
+
+                if let subgroup = event.subgroup, subgroup > 0 {
+                    Text("\(subgroup) подгр.")
+                        .font(.system(size: 8, weight: .bold))
+                        .padding(.horizontal, 3)
+                        .padding(.vertical, 1)
+                        .background(Color.blue.opacity(0.25), in: Capsule())
+                        .foregroundStyle(.cyan)
+                }
+            }
 
             HStack(spacing: 7) {
                 Text(classLocationText(for: event))

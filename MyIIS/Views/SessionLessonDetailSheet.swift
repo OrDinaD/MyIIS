@@ -6,12 +6,16 @@ struct ScheduleLessonDetailSheet: View {
 
     let lesson: DisciplineSchedule
     let onTeacherScheduleTap: (DisciplineEmployee) -> Void
+    var onGroupTap: ((String) -> Void)?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header
                 teachersSection
+                if !lesson.studentGroups.isEmpty {
+                    groupsSection
+                }
                 detailsSection
             }
             .padding(.horizontal, 20)
@@ -108,6 +112,45 @@ struct ScheduleLessonDetailSheet: View {
         }
     }
 
+    private var groupsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Группы")
+                .font(.title2.bold())
+                .foregroundStyle(.secondary)
+
+            VStack(spacing: 8) {
+                ForEach(lesson.studentGroups, id: \.name) { group in
+                    if let name = group.name, !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Button {
+                            onGroupTap?(name)
+                        } label: {
+                            HStack {
+                                Image(systemName: "person.2.fill")
+                                    .font(.headline)
+                                    .foregroundStyle(Color.accentColor)
+                                    .frame(width: 28)
+
+                                Text(name)
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+
+                                Image(systemName: "chevron.right")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(14)
+                            .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(onGroupTap == nil)
+                    }
+                }
+            }
+        }
+    }
+
     private var detailsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Детали")
@@ -143,8 +186,8 @@ struct ScheduleLessonDetailSheet: View {
                 Text(value)
                     .font(.title3.weight(.regular))
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
-                    .lineLimit(2)
+                .multilineTextAlignment(.trailing)
+                .lineLimit(2)
             }
             .padding(.vertical, 13)
 
@@ -178,135 +221,107 @@ struct ScheduleLessonDetailSheet: View {
 
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = .autoupdatingCurrent
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.dateStyle = .long
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter
     }()
 }
 
-struct TeacherAvatarView: View {
-    let teacher: DisciplineEmployee?
+// MARK: - Teacher Photo Preview
+
+private struct TeacherPhotoPreview: View {
+    @Environment(\.dismiss) private var dismiss
+    let teacher: DisciplineEmployee
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 24) {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+
+                Spacer()
+
+                if let url = photoURL {
+                    CachedAsyncImage(url: url) { image in
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    } placeholder: {
+                        ProgressView()
+                            .tint(.white)
+                    }
+                    .padding(.horizontal, 24)
+                } else {
+                    TeacherAvatarView(teacher: teacher, size: 160)
+                }
+
+                Text(teacher.fullName)
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
+                Spacer()
+            }
+        }
+    }
+
+    private var photoURL: URL? {
+        guard let link = teacher.photoLink.nilIfBlank else { return nil }
+        return URL(string: link
+            .replacingOccurrences(of: "http://", with: "https://")
+            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
+    }
+}
+
+// MARK: - Teacher Avatar View
+
+private struct TeacherAvatarView: View {
+    let teacher: DisciplineEmployee
     let size: CGFloat
 
     var body: some View {
-        Group {
-            if let url = teacher?.securePhotoURL {
-                CachedAsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    Circle().fill(Color(uiColor: .tertiarySystemFill))
-                }
-            } else {
-                ZStack {
-                    Circle().fill(Color(uiColor: .tertiarySystemFill))
-                    Image(systemName: "person.fill")
-                        .font(.system(size: size * 0.42, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                }
+        if let url = photoURL {
+            CachedAsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                avatarPlaceholder
             }
-        }
-        .frame(width: size, height: size)
-        .clipShape(Circle())
-    }
-}
-
-private struct TeacherPhotoPreview: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.dismiss) private var dismiss
-    @State private var scale: CGFloat = 1.0
-    @State private var lastScale: CGFloat = 1.0
-    @State private var offset: CGSize = .zero
-    @State private var lastOffset: CGSize = .zero
-    let teacher: DisciplineEmployee?
-
-    var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Color.black.ignoresSafeArea()
-
-            if let url = teacher?.securePhotoURL {
-                CachedAsyncImage(url: url) { image in
-                    image.resizable().scaledToFit()
-                } placeholder: {
-                    ProgressView().tint(.white)
-                }
-                .scaleEffect(scale)
-                .offset(offset)
-                .gesture(
-                    MagnificationGesture()
-                        .onChanged { value in
-                            let delta = value / lastScale
-                            lastScale = value
-                            scale = min(max(scale * delta, 1), 4)
-                        }
-                        .onEnded { _ in
-                            lastScale = 1.0
-                            if scale <= 1.0 {
-                                AccessibilitySupport.update(reduceMotion: reduceMotion) {
-                                    scale = 1.0
-                                    offset = .zero
-                                }
-                            }
-                        }
-                        .simultaneously(with: DragGesture()
-                            .onChanged { value in
-                                if scale > 1.0 {
-                                    offset = CGSize(
-                                        width: lastOffset.width + value.translation.width,
-                                        height: lastOffset.height + value.translation.height
-                                    )
-                                }
-                            }
-                            .onEnded { _ in
-                                lastOffset = offset
-                                if scale <= 1.0 {
-                                    lastOffset = .zero
-                                }
-                            }
-                        )
-                )
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipped()
-                .accessibilityLabel("Изображение")
-                .accessibilityValue("Масштаб \(Int(scale * 100)) процентов")
-                .accessibilityAction(named: "Сбросить масштаб") {
-                    AccessibilitySupport.update(reduceMotion: reduceMotion) {
-                        scale = 1.0
-                        lastScale = 1.0
-                        offset = .zero
-                        lastOffset = .zero
-                    }
-                }
-            } else {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 160))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 48, height: 48)
-                    .background(Color.white.opacity(0.18), in: Circle())
-            }
-            .padding(24)
-            .accessibilityLabel("Закрыть")
+            .frame(width: size, height: size)
+            .clipShape(Circle())
+        } else {
+            avatarPlaceholder
+                .frame(width: size, height: size)
         }
     }
-}
 
-private extension DisciplineEmployee {
-    var securePhotoURL: URL? {
-        guard let photoLink else { return nil }
-
-        let normalizedLink = photoLink
+    private var photoURL: URL? {
+        guard let link = teacher.photoLink.nilIfBlank else { return nil }
+        return URL(string: link
             .replacingOccurrences(of: "http://", with: "https://")
-            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/")
-        return URL(string: normalizedLink)
+            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
+    }
+
+    private var avatarPlaceholder: some View {
+        ZStack {
+            Circle().fill(Color(uiColor: .tertiarySystemGroupedBackground))
+            Image(systemName: "person.fill")
+                .font(.system(size: size * 0.45))
+                .foregroundStyle(.secondary)
+        }
     }
 }

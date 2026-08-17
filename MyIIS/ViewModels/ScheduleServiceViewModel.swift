@@ -185,7 +185,7 @@ final class ScheduleServiceViewModel {
     private var isContinuousEndReached = false
     private var isLoadingContinuousChunk = false
     private var searchDebounceTask: Task<Void, Never>?
-    private var localScheduleDocument: LocalScheduleDocument?
+    private(set) var localScheduleDocument: LocalScheduleDocument?
 
     private static let displayModeDefaultsKey = "services.schedule.displayMode"
     private static let dataSourceDefaultsKey = "services.schedule.dataSource"
@@ -776,8 +776,8 @@ final class ScheduleServiceViewModel {
         }
     }
 
-    /// Rebuilds the lazy timeline around a user-selected date and returns the
-    /// closest day containing lessons so ScrollViewReader can reveal it.
+    /// Prepares the lazy timeline around a user-selected date and returns the
+    /// closest day containing lessons so ScrollViewReader can reveal it without clearing past history.
     func prepareContinuousTimeline(around requestedDate: Date) -> String? {
         guard let schedule else { return nil }
 
@@ -786,15 +786,50 @@ final class ScheduleServiceViewModel {
         let lowerBound = schedule.startDate.map { calendar.startOfDay(for: $0) } ?? requestedDay
         let upperBound = continuousEndBound(for: schedule, calendar: calendar, now: requestedDay)
         let targetDay = min(max(requestedDay, lowerBound), upperBound)
-        let start = calendar.date(byAdding: .day, value: -2, to: targetDay) ?? targetDay
 
-        continuousTimelineDays = []
-        continuousCursorDate = max(start, lowerBound)
-        isContinuousEndReached = false
-        appendContinuousChunkIfNeeded()
+        // Make sure continuous days up to targetDay are generated
+        var attempts = 0
+        while (continuousCursorDate == nil || continuousCursorDate! <= targetDay) && !isContinuousEndReached && attempts < 20 {
+            appendContinuousChunkIfNeeded()
+            attempts += 1
+        }
+
+        // If targetDay is before our earliest continuous day, prepend days
+        if let earliest = continuousTimelineDays.first?.date, targetDay < earliest {
+            prependContinuousDays(from: targetDay, to: earliest)
+        }
 
         return continuousTimelineDays.first(where: { $0.date >= targetDay })?.id
             ?? continuousTimelineDays.last?.id
+    }
+
+    private func prependContinuousDays(from targetStart: Date, to currentEarliest: Date) {
+        guard let schedule else { return }
+        let calendar = Calendar.current
+        let startBound = schedule.startDate.map { calendar.startOfDay(for: $0) } ?? targetStart
+        var cursor = max(startBound, calendar.date(byAdding: .day, value: -3, to: targetStart) ?? targetStart)
+
+        var generated: [ScheduleContinuousDay] = []
+        while cursor < currentEarliest {
+            if let weekday = studyWeekday(for: cursor),
+               let weekNumber = universityWeekNumber(on: cursor) {
+                let lessons = lessonsForContinuousDay(weekday: weekday, weekNumber: weekNumber, date: cursor)
+                if !lessons.isEmpty {
+                    generated.append(
+                        ScheduleContinuousDay(
+                            date: cursor,
+                            weekday: weekday,
+                            weekNumber: weekNumber,
+                            lessons: lessons
+                        )
+                    )
+                }
+            }
+            cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? cursor
+        }
+        if !generated.isEmpty {
+            continuousTimelineDays.insert(contentsOf: generated, at: 0)
+        }
     }
 
     private func rebuildContinuousTimeline(reset: Bool) {
@@ -1012,7 +1047,8 @@ final class ScheduleServiceViewModel {
             subtitle: subtitle,
             location: lesson.location.nilIfBlank,
             lessonType: lesson.lessonTypeAbbrev.nilIfBlank,
-            kind: widgetEventKind(for: lesson)
+            kind: widgetEventKind(for: lesson),
+            subgroup: lesson.subgroup > 0 ? lesson.subgroup : nil
         )
     }
 
@@ -1627,13 +1663,51 @@ extension ScheduleServiceViewModel {
         let dayItems = schedule.orderedDays
         switch weekFilter {
         case .all:
-            return dayItems.compactMap { day in
-                let filtered = day.lessons.filter(shouldKeepLesson)
-                guard !filtered.isEmpty else { return nil }
-                return StudyDaySchedule(weekday: day.weekday, lessons: filtered)
+            return dayItems.compactMap { (day: StudyDaySchedule) -> StudyDaySchedule? in
+                let rawLessons = day.lessons.filter(shouldKeepLesson)
+                guard !rawLessons.isEmpty else { return nil }
+
+                // Aggregate duplicate pairs across the 4 academic weeks
+                var aggregated: [DisciplineSchedule] = []
+                var seenIndexByKey: [String: Int] = [:]
+
+                for lesson in rawLessons {
+                    let key = [
+                        lesson.subject.nilIfBlank ?? lesson.title,
+                        lesson.startLessonTime,
+                        lesson.endLessonTime,
+                        lesson.location,
+                        lesson.lessonTypeAbbrev ?? "",
+                        String(lesson.subgroup),
+                        lesson.employees.map(\.fullName).joined(separator: ",")
+                    ].joined(separator: "|")
+
+                    if let existingIndex = seenIndexByKey[key] {
+                        var existing = aggregated[existingIndex]
+                        let mergedWeeks = Array(Set(existing.weekNumbers + lesson.weekNumbers)).sorted()
+                        existing.weekNumbers = mergedWeeks
+                        aggregated[existingIndex] = existing
+                    } else {
+                        seenIndexByKey[key] = aggregated.count
+                        var newLesson = lesson
+                        if newLesson.weekNumbers.isEmpty {
+                            newLesson.weekNumbers = [1, 2, 3, 4]
+                        }
+                        aggregated.append(newLesson)
+                    }
+                }
+
+                let sorted = aggregated.sorted { lhs, rhs in
+                    if lhs.startLessonTime != rhs.startLessonTime {
+                        return lhs.startLessonTime < rhs.startLessonTime
+                    }
+                    return lhs.subgroup < rhs.subgroup
+                }
+
+                return StudyDaySchedule(weekday: day.weekday, lessons: sorted)
             }
         case .week(let number):
-            return dayItems.compactMap { day in
+            return dayItems.compactMap { (day: StudyDaySchedule) -> StudyDaySchedule? in
                 let filtered = day.lessons.filter {
                     ($0.weekNumbers.isEmpty || $0.weekNumbers.contains(number)) && shouldKeepLesson($0)
                 }
@@ -1641,6 +1715,24 @@ extension ScheduleServiceViewModel {
                 return StudyDaySchedule(weekday: day.weekday, lessons: filtered)
             }
         }
+    }
+
+    static func weeksBadgeText(for lesson: DisciplineSchedule) -> String? {
+        let weeks = lesson.weekNumbers.sorted()
+        guard !weeks.isEmpty else { return nil }
+        if weeks == [1, 2, 3, 4] {
+            return "1–4 нед."
+        }
+        if weeks == [1, 3] {
+            return "1, 3 нед."
+        }
+        if weeks == [2, 4] {
+            return "2, 4 нед."
+        }
+        if weeks.count == 1 {
+            return "\(weeks[0]) нед."
+        }
+        return weeks.map(String.init).joined(separator: ", ") + " нед."
     }
 
     var filteredExams: [DisciplineSchedule] {

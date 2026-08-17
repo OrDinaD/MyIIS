@@ -182,7 +182,7 @@ struct DisciplineSchedule: Decodable, Identifiable, Equatable {
     let studentGroups: [DisciplineStudentGroup]
     let subject: String
     let subjectFullName: String?
-    let weekNumbers: [Int]
+    var weekNumbers: [Int]
     let employees: [DisciplineEmployee]
     let lessonDate: Date?
     let startLessonDate: Date?
