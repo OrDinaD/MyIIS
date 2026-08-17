@@ -370,6 +370,9 @@ final class ScheduleServiceViewModel {
         )
         preferExamDisplayIfNeeded(for: scheduleResponse)
         applyDefaultWeekFilter()
+        if let savedValue = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
+            subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
+        }
         sanitizeSubgroupFilter()
         rebuildContinuousTimeline(reset: true)
         setMode(.group, preservingQuery: groupNumber)
@@ -1246,6 +1249,7 @@ final class ScheduleServiceViewModel {
     }
 
     private func persistSubgroupFilter() {
+        guard mode == .group else { return }
         switch subgroupFilter {
         case .all:
             defaults.set(0, forKey: Self.subgroupFilterDefaultsKey)
@@ -1486,14 +1490,16 @@ extension ScheduleServiceViewModel {
         }
 
         let normalizedNeedle = Self.normalizeSearchString(needle)
+        let compactNeedle = normalizedNeedle.replacingOccurrences(of: " ", with: "")
         let scored = groups.compactMap { group -> (group: StudyGroup, rank: Int)? in
             let normalizedName = Self.normalizeSearchString(group.name)
+            let compactName = normalizedName.replacingOccurrences(of: " ", with: "")
             let normalizedSpec = Self.normalizeSearchString(group.specialityName ?? "")
 
-            let isExact = normalizedName == normalizedNeedle
-            let isPrefix = normalizedName.hasPrefix(normalizedNeedle)
-            let isSubstring = normalizedName.contains(normalizedNeedle) || normalizedSpec.contains(normalizedNeedle)
-            let isFuzzy = Self.isFuzzyMatch(needle: normalizedNeedle, text: normalizedName)
+            let isExact = compactName == compactNeedle || normalizedName == normalizedNeedle
+            let isPrefix = compactName.hasPrefix(compactNeedle) || normalizedName.hasPrefix(normalizedNeedle)
+            let isSubstring = compactName.contains(compactNeedle) || normalizedName.contains(normalizedNeedle) || normalizedSpec.contains(normalizedNeedle)
+            let isFuzzy = Self.isFuzzyMatch(needle: compactNeedle, text: compactName) || Self.isFuzzyMatch(needle: normalizedNeedle, text: normalizedName)
 
             guard isExact || isPrefix || isSubstring || isFuzzy else {
                 return nil

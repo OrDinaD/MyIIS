@@ -10,13 +10,16 @@ struct ScheduleSettingsView: View {
     private var showsMidPairBreaks = false
 
     @AppStorage(ScheduleDisplayPreferences.hidePastLessonsKey, store: ScheduleDisplayPreferences.defaults)
-    private var hidePastLessons = false
+    private var hidePastLessons = true
 
     @AppStorage(ScheduleDisplayPreferences.cardDensityKey, store: ScheduleDisplayPreferences.defaults)
-    private var cardDensityRaw = ScheduleCardDensity.compact.rawValue
+    private var cardDensityRaw = ScheduleCardDensity.regular.rawValue
 
     @AppStorage(ScheduleDisplayPreferences.otherSubgroupDisplayKey, store: ScheduleDisplayPreferences.defaults)
     private var otherSubgroupRaw = ScheduleOtherSubgroupDisplay.compact.rawValue
+
+    @AppStorage("schedule.widget.customGroup", store: ScheduleDisplayPreferences.defaults)
+    private var widgetCustomGroup = ""
 
     @State private var isResetConfirmationPresented = false
 
@@ -33,6 +36,7 @@ struct ScheduleSettingsView: View {
             Form {
                 displaySection
                 subgroupSection
+                widgetSection
                 colorsSection
                 resetSection
             }
@@ -116,7 +120,30 @@ struct ScheduleSettingsView: View {
                     Text(option.localizedTitle).tag(option.rawValue)
                 }
             }
-            .pickerStyle(.menu)
+        }
+    }
+
+    private var widgetSection: some View {
+        Section {
+            TextField(
+                NSLocalizedString("schedule_settings_widget_group_placeholder", value: "Например: 420602 (оставьте пустым для авто)", comment: ""),
+                text: $widgetCustomGroup
+            )
+            .autocorrectionDisabled()
+            .textInputAutocapitalization(.never)
+            .onChange(of: widgetCustomGroup) {
+                ScheduleDisplayPreferences.reloadClassScheduleWidget()
+            }
+        } header: {
+            Text(NSLocalizedString("schedule_settings_widget_group_header", value: "Группа для виджетов", comment: ""))
+        } footer: {
+            Text(
+                NSLocalizedString(
+                    "schedule_settings_widget_group_footer",
+                    value: "По умолчанию в виджетах отображается ваша группа или последнее открытое расписание.",
+                    comment: ""
+                )
+            )
         }
     }
 
@@ -185,9 +212,10 @@ struct ScheduleSettingsView: View {
 
     private func resetAllSettings() {
         showsMidPairBreaks = false
-        hidePastLessons = false
-        cardDensityRaw = ScheduleCardDensity.compact.rawValue
+        hidePastLessons = true
+        cardDensityRaw = ScheduleCardDensity.regular.rawValue
         otherSubgroupRaw = ScheduleOtherSubgroupDisplay.compact.rawValue
+        widgetCustomGroup = ""
         resetAllColors()
     }
 }

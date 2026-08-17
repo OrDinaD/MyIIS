@@ -5,6 +5,7 @@ struct ScheduleSuggestionsView: View {
     let pinnedGroupNames: [String]
     let recentGroupNames: [String]
     let accountGroupName: String?
+    var isSearching: Bool = false
     let showsAllGroups: Bool
     let onSelect: (StudyGroup) -> Void
     let onTogglePin: (StudyGroup) -> Void
@@ -13,6 +14,12 @@ struct ScheduleSuggestionsView: View {
     var body: some View {
         if groups.isEmpty {
             ServiceEmptyState(text: NSLocalizedString("services_schedule_groups_empty", comment: ""))
+        } else if isSearching {
+            VStack(alignment: .leading, spacing: 6) {
+                ForEach(groups, id: \.name) { group in
+                    groupRowButton(group, isPinned: pinnedGroupNames.contains(group.name))
+                }
+            }
         } else {
             VStack(spacing: 12) {
                 if !pinnedGroups.isEmpty {

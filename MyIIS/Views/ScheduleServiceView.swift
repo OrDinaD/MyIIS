@@ -18,11 +18,9 @@ struct ScheduleServiceView: View {
     @AppStorage(ScheduleDisplayPreferences.hidePastLessonsKey, store: ScheduleDisplayPreferences.defaults)
     private var hidePastLessons = true
     @AppStorage(ScheduleDisplayPreferences.cardDensityKey, store: ScheduleDisplayPreferences.defaults)
-    private var cardDensityRaw = ScheduleCardDensity.compact.rawValue
+    private var cardDensityRaw = ScheduleCardDensity.regular.rawValue
     @AppStorage(ScheduleDisplayPreferences.otherSubgroupDisplayKey, store: ScheduleDisplayPreferences.defaults)
     private var otherSubgroupRaw = ScheduleOtherSubgroupDisplay.compact.rawValue
-    @AppStorage("schedule.display.compactDefaultMigrationV1", store: ScheduleDisplayPreferences.defaults)
-    private var didMigrateCompactDefault = false
 
     @State private var scheduleReportURL: URL?
     @State private var selectedExamLesson: DisciplineSchedule?
@@ -46,7 +44,7 @@ struct ScheduleServiceView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 14) {
+                LazyVStack(alignment: .leading, spacing: 32) {
                     if viewModel.isShowingStaleDataWarning {
                         StaleDataBanner(
                             lastUpdateTime: nil,
@@ -77,6 +75,18 @@ struct ScheduleServiceView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 30, coordinateSpace: .local)
+                    .onEnded { value in
+                        if value.startLocation.x < 50 && value.translation.width > 75 && abs(value.translation.height) < 65 {
+                            if viewModel.mode == .teacher || (viewModel.mode == .group && !isCurrentScheduleUserAccountGroup) {
+                                Task {
+                                    await viewModel.resetToDefaultOrPinnedSchedule()
+                                }
+                            }
+                        }
+                    }
+            )
             .background(Color(uiColor: .systemGroupedBackground))
             .navigationTitle(viewModel.scheduleHeaderTitle)
             .navigationBarTitleDisplayMode(.inline)
@@ -126,10 +136,6 @@ struct ScheduleServiceView: View {
                 }
             }
             .task {
-                if !didMigrateCompactDefault {
-                    cardDensityRaw = ScheduleCardDensity.compact.rawValue
-                    didMigrateCompactDefault = true
-                }
                 await loadSelectedScheduleSource()
                 if !hasAutoScrolled {
                     try? await Task.sleep(for: .milliseconds(300))
@@ -325,7 +331,7 @@ struct ScheduleServiceView: View {
     }
 
     private var byDayContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 32) {
             if viewModel.shouldShowWeekFilter {
                 Menu {
                     ForEach(viewModel.weekFilters) { filter in
@@ -482,10 +488,17 @@ struct ScheduleServiceView: View {
 
     // MARK: - Toolbar
 
+    private var isCurrentScheduleUserAccountGroup: Bool {
+        guard viewModel.mode == .group,
+              let accountGroup = viewModel.accountGroupName?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !accountGroup.isEmpty else { return false }
+        return viewModel.schedule?.group?.name.trimmingCharacters(in: .whitespacesAndNewlines) == accountGroup
+    }
+
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
-            if viewModel.schedule != nil {
+            if viewModel.schedule != nil, !isCurrentScheduleUserAccountGroup {
                 pinButton
             }
         }
@@ -656,6 +669,7 @@ struct ScheduleServiceView: View {
                     pinnedGroupNames: viewModel.pinnedGroupNames,
                     recentGroupNames: viewModel.recentGroupNames,
                     accountGroupName: viewModel.accountGroupName,
+                    isSearching: !viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                     showsAllGroups: showsAllGroups,
                     onSelect: { group in
                         isSearchSheetPresented = false
@@ -934,11 +948,18 @@ private struct ScheduleLessonCard: View {
         cardDensity == .compact || isOtherSubgroup ? 14 : 16
     }
 
-    private var timeFont: Font {
+    private var startLessonFont: Font {
         if cardDensity == .compact {
-            return .system(size: 14, weight: .medium, design: .monospaced)
+            return .system(size: 15, weight: .bold, design: .monospaced)
         }
-        return .system(size: 15, weight: .semibold, design: .monospaced)
+        return .system(size: 16, weight: .bold, design: .monospaced)
+    }
+
+    private var endLessonFont: Font {
+        if cardDensity == .compact {
+            return .system(size: 11, weight: .medium, design: .monospaced)
+        }
+        return .system(size: 12, weight: .medium, design: .monospaced)
     }
 
     @ViewBuilder
@@ -954,11 +975,11 @@ private struct ScheduleLessonCard: View {
         HStack(spacing: 8) {
             VStack(alignment: .trailing, spacing: 1) {
                 Text(lesson.startLessonTime)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.secondary)
                 Text(lesson.endLessonTime)
                     .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundStyle(.secondary.opacity(0.75))
+                    .foregroundStyle(.secondary.opacity(0.6))
             }
             .frame(width: 48, alignment: .trailing)
 
@@ -992,7 +1013,7 @@ private struct ScheduleLessonCard: View {
 
     private var regularCardContent: some View {
         HStack(spacing: cardDensity == .compact ? 10 : 12) {
-            timeColumn(font: timeFont)
+            timeColumn
                 .frame(width: cardDensity == .compact ? 58 : 62, alignment: .trailing)
 
             accentBar(width: 7)
@@ -1090,21 +1111,21 @@ private struct ScheduleLessonCard: View {
             .foregroundStyle(cardSecondaryForeground)
     }
 
-    private func timeColumn(font: Font) -> some View {
-        VStack(alignment: .trailing, spacing: 2) {
+    private var timeColumn: some View {
+        VStack(alignment: .trailing, spacing: 1) {
             Text(lesson.startLessonTime)
-                .font(font)
+                .font(startLessonFont)
                 .foregroundStyle(cardPrimaryForeground)
 
             if let breakTime = calculateBreakTime() {
                 Text(breakTime)
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundStyle(cardSecondaryForeground.opacity(0.8))
+                    .font(.system(size: 9, weight: .regular, design: .monospaced))
+                    .foregroundStyle(cardSecondaryForeground.opacity(0.75))
             }
 
             Text(lesson.endLessonTime)
-                .font(font.weight(.regular))
-                .foregroundStyle(cardSecondaryForeground)
+                .font(endLessonFont)
+                .foregroundStyle(cardSecondaryForeground.opacity(0.65))
         }
     }
 

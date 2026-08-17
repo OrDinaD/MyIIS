@@ -149,7 +149,7 @@ enum ScheduleDisplayPreferences {
         if let raw = defaults.string(forKey: cardDensityKey), let density = ScheduleCardDensity(rawValue: raw) {
             return density
         }
-        return .compact
+        return .regular
     }
 
     static var otherSubgroupDisplay: ScheduleOtherSubgroupDisplay {
