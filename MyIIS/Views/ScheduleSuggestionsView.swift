@@ -83,13 +83,67 @@ struct ScheduleSuggestionsView: View {
             .padding(.horizontal, 4)
     }
 
+    // Selection, pinning, context-menu, and accessibility belong to one atomic row.
+    // swiftlint:disable:next function_body_length
     private func groupRowButton(_ group: StudyGroup, isPinned: Bool) -> some View {
-        Button {
-            onSelect(group)
-        } label: {
-            groupRow(group, isPinned: isPinned)
+        HStack(spacing: 2) {
+            Button {
+                onSelect(group)
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: group.name == accountGroupName ? "person.crop.circle.badge.checkmark" : "person.2.fill")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(group.name == accountGroupName ? .green : .blue)
+                        .frame(width: 28, height: 28)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(group.name)
+                                .font(.headline.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .monospacedDigit()
+
+                            if group.name == accountGroupName {
+                                Text(NSLocalizedString("services_schedule_my_group", comment: ""))
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundStyle(.green)
+                            }
+                        }
+
+                        Text(group.detailsText)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer(minLength: 0)
+
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                onTogglePin(group)
+            } label: {
+                Image(systemName: isPinned ? "pin.fill" : "pin")
+                    .font(.subheadline)
+                    .foregroundStyle(isPinned ? Color.orange : Color(uiColor: .tertiaryLabel))
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(
+                isPinned
+                    ? NSLocalizedString("schedule_unpin", value: "Открепить", comment: "")
+                    : NSLocalizedString("schedule_pin", value: "Закрепить", comment: "")
+            )
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .contextMenu {
             Button {
                 onTogglePin(group)
@@ -102,59 +156,6 @@ struct ScheduleSuggestionsView: View {
                 )
             }
         }
-    }
-
-    private func groupRow(_ group: StudyGroup, isPinned: Bool) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: group.name == accountGroupName ? "person.crop.circle.badge.checkmark" : (isPinned ? "pin.fill" : "person.2.fill"))
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(group.name == accountGroupName ? .green : (isPinned ? .orange : .blue))
-                .frame(width: 28, height: 28)
-
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(group.name)
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .monospacedDigit()
-
-                    if group.name == accountGroupName {
-                        Text(NSLocalizedString("services_schedule_my_group", comment: ""))
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.green)
-                    }
-
-                    if isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.orange)
-                    }
-                }
-
-                Text(group.detailsText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-
-            Spacer(minLength: 0)
-
-            Button {
-                onTogglePin(group)
-            } label: {
-                Image(systemName: isPinned ? "pin.fill" : "pin")
-                    .font(.subheadline)
-                    .foregroundStyle(isPinned ? Color.orange : Color(uiColor: .tertiaryLabel))
-                    .padding(6)
-            }
-            .buttonStyle(.plain)
-
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.tertiary)
-        }
-        .padding(10)
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -175,44 +176,53 @@ struct ScheduleTeacherSuggestionsView: View {
             VStack(spacing: 8) {
                 ForEach(employees.prefix(15)) { employee in
                     let isPinned = pinnedTeachers.contains(where: { $0.urlId == employee.urlId })
-                    Button {
-                        onSelect(employee)
-                    } label: {
-                        HStack(spacing: 12) {
-                            teacherPhoto(for: employee)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(employee.displayName)
-                                    .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.primary)
-                                    .lineLimit(2)
+                    HStack(spacing: 2) {
+                        Button {
+                            onSelect(employee)
+                        } label: {
+                            HStack(spacing: 12) {
+                                teacherPhoto(for: employee)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(employee.displayName)
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.primary)
+                                        .lineLimit(2)
 
-                                if let degree = employee.degree?.nilIfBlank {
-                                    Text(degree)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
+                                    if let degree = employee.degree?.nilIfBlank {
+                                        Text(degree)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
                                 }
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
 
-                            Button {
-                                onTogglePin(employee)
-                            } label: {
-                                Image(systemName: isPinned ? "pin.fill" : "pin")
-                                    .font(.subheadline)
-                                    .foregroundStyle(isPinned ? Color.orange : Color(uiColor: .tertiaryLabel))
-                                    .padding(6)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.bold))
+                                    .foregroundStyle(.tertiary)
                             }
-                            .buttonStyle(.plain)
-
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(.tertiary)
+                            .contentShape(Rectangle())
                         }
-                        .padding(10)
-                        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .buttonStyle(.plain)
+
+                        Button {
+                            onTogglePin(employee)
+                        } label: {
+                            Image(systemName: isPinned ? "pin.fill" : "pin")
+                                .font(.subheadline)
+                                .foregroundStyle(isPinned ? Color.orange : Color(uiColor: .tertiaryLabel))
+                                .frame(width: 44, height: 44)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(
+                            isPinned
+                                ? NSLocalizedString("schedule_unpin", value: "Открепить", comment: "")
+                                : NSLocalizedString("schedule_pin", value: "Закрепить", comment: "")
+                        )
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                     .contextMenu {
                         Button {
                             onTogglePin(employee)

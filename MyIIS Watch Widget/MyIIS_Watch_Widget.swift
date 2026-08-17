@@ -19,6 +19,8 @@ private struct WatchWidgetSnapshot: Codable, Sendable {
         let lessonType: String?
         let kind: Kind
 
+        // The nested enum is part of the existing wire DTO.
+        // swiftlint:disable:next nesting
         enum Kind: String, Codable, Sendable {
             case announcement
             case exam
@@ -182,7 +184,6 @@ private struct ScheduleWidgetProvider: TimelineProvider {
 
 private struct ScheduleWidgetView: View {
     @Environment(\.widgetFamily) private var family
-    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
     let entry: ScheduleWidgetEntry
 
     var body: some View {
@@ -257,15 +258,26 @@ private struct ScheduleWidgetView: View {
     private var circularContent: some View {
         Group {
             if let event = entry.currentEvent {
-                Gauge(value: event.isCurrent(at: entry.date) ? event.progress(at: entry.date) : 0) {
-                    Image(systemName: "calendar")
-                } currentValueLabel: {
-                    Text(event.isCurrent(at: entry.date) ? event.endTime : event.startTime)
-                        .font(.caption2.monospacedDigit())
-                        .minimumScaleFactor(0.5)
+                if event.isCurrent(at: entry.date), let interval = event.interval() {
+                    ProgressView(timerInterval: interval.start ... interval.end, countsDown: false)
+                        .labelsHidden()
+                        .tint(.green)
+                        .widgetAccentable()
+                        .accessibilityLabel(event.title)
+                        .accessibilityValue(Text(timerInterval: interval.start ... interval.end, countsDown: true))
+                } else {
+                    Gauge(value: 0) {
+                        Image(systemName: "calendar")
+                    } currentValueLabel: {
+                        Text(event.startTime)
+                            .font(.caption2.monospacedDigit())
+                            .minimumScaleFactor(0.5)
+                    }
+                    .gaugeStyle(.accessoryCircular)
+                    .widgetAccentable()
+                    .accessibilityLabel(event.title)
+                    .accessibilityValue(event.startTime)
                 }
-                .gaugeStyle(.accessoryCircular)
-                .widgetAccentable()
             } else {
                 Image(systemName: "checkmark")
             }
@@ -314,13 +326,10 @@ private struct ScheduleWidgetView: View {
             Text(event.startTime)
         }
     }
-
-    private func targetDate(for event: WatchWidgetSnapshot.Event) -> Date? {
-        guard let interval = event.interval() else { return nil }
-        return event.isCurrent(at: entry.date) ? interval.end : interval.start
-    }
 }
 
+// Target-generated widget type keeps the product name used by Xcode.
+// swiftlint:disable:next type_name
 struct MyIIS_Watch_Widget: Widget {
     let kind = "com.OrDinaD.MyIIS.watch.schedule"
 

@@ -713,7 +713,32 @@
 
     },
     "Нет пар" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пар няма"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No classes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет пар"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пар немає"
+          }
+        }
+      }
     },
     "Обновить" : {
 
@@ -782,7 +807,32 @@
 
     },
     "Откройте расписание в приложении, чтобы загрузить данные." : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адкрыйце расклад у праграме, каб загрузіць даныя."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Schedule in the app to load data."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Откройте расписание в приложении, чтобы загрузить данные."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Відкрийте розклад у застосунку, щоб завантажити дані."
+          }
+        }
+      }
     },
     "Открыть раздел" : {
 
@@ -853,8 +903,33 @@
         }
       }
     },
-    "Показывает ближайшие пары вашей группы плитками: время, предмет и аудиторию." : {
-
+    "Показывает ближайшие пары: время, предмет и аудиторию." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паказвае найбліжэйшыя пары: час, прадмет і аўдыторыю."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows upcoming classes with time, subject, and room."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показывает ближайшие пары: время, предмет и аудиторию."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показує найближчі пари: час, предмет і аудиторію."
+          }
+        }
+      }
     },
     "Показывает ближайшие экзамены, консультации и объявления вашей группы." : {
       "localizations" : {

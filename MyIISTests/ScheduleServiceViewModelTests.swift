@@ -2,6 +2,8 @@
 import XCTest
 
 @MainActor
+// The helpers below intentionally form one fixture family for schedule behavior.
+// swiftlint:disable:next type_body_length
 final class ScheduleServiceViewModelTests: XCTestCase {
     func testAPISourceDoesNotRestoreLocalSnapshot() {
         let localDefaults = makeDefaults("local-snapshot")
@@ -25,7 +27,11 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         let apiViewModel = ScheduleServiceViewModel(defaults: apiDefaults)
 
         XCTAssertEqual(apiViewModel.dataSource, .api)
-        XCTAssertNil(apiViewModel.schedule)
+        XCTAssertNil(apiViewModel.localScheduleDocument)
+        XCTAssertNotEqual(
+            apiViewModel.schedule?.orderedDays.flatMap(\.lessons).map(\.id),
+            ["local"]
+        )
     }
 
     func testPublicationPendingStateUsesStableHeaderAndHidesFilters() {
@@ -68,6 +74,49 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         XCTAssertEqual(
             viewModel.filteredDays.flatMap(\.lessons).map(\.id),
             ["shared", "first"]
+        )
+
+        viewModel.weekFilter = .all
+        XCTAssertEqual(
+            viewModel.filteredDays.flatMap(\.lessons).map(\.id),
+            ["shared", "first", "second"]
+        )
+        XCTAssertTrue(viewModel.isOtherSubgroupLesson(second))
+
+        defaults.set(
+            ScheduleOtherSubgroupDisplay.hidden.rawValue,
+            forKey: ScheduleDisplayPreferences.otherSubgroupDisplayKey
+        )
+        viewModel.refreshSubgroupPresentation()
+
+        XCTAssertEqual(
+            viewModel.filteredDays.flatMap(\.lessons).map(\.id),
+            ["shared", "first"]
+        )
+    }
+
+    func testDateJumpBuildsTimelineAroundSelectedDate() throws {
+        let defaults = makeDefaults("date-jump")
+        defer { removeDefaults("date-jump") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        viewModel.schedule = makePublicSchedule(lessons: [makeLesson(id: "lesson")])
+
+        let calendar = Calendar.current
+        let requestedDate = try XCTUnwrap(
+            calendar.nextDate(
+                after: calendar.date(byAdding: .day, value: 40, to: Date()) ?? Date(),
+                matching: DateComponents(weekday: 2),
+                matchingPolicy: .nextTime
+            )
+        )
+
+        let dayID = viewModel.prepareContinuousTimeline(around: requestedDate)
+
+        XCTAssertNotNil(dayID)
+        XCTAssertTrue(
+            viewModel.continuousTimelineDays.contains {
+                calendar.isDate($0.date, inSameDayAs: requestedDate)
+            }
         )
     }
 

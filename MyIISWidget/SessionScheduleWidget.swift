@@ -30,7 +30,7 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
         from referenceDate: Date,
         calendar: Calendar = .current
     ) -> [SessionScheduleWidgetSnapshot.Event] {
-        guard let snapshot else { return Self.placeholderSnapshot.events }
+        guard let snapshot else { return [] }
         return snapshot.events.filter { event in
             event.isUpcoming(at: referenceDate, calendar: calendar)
         }
@@ -187,7 +187,7 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
 
 struct ClassScheduleWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> SessionScheduleWidgetEntry {
-        SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
+        SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.classPreviewSnapshot)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SessionScheduleWidgetEntry) -> Void) {
@@ -195,7 +195,7 @@ struct ClassScheduleWidgetProvider: TimelineProvider {
             completion(placeholder(in: context))
             return
         }
-        completion(SessionScheduleWidgetEntry(date: .now, snapshot: ClassScheduleWidgetDataStore.loadSnapshot()))
+        completion(SessionScheduleWidgetEntry(date: .now, snapshot: ClassScheduleWidgetDataStore.loadSnapshot() ?? SessionScheduleWidgetEntry.classPreviewSnapshot))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
@@ -233,7 +233,7 @@ struct SessionScheduleWidgetView: View {
         case .systemSmall:
             return 1
         case .systemMedium:
-            return 2
+            return style == .classes ? 3 : 2
         case .systemLarge:
             return style == .classes ? 5 : 4
         default:
@@ -243,12 +243,23 @@ struct SessionScheduleWidgetView: View {
 
     var body: some View {
         Group {
-            if family == .accessoryInline {
+            if entry.snapshot == nil {
+                if family == .accessoryInline {
+                    Label(String(localized: "Расписание не загружено"), systemImage: "calendar.badge.exclamationmark")
+                        .lineLimit(1)
+                } else if family == .accessoryRectangular {
+                    Label(String(localized: "Расписание не загружено"), systemImage: "calendar.badge.exclamationmark")
+                        .font(.headline.weight(.semibold))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.8)
+                        .padding(.horizontal, 4)
+                } else {
+                    emptyContent
+                }
+            } else if family == .accessoryInline {
                 accessoryInlineContent
             } else if family == .accessoryRectangular {
                 accessoryContent
-            } else if entry.snapshot == nil {
-                emptyContent
             } else if visibleEvents.isEmpty {
                 noUpcomingContent
             } else if style == .classes {
@@ -292,15 +303,15 @@ struct SessionScheduleWidgetView: View {
             header
                 .layoutPriority(10)
 
-            VStack(spacing: family == .systemLarge ? 6 : 5) {
+            VStack(spacing: 0) {
                 ForEach(visibleEvents) { event in
                     classEventTile(for: event)
                 }
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, family == .systemLarge ? 10 : 8)
-            .padding(.top, family == .systemLarge ? 8 : 6)
-            .padding(.bottom, family == .systemLarge ? 9 : 7)
+            .padding(.horizontal, family == .systemLarge ? 14 : 12)
+            .padding(.top, family == .systemLarge ? 5 : 3)
+            .padding(.bottom, family == .systemLarge ? 7 : 4)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
     }
@@ -391,13 +402,12 @@ struct SessionScheduleWidgetView: View {
             classProgressBar(for: event, accent: accent, isActive: isActive)
             classDetails(for: event, accent: accent)
         }
-        .padding(.horizontal, family == .systemLarge ? 10 : 9)
-        .padding(.vertical, family == .systemLarge ? 5 : 4)
-        .frame(maxWidth: .infinity, minHeight: family == .systemLarge ? 52 : 48, alignment: .leading)
-        .background(classTileBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(isActive ? accent.opacity(0.78) : .white.opacity(0.035), lineWidth: isActive ? 1.5 : 1)
+        .padding(.horizontal, 2)
+        .padding(.vertical, family == .systemLarge ? 4 : 2)
+        .frame(maxWidth: .infinity, minHeight: family == .systemLarge ? 44 : 36, alignment: .leading)
+        .overlay(alignment: .bottom) {
+            Divider()
+                .overlay(Color.white.opacity(0.08))
         }
     }
 
@@ -425,18 +435,21 @@ struct SessionScheduleWidgetView: View {
         isActive: Bool
     ) -> some View {
         GeometryReader { proxy in
-            let progress = isActive ? (event.progress(at: entry.date) ?? 0) : 0
-            let hasVisibleBreak = classBreak(for: event) != nil
-
-            ZStack(alignment: .top) {
-                Capsule()
-                    .fill(accent.opacity(0.2))
-                Capsule()
-                    .fill(accent)
-                    .frame(height: isActive ? max(6, proxy.size.height * progress) : proxy.size.height)
+            Group {
+                if isActive, let interval = event.interval() {
+                    ProgressView(timerInterval: interval.start ... interval.end, countsDown: false)
+                        .labelsHidden()
+                        .tint(accent)
+                        .rotationEffect(.degrees(90))
+                        .frame(width: proxy.size.height, height: 5)
+                        .position(x: 2.5, y: proxy.size.height / 2)
+                } else {
+                    Capsule()
+                        .fill(accent)
+                }
             }
             .mask {
-                if hasVisibleBreak {
+                if classBreak(for: event) != nil {
                     VStack(spacing: 3) {
                         Capsule()
                         Capsule()
@@ -448,6 +461,7 @@ struct SessionScheduleWidgetView: View {
         }
         .frame(width: 5)
         .widgetAccentable()
+        .accessibilityHidden(true)
     }
 
     private func classDetails(
@@ -457,23 +471,16 @@ struct SessionScheduleWidgetView: View {
         let midPairBreak = classBreak(for: event)
 
         return VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 5) {
-                Image(systemName: classTypeIcon(for: event))
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(accent)
-                    .widgetAccentable()
-
-                Text(event.title)
-                    .font(.system(
-                        size: family == .systemLarge ? 16 : 15,
-                        weight: .bold,
-                        design: .rounded
-                    ))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.66)
-                    .privacySensitive()
-            }
+            Text(event.title)
+                .font(.system(
+                    size: family == .systemLarge ? 16 : 15,
+                    weight: .bold,
+                    design: .rounded
+                ))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.66)
+                .privacySensitive()
 
             HStack(spacing: 7) {
                 Text(classLocationText(for: event))
@@ -481,8 +488,8 @@ struct SessionScheduleWidgetView: View {
                     .minimumScaleFactor(0.72)
                     .privacySensitive()
 
-                if let midPairBreak {
-                    Label(midPairBreak.compactText, systemImage: "cup.and.saucer.fill")
+                if let midPairBreak, family == .systemLarge {
+                    Text(midPairBreak.compactText)
                         .font(.system(size: 9, weight: .bold, design: .rounded))
                         .foregroundStyle(accent.opacity(0.9))
                         .lineLimit(1)
@@ -493,17 +500,6 @@ struct SessionScheduleWidgetView: View {
             .foregroundStyle(.white.opacity(0.7))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var classTileBackground: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.11, green: 0.12, blue: 0.16),
-                Color(red: 0.13, green: 0.14, blue: 0.18)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
 
     private func classLocationText(for event: SessionScheduleWidgetSnapshot.Event) -> String {
@@ -520,34 +516,8 @@ struct SessionScheduleWidgetView: View {
         )
     }
 
-    private func classTypeIcon(for event: SessionScheduleWidgetSnapshot.Event) -> String {
-        let type = (event.lessonType ?? event.subtitle ?? "").lowercased()
-        if event.kind == .exam || type.contains("экзам") { return "graduationcap.fill" }
-        if event.kind == .consultation || type.contains("конс") { return "bubble.left.and.text.bubble.right.fill" }
-        if type.contains("лр") || type.contains("лаб") || type.contains("lab") { return "flask.fill" }
-        if type.contains("пз") || type.contains("практ") || type.contains("practice") {
-            return "pencil.and.list.clipboard"
-        }
-        if type.contains("лк") || type.contains("лек") || type.contains("lecture") { return "book.closed.fill" }
-        if event.kind == .announcement { return "megaphone.fill" }
-        return "calendar"
-    }
-
     private func classAccentColor(for event: SessionScheduleWidgetSnapshot.Event) -> Color {
-        let type = (event.lessonType ?? event.subtitle ?? "").lowercased()
-        if event.kind == .exam || type.contains("экзам") { return Color(red: 1.0, green: 0.34, blue: 0.24) }
-        if event.kind == .consultation || type.contains("конс") { return Color(red: 0.56, green: 0.32, blue: 0.92) }
-        if type.contains("лр") || type.contains("лаб") || type.contains("lab") {
-            return .red
-        }
-        if type.contains("пз") || type.contains("практ") || type.contains("practice") {
-            return .yellow
-        }
-        if type.contains("лк") || type.contains("лек") || type.contains("lecture") {
-            return .green
-        }
-        if event.kind == .announcement { return Color(red: 0.96, green: 0.72, blue: 0.22) }
-        return Color(red: 0.24, green: 0.72, blue: 0.86)
+        ScheduleColorPreferences.color(for: event.lessonType ?? event.subtitle)
     }
 
     private func nonEmpty(_ value: String?) -> String? {
@@ -873,7 +843,7 @@ struct ClassScheduleWidget: Widget {
             SessionScheduleWidgetView(entry: entry, style: .classes)
         }
         .configurationDisplayName("Пары")
-        .description("Показывает ближайшие пары вашей группы плитками: время, предмет и аудиторию.")
+        .description("Показывает ближайшие пары: время, предмет и аудиторию.")
         .supportedFamilies([.systemMedium, .systemLarge, .accessoryRectangular, .accessoryInline])
         .contentMarginsDisabled()
         .containerBackgroundRemovable()

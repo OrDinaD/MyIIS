@@ -90,7 +90,7 @@
 "services_item_activities" = "Activities";
 "services_item_schedule" = "Schedule";
 "services_item_about" = "About App";
-"services_schedule_title" = "BSUIR Schedule";
+"services_schedule_title" = "Schedule";
 "services_schedule_search_title" = "Search schedule";
 "services_schedule_show_more_groups" = "Show other groups";
 "services_schedule_course_number" = "Course %d";
@@ -623,3 +623,13 @@
 "lesson_type_consultation" = "Consultation";
 "lesson_type_exam" = "Exam / Credit";
 "lesson_type_other" = "Other / Event";
+"schedule_date_has_no_lessons" = "No lessons on the selected date.";
+"schedule_error_offline" = "No internet connection. A saved schedule will be available after the first successful load.";
+"schedule_error_temporary" = "Could not load the schedule. Check your connection and try again.";
+"schedule_jump_action" = "Go";
+"services_schedule_local_not_found" = "Local schedule not found.";
+"services_schedule_source_api" = "BSUIR IIS";
+"services_schedule_source_local_json" = "Local JSON";
+"services_schedule_subgroup_format" = "Subgroup %d";
+"services_schedule_teacher_not_found" = "Teacher schedule not found.";
+"services_schedule_week_filter" = "Week";

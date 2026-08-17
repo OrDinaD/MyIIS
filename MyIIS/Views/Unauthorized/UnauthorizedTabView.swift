@@ -38,7 +38,9 @@ struct UnauthorizedTabView: View {
 
     private var baseTabView: some View {
         TabView(selection: $selectedTab) {
-            ScheduleServiceView()
+            NavigationStack {
+                ScheduleServiceView()
+            }
                 .tag(UnauthorizedAppTab.schedule)
                 .tabItem { Label(UnauthorizedAppTab.schedule.title, systemImage: UnauthorizedAppTab.schedule.icon) }
 

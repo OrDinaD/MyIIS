@@ -287,7 +287,20 @@ struct DisciplineSchedule: Decodable, Identifiable, Equatable {
 
     var title: String {
         if isAnnouncement {
-            return "📣 Объявление"
+            return "📣 \(NSLocalizedString("local_schedule_type_announcement", value: "Объявление", comment: ""))"
+        }
+        if let subject = subject.nilIfBlank {
+            return subject
+        }
+        if let subjectFullName = subjectFullName?.nilIfBlank {
+            return subjectFullName
+        }
+        return lessonTypeAbbrev.nilIfBlank ?? "Событие"
+    }
+
+    var fullTitle: String {
+        if isAnnouncement {
+            return "📣 \(NSLocalizedString("local_schedule_type_announcement", value: "Объявление", comment: ""))"
         }
         if let subjectFullName = subjectFullName?.nilIfBlank {
             return subjectFullName

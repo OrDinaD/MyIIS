@@ -49,7 +49,7 @@ enum ScheduleDisplayMode: String, CaseIterable, Identifiable {
         case .continuous:
             return NSLocalizedString("services_schedule_display_continuous", value: "Поток дней", comment: "")
         case .byDay:
-            return NSLocalizedString("services_schedule_display_by_day", value: "По дням", comment: "")
+            return NSLocalizedString("services_schedule_display_day", value: "По дням", comment: "")
         case .exams:
             return NSLocalizedString("services_schedule_display_exams", value: "Экзамены", comment: "")
         }
@@ -241,7 +241,11 @@ final class ScheduleServiceViewModel {
 
         if let dataSourceRaw = self.defaults.string(forKey: Self.dataSourceDefaultsKey),
            let restoredDataSource = ScheduleDataSource(rawValue: dataSourceRaw) {
-            dataSource = restoredDataSource
+            // The retired fixture mode must never replace the user's real public schedule.
+            dataSource = restoredDataSource == .localJSON ? .api : restoredDataSource
+            if restoredDataSource == .localJSON {
+                self.defaults.set(ScheduleDataSource.api.rawValue, forKey: Self.dataSourceDefaultsKey)
+            }
         }
 
         if let selectedModeRaw = self.defaults.string(forKey: Self.selectedModeDefaultsKey),
@@ -283,6 +287,9 @@ final class ScheduleServiceViewModel {
 
     @discardableResult
     private func applyCachedSnapshotIfAvailable() -> Bool {
+        guard defaults == (UserDefaults(suiteName: AppGroup.identifier) ?? .standard) else {
+            return false
+        }
         guard let snapshot = Self.cachedSnapshot,
               snapshot.dataSource == dataSource else {
             return false
@@ -300,8 +307,14 @@ final class ScheduleServiceViewModel {
         displayMode = snapshot.displayMode
         subgroupFilter = snapshot.subgroupFilter
         continuousTimelineDays = snapshot.continuousTimelineDays
+        updateClassScheduleWidgetSnapshot(from: snapshot.schedule)
+        updateSessionScheduleWidgetSnapshot(from: snapshot.schedule)
         hasLoadedInitialData = false
         return true
+    }
+
+    static func clearCachedSnapshot() {
+        cachedSnapshot = nil
     }
 
     private func restorePersistedScheduleIfAvailable() {
@@ -362,6 +375,8 @@ final class ScheduleServiceViewModel {
         setMode(.group, preservingQuery: groupNumber)
         saveSnapshot()
         errorMessage = nil
+        updateClassScheduleWidgetSnapshot(from: scheduleResponse)
+        updateSessionScheduleWidgetSnapshot(from: scheduleResponse)
     }
 
     private func scheduleDebouncedSearchUpdate() {
@@ -520,18 +535,37 @@ final class ScheduleServiceViewModel {
     ) {
         if let fallbackSchedule {
             applyFallback(fallbackSchedule)
-            staleErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            staleErrorMessage = userFacingScheduleError(error)
             isShowingStaleDataWarning = true
             errorMessage = nil
             return
         }
 
-        let description = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-        if isScheduleMissingMessage(description) {
+        let technicalDescription = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        if isScheduleMissingMessage(technicalDescription) {
             errorMessage = NSLocalizedString("services_schedule_publication_pending", comment: "")
         } else {
-            errorMessage = description
+            errorMessage = userFacingScheduleError(error)
         }
+    }
+
+    private func userFacingScheduleError(_ error: Error) -> String {
+        if let urlError = (error as? APIError).flatMap({ apiError -> URLError? in
+            guard case .networkError(let underlying) = apiError else { return nil }
+            return underlying as? URLError
+        }), urlError.code == .notConnectedToInternet {
+            return NSLocalizedString(
+                "schedule_error_offline",
+                value: "Нет подключения к интернету. Сохранённое расписание будет доступно после первой успешной загрузки.",
+                comment: ""
+            )
+        }
+
+        return NSLocalizedString(
+            "schedule_error_temporary",
+            value: "Не удалось загрузить расписание. Проверьте подключение и попробуйте ещё раз.",
+            comment: ""
+        )
     }
 
     private func isScheduleMissingMessage(_ message: String) -> Bool {
@@ -742,6 +776,27 @@ final class ScheduleServiceViewModel {
         }
     }
 
+    /// Rebuilds the lazy timeline around a user-selected date and returns the
+    /// closest day containing lessons so ScrollViewReader can reveal it.
+    func prepareContinuousTimeline(around requestedDate: Date) -> String? {
+        guard let schedule else { return nil }
+
+        let calendar = Calendar.current
+        let requestedDay = calendar.startOfDay(for: requestedDate)
+        let lowerBound = schedule.startDate.map { calendar.startOfDay(for: $0) } ?? requestedDay
+        let upperBound = continuousEndBound(for: schedule, calendar: calendar, now: requestedDay)
+        let targetDay = min(max(requestedDay, lowerBound), upperBound)
+        let start = calendar.date(byAdding: .day, value: -2, to: targetDay) ?? targetDay
+
+        continuousTimelineDays = []
+        continuousCursorDate = max(start, lowerBound)
+        isContinuousEndReached = false
+        appendContinuousChunkIfNeeded()
+
+        return continuousTimelineDays.first(where: { $0.date >= targetDay })?.id
+            ?? continuousTimelineDays.last?.id
+    }
+
     private func rebuildContinuousTimeline(reset: Bool) {
         guard schedule != nil else {
             continuousTimelineDays = []
@@ -874,21 +929,36 @@ final class ScheduleServiceViewModel {
     }
 
     private func updateClassScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {
-        guard let groupName = scheduleResponse.group?.name.nilIfBlank else { return }
-        if dataSource == .api, let accountGroupName, accountGroupName != groupName {
-            return
-        }
+        let resolvedName = scheduleResponse.group?.name.nilIfBlank
+            ?? scheduleResponse.employee?.fullName.nilIfBlank
+            ?? selectedEmployee?.displayName
+            ?? query.nilIfBlank
+        guard let groupName = resolvedName, !groupName.isEmpty else { return }
 
-        let events = continuousTimelineDays
+        let now = Date()
+        var events = continuousTimelineDays
             .flatMap { day in day.lessons.map { Self.widgetEvent(from: $0, on: day.date) } }
+            .filter { $0.isUpcoming(at: now) }
             .sorted(by: Self.widgetEventSortingComparator)
-            .prefix(80)
+
+        if events.isEmpty {
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: now)
+            var fallbackEvents: [SessionScheduleWidgetSnapshot.Event] = []
+            for day in scheduleResponse.orderedDays {
+                for lesson in day.lessons {
+                    let event = Self.widgetEvent(from: lesson, on: today)
+                    fallbackEvents.append(event)
+                }
+            }
+            events = fallbackEvents
+        }
 
         let snapshot = SessionScheduleWidgetSnapshot(
             groupName: groupName,
             startDate: scheduleResponse.startDate,
             endDate: scheduleResponse.endDate,
-            events: Array(events),
+            events: Array(events.prefix(80)),
             updatedAt: Date()
         )
         ClassScheduleWidgetDataStore.save(snapshot)
@@ -897,14 +967,20 @@ final class ScheduleServiceViewModel {
     }
 
     private func updateSessionScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {
-        guard let groupName = scheduleResponse.group?.name.nilIfBlank else { return }
-        if dataSource == .api, let accountGroupName, accountGroupName != groupName {
+        let resolvedName = scheduleResponse.group?.name.nilIfBlank
+            ?? scheduleResponse.employee?.fullName.nilIfBlank
+            ?? selectedEmployee?.displayName
+            ?? query.nilIfBlank
+        guard let groupName = resolvedName, !groupName.isEmpty else { return }
+        if dataSource == .api, let accountGroupName, accountGroupName != groupName, scheduleResponse.employee == nil {
             return
         }
 
+        let now = Date()
         let events = scheduleResponse.exams
             .sorted(by: Self.examSortingComparator)
             .map { Self.widgetEvent(from: $0, on: $0.lessonDate ?? $0.startLessonDate) }
+            .filter { $0.isUpcoming(at: now) }
 
         let snapshot = SessionScheduleWidgetSnapshot(
             groupName: groupName,
@@ -1009,7 +1085,7 @@ final class ScheduleServiceViewModel {
         } catch is CancellationError {
             return
         } catch {
-            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            errorMessage = userFacingScheduleError(error)
         }
     }
 
@@ -1031,13 +1107,23 @@ final class ScheduleServiceViewModel {
         }
     }
 
+    func isOtherSubgroupLesson(_ lesson: DisciplineSchedule) -> Bool {
+        guard case .subgroup(let selected) = subgroupFilter else { return false }
+        return lesson.subgroup > 0 && lesson.subgroup != selected
+    }
+
+    func refreshSubgroupPresentation() {
+        rebuildContinuousTimeline(reset: true)
+    }
+
     private func shouldKeepLesson(_ lesson: DisciplineSchedule) -> Bool {
-        switch subgroupFilter {
-        case .all:
+        guard case .subgroup(let value) = subgroupFilter else { return true }
+        if lesson.subgroup == 0 || lesson.subgroup == value {
             return true
-        case .subgroup(let value):
-            return lesson.subgroup == 0 || lesson.subgroup == value
         }
+        let raw = defaults.string(forKey: ScheduleDisplayPreferences.otherSubgroupDisplayKey)
+        let display = raw.flatMap(ScheduleOtherSubgroupDisplay.init(rawValue:)) ?? .compact
+        return display != .hidden
     }
 
     private func lessonInterval(for lesson: DisciplineSchedule, on date: Date) -> (start: Date, end: Date)? {
@@ -1081,7 +1167,7 @@ final class ScheduleServiceViewModel {
 
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = .autoupdatingCurrent
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter
@@ -1089,22 +1175,22 @@ final class ScheduleServiceViewModel {
 
     private static let dayDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "d MMMM"
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("dMMMM")
         return formatter
     }()
 
     private static let examDayDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "d MMMM yy 'г.'"
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("dMMMMyy")
         return formatter
     }()
 
     private static let examPeriodFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "d MMMM yyyy 'г.'"
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("dMMMMyyyy")
         return formatter
     }()
 
@@ -1194,6 +1280,7 @@ final class ScheduleServiceViewModel {
     }
 
     private func saveSnapshot() {
+        guard defaults == (UserDefaults(suiteName: AppGroup.identifier) ?? .standard) else { return }
         guard let schedule else { return }
         Self.cachedSnapshot = Snapshot(
             dataSource: dataSource,
@@ -1237,6 +1324,7 @@ final class ScheduleServiceViewModel {
     }
 
     func applyLocalSchedule(_ document: LocalScheduleDocument) {
+        dataSource = .localJSON
         localScheduleDocument = document
         let apiSchedule = document.apiSchedule()
         schedule = apiSchedule
@@ -1503,11 +1591,11 @@ extension ScheduleServiceViewModel {
         let targetLength = targetChars.count
         var distances = Array(repeating: Array(repeating: 0, count: targetLength + 1), count: sourceLength + 1)
 
-        for sourceIndex in 0...sourceLength { distances[sourceIndex][0] = sourceIndex }
-        for targetIndex in 0...targetLength { distances[0][targetIndex] = targetIndex }
+        for sourceIndex in 0 ... sourceLength { distances[sourceIndex][0] = sourceIndex }
+        for targetIndex in 0 ... targetLength { distances[0][targetIndex] = targetIndex }
 
-        for sourceIndex in 1...sourceLength {
-            for targetIndex in 1...targetLength {
+        for sourceIndex in 1 ... sourceLength {
+            for targetIndex in 1 ... targetLength {
                 if sourceChars[sourceIndex - 1] == targetChars[targetIndex - 1] {
                     distances[sourceIndex][targetIndex] = distances[sourceIndex - 1][targetIndex - 1]
                 } else {
@@ -1764,14 +1852,13 @@ extension ScheduleServiceViewModel {
             return "🎓 \(title)"
         }
 
-        var chunks: [String] = []
-        if let period = periodText {
-            chunks.append(period)
-        }
         if let currentWeekNumber {
-            chunks.append(String(format: NSLocalizedString("services_schedule_current_week", comment: ""), currentWeekNumber))
+            return String(
+                format: NSLocalizedString("services_schedule_current_week", comment: ""),
+                currentWeekNumber
+            )
         }
-        return chunks.isEmpty ? NSLocalizedString("services_schedule_subtitle", comment: "") : chunks.joined(separator: " • ")
+        return periodText ?? NSLocalizedString("services_schedule_subtitle", comment: "")
     }
 }
 

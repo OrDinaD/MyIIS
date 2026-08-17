@@ -627,3 +627,13 @@
 "lesson_type_consultation" = "Консультация";
 "lesson_type_exam" = "Экзамен / Зачёт";
 "lesson_type_other" = "Прочее / Мероприятие";
+"schedule_date_has_no_lessons" = "На выбранную дату занятий нет.";
+"schedule_error_offline" = "Нет подключения к интернету. Сохранённое расписание будет доступно после первой успешной загрузки.";
+"schedule_error_temporary" = "Не удалось загрузить расписание. Проверьте подключение и попробуйте ещё раз.";
+"schedule_jump_action" = "Перейти";
+"services_schedule_local_not_found" = "Локальное расписание не найдено.";
+"services_schedule_source_api" = "ИИС БГУИР";
+"services_schedule_source_local_json" = "Локальный JSON";
+"services_schedule_subgroup_format" = "%d подгруппа";
+"services_schedule_teacher_not_found" = "Расписание преподавателя не найдено.";
+"services_schedule_week_filter" = "Неделя";

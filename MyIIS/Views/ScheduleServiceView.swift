@@ -18,9 +18,11 @@ struct ScheduleServiceView: View {
     @AppStorage(ScheduleDisplayPreferences.hidePastLessonsKey, store: ScheduleDisplayPreferences.defaults)
     private var hidePastLessons = false
     @AppStorage(ScheduleDisplayPreferences.cardDensityKey, store: ScheduleDisplayPreferences.defaults)
-    private var cardDensityRaw = ScheduleCardDensity.regular.rawValue
+    private var cardDensityRaw = ScheduleCardDensity.compact.rawValue
     @AppStorage(ScheduleDisplayPreferences.otherSubgroupDisplayKey, store: ScheduleDisplayPreferences.defaults)
     private var otherSubgroupRaw = ScheduleOtherSubgroupDisplay.compact.rawValue
+    @AppStorage("schedule.display.compactDefaultMigrationV1", store: ScheduleDisplayPreferences.defaults)
+    private var didMigrateCompactDefault = false
 
     @State private var scheduleReportURL: URL?
     @State private var selectedExamLesson: DisciplineSchedule?
@@ -29,11 +31,12 @@ struct ScheduleServiceView: View {
     @State private var isSettingsSheetPresented = false
     @State private var isDatePickerPresented = false
     @State private var selectedDateForJump = Date()
+    @State private var dateJumpTarget: Date?
     @State private var showsAllGroups = false
     @State private var hasAutoScrolled = false
 
     private var cardDensity: ScheduleCardDensity {
-        ScheduleCardDensity(rawValue: cardDensityRaw) ?? .regular
+        ScheduleCardDensity(rawValue: cardDensityRaw) ?? .compact
     }
 
     private var otherSubgroupDisplay: ScheduleOtherSubgroupDisplay {
@@ -61,7 +64,13 @@ struct ScheduleServiceView: View {
                         }
 
                         scheduleContent(scrollProxy: proxy)
-                    } else if !viewModel.isLoading {
+                    } else if viewModel.isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity, minHeight: 220)
+                            .accessibilityLabel(NSLocalizedString("common_loading", comment: ""))
+                    } else if viewModel.errorMessage != nil {
+                        scheduleInitialErrorView
+                    } else {
                         emptySelectionView
                     }
                 }
@@ -84,6 +93,10 @@ struct ScheduleServiceView: View {
                 }
             }
             .task {
+                if !didMigrateCompactDefault {
+                    cardDensityRaw = ScheduleCardDensity.compact.rawValue
+                    didMigrateCompactDefault = true
+                }
                 await loadSelectedScheduleSource()
                 if !hasAutoScrolled {
                     try? await Task.sleep(for: .milliseconds(300))
@@ -97,6 +110,27 @@ struct ScheduleServiceView: View {
                     try? await Task.sleep(for: .milliseconds(200))
                     scrollToTodayOrCurrent(proxy: proxy)
                 }
+            }
+            .onChange(of: otherSubgroupRaw) { _, _ in
+                viewModel.refreshSubgroupPresentation()
+            }
+            .onChange(of: dateJumpTarget) { _, target in
+                guard let target else { return }
+                if let dayID = viewModel.prepareContinuousTimeline(around: target) {
+                    Task { @MainActor in
+                        await Task.yield()
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            proxy.scrollTo(dayID, anchor: .top)
+                        }
+                    }
+                } else {
+                    viewModel.noticeMessage = NSLocalizedString(
+                        "schedule_date_has_no_lessons",
+                        value: "На выбранную дату занятий не найдено.",
+                        comment: ""
+                    )
+                }
+                dateJumpTarget = nil
             }
         }
         .refreshable {
@@ -128,21 +162,13 @@ struct ScheduleServiceView: View {
         .sheet(isPresented: $isDatePickerPresented) {
             jumpDatePickerSheet
         }
-        .alert(NSLocalizedString("services_schedule_reminders_title", comment: ""), isPresented: Binding(
+        .alert(NSLocalizedString("services_schedule_title", comment: ""), isPresented: Binding(
             get: { viewModel.noticeMessage != nil },
             set: { _ in }
         ), actions: {
             Button(NSLocalizedString("common_ok", comment: "")) { viewModel.noticeMessage = nil }
         }, message: {
             Text(viewModel.noticeMessage ?? "")
-        })
-        .alert(NSLocalizedString("common_error", comment: ""), isPresented: Binding(
-            get: { viewModel.errorMessage != nil },
-            set: { _ in }
-        ), actions: {
-            Button(NSLocalizedString("common_ok", comment: "")) { viewModel.errorMessage = nil }
-        }, message: {
-            Text(viewModel.errorMessage ?? "")
         })
         .sheet(isPresented: $isSearchSheetPresented) {
             searchSheetContent
@@ -173,7 +199,7 @@ struct ScheduleServiceView: View {
                         )
                         .font(.footnote.weight(.semibold))
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .frame(minHeight: 44)
                         .background(Color(uiColor: .tertiarySystemGroupedBackground), in: Capsule())
                     }
                     .buttonStyle(.plain)
@@ -201,22 +227,35 @@ struct ScheduleServiceView: View {
                                 .font(.caption2)
                         }
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .frame(minHeight: 44)
                         .background(Color(uiColor: .tertiarySystemGroupedBackground), in: Capsule())
                     }
                 }
             }
 
             if viewModel.shouldShowWeekFilter {
-                Picker(
-                    NSLocalizedString("services_schedule_week_filter", value: "Неделя", comment: ""),
-                    selection: $viewModel.weekFilter
-                ) {
+                Menu {
                     ForEach(viewModel.weekFilters) { filter in
-                        Text(filter.localizedTitle).tag(filter)
+                        Button {
+                            viewModel.weekFilter = filter
+                        } label: {
+                            HStack {
+                                Text(filter.localizedTitle)
+                                if viewModel.weekFilter == filter {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
                     }
+                } label: {
+                    Label(
+                        "\(NSLocalizedString("services_schedule_week_filter", value: "Неделя", comment: "")): \(viewModel.weekFilter.localizedTitle)",
+                        systemImage: "calendar.badge.clock"
+                    )
+                    .font(.footnote.weight(.semibold))
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                .pickerStyle(.segmented)
             }
         }
         .padding(.vertical, 4)
@@ -293,7 +332,7 @@ struct ScheduleServiceView: View {
                     isCurrent: viewModel.isLessonCurrent(lesson, on: day.weekday, for: day.date),
                     progress: viewModel.currentLessonProgress(lesson, on: day.weekday, for: day.date),
                     isPast: isPast,
-                    cardDensity: cardDensity,
+                    cardDensity: lessonCardDensity(for: lesson),
                     showsMidPairBreaks: showsMidPairBreaks,
                     onTeacherTap: { teacher in
                         Task { await viewModel.openTeacherSchedule(teacher) }
@@ -322,7 +361,7 @@ struct ScheduleServiceView: View {
                         isCurrent: false,
                         progress: nil,
                         isPast: false,
-                        cardDensity: cardDensity,
+                        cardDensity: lessonCardDensity(for: lesson),
                         showsMidPairBreaks: showsMidPairBreaks,
                         onTeacherTap: { teacher in
                             Task { await viewModel.openTeacherSchedule(teacher) }
@@ -623,10 +662,17 @@ struct ScheduleServiceView: View {
                 DatePicker(
                     NSLocalizedString("schedule_choose_date", value: "Выберите дату", comment: ""),
                     selection: $selectedDateForJump,
+                    in: scheduleDateRange,
                     displayedComponents: [.date]
                 )
                 .datePickerStyle(.graphical)
                 .padding()
+
+                Button(NSLocalizedString("schedule_today_action", value: "Сегодня", comment: "")) {
+                    dateJumpTarget = Date()
+                    isDatePickerPresented = false
+                }
+                .buttonStyle(.bordered)
 
                 Spacer()
             }
@@ -639,14 +685,16 @@ struct ScheduleServiceView: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(NSLocalizedString("schedule_today_action", value: "Сегодня", comment: "")) {
-                        selectedDateForJump = Date()
+                    Button(NSLocalizedString("schedule_jump_action", value: "Перейти", comment: "")) {
+                        dateJumpTarget = selectedDateForJump
                         isDatePickerPresented = false
                     }
+                    .fontWeight(.semibold)
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
+        .presentationDragIndicator(.visible)
     }
 
     private func scrollToTodayOrCurrent(proxy: ScrollViewProxy) {
@@ -659,6 +707,17 @@ struct ScheduleServiceView: View {
                 proxy.scrollTo(firstUpcoming.id, anchor: .top)
             }
         }
+    }
+
+    private var scheduleDateRange: ClosedRange<Date> {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let start = viewModel.schedule?.startDate.map(calendar.startOfDay(for:)) ?? today
+        let fallbackEnd = calendar.date(byAdding: .year, value: 1, to: start) ?? start
+        let end = viewModel.schedule?.endDate.map(calendar.startOfDay(for:)) ?? fallbackEnd
+        let minBound = min(today, min(start, end))
+        let maxBound = max(today, max(start, end))
+        return minBound ... maxBound
     }
 
     private var usesLocalJSONSchedule: Bool {
@@ -680,6 +739,31 @@ struct ScheduleServiceView: View {
         viewModel.applyLocalSchedule(document)
     }
 
+    private var scheduleInitialErrorView: some View {
+        ContentUnavailableView {
+            Label(
+                NSLocalizedString("services_schedule_empty_title", comment: ""),
+                systemImage: "wifi.exclamationmark"
+            )
+        } description: {
+            Text(viewModel.errorMessage ?? "")
+        } actions: {
+            Button(NSLocalizedString("common_retry", comment: "")) {
+                viewModel.errorMessage = nil
+                Task { await viewModel.refreshData() }
+            }
+            .buttonStyle(.borderedProminent)
+
+            Button(NSLocalizedString("services_schedule_search_title", comment: "")) {
+                viewModel.errorMessage = nil
+                isSearchSheetPresented = true
+            }
+            .buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+    }
+
     private var scheduleUnavailableView: some View {
         ContentUnavailableView {
             Label(
@@ -696,6 +780,13 @@ struct ScheduleServiceView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
+    }
+
+    private func lessonCardDensity(for lesson: DisciplineSchedule) -> ScheduleCardDensity {
+        if viewModel.isOtherSubgroupLesson(lesson), otherSubgroupDisplay == .compact {
+            return .compact
+        }
+        return cardDensity
     }
 
     private func examDayTitleColor(for day: ExamScheduleDay) -> Color {
@@ -813,7 +904,7 @@ private struct ScheduleLessonCard: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
-                            Text(lesson.title)
+                            Text(compactTitle)
                                 .font(.headline.weight(.semibold))
                                 .foregroundStyle(cardPrimaryForeground)
                                 .lineLimit(2)

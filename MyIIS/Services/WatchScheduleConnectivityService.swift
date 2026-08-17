@@ -5,15 +5,21 @@ import WatchConnectivity
 
 enum WatchScheduleTransfer {
     nonisolated static let snapshotKey = "classScheduleSnapshot"
+    nonisolated static let clearKey = "clearClassScheduleSnapshot"
 }
 
 final class WatchScheduleConnectivityService: NSObject, @unchecked Sendable {
     static let shared = WatchScheduleConnectivityService()
 
 #if canImport(WatchConnectivity)
+    private enum PendingTransfer: Equatable {
+        case snapshot(Data)
+        case clear
+    }
+
     private let session = WCSession.default
     private let lock = NSLock()
-    private var pendingSnapshotData: Data?
+    private var pendingTransfer: PendingTransfer?
 #endif
 
     private override init() {
@@ -32,26 +38,43 @@ final class WatchScheduleConnectivityService: NSObject, @unchecked Sendable {
 #if canImport(WatchConnectivity) && os(iOS)
         guard let data = try? JSONEncoder().encode(snapshot) else { return }
         lock.withLock {
-            pendingSnapshotData = data
+            pendingTransfer = .snapshot(data)
         }
-        sendPendingSnapshotIfPossible()
+        sendPendingTransferIfPossible()
+#endif
+    }
+
+    func clear() {
+#if canImport(WatchConnectivity) && os(iOS)
+        lock.withLock {
+            pendingTransfer = .clear
+        }
+        sendPendingTransferIfPossible()
 #endif
     }
 
 #if canImport(WatchConnectivity) && os(iOS)
-    private func sendPendingSnapshotIfPossible() {
+    private func sendPendingTransferIfPossible() {
         guard session.activationState == .activated, session.isWatchAppInstalled else { return }
-        guard let data = lock.withLock({ pendingSnapshotData }) else { return }
+        guard let transfer = lock.withLock({ pendingTransfer }) else { return }
+
+        let context: [String: Any]
+        switch transfer {
+        case let .snapshot(data):
+            context = [WatchScheduleTransfer.snapshotKey: data]
+        case .clear:
+            context = [WatchScheduleTransfer.clearKey: true]
+        }
 
         do {
-            try session.updateApplicationContext([WatchScheduleTransfer.snapshotKey: data])
+            try session.updateApplicationContext(context)
             lock.withLock {
-                if pendingSnapshotData == data {
-                    pendingSnapshotData = nil
+                if pendingTransfer == transfer {
+                    pendingTransfer = nil
                 }
             }
         } catch {
-            assertionFailure("Failed to send schedule to Apple Watch: \(error)")
+            assertionFailure("Failed to update Apple Watch schedule: \(error)")
         }
     }
 #endif
@@ -67,7 +90,7 @@ extension WatchScheduleConnectivityService: WCSessionDelegate {
 #if os(iOS)
         guard activationState == .activated, error == nil else { return }
         Task { @MainActor [weak self] in
-            self?.sendPendingSnapshotIfPossible()
+            self?.sendPendingTransferIfPossible()
         }
 #endif
     }
@@ -81,7 +104,7 @@ extension WatchScheduleConnectivityService: WCSessionDelegate {
 
     nonisolated func sessionWatchStateDidChange(_ session: WCSession) {
         Task { @MainActor [weak self] in
-            self?.sendPendingSnapshotIfPossible()
+            self?.sendPendingTransferIfPossible()
         }
     }
 #endif

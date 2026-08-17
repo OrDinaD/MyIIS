@@ -178,7 +178,7 @@ class AuthenticationService: ObservableObject {
         isSessionReady = true
 
         if !isSilent {
-            AppRouter.shared.selectedTab = AppRouter.isSectionOrTabEnabled("home") ? .home : .profile
+            AppRouter.shared.navigate(to: .schedule)
         }
 
         cacheUser(user)
@@ -335,6 +335,7 @@ class AuthenticationService: ObservableObject {
 
         AttendanceWidgetDataStore.clear()
         MyIISDataStore.clear()
+        WatchScheduleConnectivityService.shared.clear()
         UserDefaultsPayloadStore.clearAll()
         logService.log("User logged out.")
     }

@@ -38,15 +38,16 @@ For each item above:
 
 ## 4) Required Reason API usage
 
-Current manifest reasons declared:
+Required-reason manifests are included in every executable bundle that uses UserDefaults:
 
 1. App: `PrivacyInfo.xcprivacy`
 2. Widget: `MyIISWidget/PrivacyInfo.xcprivacy`
 3. Intents extension: `MyIISIntents/PrivacyInfo.xcprivacy`
+4. Messages extension: `MyIISMessages/PrivacyInfo.xcprivacy`
+5. Watch app: `MyIIS Watch App Watch App/PrivacyInfo.xcprivacy`
+6. Watch widget: `MyIIS Watch Widget/PrivacyInfo.xcprivacy`
 
-All of them currently declare:
-
-1. `NSPrivacyAccessedAPICategoryUserDefaults` with reason `CA92.1`
+The manifests declare `NSPrivacyAccessedAPICategoryUserDefaults` with App Group reason `1C8F.1`. Bundles that also use their own standard defaults retain reason `CA92.1` as applicable.
 
 Current scan did not find tracking domains, analytics SDKs, advertising SDKs, or additional required-reason API categories in app code. Temporary-file writes are used for user-initiated exports/previews; no file timestamp, system boot time, disk space, or active keyboard API usage is currently declared or expected.
 

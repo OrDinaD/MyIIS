@@ -136,6 +136,7 @@ final class LocalScheduleViewModel {
             try LocalScheduleStore.delete()
             document = nil
             ClassScheduleWidgetDataStore.clear()
+            WatchScheduleConnectivityService.shared.clear()
             noticeMessage = NSLocalizedString("local_schedule_delete_success", comment: "")
         } catch {
             errorMessage = error.localizedDescription

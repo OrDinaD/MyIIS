@@ -21,6 +21,13 @@ struct ContentView: View {
     private func scheduleList(_ snapshot: WatchScheduleSnapshot, now: Date) -> some View {
         let events = snapshot.upcomingEvents(at: now)
         return List {
+            if events.isEmpty {
+                Section {
+                    Label("watch_widget_no_events", systemImage: "checkmark.circle")
+                        .font(.headline)
+                }
+            }
+
             if let event = events.first {
                 Section {
                     currentEventCard(event, now: now)
@@ -83,7 +90,20 @@ struct ContentView: View {
     }
 
     private func eventRow(_ event: WatchScheduleSnapshot.Event) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        let dateText = event.date?.formatted(
+            .dateTime
+                .weekday(.abbreviated)
+                .day()
+                .month(.abbreviated)
+        )
+        let details = [dateText, event.location]
+            .compactMap { value in
+                guard let value, !value.isEmpty else { return nil }
+                return value
+            }
+            .joined(separator: " · ")
+
+        return VStack(alignment: .leading, spacing: 3) {
             HStack {
                 Text(event.startTime)
                     .font(.caption.monospacedDigit())
@@ -94,14 +114,15 @@ struct ContentView: View {
                     .privacySensitive()
             }
 
-            if let location = event.location, !location.isEmpty {
-                Text(location)
+            if !details.isEmpty {
+                Text(details)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .privacySensitive()
             }
         }
+        .accessibilityElement(children: .combine)
     }
 
     private var emptyContent: some View {

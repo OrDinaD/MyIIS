@@ -827,3 +827,13 @@
 "lesson_type_consultation" = "Кансультацыя";
 "lesson_type_exam" = "Экзамен / Залік";
 "lesson_type_other" = "Іншае / Мерапрыемства";
+"schedule_date_has_no_lessons" = "На выбраную дату заняткаў няма.";
+"schedule_error_offline" = "Няма падключэння да інтэрнэту. Захаваны расклад будзе даступны пасля першай паспяховай загрузкі.";
+"schedule_error_temporary" = "Не ўдалося загрузіць расклад. Праверце падключэнне і паспрабуйце яшчэ раз.";
+"schedule_jump_action" = "Перайсці";
+"services_schedule_local_not_found" = "Лакальны расклад не знойдзены.";
+"services_schedule_source_api" = "ІІС БДУІР";
+"services_schedule_source_local_json" = "Лакальны JSON";
+"services_schedule_subgroup_format" = "%d падгрупа";
+"services_schedule_teacher_not_found" = "Расклад выкладчыка не знойдзены.";
+"services_schedule_week_filter" = "Тыдзень";

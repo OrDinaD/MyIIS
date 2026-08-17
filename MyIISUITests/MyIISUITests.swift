@@ -7,6 +7,44 @@ final class MyIISUITests: XCTestCase {
     }
 
     @MainActor
+    func testScheduleGuestSmokeFlow() throws {
+        let app = XCUIApplication()
+        app.launchArguments += [
+            "-UITesting",
+            "-ui_testing",
+            "-enable_beta_sections", "NO",
+            "-AppleLanguages", "(ru-RU)",
+            "-AppleLocale", "ru_RU"
+        ]
+        app.launch()
+
+        let guestButton = app.buttons["Продолжить без входа"]
+        if guestButton.waitForExistence(timeout: 5) {
+            guestButton.tap()
+        }
+
+        let scheduleTab = app.tabBars.buttons["Расписание"]
+        XCTAssertTrue(scheduleTab.waitForExistence(timeout: 10), "Schedule must be the first available tab")
+        scheduleTab.tap()
+
+        let searchButton = app.buttons["Поиск расписания"]
+        XCTAssertTrue(searchButton.waitForExistence(timeout: 10), "Schedule search must stay available")
+        searchButton.tap()
+
+        let groupMode = app.buttons["Группа"]
+        let teacherMode = app.buttons["Преподаватель"]
+        XCTAssertTrue(groupMode.waitForExistence(timeout: 5), "Group lookup mode is missing")
+        XCTAssertTrue(teacherMode.waitForExistence(timeout: 5), "Teacher lookup mode is missing")
+        teacherMode.tap()
+        groupMode.tap()
+
+        let closeButton = app.buttons["Закрыть"]
+        XCTAssertTrue(closeButton.waitForExistence(timeout: 5), "Search sheet must be dismissible")
+        closeButton.tap()
+        XCTAssertTrue(scheduleTab.waitForExistence(timeout: 5))
+    }
+
+    @MainActor
     func testGenerateAppStoreScreenshots() throws {
         let app = makeScreenshotApp()
         app.launch()

@@ -615,3 +615,16 @@
 "lesson_type_consultation" = "Консультація";
 "lesson_type_exam" = "Іспит / Залік";
 "lesson_type_other" = "Інше / Захід";
+"schedule_date_has_no_lessons" = "На обрану дату занять немає.";
+"schedule_error_offline" = "Немає підключення до інтернету. Збережений розклад буде доступний після першого успішного завантаження.";
+"schedule_error_temporary" = "Не вдалося завантажити розклад. Перевірте підключення та спробуйте ще раз.";
+"schedule_jump_action" = "Перейти";
+"services_schedule_local_not_found" = "Локальний розклад не знайдено.";
+"services_schedule_source_api" = "ІІС БДУІР";
+"services_schedule_source_local_json" = "Локальний JSON";
+"services_schedule_subgroup_format" = "%d підгрупа";
+"services_schedule_teacher_not_found" = "Розклад викладача не знайдено.";
+"services_schedule_week_filter" = "Тиждень";
+"services_schedule_past_lessons" = "Минулі заняття";
+"services_schedule_no_more_today" = "На сьогодні занять більше немає 🎉";
+"services_schedule_past_exams" = "Минулі іспити";

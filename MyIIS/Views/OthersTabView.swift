@@ -10,7 +10,6 @@ private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
     case profile
     case gradebook
     case study
-    case schedule
     case headman
     case lms
     case diploma
@@ -37,8 +36,6 @@ private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
             return NSLocalizedString("services_item_markbook", comment: "")
         case .study:
             return NSLocalizedString("services_item_study", comment: "")
-        case .schedule:
-            return NSLocalizedString("services_item_schedule", comment: "")
         case .headman:
             return NSLocalizedString("services_item_headman", comment: "")
         case .lms:
@@ -75,8 +72,6 @@ private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
             return "book.closed.fill"
         case .study:
             return "graduationcap.fill"
-        case .schedule:
-            return "calendar"
         case .headman:
             return "crown.fill"
         case .lms:
@@ -238,12 +233,6 @@ private extension OthersTabView {
             }
             .accessibilityLabel(NSLocalizedString("services_item_study", comment: ""))
             .accessibilityIdentifier("serviceLink_study")
-
-            NavigationLink(value: AppSection.schedule) {
-                serviceRow(for: .schedule)
-            }
-            .accessibilityLabel(NSLocalizedString("services_item_schedule", comment: ""))
-            .accessibilityIdentifier("serviceLink_schedule")
 
             if enableBetaSections && authService.currentUser?.isHeadmanOrNoteAllowed == true {
                 NavigationLink(value: AppSection.headman) {
@@ -455,7 +444,7 @@ private extension OthersTabView {
     }
 
     private var studyDestinations: [ServicesDestination] {
-        var values: [ServicesDestination] = [.gradebook, .study, .schedule]
+        var values: [ServicesDestination] = [.gradebook, .study]
         if enableBetaSections && authService.currentUser?.isHeadmanOrNoteAllowed == true {
             values.append(.headman)
         }
@@ -527,8 +516,6 @@ private extension OthersTabView {
             GradebookView()
         case .study:
             StudyView()
-        case .schedule:
-            ScheduleServiceView()
         case .headman:
             if enableBetaSections && authService.currentUser?.isHeadmanOrNoteAllowed == true {
                 HeadmanView()

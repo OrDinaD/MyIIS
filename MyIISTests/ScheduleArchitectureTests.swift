@@ -8,21 +8,6 @@ import XCTest
 
 @MainActor
 final class ScheduleArchitectureTests: XCTestCase {
-    private var testDefaults: UserDefaults!
-    private let testSuiteName = "test.suite.schedule.architecture"
-
-    override func setUp() {
-        super.setUp()
-        testDefaults = UserDefaults(suiteName: testSuiteName)
-        testDefaults.removePersistentDomain(forName: testSuiteName)
-    }
-
-    override func tearDown() {
-        testDefaults.removePersistentDomain(forName: testSuiteName)
-        testDefaults = nil
-        super.tearDown()
-    }
-
     // MARK: - Navigation & Migration Tests
 
     func testAppTabScheduleIsFirstTab() {
@@ -129,7 +114,15 @@ final class ScheduleArchitectureTests: XCTestCase {
     }
 
     func testViewModelPinnedGroupsAndTeachers() {
-        let viewModel = ScheduleServiceViewModel(defaults: testDefaults)
+        let suiteName = "test.suite.schedule.architecture"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            XCTFail("Could not create isolated UserDefaults")
+            return
+        }
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
         XCTAssertTrue(viewModel.pinnedGroupNames.isEmpty)
         XCTAssertTrue(viewModel.pinnedTeachers.isEmpty)
 

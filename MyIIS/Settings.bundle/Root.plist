@@ -20,7 +20,7 @@
 			<key>Key</key>
 			<string>initial_startup_tab</string>
 			<key>DefaultValue</key>
-			<string>profile</string>
+			<string>schedule</string>
 			<key>Titles</key>
 			<array>
 				<string>Профиль</string>

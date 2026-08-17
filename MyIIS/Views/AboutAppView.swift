@@ -5,11 +5,14 @@
 import SwiftUI
 import UIKit
 
+// Kept as one screen so its stateful settings sections share a single navigation context.
+// swiftlint:disable:next type_body_length
 struct AboutAppView: View {
     @Environment(\.openURL) private var openURL
     @State private var selectedIcon = AppIconManager.currentIcon
     @State private var iconAlert: IconAlert?
     @State private var isSupportSheetPresented = false
+    @State private var isScheduleSettingsPresented = false
     @State private var isUpdatingAcademicNotifications = false
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @AppStorage(AcademicChangeNotificationService.enabledDefaultsKey) private var academicChangeNotificationsEnabled = false
@@ -19,6 +22,7 @@ struct AboutAppView: View {
             VStack(alignment: .leading, spacing: 26) {
                 versionSection
                 languageSection
+                scheduleAppearanceSection
                 academicNotificationsSection
                 supportSection
                 linksSection
@@ -42,6 +46,9 @@ struct AboutAppView: View {
             NavigationStack {
                 SupportAuthorView()
             }
+        }
+        .sheet(isPresented: $isScheduleSettingsPresented) {
+            ScheduleSettingsView()
         }
         .alert(item: $iconAlert) { alert in
             Alert(
@@ -87,6 +94,25 @@ struct AboutAppView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 2)
+        }
+    }
+
+    private var scheduleAppearanceSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("schedule_settings_title", value: "Настройки расписания", comment: ""))
+
+            cardContainer {
+                linkRow(
+                    icon: "calendar.badge.gearshape",
+                    title: NSLocalizedString(
+                        "schedule_appearance_action",
+                        value: "Вид, цвета и поведение",
+                        comment: ""
+                    )
+                ) {
+                    isScheduleSettingsPresented = true
+                }
+            }
         }
     }
 

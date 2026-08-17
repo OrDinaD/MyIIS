@@ -28,10 +28,7 @@ enum AttendanceWidgetDataStore {
     }
 
     private static var defaults: UserDefaults? {
-        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier) != nil else {
-            return nil
-        }
-        return UserDefaults(suiteName: AppGroup.identifier)
+        UserDefaults(suiteName: AppGroup.identifier) ?? .standard
     }
 
     /// Saves snapshot data that was fetched inside the main app.
@@ -39,6 +36,7 @@ enum AttendanceWidgetDataStore {
         guard let defaults else { return }
         do {
             let data = try JSONEncoder().encode(snapshot)
+            defaults.set(data, forKey: Key.snapshot)
             _ = UserDefaultsPayloadStore.save(data, forKey: Key.snapshot, in: defaults)
         } catch {
             assertionFailure("Failed to encode AttendanceWidgetSnapshot: \(error)")
@@ -47,14 +45,11 @@ enum AttendanceWidgetDataStore {
 
     /// Loads the cached snapshot for the widget.
     static func loadSnapshot() -> AttendanceWidgetSnapshot? {
-        guard
-            let defaults,
-            let data = UserDefaultsPayloadStore.load(forKey: Key.snapshot, from: defaults)
-        else {
-            return nil
+        guard let defaults else { return nil }
+        if let data = defaults.data(forKey: Key.snapshot) ?? UserDefaultsPayloadStore.load(forKey: Key.snapshot, from: defaults) {
+            return try? JSONDecoder().decode(AttendanceWidgetSnapshot.self, from: data)
         }
-
-        return try? JSONDecoder().decode(AttendanceWidgetSnapshot.self, from: data)
+        return nil
     }
 
     /// Removes cached data (for example, after logout) and refreshes timelines.

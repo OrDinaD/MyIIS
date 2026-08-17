@@ -26,7 +26,7 @@ enum UserDefaultsPayloadStore {
 
         guard let url = fileURL(forKey: key) else { return false }
         do {
-            try data.write(to: url, options: [.atomic, .completeFileProtection])
+            try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
             return true
         } catch {
             return false

@@ -11,7 +11,14 @@ final class SessionScheduleWidgetTests: XCTestCase {
     func testNumericDateFormatUsesRussianDayMonthYearOrderAndWeekday() {
         let date = calendar.date(from: DateComponents(year: 2026, month: 6, day: 16))!
 
-        XCTAssertEqual(SessionScheduleWidgetDateFormatting.numericDateText(from: date), "16.06.2026(Вт)")
+        XCTAssertEqual(
+            SessionScheduleWidgetDateFormatting.numericDateText(
+                from: date,
+                locale: Locale(identifier: "ru_RU"),
+                calendar: calendar
+            ),
+            "16.06.2026(Вт)"
+        )
     }
 
     func testEventInterval() {
@@ -47,6 +54,22 @@ final class SessionScheduleWidgetTests: XCTestCase {
         XCTAssertEqual(event.progress(at: before, calendar: calendar), 0.0)
         XCTAssertEqual(event.progress(at: middle, calendar: calendar), 0.5)
         XCTAssertEqual(event.progress(at: after, calendar: calendar), 1.0)
+    }
+
+    func testUndatedEventIsNotTreatedAsForeverUpcoming() {
+        let event = SessionScheduleWidgetSnapshot.Event(
+            id: "announcement",
+            date: nil,
+            startTime: "",
+            endTime: "",
+            title: "Announcement",
+            subtitle: nil,
+            location: nil,
+            lessonType: nil,
+            kind: .announcement
+        )
+
+        XCTAssertFalse(event.isUpcoming(at: Date(), calendar: calendar))
     }
 
     func testInvalidTimeDoesNotCrash() {

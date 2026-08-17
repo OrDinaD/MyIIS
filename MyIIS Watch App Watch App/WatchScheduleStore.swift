@@ -3,56 +3,59 @@ import Foundation
 import WatchConnectivity
 import WidgetKit
 
+enum WatchScheduleEventKind: String, Codable, Sendable {
+    case announcement
+    case exam
+    case consultation
+    case other
+}
+
+struct WatchScheduleEvent: Codable, Identifiable, Sendable {
+    typealias Kind = WatchScheduleEventKind
+    let id: String
+    let date: Date?
+    let startTime: String
+    let endTime: String
+    let title: String
+    let subtitle: String?
+    let location: String?
+    let lessonType: String?
+    let kind: Kind
+
+    func interval(calendar: Calendar = .current) -> DateInterval? {
+        guard let date else { return nil }
+        let startParts = startTime.split(separator: ":").compactMap { Int($0) }
+        let endParts = endTime.split(separator: ":").compactMap { Int($0) }
+        guard startParts.count == 2, endParts.count == 2 else { return nil }
+
+        var startComponents = calendar.dateComponents([.year, .month, .day], from: date)
+        startComponents.hour = startParts[0]
+        startComponents.minute = startParts[1]
+        var endComponents = startComponents
+        endComponents.hour = endParts[0]
+        endComponents.minute = endParts[1]
+
+        guard let start = calendar.date(from: startComponents),
+              let end = calendar.date(from: endComponents),
+              end > start else {
+            return nil
+        }
+        return DateInterval(start: start, end: end)
+    }
+
+    func isCurrent(at date: Date) -> Bool {
+        interval()?.contains(date) == true
+    }
+}
+
 struct WatchScheduleSnapshot: Codable, Sendable {
+    typealias Event = WatchScheduleEvent
+
     let groupName: String
     let startDate: Date?
     let endDate: Date?
     let events: [Event]
     let updatedAt: Date
-
-    struct Event: Codable, Identifiable, Sendable {
-        let id: String
-        let date: Date?
-        let startTime: String
-        let endTime: String
-        let title: String
-        let subtitle: String?
-        let location: String?
-        let lessonType: String?
-        let kind: Kind
-
-        enum Kind: String, Codable, Sendable {
-            case announcement
-            case exam
-            case consultation
-            case other
-        }
-
-        func interval(calendar: Calendar = .current) -> DateInterval? {
-            guard let date else { return nil }
-            let startParts = startTime.split(separator: ":").compactMap { Int($0) }
-            let endParts = endTime.split(separator: ":").compactMap { Int($0) }
-            guard startParts.count == 2, endParts.count == 2 else { return nil }
-
-            var startComponents = calendar.dateComponents([.year, .month, .day], from: date)
-            startComponents.hour = startParts[0]
-            startComponents.minute = startParts[1]
-            var endComponents = startComponents
-            endComponents.hour = endParts[0]
-            endComponents.minute = endParts[1]
-
-            guard let start = calendar.date(from: startComponents),
-                  let end = calendar.date(from: endComponents),
-                  end > start else {
-                return nil
-            }
-            return DateInterval(start: start, end: end)
-        }
-
-        func isCurrent(at date: Date) -> Bool {
-            interval()?.contains(date) == true
-        }
-    }
 
     func upcomingEvents(at date: Date) -> [Event] {
         events
@@ -68,6 +71,7 @@ enum WatchScheduleStore {
     nonisolated static let appGroupIdentifier = "group.com.OrDinaD.MyIIS"
     nonisolated static let snapshotKey = "watch_class_schedule_snapshot_v1"
     nonisolated static let transferKey = "classScheduleSnapshot"
+    nonisolated static let clearTransferKey = "clearClassScheduleSnapshot"
 
     static func save(_ data: Data) throws {
         guard let defaults = appGroupDefaults else {
@@ -82,13 +86,12 @@ enum WatchScheduleStore {
         return try? JSONDecoder().decode(WatchScheduleSnapshot.self, from: data)
     }
 
+    static func clear() {
+        appGroupDefaults?.removeObject(forKey: snapshotKey)
+    }
+
     private static var appGroupDefaults: UserDefaults? {
-        guard FileManager.default.containerURL(
-            forSecurityApplicationGroupIdentifier: appGroupIdentifier
-        ) != nil else {
-            return nil
-        }
-        return UserDefaults(suiteName: appGroupIdentifier)
+        UserDefaults(suiteName: appGroupIdentifier) ?? .standard
     }
 }
 
@@ -110,12 +113,19 @@ final class WatchScheduleReceiver: NSObject, ObservableObject {
         session.delegate = self
         session.activate()
 
-        if let data = session.receivedApplicationContext[WatchScheduleStore.transferKey] as? Data {
-            accept(data)
-        }
+        accept(session.receivedApplicationContext)
     }
 
-    private func accept(_ data: Data) {
+    private func accept(_ applicationContext: [String: Any]) {
+        if applicationContext[WatchScheduleStore.clearTransferKey] as? Bool == true {
+            WatchScheduleStore.clear()
+            snapshot = nil
+            connectionError = nil
+            WidgetCenter.shared.reloadAllTimelines()
+            return
+        }
+
+        guard let data = applicationContext[WatchScheduleStore.transferKey] as? Data else { return }
         do {
             try WatchScheduleStore.save(data)
             snapshot = WatchScheduleStore.load()
@@ -138,9 +148,7 @@ extension WatchScheduleReceiver: WCSessionDelegate {
                 connectionError = error.localizedDescription
                 return
             }
-            if let data = session.receivedApplicationContext[WatchScheduleStore.transferKey] as? Data {
-                accept(data)
-            }
+            accept(session.receivedApplicationContext)
         }
     }
 
@@ -156,9 +164,8 @@ extension WatchScheduleReceiver: WCSessionDelegate {
         _ session: WCSession,
         didReceiveApplicationContext applicationContext: [String: Any]
     ) {
-        guard let data = applicationContext[WatchScheduleStore.transferKey] as? Data else { return }
         Task { @MainActor in
-            accept(data)
+            accept(applicationContext)
         }
     }
 }

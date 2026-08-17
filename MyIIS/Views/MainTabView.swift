@@ -60,7 +60,9 @@ private struct ModernMainTabView: View {
     var body: some View {
         TabView(selection: tabBinding) {
             Tab(LocalizedStringKey("tab_schedule"), systemImage: AppTab.schedule.icon, value: AppTab.schedule) {
-                ScheduleServiceView()
+                NavigationStack {
+                    ScheduleServiceView()
+                }
             }
             .customizationID("tab.schedule")
             .customizationBehavior(.disabled, for: .sidebar, .tabBar)
@@ -117,7 +119,9 @@ private struct LegacyMainTabView: View {
 
     var body: some View {
         TabView(selection: tabBinding) {
-            ScheduleServiceView()
+            NavigationStack {
+                ScheduleServiceView()
+            }
                 .tag(AppTab.schedule)
                 .tabItem { Label(AppTab.schedule.title, systemImage: AppTab.schedule.icon) }
 

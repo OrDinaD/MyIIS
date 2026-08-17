@@ -145,7 +145,7 @@ enum ScheduleDisplayPreferences {
         if let raw = defaults.string(forKey: cardDensityKey), let density = ScheduleCardDensity(rawValue: raw) {
             return density
         }
-        return .regular
+        return .compact
     }
 
     static var otherSubgroupDisplay: ScheduleOtherSubgroupDisplay {
@@ -164,22 +164,29 @@ enum ScheduleDisplayPreferences {
 }
 
 enum SessionScheduleWidgetDateFormatting {
-    nonisolated static func numericDateText(from date: Date) -> String {
+    nonisolated static func numericDateText(
+        from date: Date,
+        locale: Locale = .autoupdatingCurrent,
+        calendar: Calendar = .autoupdatingCurrent
+    ) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = locale
+        formatter.calendar = calendar
         formatter.dateStyle = .short
         formatter.timeStyle = .none
 
-        return "\(formatter.string(from: date))(\(weekdayShortText(from: date).capitalized))"
+        return "\(formatter.string(from: date))(\(weekdayShortText(from: date, locale: locale, calendar: calendar).capitalized))"
     }
 
-    private nonisolated static func weekdayShortText(from date: Date) -> String {
+    private nonisolated static func weekdayShortText(
+        from date: Date,
+        locale: Locale,
+        calendar: Calendar
+    ) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = locale
+        formatter.calendar = calendar
         let weekdays = formatter.shortWeekdaySymbols ?? []
-        let calendar = Calendar(identifier: .gregorian)
         let index = calendar.component(.weekday, from: date) - 1
         guard weekdays.indices.contains(index) else { return "" }
         return weekdays[index]
@@ -253,8 +260,6 @@ enum SessionScheduleWidgetDataStore {
 
 enum ClassScheduleWidgetDataStore {
     private enum Key {
-        // v2 intentionally invalidates snapshots that could have been overwritten
-        // by the retired local-JSON refresh intent.
         static let snapshot = "class_schedule_widget_snapshot_v2"
     }
 
@@ -280,16 +285,14 @@ enum ClassScheduleWidgetDataStore {
 
 private enum ScheduleWidgetSnapshotStore {
     private static var defaults: UserDefaults? {
-        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier) != nil else {
-            return nil
-        }
-        return UserDefaults(suiteName: AppGroup.identifier)
+        UserDefaults(suiteName: AppGroup.identifier) ?? .standard
     }
 
     static func save(_ snapshot: SessionScheduleWidgetSnapshot, key: String, widgetKind: String) {
         guard let defaults else { return }
         do {
             let data = try JSONEncoder().encode(snapshot)
+            defaults.set(data, forKey: key)
             _ = UserDefaultsPayloadStore.save(data, forKey: key, in: defaults)
 #if canImport(WidgetKit)
             WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
@@ -300,16 +303,17 @@ private enum ScheduleWidgetSnapshotStore {
     }
 
     static func load(key: String) -> SessionScheduleWidgetSnapshot? {
-        guard let defaults,
-              let data = UserDefaultsPayloadStore.load(forKey: key, from: defaults) else {
-            return nil
+        guard let defaults else { return nil }
+        if let data = defaults.data(forKey: key) ?? UserDefaultsPayloadStore.load(forKey: key, from: defaults) {
+            return try? JSONDecoder().decode(SessionScheduleWidgetSnapshot.self, from: data)
         }
-        return try? JSONDecoder().decode(SessionScheduleWidgetSnapshot.self, from: data)
+        return nil
     }
 
     static func clear(key: String, widgetKind: String) {
         guard let defaults else { return }
         defaults.removeObject(forKey: key)
+        UserDefaultsPayloadStore.clear(forKey: key, from: defaults)
 #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
 #endif
@@ -358,7 +362,7 @@ extension SessionScheduleWidgetSnapshot.Event {
         if let interval = interval(calendar: calendar) {
             return interval.end >= referenceDate
         }
-        guard let date else { return true }
+        guard let date else { return false }
         let eventDay = calendar.startOfDay(for: date)
         let referenceDay = calendar.startOfDay(for: referenceDate)
         return eventDay >= referenceDay

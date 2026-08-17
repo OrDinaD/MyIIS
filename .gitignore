@@ -161,4 +161,8 @@ skarnik_check.py
 # Context Link
 .context-link.db
 
+# Xcode release artifacts
+*.xcarchive
+*.xcdistributionlogs
+fastlane/screenshots/screenshots.html
 
