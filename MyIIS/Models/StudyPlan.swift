@@ -154,15 +154,27 @@ enum StudyWeekday: String, CaseIterable, Decodable, Identifiable {
 
     var id: String { rawValue }
 
+    var localizedTitle: String {
+        switch self {
+        case .monday: return NSLocalizedString("weekday_monday", value: "Понедельник", comment: "")
+        case .tuesday: return NSLocalizedString("weekday_tuesday", value: "Вторник", comment: "")
+        case .wednesday: return NSLocalizedString("weekday_wednesday", value: "Среда", comment: "")
+        case .thursday: return NSLocalizedString("weekday_thursday", value: "Четверг", comment: "")
+        case .friday: return NSLocalizedString("weekday_friday", value: "Пятница", comment: "")
+        case .saturday: return NSLocalizedString("weekday_saturday", value: "Суббота", comment: "")
+        case .sunday: return NSLocalizedString("weekday_sunday", value: "Воскресенье", comment: "")
+        }
+    }
+
     var shortTitle: String {
         switch self {
-        case .monday: return "Пн"
-        case .tuesday: return "Вт"
-        case .wednesday: return "Ср"
-        case .thursday: return "Чт"
-        case .friday: return "Пт"
-        case .saturday: return "Сб"
-        case .sunday: return "Вс"
+        case .monday: return NSLocalizedString("weekday_monday_short", value: "Пн", comment: "")
+        case .tuesday: return NSLocalizedString("weekday_tuesday_short", value: "Вт", comment: "")
+        case .wednesday: return NSLocalizedString("weekday_wednesday_short", value: "Ср", comment: "")
+        case .thursday: return NSLocalizedString("weekday_thursday_short", value: "Чт", comment: "")
+        case .friday: return NSLocalizedString("weekday_friday_short", value: "Пт", comment: "")
+        case .saturday: return NSLocalizedString("weekday_saturday_short", value: "Сб", comment: "")
+        case .sunday: return NSLocalizedString("weekday_sunday_short", value: "Вс", comment: "")
         }
     }
 
@@ -475,9 +487,9 @@ enum StudyWeekFilter: Hashable, Identifiable {
     var title: String {
         switch self {
         case .all:
-            return "Все недели"
+            return NSLocalizedString("services_schedule_week_all", value: "Все недели", comment: "")
         case .week(let value):
-            return "Неделя \(value)"
+            return String(format: NSLocalizedString("services_schedule_week_number", value: "Неделя %d", comment: ""), value)
         }
     }
 }

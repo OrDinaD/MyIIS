@@ -2,25 +2,168 @@
   "sourceLanguage" : "ru",
   "strings" : {
     "[%lld]" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[%lld]"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[%lld]"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[%lld]"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "[%lld]"
+          }
+        }
+      }
     },
     "%@ — endpoint вернул ошибку" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — endpoint вярнуў памылку"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — endpoint returned an error"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — endpoint вернул ошибку"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — endpoint повернув помилку"
+          }
+        }
+      }
     },
     "%@ — ошибка сервера" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — памылка сервера"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — server error"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — ошибка сервера"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — помилка сервера"
+          }
+        }
+      }
     },
     "%@ — сервер не поддерживает HEAD" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — сервер не падтрымлівае HEAD"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — server does not support HEAD"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — сервер не поддерживает HEAD"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — сервер не підтримує HEAD"
+          }
+        }
+      }
     },
     "%@ — требуется авторизация" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — патрабуецца аўтарызацыя"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — authorization required"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — требуется авторизация"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — потрібна авторизація"
+          }
+        }
+      }
     },
     "%@ %@" : {
       "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        },
         "ru" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "%1$@ %2$@"
           }
         }
@@ -31,34 +174,52 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ і яшчэ %lld"
+            "value" : "%@ и еще %lld"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ and %lld more"
+            "value" : "%@ и еще %lld"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ и ещё %lld"
+            "value" : "%@ и еще %lld"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ і ще %lld"
+            "value" : "%@ и еще %lld"
           }
         }
       }
     },
     "%@–%@" : {
       "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@–%2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@–%2$@"
+          }
+        },
         "ru" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
+            "value" : "%1$@–%2$@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "%1$@–%2$@"
           }
         }
@@ -69,158 +230,980 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Гадзін: %lld"
+            "value" : "%lld часов"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hours: %lld"
+            "value" : "%lld часов"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Часов: %lld"
+            "value" : "%lld часов"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Годин: %lld"
+            "value" : "%lld часов"
           }
         }
       }
     },
     "=== Доступность серверов БГУИР ===" : {
-
-    },
-    "=== Ошибка ===" : {
-
-    },
-    "=== Рекомендация ===" : {
-
-    },
-    "=== Технические детали ===" : {
-
-    },
-    "error_stale_data" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Даныя могуць быць састарэлымі."
+            "value" : "=== Даступнасць сервераў БДУІР ==="
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== BSUIR Server Availability ==="
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Данные могут быть устаревшими."
+            "state" : "translated",
+            "value" : "=== Доступность серверов БГУИР ==="
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Доступність серверів БДУІР ==="
+          }
+        }
+      }
+    },
+    "=== Ошибка ===" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Памылка ==="
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Error ==="
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Ошибка ==="
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Помилка ==="
+          }
+        }
+      }
+    },
+    "=== Рекомендация ===" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Рэкамендацыя ==="
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Recommendation ==="
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Рекомендация ==="
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Рекомендація ==="
+          }
+        }
+      }
+    },
+    "=== Технические детали ===" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Тэхнічныя падрабязнасці ==="
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Technical Details ==="
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Технические детали ==="
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "=== Технічні подробиці ==="
+          }
+        }
+      }
+    },
+    "error_stale_data" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "error_stale_data"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "error_stale_data"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "error_stale_data"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "error_stale_data"
           }
         }
       }
     },
     "error_stale_data_with_time" : {
-      "extractionState" : "extracted_with_value",
       "localizations" : {
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Даныя могуць быць састарэлымі. Апошняе абнаўленне: %@"
+            "value" : "error_stale_data_with_time"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "error_stale_data_with_time"
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Данные могут быть устаревшими. Последнее обновление: %@"
+            "state" : "translated",
+            "value" : "error_stale_data_with_time"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "error_stale_data_with_time"
           }
         }
       }
     },
     "gradebook_share_semester_format" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ семестр"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Semester %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ семестр"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ семестр"
+          }
+        }
+      }
     },
     "intent_absences_response_format" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропускі па непаважлівай прычыне — %d г."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unexcused absences: %d hrs"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски по неуважительной причине — %d ч."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски з неповажної причини — %d год."
+          }
+        }
+      }
     },
     "intent_absences_title" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паказаць пропускі"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show absences"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать пропуски"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показати пропуски"
+          }
+        }
+      }
     },
     "intent_absences_unavailable_dialog" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не ўдалося атрымаць даныя пра пропускі. Спачатку адкрыйце MyIIS і абнавіце даныя."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not get absence data. Please open MyIIS and refresh data first."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить данные о пропусках. Сначала откройте MyIIS и обновите данные."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося отримати дані про пропуски. Спочатку відкрийте MyIIS та оновіть дані."
+          }
+        }
+      }
     },
     "intent_absences_unavailable_short" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не ўдалося атрымаць даныя пра пропускі."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not get absence data."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить данные о пропусках."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося отримати дані про пропуски."
+          }
+        }
+      }
     },
     "intent_average_response_format" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сярэдні бал — %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Average score is %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Средний балл — %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Середній бал — %@"
+          }
+        }
+      }
     },
     "intent_average_title" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паказаць сярэдні бал"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show average grade"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать средний балл"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показати середній бал"
+          }
+        }
+      }
     },
     "intent_average_unavailable_dialog" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не ўдалося атрымаць сярэдні бал. Спачатку адкрыйце MyIIS і абнавіце даныя."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not get average grade. Please open MyIIS and refresh data first."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить средний балл. Сначала откройте MyIIS и обновите данные."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося отримати середній бал. Спочатку відкрийте MyIIS та оновіть дані."
+          }
+        }
+      }
     },
     "intent_average_unavailable_short" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не ўдалося атрымаць сярэдні бал."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not get average grade."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось получить средний балл."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося отримати середній бал."
+          }
+        }
+      }
     },
     "intent_group_response_format" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ваша група — %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your group is %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ваша группа — %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ваша група — %@"
+          }
+        }
+      }
     },
     "intent_group_title" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Паказаць маю групу"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show my group"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показать мою группу"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Показати мою групу"
+          }
+        }
+      }
     },
     "intent_group_unavailable_dialog" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нумар групы не знойдзены. Калі ласка, аўтарызуйцеся ў праграме."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group number not found. Please log in to the app."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Номер группы не найден. Пожалуйста, авторизуйтесь в приложении."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Номер групи не знайдено. Будь ласка, авторизуйтесь у застосунку."
+          }
+        }
+      }
     },
     "intent_group_unavailable_short" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нумар групы не знойдзены."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group number not found."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Номер группы не найден."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Номер групи не знайдено."
+          }
+        }
+      }
     },
     "intent_open_section_title" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адкрыць раздзел у MyIIS"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open section in MyIIS"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть раздел в MyIIS"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Відкрити розділ у MyIIS"
+          }
+        }
+      }
     },
     "intent_section_attendance" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропускі"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Absences"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски"
+          }
+        }
+      }
     },
     "intent_section_diploma" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Дыплом"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diploma"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Диплом"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Диплом"
+          }
+        }
+      }
     },
     "intent_section_dormitory" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Інтэрнат"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dormitory"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Общежитие"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Гуртожиток"
+          }
+        }
+      }
     },
     "intent_section_gradebook" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Залікоўка"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gradebook"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Зачётка"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Заліковка"
+          }
+        }
+      }
     },
     "intent_section_group" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Група"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Группа"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Група"
+          }
+        }
+      }
     },
     "intent_section_headman" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Стараста"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Headman"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Староста"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Староста"
+          }
+        }
+      }
     },
     "intent_section_library" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бібліятэка"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Library"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Библиотека"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Бібліотека"
+          }
+        }
+      }
     },
     "intent_section_parameter" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Раздзел"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Section"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Раздел"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Розділ"
+          }
+        }
+      }
     },
     "intent_section_profile" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Профіль"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Профиль"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Профіль"
+          }
+        }
+      }
     },
     "intent_section_rating" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рэйтынг"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rating"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рейтинг"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рейтинг"
+          }
+        }
+      }
     },
     "intent_section_schedule" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расклад"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schedule"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расписание"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Розклад"
+          }
+        }
+      }
     },
     "intent_section_services" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сэрвісы"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Services"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервисы"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервіси"
+          }
+        }
+      }
     },
     "intent_section_study" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вучоба"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Study"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Учёба"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Навчання"
+          }
+        }
+      }
     },
     "intent_section_type" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Раздзел MyIIS"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MyIIS Section"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Раздел MyIIS"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Розділ MyIIS"
+          }
+        }
+      }
     },
     "lesson_type_consultation" : {
       "localizations" : {
@@ -255,7 +1238,7 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Экзамен / Залік"
+            "value" : "Іспыт / Залік"
           }
         },
         "en" : {
@@ -531,32 +1514,157 @@
       }
     },
     "tab_attendance" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропускі"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Absences"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски"
+          }
+        }
+      }
     },
     "tab_profile" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Профіль"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Профиль"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Профіль"
+          }
+        }
+      }
     },
     "tab_rating" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рэйтынг"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rating"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рейтинг"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рейтинг"
+          }
+        }
+      }
     },
     "tab_schedule" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расклад"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schedule"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расписание"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Розклад"
+          }
+        }
+      }
     },
     "tab_services" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сэрвісы"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Services"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервисы"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервіси"
+          }
+        }
+      }
     },
     "Аудитория не указана" : {
       "localizations" : {
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Аўдыторыя не пазначана"
+            "value" : "Аудитория не указана"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Room not specified"
+            "value" : "Аудитория не указана"
           }
         },
         "ru" : {
@@ -568,7 +1676,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Аудиторію не вказано"
+            "value" : "Аудитория не указана"
           }
         }
       }
@@ -578,13 +1686,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Бліжэйшых падзей няма"
+            "value" : "Ближайших событий нет"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No upcoming events"
+            "value" : "Ближайших событий нет"
           }
         },
         "ru" : {
@@ -596,16 +1704,66 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Найближчих подій немає"
+            "value" : "Ближайших событий нет"
           }
         }
       }
     },
     "В %@" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В %@"
+          }
+        }
+      }
     },
     "Далее:" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Далей:"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next:"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Далее:"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Далі:"
+          }
+        }
+      }
     },
     "Дата" : {
       "localizations" : {
@@ -618,7 +1776,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Date"
+            "value" : "Дата"
           }
         },
         "ru" : {
@@ -636,117 +1794,179 @@
       }
     },
     "Детали ошибки" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Падрабязнасці памылкі"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error details"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Детали ошибки"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Подробиці помилки"
+          }
+        }
+      }
     },
     "До %@" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "До %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "До %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "До %@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "До %@"
+          }
+        }
+      }
     },
     "Доступен" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Даступны"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Available"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступен"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступний"
+          }
+        }
+      }
     },
     "Доступность серверов БГУИР" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Даступнасць сервераў БДУІР"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BSUIR Server Availability"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступность серверов БГУИР"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Доступність серверів БДУІР"
+          }
+        }
+      }
     },
     "Если ошибка повторяется: отключите VPN и попробуйте сеть eduroam." : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Калі памылка паўтараецца, адключыце VPN і паспрабуйце сетку eduroam."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If the error persists: disconnect VPN and try eduroam network."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если ошибка повторяется: отключите VPN и попробуйте сеть eduroam."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Якщо помилка повторюється: вимкніть VPN та спробуйте мережу eduroam."
+          }
+        }
+      }
     },
     "Закрыть" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закрыць"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закрыть"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Закрити"
+          }
+        }
+      }
     },
     "Занятий нет" : {
-
-    },
-    "ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD-запросом с timeout 8 секунд." : {
-
-    },
-    "Код ошибки / Подробности:" : {
-
-    },
-    "Моя группа" : {
-
-    },
-    "Навигация" : {
-
-    },
-    "Нажмите ↻ или откройте расписание в приложении." : {
-      "extractionState" : "stale",
       "localizations" : {
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Націсніце ↻ або адкрыйце расклад у праграме."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap ↻ or open the schedule in the app."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нажмите ↻ или откройте расписание в приложении."
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Натисніть ↻ або відкрийте розклад у застосунку."
-          }
-        }
-      }
-    },
-    "Не удалось обновить данные" : {
-
-    },
-    "Недоступен" : {
-
-    },
-    "Некорректный URL для проверки." : {
-
-    },
-    "Нет HTTP-ответа" : {
-
-    },
-    "Нет ближайших событий" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "be" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Няма бліжэйшых падзей"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No upcoming events"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нет ближайших событий"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Немає найближчих подій"
-          }
-        }
-      }
-    },
-    "Нет доступа" : {
-
-    },
-    "Нет пар" : {
-      "localizations" : {
-        "be" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Пар няма"
+            "value" : "Заняткаў няма"
           }
         },
         "en" : {
@@ -758,19 +1978,382 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
+            "value" : "Занятий нет"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Занять немає"
+          }
+        }
+      }
+    },
+    "ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD-запросом с timeout 8 секунд." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ІІС правяраецца праз працоўны API endpoint, астатнія серверы — лёгкім HEAD-запытам з тайм-аўтам 8 секунд."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IIS is checked via active API endpoint, other servers via lightweight HEAD request with 8s timeout."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD-запросом с timeout 8 секунд."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ІІС перевіряється через робочий API endpoint, інші сервери — швидким HEAD-запитом із тайм-аутом 8 секунд."
+          }
+        }
+      }
+    },
+    "Код ошибки / Подробности:" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Код памылкі / Падрабязнасці:"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error code / Details:"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Код ошибки / Подробности:"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Код помилки / Подробиці:"
+          }
+        }
+      }
+    },
+    "Моя группа" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мая група"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My group"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Моя группа"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Моя група"
+          }
+        }
+      }
+    },
+    "Навигация" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Навігацыя"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigation"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Навигация"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Навігація"
+          }
+        }
+      }
+    },
+    "Нажмите ↻ или откройте расписание в приложении." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите ↻ или откройте расписание в приложении."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите ↻ или откройте расписание в приложении."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите ↻ или откройте расписание в приложении."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите ↻ или откройте расписание в приложении."
+          }
+        }
+      }
+    },
+    "Не удалось обновить данные" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не ўдалося абнавіць даныя"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Failed to refresh data"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось обновить данные"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося оновити дані"
+          }
+        }
+      }
+    },
+    "Недоступен" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Недаступны"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unavailable"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Недоступен"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Недоступний"
+          }
+        }
+      }
+    },
+    "Некорректный URL для проверки." : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Некарэктны URL для праверкі."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invalid URL for check."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Некорректный URL для проверки."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Некоректний URL для перевірки."
+          }
+        }
+      }
+    },
+    "Нет HTTP-ответа" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Няма HTTP-адказу"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No HTTP response"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет HTTP-ответа"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Немає HTTP-відповіді"
+          }
+        }
+      }
+    },
+    "Нет ближайших событий" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет ближайших событий"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет ближайших событий"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет ближайших событий"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет ближайших событий"
+          }
+        }
+      }
+    },
+    "Нет доступа" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Няма доступу"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No access"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет доступа"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Немає доступу"
+          }
+        }
+      }
+    },
+    "Нет пар" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет пар"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет пар"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
             "value" : "Нет пар"
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Пар немає"
+            "value" : "Нет пар"
           }
         }
       }
     },
     "Обновить" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Абнавіць"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refresh"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обновить"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оновити"
+          }
+        }
+      }
     },
     "Обновить расписание" : {
       "extractionState" : "stale",
@@ -778,13 +2361,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Абнавіць расклад"
+            "value" : "Обновить расписание"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Refresh schedule"
+            "value" : "Обновить расписание"
           }
         },
         "ru" : {
@@ -796,13 +2379,38 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Оновити розклад"
+            "value" : "Обновить расписание"
           }
         }
       }
     },
     "Обновление данных" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Абнаўленне даных"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updating data"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обновление данных"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Оновлення даних"
+          }
+        }
+      }
     },
     "Объявление" : {
       "localizations" : {
@@ -833,20 +2441,45 @@
       }
     },
     "Отключить VPN и использовать сеть eduroam" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адключыць VPN і выкарыстоўваць сетку eduroam"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disconnect VPN and use eduroam"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отключить VPN и использовать сеть eduroam"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вимкнути VPN та використовувати мережу eduroam"
+          }
+        }
+      }
     },
     "Откройте расписание в приложении, чтобы загрузить данные." : {
       "localizations" : {
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Адкрыйце расклад у праграме, каб загрузіць даныя."
+            "value" : "Откройте расписание в приложении, чтобы загрузить данные."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Schedule in the app to load data."
+            "value" : "Откройте расписание в приложении, чтобы загрузить данные."
           }
         },
         "ru" : {
@@ -858,35 +2491,135 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Відкрийте розклад у застосунку, щоб завантажити дані."
+            "value" : "Откройте расписание в приложении, чтобы загрузить данные."
           }
         }
       }
     },
     "Открыть раздел" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адкрыць раздзел"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open section"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть раздел"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Відкрити розділ"
+          }
+        }
+      }
     },
     "Ошибка API" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Памылка API"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API error"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ошибка API"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Помилка API"
+          }
+        }
+      }
     },
     "Ошибка URL" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Памылка URL"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "URL error"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ошибка URL"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Помилка URL"
+          }
+        }
+      }
     },
     "Ошибка:" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Памылка:"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error:"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ошибка:"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Помилка:"
+          }
+        }
+      }
     },
     "Пары" : {
       "localizations" : {
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Заняткі"
+            "value" : "Пары"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Classes"
+            "value" : "Пары"
           }
         },
         "ru" : {
@@ -898,7 +2631,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Пари"
+            "value" : "Пары"
           }
         }
       }
@@ -909,13 +2642,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Перачытаць лакальны расклад і абнавіць віджэт «Заняткі»."
+            "value" : "Перечитать локальное расписание и обновить виджет «Пары»."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reload the local schedule and refresh the Classes widget."
+            "value" : "Перечитать локальное расписание и обновить виджет «Пары»."
           }
         },
         "ru" : {
@@ -927,7 +2660,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Перечитати локальний розклад і оновити віджет «Пари»."
+            "value" : "Перечитать локальное расписание и обновить виджет «Пары»."
           }
         }
       }
@@ -937,13 +2670,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Паказвае найбліжэйшыя пары: час, прадмет і аўдыторыю."
+            "value" : "Показывает ближайшие пары: время, предмет и аудиторию."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shows upcoming classes with time, subject, and room."
+            "value" : "Показывает ближайшие пары: время, предмет и аудиторию."
           }
         },
         "ru" : {
@@ -955,7 +2688,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показує найближчі пари: час, предмет і аудиторію."
+            "value" : "Показывает ближайшие пары: время, предмет и аудиторию."
           }
         }
       }
@@ -965,13 +2698,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Паказвае найбліжэйшыя іспыты, кансультацыі і аб’явы вашай групы."
+            "value" : "Показывает ближайшие экзамены, консультации и объявления вашей группы."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shows your group's upcoming exams, consultations, and announcements."
+            "value" : "Показывает ближайшие экзамены, консультации и объявления вашей группы."
           }
         },
         "ru" : {
@@ -983,7 +2716,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показує найближчі іспити, консультації та оголошення вашої групи."
+            "value" : "Показывает ближайшие экзамены, консультации и объявления вашей группы."
           }
         }
       }
@@ -994,13 +2727,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Паказвае найбліжэйшы занятак вашай групы: час, прадмет і аўдыторыю."
+            "value" : "Показывает ближайшую пару вашей группы: время, предмет и аудиторию."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shows your group's next class: time, subject, and room."
+            "value" : "Показывает ближайшую пару вашей группы: время, предмет и аудиторию."
           }
         },
         "ru" : {
@@ -1012,7 +2745,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показує найближчу пару вашої групи: час, предмет і аудиторію."
+            "value" : "Показывает ближайшую пару вашей группы: время, предмет и аудиторию."
           }
         }
       }
@@ -1022,13 +2755,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Паказвае пропускі за месяц."
+            "value" : "Показывает пропуски за месяц."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shows absences for the month."
+            "value" : "Показывает пропуски за месяц."
           }
         },
         "ru" : {
@@ -1040,53 +2773,178 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показує пропуски за місяць."
+            "value" : "Показывает пропуски за месяц."
           }
         }
       }
     },
     "Портал БГУИР" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Партал БДУІР"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BSUIR Portal"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Портал БГУИР"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Портал БДУІР"
+          }
+        }
+      }
     },
     "Последнее успешное обновление данных:\n%@" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Последнее успешное обновление данных:\n%@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Последнее успешное обновление данных:\n%@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Последнее успешное обновление данных:\n%@"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Последнее успешное обновление данных:\n%@"
+          }
+        }
+      }
     },
     "Последний кэш расписания сохранен для офлайн-доступа." : {
       "localizations" : {
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Апошні кэш раскладу захаваны для доступу без інтэрнэту."
+            "value" : "Последний кэш расписания сохранен для офлайн-доступа."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The latest schedule cache is available offline."
+            "value" : "Последний кэш расписания сохранен для офлайн-доступа."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Последний кэш расписания сохранён для офлайн-доступа."
+            "value" : "Последний кэш расписания сохранен для офлайн-доступа."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Останній кеш розкладу збережено для офлайн-доступу."
+            "value" : "Последний кэш расписания сохранен для офлайн-доступа."
           }
         }
       }
     },
     "Последняя проверка серверов:" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Апошняя праверка сервераў:"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last server check:"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Последняя проверка серверов:"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Остання перевірка серверів:"
+          }
+        }
+      }
     },
     "Проверка отменена" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Праверка скасавана"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check cancelled"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверка отменена"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перевірку скасовано"
+          }
+        }
+      }
     },
     "Проверяем серверы..." : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Правяраем серверы..."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking servers..."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверяем серверы..."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перевіряємо сервери..."
+          }
+        }
+      }
     },
     "Пропуски" : {
       "localizations" : {
@@ -1149,13 +3007,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Расклад не загружаны"
+            "value" : "Расписание не загружено"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schedule not loaded"
+            "value" : "Расписание не загружено"
           }
         },
         "ru" : {
@@ -1167,22 +3025,122 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Розклад не завантажено"
+            "value" : "Расписание не загружено"
           }
         }
       }
     },
     "Рекомендации по сети" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рэкамендацыі па сетцы"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network recommendations"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рекомендации по сети"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рекомендації щодо мережі"
+          }
+        }
+      }
     },
     "Рекомендуется отключить VPN и использовать сеть eduroam. Это снижает риск блокировки/таймаутов при доступе к сервисам БГУИР." : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рэкамендуецца адключыць VPN і выкарыстоўваць сетку eduroam. Гэта зніжае рызыку блакіроўкі і тайм-аўтаў пры доступе да сэрвісаў БДУІР."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We recommend disconnecting VPN and using eduroam network to reduce timeouts to BSUIR services."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рекомендуется отключить VPN и использовать сеть eduroam. Это снижает риск блокировки/таймаутов при доступе к сервисам БГУИР."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Рекомендується вимкнути VPN та використовувати мережу eduroam. Це знижує ризик блокування та таймаутів при доступі до сервісів БДУІР."
+          }
+        }
+      }
     },
     "Сдача задолженностей, рецензирование" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Здача запазычанасцей, рэцэнзаванне"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retake submissions, reviewing"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сдача задолженностей, рецензирование"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Здача заборгованостей, рецензування"
+          }
+        }
+      }
     },
     "СЕЙЧАС" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ЗАРАЗ"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "NOW"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "СЕЙЧАС"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ЗАРАЗ"
+          }
+        }
+      }
     },
     "Сейчас до %@" : {
       "extractionState" : "stale",
@@ -1190,13 +3148,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Зараз да %@"
+            "value" : "Сейчас до %@"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Now until %@"
+            "value" : "Сейчас до %@"
           }
         },
         "ru" : {
@@ -1208,29 +3166,79 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Зараз до %@"
+            "value" : "Сейчас до %@"
           }
         }
       }
     },
     "Сервер недоступен. Детали ниже." : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервер недаступны. Падрабязнасці ніжэй."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server unavailable. Details below."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервер недоступен. Детали ниже."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервер недоступний. Подробиці нижче."
+          }
+        }
+      }
     },
     "Сервер ответил не-HTTP протоколом." : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервер адказаў не праз HTTP-пратакол."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server responded with non-HTTP protocol."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервер ответил не-HTTP протоколом."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сервер відповів не через HTTP-протокол."
+          }
+        }
+      }
     },
     "Сессия" : {
       "localizations" : {
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сесія"
+            "value" : "Сессия"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exam session"
+            "value" : "Сессия"
           }
         },
         "ru" : {
@@ -1242,16 +3250,66 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сесія"
+            "value" : "Сессия"
           }
         }
       }
     },
     "Скопировано" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скапіявана"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copied"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировано"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопійовано"
+          }
+        }
+      }
     },
     "Скопировать" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скапіяваць"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copy"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопировать"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скопіювати"
+          }
+        }
+      }
     },
     "Следующая в %@" : {
       "extractionState" : "stale",
@@ -1259,13 +3317,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Наступны занятак а %@"
+            "value" : "Следующая в %@"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Next at %@"
+            "value" : "Следующая в %@"
           }
         },
         "ru" : {
@@ -1277,16 +3335,66 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Наступна о %@"
+            "value" : "Следующая в %@"
           }
         }
       }
     },
     "Средний балл" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сярэдні бал"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grade point average"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Средний балл"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Середній бал"
+          }
+        }
+      }
     },
     "Технические детали" : {
-
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тэхнічныя падрабязнасці"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Technical details"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Технические детали"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Технічні подробиці"
+          }
+        }
+      }
     },
     "ч." : {
       "localizations" : {
@@ -1321,13 +3429,13 @@
         "be" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Іспыт"
+            "value" : "Экзамен"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exam"
+            "value" : "Экзамен"
           }
         },
         "ru" : {
@@ -1339,7 +3447,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Іспит"
+            "value" : "Экзамен"
           }
         }
       }

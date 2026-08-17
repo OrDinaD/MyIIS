@@ -1969,7 +1969,7 @@ extension ScheduleServiceViewModel {
     }
 
     func dayTitle(for day: StudyDaySchedule) -> String {
-        day.weekday.rawValue
+        day.weekday.localizedTitle
     }
 
     func continuousDayTitle(for day: ScheduleContinuousDay) -> String {
