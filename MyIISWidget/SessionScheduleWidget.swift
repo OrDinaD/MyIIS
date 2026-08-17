@@ -307,7 +307,7 @@ struct SessionScheduleWidgetView: View {
                     header
                         .layoutPriority(10)
 
-                    VStack(spacing: 0) {
+                    VStack(spacing: family == .systemLarge ? 5 : 4) {
                         ForEach(groupedVisibleEvents) { day in
                             if day.id != groupedVisibleEvents.first?.id {
                                 classDaySeparator(for: day.date)
@@ -319,9 +319,9 @@ struct SessionScheduleWidgetView: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, family == .systemLarge ? 14 : 12)
-                    .padding(.top, family == .systemLarge ? 5 : 3)
-                    .padding(.bottom, family == .systemLarge ? 7 : 4)
+                    .padding(.horizontal, family == .systemLarge ? 12 : 10)
+                    .padding(.top, family == .systemLarge ? 4 : 3)
+                    .padding(.bottom, family == .systemLarge ? 6 : 4)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 }
             }
@@ -332,25 +332,28 @@ struct SessionScheduleWidgetView: View {
         HStack(spacing: 6) {
             Image(systemName: "calendar")
                 .font(.system(size: 10, weight: .bold))
-            Text(daySeparatorText(for: date).uppercased())
-                .font(.system(size: 11, weight: .bold, design: .rounded))
+            Text(daySeparatorText(for: date))
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
                 .lineLimit(1)
             Spacer(minLength: 4)
         }
-        .foregroundStyle(Color.white.opacity(0.85))
+        .foregroundStyle(Color.white.opacity(0.9))
         .padding(.horizontal, 6)
         .padding(.vertical, 3)
-        .background(Color.white.opacity(0.1), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-        .padding(.top, 4)
-        .padding(.bottom, 2)
+        .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .padding(.top, 3)
+        .padding(.bottom, 1)
     }
 
     private func daySeparatorText(for date: Date?) -> String {
         guard let date else { return "" }
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "E, d MMMM"
-        return formatter.string(from: date)
+        formatter.dateFormat = "dd.MM.yy"
+        let dateString = formatter.string(from: date)
+        formatter.dateFormat = "EE"
+        let weekdayString = formatter.string(from: date).lowercased().replacingOccurrences(of: ".", with: "")
+        return "\(dateString) (\(weekdayString))"
     }
 
     private var classSmallContent: some View {
@@ -388,22 +391,11 @@ struct SessionScheduleWidgetView: View {
                     classProgressBar(for: event, accent: accent, isActive: isActive)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 4) {
-                            Text(event.title)
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
-
-                            if let subgroup = event.subgroup, subgroup > 0 {
-                                Text("\(subgroup) подгр.")
-                                    .font(.system(size: 8, weight: .bold))
-                                    .padding(.horizontal, 3)
-                                    .padding(.vertical, 1)
-                                    .background(Color.blue.opacity(0.25), in: Capsule())
-                                    .foregroundStyle(.cyan)
-                            }
-                        }
+                        Text(event.title)
+                            .font(.system(size: 17, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
 
                         Text("\(event.startTime)–\(event.endTime)")
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
@@ -527,13 +519,14 @@ struct SessionScheduleWidgetView: View {
             classProgressBar(for: event, accent: accent, isActive: isActive)
             classDetails(for: event, accent: accent)
         }
-        .padding(.horizontal, 2)
-        .padding(.vertical, family == .systemLarge ? 4 : 2)
-        .frame(maxWidth: .infinity, minHeight: family == .systemLarge ? 44 : 36, alignment: .leading)
-        .overlay(alignment: .bottom) {
-            Divider()
-                .overlay(Color.white.opacity(0.08))
-        }
+        .padding(.horizontal, family == .systemLarge ? 8 : 6)
+        .padding(.vertical, family == .systemLarge ? 5 : 4)
+        .background(
+            isActive
+                ? Color.white.opacity(0.14)
+                : Color.white.opacity(0.08),
+            in: RoundedRectangle(cornerRadius: family == .systemLarge ? 10 : 8, style: .continuous)
+        )
     }
 
     private func classTimeColumn(for event: SessionScheduleWidgetSnapshot.Event) -> some View {
@@ -566,8 +559,8 @@ struct SessionScheduleWidgetView: View {
                         .labelsHidden()
                         .tint(accent)
                         .rotationEffect(.degrees(90))
-                        .frame(width: proxy.size.height, height: 5)
-                        .position(x: 2.5, y: proxy.size.height / 2)
+                        .frame(width: proxy.size.height, height: 6)
+                        .position(x: 3, y: proxy.size.height / 2)
                 } else {
                     Capsule()
                         .fill(accent)
@@ -584,7 +577,7 @@ struct SessionScheduleWidgetView: View {
                 }
             }
         }
-        .frame(width: 5)
+        .frame(width: 6)
         .widgetAccentable()
         .accessibilityHidden(true)
     }
@@ -596,27 +589,16 @@ struct SessionScheduleWidgetView: View {
         let midPairBreak = classBreak(for: event)
 
         return VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 4) {
-                Text(event.title)
-                    .font(.system(
-                        size: family == .systemLarge ? 16 : 15,
-                        weight: .bold,
-                        design: .rounded
-                    ))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.66)
-                    .privacySensitive()
-
-                if let subgroup = event.subgroup, subgroup > 0 {
-                    Text("\(subgroup) подгр.")
-                        .font(.system(size: 8, weight: .bold))
-                        .padding(.horizontal, 3)
-                        .padding(.vertical, 1)
-                        .background(Color.blue.opacity(0.25), in: Capsule())
-                        .foregroundStyle(.cyan)
-                }
-            }
+            Text(event.title)
+                .font(.system(
+                    size: family == .systemLarge ? 16 : 15,
+                    weight: .bold,
+                    design: .rounded
+                ))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.66)
+                .privacySensitive()
 
             HStack(spacing: 7) {
                 Text(classLocationText(for: event))

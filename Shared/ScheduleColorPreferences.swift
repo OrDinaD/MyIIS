@@ -37,13 +37,13 @@ public enum LessonTypeCategory: String, CaseIterable, Identifiable, Codable, Sen
         case .lecture:
             return "#34C759" // Green
         case .practice:
-            return "#FF9500" // Orange/Amber
+            return "#FF3B30" // Red
         case .laboratory:
-            return "#007AFF" // Blue
+            return "#FFCC00" // Yellow
         case .consultation:
             return "#AF52DE" // Purple
         case .exam:
-            return "#FF3B30" // Red
+            return "#FF2D55" // Pink/Exam Red
         case .other:
             return "#5AC8FA" // Teal
         }

@@ -37,7 +37,7 @@ struct UnauthorizedTabView: View {
     }
 
     private var baseTabView: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: tabBinding) {
             NavigationStack {
                 ScheduleServiceView()
             }
@@ -55,5 +55,17 @@ struct UnauthorizedTabView: View {
         .automaticTabBarAppearance()
         .appBackground()
         .reduceMotionSensitive()
+    }
+
+    private var tabBinding: Binding<UnauthorizedAppTab> {
+        Binding(
+            get: { selectedTab },
+            set: { newTab in
+                if newTab == selectedTab && newTab == .schedule {
+                    NotificationCenter.default.post(name: .scheduleResetToDefaultGroup, object: nil)
+                }
+                selectedTab = newTab
+            }
+        )
     }
 }

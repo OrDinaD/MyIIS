@@ -177,6 +177,11 @@ struct ScheduleServiceView: View {
         .sheet(isPresented: $isSearchSheetPresented) {
             searchSheetContent
         }
+        .onReceive(NotificationCenter.default.publisher(for: .scheduleResetToDefaultGroup)) { _ in
+            Task {
+                await viewModel.resetToDefaultOrPinnedSchedule()
+            }
+        }
     }
 
     // MARK: - Header Info Bar
@@ -519,13 +524,6 @@ struct ScheduleServiceView: View {
                         Label(NSLocalizedString("services_schedule_report_download", comment: ""), systemImage: "square.and.arrow.down")
                     }
                     .disabled(viewModel.isDownloadingReport)
-
-                    Button {
-                        Task { await viewModel.enableExamRemindersFromUserAction() }
-                    } label: {
-                        Label(NSLocalizedString("services_schedule_exam_reminders", comment: ""), systemImage: "bell.badge")
-                    }
-                    .disabled(viewModel.filteredExams.isEmpty)
                 }
 
                 if usesLocalJSONSchedule {
@@ -765,8 +763,8 @@ struct ScheduleServiceView: View {
     private var scheduleUnavailableView: some View {
         ContentUnavailableView {
             Label(
-                NSLocalizedString("services_schedule_empty_title", comment: ""),
-                systemImage: viewModel.isSchedulePublicationPending ? "calendar.badge.clock" : "calendar"
+                viewModel.currentModeEmptyTitle,
+                systemImage: viewModel.displayMode == .exams ? "graduationcap" : (viewModel.isSchedulePublicationPending ? "calendar.badge.clock" : "calendar")
             )
         } description: {
             Text(viewModel.currentModeEmptyText)
@@ -776,8 +774,8 @@ struct ScheduleServiceView: View {
             }
             .buttonStyle(.bordered)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 280)
+        .padding(.vertical, 24)
     }
 
     private func lessonCardDensity(for lesson: DisciplineSchedule) -> ScheduleCardDensity {
@@ -912,7 +910,7 @@ private struct ScheduleLessonCard: View {
             timeColumn(font: timeFont)
                 .frame(width: cardDensity == .compact ? 62 : 66)
 
-            accentBar(width: 5)
+            accentBar(width: 7)
 
             VStack(alignment: .leading, spacing: cardDensity == .compact ? 2 : 4) {
                 HStack(spacing: 6) {
@@ -991,12 +989,16 @@ private struct ScheduleLessonCard: View {
     }
 
     private var subgroupBadge: some View {
-        Text("\(lesson.subgroup) подгр.")
-            .font(.system(size: 10, weight: .bold))
-            .padding(.horizontal, 5)
-            .padding(.vertical, 2)
-            .background(Color.blue.opacity(0.15), in: Capsule())
-            .foregroundStyle(.blue)
+        HStack(spacing: 2) {
+            Image(systemName: "person")
+                .font(.system(size: 8, weight: .semibold))
+            Text("\(lesson.subgroup)")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+        }
+        .foregroundStyle(cardSecondaryForeground)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 1.5)
+        .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 
     private func weeksBadge(_ text: String) -> some View {

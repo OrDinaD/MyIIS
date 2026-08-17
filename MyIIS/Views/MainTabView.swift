@@ -102,8 +102,12 @@ private struct ModernMainTabView: View {
         Binding(
             get: { router.selectedTab },
             set: { newTab in
-                if newTab == router.selectedTab && newTab == .others {
-                    router.servicesPath = NavigationPath()
+                if newTab == router.selectedTab {
+                    if newTab == .schedule {
+                        NotificationCenter.default.post(name: .scheduleResetToDefaultGroup, object: nil)
+                    } else if newTab == .others {
+                        router.servicesPath = NavigationPath()
+                    }
                 }
                 router.selectedTab = newTab
             }

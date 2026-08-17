@@ -369,3 +369,7 @@ extension SessionScheduleWidgetSnapshot.Event {
         return eventDay >= referenceDay
     }
 }
+
+public extension Notification.Name {
+    static let scheduleResetToDefaultGroup = Notification.Name("scheduleResetToDefaultGroup")
+}

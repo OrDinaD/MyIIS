@@ -453,6 +453,43 @@ final class ScheduleServiceViewModel {
         }
     }
 
+    func resetToDefaultOrPinnedSchedule() async {
+        let primaryGroup = accountGroupName?.nilIfBlank
+            ?? pinnedGroupNames.first?.nilIfBlank
+            ?? defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank
+
+        if let primaryGroup {
+            shouldResetQueryOnModeChange = false
+            mode = .group
+            shouldResetQueryOnModeChange = true
+            selectedEmployee = nil
+            query = primaryGroup
+            await loadGroup(primaryGroup)
+        } else if let firstPinnedTeacher = pinnedTeachers.first {
+            shouldResetQueryOnModeChange = false
+            mode = .teacher
+            shouldResetQueryOnModeChange = true
+            query = firstPinnedTeacher.name
+            if let employee = employees.first(where: { $0.urlId == firstPinnedTeacher.urlId }) {
+                await loadEmployee(employee)
+            } else {
+                let fallbackTeacher = ScheduleEmployeeDirectoryEntry(
+                    firstName: nil,
+                    lastName: nil,
+                    middleName: nil,
+                    degree: nil,
+                    rank: nil,
+                    photoLink: firstPinnedTeacher.photoLink,
+                    calendarId: nil,
+                    id: Int.min,
+                    urlId: firstPinnedTeacher.urlId,
+                    fio: firstPinnedTeacher.name
+                )
+                await loadEmployee(fallbackTeacher)
+            }
+        }
+    }
+
     func loadGroup(_ groupName: String) async {
         let trimmed = groupName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -972,7 +1009,11 @@ final class ScheduleServiceViewModel {
 
         let now = Date()
         var events = continuousTimelineDays
-            .flatMap { day in day.lessons.map { Self.widgetEvent(from: $0, on: day.date) } }
+            .flatMap { day in
+                day.lessons
+                    .filter { shouldKeepLessonForWidget($0) }
+                    .map { Self.widgetEvent(from: $0, on: day.date) }
+            }
             .filter { $0.isUpcoming(at: now) }
             .sorted(by: Self.widgetEventSortingComparator)
 
@@ -981,7 +1022,7 @@ final class ScheduleServiceViewModel {
             let today = calendar.startOfDay(for: now)
             var fallbackEvents: [SessionScheduleWidgetSnapshot.Event] = []
             for day in scheduleResponse.orderedDays {
-                for lesson in day.lessons {
+                for lesson in day.lessons where shouldKeepLessonForWidget(lesson) {
                     let event = Self.widgetEvent(from: lesson, on: today)
                     fallbackEvents.append(event)
                 }
@@ -999,6 +1040,11 @@ final class ScheduleServiceViewModel {
         ClassScheduleWidgetDataStore.save(snapshot)
         WatchScheduleConnectivityService.shared.activate()
         WatchScheduleConnectivityService.shared.send(snapshot)
+    }
+
+    private func shouldKeepLessonForWidget(_ lesson: DisciplineSchedule) -> Bool {
+        guard case .subgroup(let value) = subgroupFilter else { return true }
+        return lesson.subgroup == 0 || lesson.subgroup == value
     }
 
     private func updateSessionScheduleWidgetSnapshot(from scheduleResponse: PublicScheduleResponse) {
@@ -1825,9 +1871,22 @@ extension ScheduleServiceViewModel {
         }
     }
 
+    var currentModeEmptyTitle: String {
+        if isSchedulePublicationPending {
+            return NSLocalizedString("services_schedule_publication_pending_title", value: "Расписание составляется", comment: "")
+        }
+        if displayMode == .exams {
+            return NSLocalizedString("services_schedule_exams_empty_title", value: "Экзаменов пока нет", comment: "")
+        }
+        return NSLocalizedString("services_schedule_empty_title", value: "Занятий нет", comment: "")
+    }
+
     var currentModeEmptyText: String {
         if isSchedulePublicationPending {
             return NSLocalizedString("services_schedule_publication_pending", comment: "")
+        }
+        if displayMode == .exams {
+            return NSLocalizedString("services_schedule_exams_empty_description", value: "В расписании экзамены и консультации пока не запланированы.", comment: "")
         }
         if displayMode == .continuous, isSchedulePastEnd {
             return NSLocalizedString("services_schedule_no_future_lessons", comment: "")
