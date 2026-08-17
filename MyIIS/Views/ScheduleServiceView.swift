@@ -80,6 +80,7 @@ struct ScheduleServiceView: View {
                     .onEnded { value in
                         if value.startLocation.x < 50 && value.translation.width > 75 && abs(value.translation.height) < 65 {
                             if viewModel.mode == .teacher || (viewModel.mode == .group && !isCurrentScheduleUserAccountGroup) {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 Task {
                                     await viewModel.resetToDefaultOrPinnedSchedule()
                                 }
@@ -920,6 +921,7 @@ private struct ScheduleTeacherHeader: View {
 
 // MARK: - Lesson Card
 
+// swiftlint:disable:next type_body_length
 private struct ScheduleLessonCard: View {
     let lesson: DisciplineSchedule
     let isCurrent: Bool
@@ -942,6 +944,8 @@ private struct ScheduleLessonCard: View {
         }
         .buttonStyle(.plain)
         .contentShape(RoundedRectangle(cornerRadius: cardCornerRadius, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityHint(NSLocalizedString("schedule_card_details_hint", value: "Дважды коснитесь для подробностей", comment: ""))
     }
 
     private var cardCornerRadius: CGFloat {
@@ -972,20 +976,21 @@ private struct ScheduleLessonCard: View {
     }
 
     private var otherSubgroupCardContent: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: cardDensity == .compact ? 10 : 12) {
             VStack(alignment: .trailing, spacing: 1) {
                 Text(lesson.startLessonTime)
-                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .font(.system(size: cardDensity == .compact ? 13 : 14, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.secondary)
                 Text(lesson.endLessonTime)
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundStyle(.secondary.opacity(0.6))
+                    .font(.system(size: cardDensity == .compact ? 10 : 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.secondary.opacity(0.75))
             }
-            .frame(width: 48, alignment: .trailing)
+            .frame(width: cardDensity == .compact ? 58 : 62, alignment: .trailing)
 
-            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
                 .fill(accentColor.opacity(0.65))
-                .frame(width: 3, height: 22)
+                .frame(width: 4, height: cardDensity == .compact ? 20 : 24)
+                .accessibilityHidden(true)
 
             Text(compactTitle)
                 .font(.subheadline.weight(.medium))
@@ -1000,8 +1005,8 @@ private struct ScheduleLessonCard: View {
                     .foregroundStyle(.secondary.opacity(0.75))
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, cardDensity == .compact ? 12 : 14)
+        .padding(.vertical, cardDensity == .compact ? 6 : 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(uiColor: .secondarySystemGroupedBackground).opacity(0.35), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay {
@@ -1125,7 +1130,7 @@ private struct ScheduleLessonCard: View {
 
             Text(lesson.endLessonTime)
                 .font(endLessonFont)
-                .foregroundStyle(cardSecondaryForeground.opacity(0.65))
+                .foregroundStyle(cardPrimaryForeground)
         }
     }
 
@@ -1148,6 +1153,7 @@ private struct ScheduleLessonCard: View {
             }
         }
         .frame(width: width)
+        .accessibilityHidden(true)
     }
 
     private var currentBadge: some View {

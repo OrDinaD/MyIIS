@@ -329,26 +329,30 @@ struct SessionScheduleWidgetView: View {
     }
 
     private func classDaySeparator(for date: Date?) -> some View {
-        HStack(spacing: 6) {
-            Image(systemName: "calendar")
-                .font(.system(size: 10, weight: .bold))
-            Text(daySeparatorText(for: date))
-                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                .lineLimit(1)
-            Spacer(minLength: 4)
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 5) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 9, weight: .semibold))
+                Text(daySeparatorText(for: date))
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+            }
+            .foregroundStyle(Color.white.opacity(0.85))
+
+            Rectangle()
+                .fill(Color.white.opacity(0.18))
+                .frame(height: 1)
         }
-        .foregroundStyle(Color.white.opacity(0.9))
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .padding(.horizontal, 2)
         .padding(.top, family == .systemLarge ? 10 : 8)
-        .padding(.bottom, 2)
+        .padding(.bottom, 3)
     }
 
     private func daySeparatorText(for date: Date?) -> String {
         guard let date else { return "" }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = .autoupdatingCurrent
         formatter.dateFormat = "dd.MM.yy"
         let dateString = formatter.string(from: date)
         formatter.dateFormat = "EE"

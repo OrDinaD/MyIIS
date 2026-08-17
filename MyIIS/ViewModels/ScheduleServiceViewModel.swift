@@ -160,6 +160,10 @@ final class ScheduleServiceViewModel {
         didSet {
             persistSubgroupFilter()
             rebuildContinuousTimeline(reset: true)
+            if let schedule {
+                updateClassScheduleWidgetSnapshot(from: schedule)
+                updateSessionScheduleWidgetSnapshot(from: schedule)
+            }
         }
     }
     var isLoading = false
@@ -304,8 +308,23 @@ final class ScheduleServiceViewModel {
         schedule = snapshot.schedule
         currentWeekNumber = snapshot.currentWeekNumber
         weekFilter = snapshot.weekFilter
-        displayMode = snapshot.displayMode
-        subgroupFilter = snapshot.subgroupFilter
+
+        if let savedModeRaw = defaults.string(forKey: Self.displayModeDefaultsKey),
+           let savedMode = ScheduleDisplayMode(rawValue: savedModeRaw) {
+            displayMode = savedMode
+        } else {
+            displayMode = snapshot.displayMode
+        }
+
+        if mode == .group,
+           let savedValue = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
+            subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
+        } else if mode == .teacher {
+            subgroupFilter = .all
+        } else {
+            subgroupFilter = snapshot.subgroupFilter
+        }
+
         continuousTimelineDays = snapshot.continuousTimelineDays
         updateClassScheduleWidgetSnapshot(from: snapshot.schedule)
         updateSessionScheduleWidgetSnapshot(from: snapshot.schedule)
@@ -782,9 +801,12 @@ final class ScheduleServiceViewModel {
         )
         preferExamDisplayIfNeeded(for: scheduleResponse)
         applyDefaultWeekFilter()
+        setMode(.group, preservingQuery: groupNumber)
+        if let savedValue = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
+            subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
+        }
         sanitizeSubgroupFilter()
         rebuildContinuousTimeline(reset: true)
-        setMode(.group, preservingQuery: groupNumber)
         persistGroupSelection(groupNumber)
         saveSnapshot()
         errorMessage = nil
@@ -804,11 +826,10 @@ final class ScheduleServiceViewModel {
             backendValue: week,
             termStartDate: scheduleResponse.startDate
         )
+        setMode(.teacher, preservingQuery: employee.displayName)
         subgroupFilter = .all
         applyDefaultWeekFilter()
-        sanitizeSubgroupFilter()
         rebuildContinuousTimeline(reset: true)
-        setMode(.teacher, preservingQuery: employee.displayName)
         persistTeacherSelection(urlId: urlId, displayName: employee.displayName)
         saveSnapshot()
         errorMessage = nil
@@ -1069,6 +1090,7 @@ final class ScheduleServiceViewModel {
 
         let now = Date()
         let events = scheduleResponse.exams
+            .filter { shouldKeepLessonForWidget($0) }
             .sorted(by: Self.examSortingComparator)
             .map { Self.widgetEvent(from: $0, on: $0.lessonDate ?? $0.startLessonDate) }
             .filter { $0.isUpcoming(at: now) }
@@ -1194,7 +1216,11 @@ final class ScheduleServiceViewModel {
     }
 
     private func sanitizeSubgroupFilter() {
-        if !subgroupFilters.contains(subgroupFilter) {
+        guard mode == .group else {
+            subgroupFilter = .all
+            return
+        }
+        if subgroupFilters.count > 1, !subgroupFilters.contains(subgroupFilter) {
             subgroupFilter = .all
         }
     }
@@ -1448,10 +1474,10 @@ final class ScheduleServiceViewModel {
         )
         schedule = teacherSchedule
         currentWeekNumber = 1
-        applyDefaultWeekFilter()
-        sanitizeSubgroupFilter()
-        rebuildContinuousTimeline(reset: true)
         setMode(.teacher, preservingQuery: entry.displayName)
+        subgroupFilter = .all
+        applyDefaultWeekFilter()
+        rebuildContinuousTimeline(reset: true)
         saveSnapshot()
         errorMessage = nil
     }

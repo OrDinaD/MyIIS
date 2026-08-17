@@ -201,6 +201,35 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         XCTAssertEqual(schedule.orderedDays.flatMap(\.lessons).map(\.id), ["first"])
     }
 
+    func testSubgroupPreferencePreservedAcrossTeacherNavigation() {
+        let defaults = makeDefaults("subgroup-preserve")
+        defer { removeDefaults("subgroup-preserve") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        let groupLesson1 = makeLesson(id: "g1", subgroup: 1)
+        let groupLesson2 = makeLesson(id: "g2", subgroup: 2)
+        let groupSchedule = makePublicSchedule(lessons: [groupLesson1, groupLesson2])
+
+        viewModel.applyGroupSchedule(groupSchedule, week: 1, groupNumber: "420602")
+        viewModel.subgroupFilter = .subgroup(2)
+        XCTAssertEqual(defaults.integer(forKey: "services.schedule.subgroupFilter"), 2)
+
+        // Switch to teacher schedule
+        let teacherSchedule = makePublicSchedule(lessons: [makeLesson(id: "t1")])
+        viewModel.schedule = teacherSchedule
+        viewModel.mode = .teacher
+        viewModel.subgroupFilter = .all
+
+        XCTAssertEqual(viewModel.mode, .teacher)
+        XCTAssertEqual(viewModel.subgroupFilter, .all)
+        // Subgroup filter setting for student groups must remain untouched in UserDefaults
+        XCTAssertEqual(defaults.integer(forKey: "services.schedule.subgroupFilter"), 2)
+
+        // Switch back to group schedule
+        viewModel.applyGroupSchedule(groupSchedule, week: 1, groupNumber: "420602")
+        XCTAssertEqual(viewModel.mode, .group)
+        XCTAssertEqual(viewModel.subgroupFilter, .subgroup(2))
+    }
+
     func testExactDateLessonDoesNotRepeatOnSameWeekday() {
         let exactDate = Date(timeIntervalSince1970: 1_775_344_400)
         let nextWeek = exactDate.addingTimeInterval(7 * 24 * 60 * 60)
