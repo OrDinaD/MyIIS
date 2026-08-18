@@ -1,4 +1,0 @@
-interface:
-  display_name: "Xcode for MyIIS"
-  short_description: "Работа с MyIIS через живой Xcode MCP"
-  default_prompt: "Use $xcode to inspect and change MyIIS safely through the live Xcode MCP workflow."

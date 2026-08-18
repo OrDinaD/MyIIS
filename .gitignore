@@ -143,13 +143,14 @@ periphery_report.txt
 # Local editor metadata
 .vscode/
 
-# Local agent artifacts (project AGENTS.md and .agents/ are tracked intentionally)
+# Local agent and AI artifacts
+.agents/
+AGENTS.md
 .antigravity.md
-archive_fail_log*.txt
-task.md
-
-# Local Antigravity CLI context
 GEMINI.md
+task.md
+CRASH_AUDIT.md
+archive_fail_log*.txt
 
 # Python
 venv/

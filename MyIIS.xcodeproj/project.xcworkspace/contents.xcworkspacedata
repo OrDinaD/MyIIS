@@ -4,4 +4,12 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <Group
+      location = "group:Documentation"
+      name = "Documentation">
+   </Group>
+   <Group
+      location = "group:scripts"
+      name = "scripts">
+   </Group>
 </Workspace>

@@ -139,7 +139,6 @@
 		F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "MyIIS Watch WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F52AB8D33008F114002D379E /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		F52AB8D53008F115002D379E /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		F52AB91D300916B2002D379E /* MyIIS Watch WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "MyIIS Watch WidgetExtension.entitlements"; sourceTree = "<group>"; };
 		F56F7A9B3011EA7200DBCCC7 /* Default-iOS-Default-1024x1024@1x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-iOS-Default-1024x1024@1x.png"; sourceTree = "<group>"; };
 		F56FE4ED2FD2DD45004E8300 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -148,6 +147,19 @@
 		F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F5BB00012E9CF9DA00A3E835 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		F5BB00022E9CF9DA00A3E835 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		F5BB00032E9CF9DA00A3E835 /* PROJECT_DOCUMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PROJECT_DOCUMENTATION.md; sourceTree = "<group>"; };
+		F5BB00042E9CF9DA00A3E835 /* apps.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = apps.json; sourceTree = "<group>"; };
+		F5BB00052E9CF9DA00A3E835 /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
+		F5BB00062E9CF9DA00A3E835 /* .nojekyll */ = {isa = PBXFileReference; lastKnownFileType = text; path = .nojekyll; sourceTree = "<group>"; };
+		F5BB00072E9CF9DA00A3E835 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		F5BB00082E9CF9DA00A3E835 /* .swiftformat */ = {isa = PBXFileReference; lastKnownFileType = text; path = .swiftformat; sourceTree = "<group>"; };
+		F5BB00092E9CF9DA00A3E835 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text; path = .swiftlint.yml; sourceTree = "<group>"; };
+		F5BB000A2E9CF9DA00A3E835 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		F5BB000B2E9CF9DA00A3E835 /* GEMINI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI.md; sourceTree = "<group>"; };
+		F5BB000C2E9CF9DA00A3E835 /* .antigravity.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = .antigravity.md; sourceTree = "<group>"; };
+		F5BB000D2E9CF9DA00A3E835 /* task.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = task.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -227,6 +239,66 @@
 		F5EE36312FB1ED94004B7BD8 /* MyIISUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = MyIISUITests;
+			sourceTree = "<group>";
+		};
+		F5AA00012E9CF9DA00A3E835 /* scripts */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = scripts;
+			sourceTree = "<group>";
+		};
+		F5AA00022E9CF9DA00A3E835 /* fastlane */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = fastlane;
+			sourceTree = "<group>";
+		};
+		F5AA00032E9CF9DA00A3E835 /* .github */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = .github;
+			sourceTree = "<group>";
+		};
+		F5AA00042E9CF9DA00A3E835 /* static */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = static;
+			sourceTree = "<group>";
+		};
+		F5AA00052E9CF9DA00A3E835 /* public */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = public;
+			sourceTree = "<group>";
+		};
+		F5AA00062E9CF9DA00A3E835 /* Design */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Design;
+			sourceTree = "<group>";
+		};
+		F5AA00072E9CF9DA00A3E835 /* Wos */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Wos;
+			sourceTree = "<group>";
+		};
+		F5AA00082E9CF9DA00A3E835 /* iMessageIconsGen */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = iMessageIconsGen;
+			sourceTree = "<group>";
+		};
+		F5AA00092E9CF9DA00A3E835 /* API */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = API;
+			sourceTree = "<group>";
+		};
+		F5AA000A2E9CF9DA00A3E835 /* SupportSpecFiles */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SupportSpecFiles;
+			sourceTree = "<group>";
+		};
+		F5AA000B2E9CF9DA00A3E835 /* Configs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Configs;
+			sourceTree = "<group>";
+		};
+		F5AA000C2E9CF9DA00A3E835 /* .agents */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = .agents;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -318,24 +390,96 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		F5CC00012E9CF9DA00A3E835 /* Design & Marketing */ = {
+			isa = PBXGroup;
+			children = (
+				F5AA00062E9CF9DA00A3E835 /* Design */,
+				F51DCE2A2FB0D4BB00EA90E3 /* logos */,
+				F5AA00052E9CF9DA00A3E835 /* public */,
+				F5AA00072E9CF9DA00A3E835 /* Wos */,
+				F5AA00082E9CF9DA00A3E835 /* iMessageIconsGen */,
+			);
+			name = "Design & Marketing";
+			sourceTree = "<group>";
+		};
+		F5CC00022E9CF9DA00A3E835 /* Scripts & Automation */ = {
+			isa = PBXGroup;
+			children = (
+				F5AA00012E9CF9DA00A3E835 /* scripts */,
+				F5AA00022E9CF9DA00A3E835 /* fastlane */,
+				F5AA00032E9CF9DA00A3E835 /* .github */,
+			);
+			name = "Scripts & Automation";
+			sourceTree = "<group>";
+		};
+		F5CC00032E9CF9DA00A3E835 /* Web & SideStore */ = {
+			isa = PBXGroup;
+			children = (
+				F5AA00042E9CF9DA00A3E835 /* static */,
+				F5BB00042E9CF9DA00A3E835 /* apps.json */,
+				F5BB00052E9CF9DA00A3E835 /* index.html */,
+				F5BB00062E9CF9DA00A3E835 /* .nojekyll */,
+			);
+			name = "Web & SideStore";
+			sourceTree = "<group>";
+		};
+		F5CC00042E9CF9DA00A3E835 /* Documentation & Specs */ = {
+			isa = PBXGroup;
+			children = (
+				F5BB00012E9CF9DA00A3E835 /* README.md */,
+				F5BB00022E9CF9DA00A3E835 /* LICENSE */,
+				F5BB00032E9CF9DA00A3E835 /* PROJECT_DOCUMENTATION.md */,
+				F5AA00092E9CF9DA00A3E835 /* API */,
+				F5AA000A2E9CF9DA00A3E835 /* SupportSpecFiles */,
+			);
+			name = "Documentation & Specs";
+			sourceTree = "<group>";
+		};
+		F5CC00052E9CF9DA00A3E835 /* Agents & AI */ = {
+			isa = PBXGroup;
+			children = (
+				F5AA000C2E9CF9DA00A3E835 /* .agents */,
+				F5BB000A2E9CF9DA00A3E835 /* AGENTS.md */,
+				F5BB000B2E9CF9DA00A3E835 /* GEMINI.md */,
+				F5BB000C2E9CF9DA00A3E835 /* .antigravity.md */,
+				F5BB000D2E9CF9DA00A3E835 /* task.md */,
+			);
+			name = "Agents & AI";
+			sourceTree = "<group>";
+		};
+		F5CC00062E9CF9DA00A3E835 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				F5BB00072E9CF9DA00A3E835 /* .gitignore */,
+				F5BB00082E9CF9DA00A3E835 /* .swiftformat */,
+				F5BB00092E9CF9DA00A3E835 /* .swiftlint.yml */,
+				F5AA000B2E9CF9DA00A3E835 /* Configs */,
+			);
+			name = "Configuration";
+			sourceTree = "<group>";
+		};
 		F59436C62E9CF9DA00A3E835 = {
 			isa = PBXGroup;
 			children = (
-				F52AB91D300916B2002D379E /* MyIIS Watch WidgetExtension.entitlements */,
 				F59436D12E9CF9DA00A3E835 /* MyIIS */,
 				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
 				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
 				F51DCBA92FB09EC400EA90E3 /* MyIISIntents */,
-				F5B1AA102FC70D9D00A56D01 /* MyIISTests */,
-				F5EE36312FB1ED94004B7BD8 /* MyIISUITests */,
 				F58E2F0E2FD00E66002BCF03 /* MyIISMessages */,
 				F52AB8C03008EF79002D379E /* MyIIS Watch App Watch App */,
 				F52AB8D73008F115002D379E /* MyIIS Watch Widget */,
-				F58E2F0B2FD00E66002BCF03 /* Frameworks */,
-				F59436D02E9CF9DA00A3E835 /* Products */,
-				F51DCE2A2FB0D4BB00EA90E3 /* logos */,
+				F5B1AA102FC70D9D00A56D01 /* MyIISTests */,
+				F5EE36312FB1ED94004B7BD8 /* MyIISUITests */,
+				F5CC00012E9CF9DA00A3E835 /* Design & Marketing */,
+				F5CC00022E9CF9DA00A3E835 /* Scripts & Automation */,
+				F5CC00032E9CF9DA00A3E835 /* Web & SideStore */,
+				F5CC00042E9CF9DA00A3E835 /* Documentation & Specs */,
+				F5CC00052E9CF9DA00A3E835 /* Agents & AI */,
+				F5CC00062E9CF9DA00A3E835 /* Configuration */,
 				F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */,
 				F56FE4ED2FD2DD45004E8300 /* Info.plist */,
+				F58E2F0B2FD00E66002BCF03 /* Frameworks */,
+				F59436D02E9CF9DA00A3E835 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
@@ -928,7 +1072,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = "MyIIS Watch WidgetExtension.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "MyIIS Watch Widget/MyIIS Watch WidgetExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
@@ -963,7 +1107,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = "MyIIS Watch WidgetExtension.entitlements";
+				CODE_SIGN_ENTITLEMENTS = "MyIIS Watch Widget/MyIIS Watch WidgetExtension.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = Y85TSUMM4F;
