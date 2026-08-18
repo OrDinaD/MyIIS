@@ -233,7 +233,13 @@ struct SessionScheduleWidgetView: View {
         case .systemSmall:
             return 1
         case .systemMedium:
-            return style == .classes ? 3 : 2
+            if style == .classes {
+                let allEvents = entry.upcomingEvents
+                let firstDate = allEvents.first?.date
+                let spansDays = allEvents.prefix(3).contains { $0.date != firstDate }
+                return spansDays ? 2 : 3
+            }
+            return 2
         case .systemLarge:
             return style == .classes ? 5 : 4
         default:
@@ -329,12 +335,12 @@ struct SessionScheduleWidgetView: View {
     }
 
     private func classDaySeparator(for date: Date?) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 5) {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 4) {
                 Image(systemName: "calendar")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: family == .systemLarge ? 9 : 8, weight: .semibold))
                 Text(daySeparatorText(for: date))
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .font(.system(size: family == .systemLarge ? 11 : 10, weight: .bold, design: .monospaced))
                     .lineLimit(1)
                 Spacer(minLength: 4)
             }
@@ -345,8 +351,8 @@ struct SessionScheduleWidgetView: View {
                 .frame(height: 1)
         }
         .padding(.horizontal, 2)
-        .padding(.top, family == .systemLarge ? 10 : 8)
-        .padding(.bottom, 3)
+        .padding(.top, family == .systemLarge ? 10 : 4)
+        .padding(.bottom, family == .systemLarge ? 3 : 2)
     }
 
     private func daySeparatorText(for date: Date?) -> String {
@@ -526,13 +532,13 @@ struct SessionScheduleWidgetView: View {
         let accent = classAccentColor(for: event)
         let isActive = event.isActive(at: entry.date)
 
-        return HStack(spacing: family == .systemLarge ? 9 : 8) {
+        return HStack(spacing: family == .systemLarge ? 9 : 7) {
             classTimeColumn(for: event)
             classProgressBar(for: event, accent: accent, isActive: isActive)
             classDetails(for: event, accent: accent)
         }
-        .padding(.horizontal, family == .systemLarge ? 8 : 6)
-        .padding(.vertical, family == .systemLarge ? 5 : 4)
+        .padding(.horizontal, family == .systemLarge ? 8 : 7)
+        .padding(.vertical, family == .systemLarge ? 5 : 3.5)
         .background(
             isActive
                 ? Color.white.opacity(0.14)
@@ -550,13 +556,13 @@ struct SessionScheduleWidgetView: View {
                 .foregroundStyle(.white.opacity(0.72))
         }
         .font(.system(
-            size: family == .systemLarge ? 13 : 12,
+            size: family == .systemLarge ? 13 : 11.5,
             weight: .regular,
             design: .monospaced
         ))
         .lineLimit(1)
         .minimumScaleFactor(0.8)
-        .frame(width: family == .systemLarge ? 50 : 46)
+        .frame(width: family == .systemLarge ? 50 : 44)
     }
 
     private func classProgressBar(
@@ -604,7 +610,7 @@ struct SessionScheduleWidgetView: View {
             HStack(spacing: 4) {
                 Text(event.title)
                     .font(.system(
-                        size: family == .systemLarge ? 16 : 15,
+                        size: family == .systemLarge ? 16 : 14.5,
                         weight: .bold,
                         design: .rounded
                     ))
@@ -615,7 +621,7 @@ struct SessionScheduleWidgetView: View {
 
                 if let subgroup = event.subgroup, subgroup > 0 {
                     Text("[\(subgroup)]")
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .font(.system(size: family == .systemLarge ? 9 : 8.5, weight: .bold, design: .monospaced))
                         .foregroundStyle(.white.opacity(0.75))
                 }
             }
@@ -634,7 +640,7 @@ struct SessionScheduleWidgetView: View {
                         .widgetAccentable()
                 }
             }
-            .font(.caption2.weight(.medium))
+            .font(.system(size: family == .systemLarge ? 11 : 10.5, weight: .medium))
             .foregroundStyle(.white.opacity(0.7))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -699,19 +705,19 @@ struct SessionScheduleWidgetView: View {
 
     private var headerHeight: CGFloat {
         if style == .classes {
-            return family == .systemLarge ? 38 : 36
+            return family == .systemLarge ? 38 : 34
         }
         return family == .systemLarge ? 42 : 40
     }
 
     private var headerDateFont: Font {
-        .system(size: style == .classes ? 15 : (family == .systemLarge ? 16 : 15),
+        .system(size: style == .classes ? (family == .systemLarge ? 15 : 14) : (family == .systemLarge ? 16 : 15),
                 weight: .bold,
                 design: .rounded)
     }
 
     private var headerGroupFont: Font {
-        .system(size: style == .classes ? 16 : (family == .systemLarge ? 17 : 16),
+        .system(size: style == .classes ? (family == .systemLarge ? 16 : 15) : (family == .systemLarge ? 17 : 16),
                 weight: .semibold,
                 design: .rounded)
     }
@@ -858,10 +864,17 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var headerDateText: String {
-        if let firstDate = visibleEvents.first?.date {
-            return SessionScheduleWidgetDateFormatting.numericDateText(from: firstDate)
+        let date = visibleEvents.first?.date ?? Date()
+        if style == .classes {
+            let formatter = DateFormatter()
+            formatter.locale = .autoupdatingCurrent
+            formatter.dateFormat = "dd.MM"
+            let dateString = formatter.string(from: date)
+            formatter.dateFormat = "EE"
+            let weekdayString = formatter.string(from: date).capitalized.replacingOccurrences(of: ".", with: "")
+            return "\(dateString) (\(weekdayString))"
         }
-        return SessionScheduleWidgetDateFormatting.numericDateText(from: Date())
+        return SessionScheduleWidgetDateFormatting.numericDateText(from: date)
     }
 
     private var headerGradient: LinearGradient {
