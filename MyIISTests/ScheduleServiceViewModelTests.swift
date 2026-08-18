@@ -265,6 +265,173 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.continuousTimelineDays.isEmpty)
     }
 
+    func testScheduleEnumsAndFilterProperties() {
+        for mode in ScheduleLookupMode.allCases {
+            XCTAssertEqual(mode.id, mode.rawValue)
+            XCTAssertFalse(mode.title.isEmpty)
+        }
+
+        for display in ScheduleDisplayMode.allCases {
+            XCTAssertEqual(display.id, display.rawValue)
+            XCTAssertFalse(display.title.isEmpty)
+        }
+
+        for source in ScheduleDataSource.allCases {
+            XCTAssertEqual(source.id, source.rawValue)
+            XCTAssertFalse(source.title.isEmpty)
+        }
+
+        let allSubgroup = ScheduleSubgroupFilter.all
+        XCTAssertEqual(allSubgroup.id, "all")
+        XCTAssertFalse(allSubgroup.localizedTitle.isEmpty)
+        XCTAssertFalse(allSubgroup.shortTitle.isEmpty)
+
+        let specificSubgroup = ScheduleSubgroupFilter.subgroup(2)
+        XCTAssertEqual(specificSubgroup.id, "subgroup_2")
+        XCTAssertFalse(specificSubgroup.localizedTitle.isEmpty)
+        XCTAssertEqual(specificSubgroup.shortTitle, "2")
+    }
+
+    func testPinnedGroupsToggleAndPersistence() {
+        let defaults = makeDefaults("pinned-groups")
+        defer { removeDefaults("pinned-groups") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+
+        XCTAssertFalse(viewModel.isGroupPinned("420603"))
+
+        viewModel.togglePinnedGroupName("420603")
+        XCTAssertTrue(viewModel.isGroupPinned("420603"))
+        XCTAssertTrue(viewModel.pinnedGroupNames.contains("420603"))
+
+        // Toggle again unpins
+        viewModel.togglePinnedGroupName("420603")
+        XCTAssertFalse(viewModel.isGroupPinned("420603"))
+        XCTAssertFalse(viewModel.pinnedGroupNames.contains("420603"))
+    }
+
+    func testPinnedTeachersToggleAndPersistence() {
+        let defaults = makeDefaults("pinned-teachers")
+        defer { removeDefaults("pinned-teachers") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        let teacher = PinnedTeacher(urlId: "i-abramov", name: "Абрамов И.И.", photoLink: nil)
+
+        XCTAssertEqual(teacher.id, "i-abramov")
+        XCTAssertFalse(viewModel.isTeacherPinned("i-abramov"))
+
+        viewModel.togglePinnedTeacher(teacher)
+        XCTAssertTrue(viewModel.isTeacherPinned("i-abramov"))
+        XCTAssertTrue(viewModel.pinnedTeachers.contains(where: { $0.urlId == "i-abramov" }))
+
+        // Toggle unpins
+        viewModel.togglePinnedTeacher(teacher)
+        XCTAssertFalse(viewModel.isTeacherPinned("i-abramov"))
+        XCTAssertFalse(viewModel.pinnedTeachers.contains(where: { $0.urlId == "i-abramov" }))
+    }
+
+    func testRecentGroupsAndTeachersTracking() {
+        let defaults = makeDefaults("recent-items")
+        defer { removeDefaults("recent-items") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+
+        viewModel.recordRecentGroup("420603")
+        XCTAssertTrue(viewModel.recentGroupNames.contains("420603"))
+
+        let entry = ScheduleEmployeeDirectoryEntry(
+            firstName: "Иван",
+            lastName: "Иванов",
+            middleName: "Иванович",
+            degree: nil,
+            rank: nil,
+            photoLink: nil,
+            calendarId: nil,
+            id: 101,
+            urlId: "test-teacher",
+            fio: "Иванов Иван Иванович"
+        )
+        viewModel.recordRecentTeacher(entry)
+        XCTAssertTrue(viewModel.recentTeachers.contains(where: { $0.urlId == "test-teacher" }))
+    }
+
+    func testFilteredEmployeesSearchAndTransliteration() async throws {
+        let defaults = makeDefaults("employees-search")
+        defer { removeDefaults("employees-search") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        viewModel.employees = [
+            ScheduleEmployeeDirectoryEntry(
+                firstName: "Игорь",
+                lastName: "Абрамов",
+                middleName: "Иванович",
+                degree: "д.т.н.",
+                rank: "профессор",
+                photoLink: nil,
+                calendarId: nil,
+                id: 500434,
+                urlId: "i-abramov",
+                fio: "Абрамов Игорь Иванович"
+            ),
+            ScheduleEmployeeDirectoryEntry(
+                firstName: "Елена",
+                lastName: "Сидорова",
+                middleName: "Петровна",
+                degree: "к.т.н.",
+                rank: "доцент",
+                photoLink: nil,
+                calendarId: nil,
+                id: 500123,
+                urlId: "e-sidorova",
+                fio: "Сидорова Елена Петровна"
+            )
+        ]
+
+        viewModel.mode = .teacher
+        viewModel.query = "абрамов"
+        try await Task.sleep(for: .milliseconds(250))
+        XCTAssertEqual(viewModel.filteredEmployees.map(\.urlId), ["i-abramov"])
+
+        viewModel.query = "елена"
+        try await Task.sleep(for: .milliseconds(250))
+        XCTAssertEqual(viewModel.filteredEmployees.map(\.urlId), ["e-sidorova"])
+    }
+
+    func testContinuousDayAndExamDayIdentifiers() {
+        let date = Date(timeIntervalSince1970: 1780000000)
+        let continuousDay = ScheduleContinuousDay(
+            date: date,
+            weekday: .monday,
+            weekNumber: 1,
+            lessons: []
+        )
+        XCTAssertFalse(continuousDay.id.isEmpty)
+
+        let examDay = ExamScheduleDay(
+            date: date,
+            weekday: .monday,
+            lessons: []
+        )
+        XCTAssertFalse(examDay.id.isEmpty)
+    }
+
+    func testScheduleServicePerformanceBenchmark() {
+        let defaults = makeDefaults("bench")
+        defer { removeDefaults("bench") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+
+        var lessons: [DisciplineSchedule] = []
+        for i in 0..<100 {
+            lessons.append(makeLesson(id: "lesson-\(i)", weeks: [1, 2, 3, 4], subgroup: i % 3))
+        }
+        viewModel.schedule = makePublicSchedule(lessons: lessons)
+
+        measure {
+            for mode in [ScheduleDisplayMode.continuous, .byDay, .exams] {
+                viewModel.displayMode = mode
+                _ = viewModel.filteredDays
+                _ = viewModel.weekFilters
+                _ = viewModel.subgroupFilters
+            }
+        }
+    }
+
     private func makeDefaults(_ identifier: String) -> UserDefaults {
         let suiteName = defaultsSuiteName(identifier)
         let defaults = UserDefaults(suiteName: suiteName)!
