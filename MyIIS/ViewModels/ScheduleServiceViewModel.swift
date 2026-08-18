@@ -857,7 +857,7 @@ final class ScheduleServiceViewModel {
 
         // Make sure continuous days up to targetDay are generated
         var attempts = 0
-        while (continuousCursorDate == nil || continuousCursorDate! <= targetDay) && !isContinuousEndReached && attempts < 20 {
+        while ((continuousCursorDate ?? .distantPast) <= targetDay) && !isContinuousEndReached && attempts < 20 {
             appendContinuousChunkIfNeeded()
             attempts += 1
         }
@@ -1037,6 +1037,9 @@ final class ScheduleServiceViewModel {
             ?? selectedEmployee?.displayName
             ?? query.nilIfBlank
         guard let groupName = resolvedName, !groupName.isEmpty else { return }
+        if dataSource == .api, let accountGroupName, accountGroupName != groupName, scheduleResponse.employee == nil {
+            return
+        }
 
         let now = Date()
         var events = continuousTimelineDays
@@ -1220,7 +1223,7 @@ final class ScheduleServiceViewModel {
             subgroupFilter = .all
             return
         }
-        if subgroupFilters.count > 1, !subgroupFilters.contains(subgroupFilter) {
+        if !subgroupFilters.contains(subgroupFilter) {
             subgroupFilter = .all
         }
     }

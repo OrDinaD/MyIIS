@@ -36,10 +36,11 @@ enum AttendanceWidgetDataStore {
         guard let defaults else { return }
         do {
             let data = try JSONEncoder().encode(snapshot)
-            defaults.set(data, forKey: Key.snapshot)
             _ = UserDefaultsPayloadStore.save(data, forKey: Key.snapshot, in: defaults)
         } catch {
-            assertionFailure("Failed to encode AttendanceWidgetSnapshot: \(error)")
+            #if DEBUG
+            print("Failed to encode AttendanceWidgetSnapshot: \(error)")
+            #endif
         }
     }
 
@@ -56,6 +57,7 @@ enum AttendanceWidgetDataStore {
     static func clear() {
         guard let defaults else { return }
         defaults.removeObject(forKey: Key.snapshot)
+        UserDefaultsPayloadStore.clear(forKey: Key.snapshot, from: defaults)
 #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: AttendanceWidgetConstants.kind)
 #endif

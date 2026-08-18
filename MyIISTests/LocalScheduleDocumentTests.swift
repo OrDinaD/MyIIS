@@ -99,7 +99,7 @@ final class LocalScheduleDocumentTests: XCTestCase {
         XCTAssertEqual(viewModel.dataSource, .api)
     }
 
-    func testSavedLocalScheduleSourceIsPreserved() {
+    func testSavedLocalScheduleSourceIsMigratedToAPI() {
         let suiteName = "LocalScheduleDocumentTests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suiteName)!
         defer { defaults.removePersistentDomain(forName: suiteName) }
@@ -107,7 +107,7 @@ final class LocalScheduleDocumentTests: XCTestCase {
 
         let viewModel = ScheduleServiceViewModel(defaults: defaults)
 
-        XCTAssertEqual(viewModel.dataSource, .localJSON)
+        XCTAssertEqual(viewModel.dataSource, .api)
     }
 
     func testPreparingAlreadyActiveAPISourceKeepsDisplayedSchedule() {
@@ -218,7 +218,7 @@ final class LocalScheduleDocumentTests: XCTestCase {
 
         XCTAssertEqual(schedule.group?.name, "420603")
         XCTAssertEqual(lesson.subject, "СИИ")
-        XCTAssertEqual(lesson.title, "Системы искусственного интеллекта")
+        XCTAssertEqual(lesson.fullTitle, "Системы искусственного интеллекта")
         XCTAssertEqual(lesson.lessonTypeAbbrev, "ПЗ")
         XCTAssertEqual(lesson.employees.first?.id, 500434)
         XCTAssertEqual(lesson.employees.first?.urlId, "i-abramov")

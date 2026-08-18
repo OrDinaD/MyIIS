@@ -296,13 +296,14 @@ private enum ScheduleWidgetSnapshotStore {
         guard let defaults else { return }
         do {
             let data = try JSONEncoder().encode(snapshot)
-            defaults.set(data, forKey: key)
             _ = UserDefaultsPayloadStore.save(data, forKey: key, in: defaults)
 #if canImport(WidgetKit)
             WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
 #endif
         } catch {
-            assertionFailure("Failed to encode SessionScheduleWidgetSnapshot: \(error)")
+            #if DEBUG
+            print("Failed to encode SessionScheduleWidgetSnapshot: \(error)")
+            #endif
         }
     }
 

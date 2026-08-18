@@ -122,7 +122,7 @@ struct AcademicChangeSnapshot: Codable, Equatable {
         since oldSnapshot: AcademicChangeSnapshot
     ) -> [Int] {
         guard hasDormitoryBaseline, oldSnapshot.hasDormitoryBaseline else { return [] }
-        let oldItemsByID = Dictionary(uniqueKeysWithValues: oldSnapshot.dormitoryItems.map { ($0.id, $0) })
+        let oldItemsByID = Dictionary(oldSnapshot.dormitoryItems.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
 
         return dormitoryItems.compactMap { item in
             guard
@@ -154,7 +154,7 @@ struct AcademicChangeSnapshot: Codable, Equatable {
     }
 
     private func penaltyChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
-        let oldItemsById = Dictionary(uniqueKeysWithValues: oldSnapshot.penaltyItems.map { ($0.id, $0) })
+        let oldItemsById = Dictionary(oldSnapshot.penaltyItems.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
         return penaltyItems.flatMap { item -> [AcademicChangeItem] in
             guard let oldItem = oldItemsById[item.id] else {
                 return [AcademicChangeItem(
@@ -181,7 +181,7 @@ struct AcademicChangeSnapshot: Codable, Equatable {
     }
 
     private func certificateChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
-        let oldItemsById = Dictionary(uniqueKeysWithValues: oldSnapshot.certificateItems.map { ($0.id, $0) })
+        let oldItemsById = Dictionary(oldSnapshot.certificateItems.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
         return certificateItems.flatMap { item -> [AcademicChangeItem] in
             guard let oldItem = oldItemsById[item.id] else {
                 return [AcademicChangeItem(
@@ -211,7 +211,7 @@ struct AcademicChangeSnapshot: Codable, Equatable {
     }
 
     private func omissionChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
-        let oldItemsBySubject = Dictionary(uniqueKeysWithValues: oldSnapshot.omissionItems.map { ($0.subject, $0) })
+        let oldItemsBySubject = Dictionary(oldSnapshot.omissionItems.map { ($0.subject, $0) }, uniquingKeysWith: { _, last in last })
 
         return omissionItems.compactMap { item in
             let oldHours = oldItemsBySubject[item.subject]?.hours ?? 0
@@ -230,7 +230,7 @@ struct AcademicChangeSnapshot: Codable, Equatable {
     }
 
     private func dormitoryChanges(since oldSnapshot: AcademicChangeSnapshot) -> [AcademicChangeItem] {
-        let oldItemsById = Dictionary(uniqueKeysWithValues: oldSnapshot.dormitoryItems.map { ($0.id, $0) })
+        let oldItemsById = Dictionary(oldSnapshot.dormitoryItems.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
 
         return dormitoryItems.flatMap { item -> [AcademicChangeItem] in
             guard let oldItem = oldItemsById[item.id] else {

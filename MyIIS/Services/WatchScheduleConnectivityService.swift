@@ -74,7 +74,7 @@ final class WatchScheduleConnectivityService: NSObject, @unchecked Sendable {
                 }
             }
         } catch {
-            assertionFailure("Failed to update Apple Watch schedule: \(error)")
+            LogService.shared.log("⚠️ Failed to update Apple Watch schedule: \(error.localizedDescription)")
         }
     }
 #endif

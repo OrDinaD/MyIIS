@@ -6,6 +6,7 @@ import UserNotifications
 import WidgetKit
 #endif
 
+@MainActor
 final class AcademicChangeNotificationService: NSObject {
     static let shared = AcademicChangeNotificationService()
 
@@ -21,8 +22,8 @@ final class AcademicChangeNotificationService: NSObject {
     private static let maximumRetryDelay: TimeInterval = 4 * 60 * 60
     private static let maxNotificationItems = 4
 
-    private let apiService = APIService()
-    private lazy var dormitoryService = DormitoryService(apiService: apiService)
+    private let apiService: APIService
+    private let dormitoryService: DormitoryService
     private let credentialStore = CredentialStore.shared
     private let userDefaults = UserDefaults.standard
     private let notificationCenter = UNUserNotificationCenter.current()
@@ -32,6 +33,9 @@ final class AcademicChangeNotificationService: NSObject {
     private var activeCheckTask: Task<Void, Never>?
 
     private override init() {
+        let api = APIService()
+        self.apiService = api
+        self.dormitoryService = DormitoryService(apiService: api)
         super.init()
     }
 
@@ -191,7 +195,7 @@ private extension AcademicChangeNotificationService {
     func registerBackgroundRefreshTask() {
         guard !didRegisterBackgroundTask else { return }
 
-        didRegisterBackgroundTask = BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.taskIdentifier, using: nil) { [weak self] task in
+        didRegisterBackgroundTask = BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.taskIdentifier, using: .main) { [weak self] task in
             guard let self, let refreshTask = task as? BGAppRefreshTask else {
                 task.setTaskCompleted(success: false)
                 return
@@ -209,21 +213,29 @@ private extension AcademicChangeNotificationService {
         logService.log("🌙 Academic background refresh was launched by iOS.")
         scheduleBackgroundRefresh()
 
+        var isCompleted = false
+        func completeOnce(success: Bool) {
+            guard !isCompleted else { return }
+            isCompleted = true
+            task.setTaskCompleted(success: success)
+        }
+
         let refreshTask = Task { [weak self] in
             guard let self else {
-                task.setTaskCompleted(success: false)
+                completeOnce(success: false)
                 return
             }
 
             let success = await self.checkForChanges(deliverNotifications: true, reason: "background")
             self.recordBackgroundResult(success: success)
             self.scheduleBackgroundRefresh()
-            task.setTaskCompleted(success: success)
+            completeOnce(success: success)
         }
 
         task.expirationHandler = { [weak self] in
             self?.logService.log("⏳ Academic background refresh expired; cancelling requests.")
             refreshTask.cancel()
+            completeOnce(success: false)
         }
     }
 

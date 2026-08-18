@@ -33,7 +33,7 @@ extension DepartmentsMockData {
         do {
             return try JSONDecoder().decode(type, from: data)
         } catch {
-            assertionFailure("Failed to decode departments mock data: \(error)")
+            LogService.shared.log("Failed to decode departments mock data: \(error)")
             return nil
         }
     }

@@ -318,7 +318,7 @@ final class HeadmanViewModel {
 
 }
 
-private extension HeadmanViewModel {
+extension HeadmanViewModel {
     func applyAccessSnapshot(groupHead: Bool, responsibleIDs: [Int], loadedStudents: [HeadmanStudent]) {
         isGroupHead = groupHead
         responsibleStudentIDs = Set(responsibleIDs)
@@ -388,7 +388,7 @@ private extension HeadmanViewModel {
             return
         }
 
-        let updatedByID = Dictionary(uniqueKeysWithValues: updatedStudents.map { ($0.id, $0) })
+        let updatedByID = Dictionary(updatedStudents.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
         lessonsByDate[lessonIndex].students = lessonsByDate[lessonIndex].students.map { student in
             var updated = student
             if let savedStudent = updatedByID[student.id] {
@@ -413,7 +413,7 @@ private extension HeadmanViewModel {
     }
 
     static func buildWeeklySummary(students: [HeadmanStudent], lessons: [HeadmanLesson]) -> [HeadmanWeeklyStudentSummary] {
-        var totalsByStudent = Dictionary(uniqueKeysWithValues: students.map { ($0.id, HeadmanWeeklyTotals()) })
+        var totalsByStudent = Dictionary(students.map { ($0.id, HeadmanWeeklyTotals()) }, uniquingKeysWith: { _, last in last })
 
         for lesson in lessons {
             guard let category = HeadmanLessonCategory(lessonTypeAbbrev: lesson.lessonTypeAbbrev) else { continue }
