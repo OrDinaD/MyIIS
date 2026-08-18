@@ -156,10 +156,6 @@
 		F5BB00072E9CF9DA00A3E835 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		F5BB00082E9CF9DA00A3E835 /* .swiftformat */ = {isa = PBXFileReference; lastKnownFileType = text; path = .swiftformat; sourceTree = "<group>"; };
 		F5BB00092E9CF9DA00A3E835 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text; path = .swiftlint.yml; sourceTree = "<group>"; };
-		F5BB000A2E9CF9DA00A3E835 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
-		F5BB000B2E9CF9DA00A3E835 /* GEMINI.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = GEMINI.md; sourceTree = "<group>"; };
-		F5BB000C2E9CF9DA00A3E835 /* .antigravity.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = .antigravity.md; sourceTree = "<group>"; };
-		F5BB000D2E9CF9DA00A3E835 /* task.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = task.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -296,11 +292,6 @@
 			path = Configs;
 			sourceTree = "<group>";
 		};
-		F5AA000C2E9CF9DA00A3E835 /* .agents */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = .agents;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -435,18 +426,6 @@
 			name = "Documentation & Specs";
 			sourceTree = "<group>";
 		};
-		F5CC00052E9CF9DA00A3E835 /* Agents & AI */ = {
-			isa = PBXGroup;
-			children = (
-				F5AA000C2E9CF9DA00A3E835 /* .agents */,
-				F5BB000A2E9CF9DA00A3E835 /* AGENTS.md */,
-				F5BB000B2E9CF9DA00A3E835 /* GEMINI.md */,
-				F5BB000C2E9CF9DA00A3E835 /* .antigravity.md */,
-				F5BB000D2E9CF9DA00A3E835 /* task.md */,
-			);
-			name = "Agents & AI";
-			sourceTree = "<group>";
-		};
 		F5CC00062E9CF9DA00A3E835 /* Configuration */ = {
 			isa = PBXGroup;
 			children = (
@@ -474,7 +453,6 @@
 				F5CC00022E9CF9DA00A3E835 /* Scripts & Automation */,
 				F5CC00032E9CF9DA00A3E835 /* Web & SideStore */,
 				F5CC00042E9CF9DA00A3E835 /* Documentation & Specs */,
-				F5CC00052E9CF9DA00A3E835 /* Agents & AI */,
 				F5CC00062E9CF9DA00A3E835 /* Configuration */,
 				F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */,
 				F56FE4ED2FD2DD45004E8300 /* Info.plist */,
