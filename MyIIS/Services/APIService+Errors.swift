@@ -68,11 +68,31 @@ enum APIError: LocalizedError {
         case .serverError(let code, let message):
             let prefix = NSLocalizedString("api_error_server", value: "Ошибка сервера", comment: "")
             return "\(prefix) (\(code)): \(message)"
-        case .decodingError(let error):
-            let prefix = NSLocalizedString("api_error_decoding_prefix", value: "Ошибка парсинга данных", comment: "")
-            return "\(prefix): \(error.localizedDescription)"
+        case .decodingError:
+            return NSLocalizedString("api_error_decoding_prefix", value: "Не удалось обработать ответ сервера БГУИР", comment: "")
+        case .networkError(let error):
+            if let urlError = error as? URLError {
+                switch urlError.code {
+                case .notConnectedToInternet, .networkConnectionLost:
+                    return NSLocalizedString("api_error_offline", value: "Нет подключения к интернету. Проверьте сеть.", comment: "")
+                case .timedOut:
+                    return NSLocalizedString("api_error_timeout", value: "Время ожидания ответа сервера истекло. Попробуйте снова.", comment: "")
+                default:
+                    return NSLocalizedString("api_error_network_generic", value: "Сетевая ошибка. Проверьте подключение к интернету.", comment: "")
+                }
+            }
+            return NSLocalizedString("api_error_network_generic", value: "Сетевая ошибка. Проверьте подключение к интернету.", comment: "")
+        }
+    }
+
+    var technicalDetails: String {
+        switch self {
         case .networkError(let error):
             return Self.formattedNetworkError(error)
+        case .decodingError(let error):
+            return "DecodingError: \(error.localizedDescription)"
+        default:
+            return errorDescription ?? "Unknown APIError"
         }
     }
 

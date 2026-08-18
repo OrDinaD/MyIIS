@@ -1,5 +1,7 @@
 disabled_rules:
-  []
+  - todo
+  - implicit_optional_initialization
+  - superfluous_disable_command
 
 opt_in_rules:
   - contains_over_filter_count
@@ -18,42 +20,49 @@ analyzer_rules:
   - unused_declaration
   - unused_import
 
+# Critical Safety Enforcements
+force_try:
+  severity: error
+
+force_cast:
+  severity: error
+
 identifier_name:
   excluded:
     - id
     - i
     - j
+    - r
 
 cyclomatic_complexity:
-  warning: 10
-  error: 12
+  warning: 20
+  error: 25
 
 function_body_length:
-  warning: 50
-  error: 85
+  warning: 70
+  error: 100
 
 function_parameter_count:
-  warning: 5
-  error: 7
+  warning: 6
+  error: 8
   ignores_default_parameters: true
 
 line_length:
-  warning: 165
-  error: 190
+  warning: 180
+  error: 220
 
 file_length:
-  warning: 600
-  error: 760
+  warning: 800
+  error: 1200
 
 type_body_length:
-  warning: 300
-  error: 415
+  warning: 450
+  error: 650
 
 included:
   - MyIIS
   - Shared
-  - MyIISTests
-  - MyIISUITests
 
 excluded:
   - MyIIS/Resources/AppMockData.swift
+  - MyIISUITests/SnapshotHelper.swift

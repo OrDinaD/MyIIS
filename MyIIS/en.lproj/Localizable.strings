@@ -830,3 +830,15 @@
 "Часы" = "Hours";
 "Элемент" = "Item";
 "отмечающий" = "recorder";
+
+"about_section_diagnostics" = "Diagnostics and Support";
+"about_copy_diagnostics" = "Copy Support Diagnostics";
+"about_export_diagnostics_file" = "Share Diagnostic Report (.json)";
+"about_diagnostics_hint" = "The report contains only technical device data and recent network events without passwords or personal information.";
+"diagnostics_copied_toast" = "Support diagnostics copied";
+"api_error_gateway_overloaded" = "BSUIR servers are temporarily overloaded. Please try refreshing later.";
+"api_error_maintenance" = "BSUIR service is under maintenance.";
+"api_error_server_internal" = "Internal BSUIR service error.";
+"api_error_offline" = "No internet connection. Please check your network.";
+"api_error_timeout" = "Server response timed out. Please try again.";
+"api_error_network_generic" = "Network error. Please check your internet connection.";

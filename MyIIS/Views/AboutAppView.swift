@@ -14,6 +14,9 @@ struct AboutAppView: View {
     @State private var isSupportSheetPresented = false
     @State private var isScheduleSettingsPresented = false
     @State private var isUpdatingAcademicNotifications = false
+    @State private var exportedReportURL: URL?
+    @State private var isShareSheetPresented = false
+    @State private var isCopiedToastVisible = false
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @AppStorage(AcademicChangeNotificationService.enabledDefaultsKey) private var academicChangeNotificationsEnabled = false
 
@@ -25,6 +28,7 @@ struct AboutAppView: View {
                 scheduleAppearanceSection
                 academicNotificationsSection
                 supportSection
+                diagnosticsSection
                 linksSection
                 documentsSection
                 if AppIconManager.supportsAlternateIcons && enableBetaSections {
@@ -49,6 +53,28 @@ struct AboutAppView: View {
         }
         .sheet(isPresented: $isScheduleSettingsPresented) {
             ScheduleSettingsView()
+        }
+        .sheet(isPresented: $isShareSheetPresented) {
+            if let url = exportedReportURL {
+                ShareSheet(activityItems: [url])
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if isCopiedToastVisible {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text(NSLocalizedString("diagnostics_copied_toast", value: "Данные для поддержки скопированы", comment: ""))
+                        .font(.subheadline.weight(.medium))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial, in: Capsule())
+                .overlay(Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1))
+                .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+                .padding(.bottom, 20)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .alert(item: $iconAlert) { alert in
             Alert(
@@ -161,6 +187,61 @@ struct AboutAppView: View {
             AboutSupportCard {
                 isSupportSheetPresented = true
             }
+        }
+    }
+
+    private var diagnosticsSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            sectionTitle(NSLocalizedString("about_section_diagnostics", value: "Диагностика и поддержка", comment: ""))
+
+            cardContainer {
+                linkRow(
+                    icon: "doc.on.doc.fill",
+                    title: NSLocalizedString("about_copy_diagnostics", value: "Скопировать данные для поддержки", comment: "")
+                ) {
+                    Task {
+                        let text = await CrashDiagnosticManager.shared.generateReportText()
+                        UIPasteboard.general.string = text
+                        UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        UIAccessibility.post(
+                            notification: .announcement,
+                            argument: NSLocalizedString("diagnostics_copied_toast", value: "Данные для поддержки скопированы", comment: "")
+                        )
+                        withAnimation {
+                            isCopiedToastVisible = true
+                        }
+                        try? await Task.sleep(nanoseconds: 2_500_000_000)
+                        withAnimation {
+                            isCopiedToastVisible = false
+                        }
+                    }
+                }
+
+                divider
+
+                linkRow(
+                    icon: "square.and.arrow.up.fill",
+                    title: NSLocalizedString("about_export_diagnostics_file", value: "Поделиться файлом отчета (.json)", comment: "")
+                ) {
+                    Task {
+                        if let url = try? await CrashDiagnosticManager.shared.exportReportFile() {
+                            exportedReportURL = url
+                            isShareSheetPresented = true
+                        }
+                    }
+                }
+            }
+
+            Text(
+                NSLocalizedString(
+                    "about_diagnostics_hint",
+                    value: "Отчет содержит только технические данные устройства и последние сетевые события без паролей и личной информации.",
+                    comment: ""
+                )
+            )
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
         }
     }
 

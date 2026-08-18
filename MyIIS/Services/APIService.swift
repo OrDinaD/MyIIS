@@ -355,6 +355,9 @@ class APIService {
         let url = request.url?.absoluteString ?? "—"
         logService.log("❌ Transport error for \(method) \(url)")
 
+        let statusCode: Int? = (error as? URLError)?.code.rawValue
+        logService.recordNetworkError(endpoint: "\(method) \(url)", statusCode: statusCode, message: error.localizedDescription)
+
         if let urlError = error as? URLError {
             logService.log("URLError: \(urlError.code.rawValue) (\(urlError.code))")
             if let failingURL = urlError.failingURL {
@@ -398,6 +401,22 @@ class APIService {
                     comment: ""
                 )
             )
+        case 502, 504:
+            let friendly = NSLocalizedString(
+                "api_error_gateway_overloaded",
+                value: "Серверы БГУИР временно перегружены. Попробуйте обновить данные позже.",
+                comment: ""
+            )
+            logService.log("❌ Server Gateway \(statusCode): \(message ?? "Overloaded")")
+            throw APIError.serverError(statusCode: statusCode, message: message ?? friendly)
+        case 503:
+            let friendly = NSLocalizedString(
+                "api_error_maintenance",
+                value: "Сервис БГУИР на техническом обслуживании.",
+                comment: ""
+            )
+            logService.log("❌ Server Maintenance \(statusCode): \(message ?? "Maintenance")")
+            throw APIError.serviceUnavailable(message: message ?? friendly)
         default:
             logService.log("❌ Server Error \(statusCode): \(message ?? "nil")")
             throw APIError.serverError(

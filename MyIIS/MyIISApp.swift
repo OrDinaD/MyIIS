@@ -76,6 +76,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        CrashDiagnosticManager.shared.start()
         AcademicChangeNotificationService.shared.configureAtLaunch()
         return true
     }

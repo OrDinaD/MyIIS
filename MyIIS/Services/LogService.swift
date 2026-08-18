@@ -3,7 +3,17 @@ import Foundation
 
 final class LogService: ObservableObject, @unchecked Sendable {
 
+    struct NetworkErrorRecord: Sendable, Codable {
+        let endpoint: String
+        let statusCode: Int?
+        let message: String
+        let timestamp: Date
+    }
+
     @Published private(set) var messages: [String] = []
+    @Published private(set) var lastNetworkError: NetworkErrorRecord?
+
+    private let maxCapacity = 200
 
     static let shared = LogService()
 
@@ -14,7 +24,11 @@ final class LogService: ObservableObject, @unchecked Sendable {
         let formattedMessage = "[\(timestamp)] \(message)"
 
         Task { @MainActor [weak self] in
-            self?.messages.append(formattedMessage)
+            guard let self else { return }
+            self.messages.append(formattedMessage)
+            if self.messages.count > self.maxCapacity {
+                self.messages.removeFirst(self.messages.count - self.maxCapacity)
+            }
         }
 
         #if DEBUG
@@ -22,9 +36,22 @@ final class LogService: ObservableObject, @unchecked Sendable {
         #endif
     }
 
+    nonisolated func recordNetworkError(endpoint: String, statusCode: Int?, message: String) {
+        let record = NetworkErrorRecord(
+            endpoint: endpoint,
+            statusCode: statusCode,
+            message: message,
+            timestamp: Date()
+        )
+        Task { @MainActor [weak self] in
+            self?.lastNetworkError = record
+        }
+    }
+
     @MainActor
     func clearLogs() {
         messages.removeAll()
+        lastNetworkError = nil
     }
 
     @MainActor

@@ -146,7 +146,6 @@
 		F59436CF2E9CF9DA00A3E835 /* MyIIS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MyIIS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MyIISWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5BB00012E9CF9DA00A3E835 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		F5BB00022E9CF9DA00A3E835 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		F5BB00032E9CF9DA00A3E835 /* PROJECT_DOCUMENTATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PROJECT_DOCUMENTATION.md; sourceTree = "<group>"; };
@@ -156,6 +155,7 @@
 		F5BB00072E9CF9DA00A3E835 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		F5BB00082E9CF9DA00A3E835 /* .swiftformat */ = {isa = PBXFileReference; lastKnownFileType = text; path = .swiftformat; sourceTree = "<group>"; };
 		F5BB00092E9CF9DA00A3E835 /* .swiftlint.yml */ = {isa = PBXFileReference; lastKnownFileType = text; path = .swiftlint.yml; sourceTree = "<group>"; };
+		F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MyIISUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -227,16 +227,6 @@
 			path = MyIISWidget;
 			sourceTree = "<group>";
 		};
-		F5B1AA102FC70D9D00A56D01 /* MyIISTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MyIISTests;
-			sourceTree = "<group>";
-		};
-		F5EE36312FB1ED94004B7BD8 /* MyIISUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MyIISUITests;
-			sourceTree = "<group>";
-		};
 		F5AA00012E9CF9DA00A3E835 /* scripts */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = scripts;
@@ -290,6 +280,16 @@
 		F5AA000B2E9CF9DA00A3E835 /* Configs */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Configs;
+			sourceTree = "<group>";
+		};
+		F5B1AA102FC70D9D00A56D01 /* MyIISTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MyIISTests;
+			sourceTree = "<group>";
+		};
+		F5EE36312FB1ED94004B7BD8 /* MyIISUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MyIISUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -381,6 +381,45 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		F59436C62E9CF9DA00A3E835 = {
+			isa = PBXGroup;
+			children = (
+				F59436D12E9CF9DA00A3E835 /* MyIIS */,
+				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
+				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
+				F51DCBA92FB09EC400EA90E3 /* MyIISIntents */,
+				F58E2F0E2FD00E66002BCF03 /* MyIISMessages */,
+				F52AB8C03008EF79002D379E /* MyIIS Watch App Watch App */,
+				F52AB8D73008F115002D379E /* MyIIS Watch Widget */,
+				F5B1AA102FC70D9D00A56D01 /* MyIISTests */,
+				F5EE36312FB1ED94004B7BD8 /* MyIISUITests */,
+				F5CC00012E9CF9DA00A3E835 /* Design & Marketing */,
+				F5CC00022E9CF9DA00A3E835 /* Scripts & Automation */,
+				F5CC00032E9CF9DA00A3E835 /* Web & SideStore */,
+				F5CC00042E9CF9DA00A3E835 /* Documentation & Specs */,
+				F5CC00062E9CF9DA00A3E835 /* Configuration */,
+				F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */,
+				F56FE4ED2FD2DD45004E8300 /* Info.plist */,
+				F58E2F0B2FD00E66002BCF03 /* Frameworks */,
+				F59436D02E9CF9DA00A3E835 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F59436D02E9CF9DA00A3E835 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F59436CF2E9CF9DA00A3E835 /* MyIIS.app */,
+				F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */,
+				F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */,
+				F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */,
+				F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */,
+				F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */,
+				F52AB8BF3008EF79002D379E /* MyIIS Watch App Watch App.app */,
+				F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		F5CC00012E9CF9DA00A3E835 /* Design & Marketing */ = {
 			isa = PBXGroup;
 			children = (
@@ -434,46 +473,7 @@
 				F5BB00092E9CF9DA00A3E835 /* .swiftlint.yml */,
 				F5AA000B2E9CF9DA00A3E835 /* Configs */,
 			);
-			name = "Configuration";
-			sourceTree = "<group>";
-		};
-		F59436C62E9CF9DA00A3E835 = {
-			isa = PBXGroup;
-			children = (
-				F59436D12E9CF9DA00A3E835 /* MyIIS */,
-				F5A5EE0B2F1C7E2A00D2B7A1 /* Shared */,
-				F5A5EE0C2F1C7E2A00D2B7A1 /* MyIISWidget */,
-				F51DCBA92FB09EC400EA90E3 /* MyIISIntents */,
-				F58E2F0E2FD00E66002BCF03 /* MyIISMessages */,
-				F52AB8C03008EF79002D379E /* MyIIS Watch App Watch App */,
-				F52AB8D73008F115002D379E /* MyIIS Watch Widget */,
-				F5B1AA102FC70D9D00A56D01 /* MyIISTests */,
-				F5EE36312FB1ED94004B7BD8 /* MyIISUITests */,
-				F5CC00012E9CF9DA00A3E835 /* Design & Marketing */,
-				F5CC00022E9CF9DA00A3E835 /* Scripts & Automation */,
-				F5CC00032E9CF9DA00A3E835 /* Web & SideStore */,
-				F5CC00042E9CF9DA00A3E835 /* Documentation & Specs */,
-				F5CC00062E9CF9DA00A3E835 /* Configuration */,
-				F51DC97B2FB0920300EA90E3 /* PrivacyInfo.xcprivacy */,
-				F56FE4ED2FD2DD45004E8300 /* Info.plist */,
-				F58E2F0B2FD00E66002BCF03 /* Frameworks */,
-				F59436D02E9CF9DA00A3E835 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		F59436D02E9CF9DA00A3E835 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				F59436CF2E9CF9DA00A3E835 /* MyIIS.app */,
-				F59436E22E9CF9DD00A3E835 /* MyIISTests.xctest */,
-				F5A5EE0A2F1C7E2A00D2B7A1 /* MyIISWidgetExtension.appex */,
-				F51DCBA82FB09EC400EA90E3 /* MyIISIntents.appex */,
-				F5EE36302FB1ED94004B7BD8 /* MyIISUITests.xctest */,
-				F58E2F0A2FD00E66002BCF03 /* MyIISMessages.appex */,
-				F52AB8BF3008EF79002D379E /* MyIIS Watch App Watch App.app */,
-				F52AB8D23008F114002D379E /* MyIIS Watch WidgetExtension.appex */,
-			);
-			name = Products;
+			name = Configuration;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
