@@ -151,7 +151,7 @@ struct MyIISScreenshotBrandBadge: View {
                 .scaledToFit()
                 .frame(width: 17, height: 17)
 
-            Text("MYIIS")
+            Text("MyIIS")
                 .font(.system(size: 13.5, weight: .semibold, design: .rounded))
         }
         .foregroundStyle(.white)
