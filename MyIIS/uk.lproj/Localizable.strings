@@ -512,7 +512,7 @@
 "services_schedule_exams_no_date" = "Дата не вказана";
 "services_schedule_exams_short" = "Іспити";
 "services_schedule_google_calendar" = "Імпортувати в Google Календар";
-"services_schedule_group_format" = "%d група";
+"services_schedule_group_format" = "Група %@";
 "services_schedule_group_placeholder" = "Введіть номер групи";
 "services_schedule_groups_empty" = "Групи не знайдено";
 "services_schedule_import_file" = "Імпортувати JSON або Excel";

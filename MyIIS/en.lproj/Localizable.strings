@@ -512,7 +512,7 @@
 "services_schedule_exams_no_date" = "No date";
 "services_schedule_exams_short" = "Exams";
 "services_schedule_google_calendar" = "Import to Google Calendar";
-"services_schedule_group_format" = "Group %d";
+"services_schedule_group_format" = "Group %@";
 "services_schedule_group_placeholder" = "Enter group number";
 "services_schedule_groups_empty" = "No groups found";
 "services_schedule_import_file" = "Import JSON or Excel";

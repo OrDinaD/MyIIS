@@ -36,11 +36,29 @@ final class BelarusianLocalizationTests: XCTestCase {
             "Не удалось обновить данные": "Не ўдалося абнавіць даныя",
             "Техническая поддержка": "Тэхнічная падтрымка",
             "Дипломный проект": "Дыпломны праект",
-            "Портал БГУИР": "Партал БДУІР"
+            "Портал БГУИР": "Партал БДУІР",
+            "services_schedule_group_format": "Група %@"
         ]
 
         for (key, value) in expected {
             XCTAssertEqual(belarusian[key], value, "Некорректный перевод для ключа \(key)")
+        }
+    }
+
+    func testServicesScheduleGroupFormatInAllLanguages() throws {
+        let expectedFormats = [
+            "ru": "Группа %@",
+            "en": "Group %@",
+            "be": "Група %@",
+            "uk": "Група %@"
+        ]
+        for (lang, expectedFormat) in expectedFormats {
+            let dict = try stringsDictionary(language: lang)
+            let format = try XCTUnwrap(dict["services_schedule_group_format"], "Ключ services_schedule_group_format отсутствует в \(lang)")
+            XCTAssertEqual(format, expectedFormat, "Неверный формат для языка \(lang)")
+            let formatted = String(format: format, "124401")
+            XCTAssertFalse(formatted.contains("%@"))
+            XCTAssertTrue(formatted.contains("124401"))
         }
     }
 
