@@ -253,9 +253,17 @@ extension RatingViewModel {
             checkpointNumbers = []
             summary = nil
             gradebookAverage = nil
-            isGradebookUnavailable = true
-            isRatingPendingForNewSemester = false
-            errorMessage = error.localizedDescription
+
+            switch error {
+            case .serverError(let statusCode, _) where statusCode == 403 || statusCode == 404:
+                isGradebookUnavailable = false
+                isRatingPendingForNewSemester = true
+                errorMessage = nil
+            default:
+                isGradebookUnavailable = true
+                isRatingPendingForNewSemester = false
+                errorMessage = error.localizedDescription
+            }
         } catch {
             logService.log("❌ Unexpected grade-book error: \(error.localizedDescription)")
             disciplines = []
