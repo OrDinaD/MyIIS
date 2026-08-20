@@ -135,7 +135,7 @@ struct RatingView: View {
 
     @ViewBuilder
     private func ratingHeaderMetrics(user: User) -> some View {
-        if user.displayRating > 0 {
+        if user.displayRating > 0, !viewModel.disciplines.isEmpty {
             RatingHeaderMetric(
                 title: NSLocalizedString("rating_place_in_course", comment: ""),
                 value: "№ \(user.displayRating)",

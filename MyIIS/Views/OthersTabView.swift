@@ -196,9 +196,7 @@ private extension OthersTabView {
                 ProfileView()
             } label: {
                 HStack(spacing: 14) {
-                    Image(systemName: "person.crop.circle.fill")
-                        .font(.system(size: 38))
-                        .foregroundStyle(Color.accentColor)
+                    mobileProfileAvatar
 
                     VStack(alignment: .leading, spacing: 3) {
                         Text(authService.currentUser?.fullName ?? NSLocalizedString("tab_profile", comment: ""))
@@ -216,6 +214,34 @@ private extension OthersTabView {
             }
             .accessibilityLabel(NSLocalizedString("tab_profile", comment: ""))
             .accessibilityIdentifier("serviceLink_profile")
+        }
+    }
+
+    @ViewBuilder
+    private var mobileProfileAvatar: some View {
+        let user = authService.currentUser
+        CachedAsyncImage(url: user?.photoURL, maxPixelSize: 120) { image in
+            image
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 44, height: 44)
+                .clipShape(Circle())
+        } placeholder: {
+            if let initials = user?.initials.nilIfBlank {
+                Circle()
+                    .fill(Color.accentColor.opacity(0.12))
+                    .frame(width: 44, height: 44)
+                    .overlay {
+                        Text(initials)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                    }
+            } else {
+                Image(systemName: "person.crop.circle.fill")
+                    .font(.system(size: 40))
+                    .foregroundStyle(Color.accentColor)
+                    .frame(width: 44, height: 44)
+            }
         }
     }
 
