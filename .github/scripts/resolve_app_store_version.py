@@ -121,23 +121,35 @@ def resolve_version(
     if not apps:
         raise RuntimeError(f"App Store Connect app '{bundle_id}' was not found")
 
+    app_id = apps[0]["id"]
     versions = request_json(
-        f"/v1/apps/{apps[0]['id']}/appStoreVersions?limit=200",
+        f"/v1/apps/{app_id}/appStoreVersions?limit=200",
         token,
     ).get("data", [])
-    semantic_versions = [
-        item
-        for item in versions
-        if VERSION_PATTERN.fullmatch(item.get("attributes", {}).get("versionString", ""))
-    ]
-    if not semantic_versions:
+
+    prerelease_versions = []
+    try:
+        prerelease_versions = request_json(
+            f"/v1/apps/{app_id}/preReleaseVersions?limit=200",
+            token,
+        ).get("data", [])
+    except Exception:
+        pass
+
+    all_version_strings: set[str] = set()
+    for item in (versions + prerelease_versions):
+        attrs = item.get("attributes", {})
+        ver = attrs.get("versionString") or attrs.get("version")
+        if ver and VERSION_PATTERN.fullmatch(ver):
+            all_version_strings.add(ver)
+
+    if not all_version_strings:
         return project_version, "Xcode project (no App Store versions found)"
 
-    latest = max(
-        semantic_versions,
-        key=lambda item: version_tuple(item["attributes"]["versionString"]),
+    latest_version = max(
+        all_version_strings,
+        key=version_tuple,
     )
-    latest_version = latest["attributes"]["versionString"]
 
     if version_tuple(project_version) > version_tuple(latest_version):
         return project_version, "Xcode project"
