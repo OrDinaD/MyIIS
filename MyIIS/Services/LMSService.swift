@@ -4,7 +4,6 @@ import SwiftUI
 
 enum LMSError: LocalizedError {
     case invalidResponse
-    case noCredentials
     case invalidCredentials
     case loginFailed
     case sessionExpired
@@ -14,8 +13,6 @@ enum LMSError: LocalizedError {
         switch self {
         case .invalidResponse:
             return "СЭО вернула некорректный ответ."
-        case .noCredentials:
-            return "Не найдены сохранённые данные для входа."
         case .invalidCredentials:
             return "СЭО отклонила логин или пароль."
         case .loginFailed:
@@ -33,14 +30,14 @@ class LMSService: ObservableObject {
 
     private let session: URLSession
     private let logService = LogService.shared
-    private let credentialStore = CredentialStore.shared
+    private let credentialStore = CredentialStore.lms
     private let userDefaults = UserDefaults.standard
 
     private static let cachePrefix = "LMSService.cache."
     private static let automaticRefreshInterval: TimeInterval = 5 * 60
     private static let courseURLs = [
-        URL(string: "https://lms.bsuir.by/")!,
-        URL(string: "https://lms.bsuir.by/my/")!
+        NetworkSecurityPolicy.lmsBaseURL,
+        NetworkSecurityPolicy.lmsBaseURL.appendingPathComponent("my", isDirectory: true)
     ]
 
     private struct CachedEnvelope: Codable {
@@ -61,11 +58,9 @@ class LMSService: ObservableObject {
     @Published private(set) var lastUpdatedAt: Date?
 
     private init() {
-        let configuration = URLSessionConfiguration.default
-        configuration.httpCookieStorage = .shared
-        configuration.httpShouldSetCookies = true
-        configuration.httpCookieAcceptPolicy = .always
-        self.session = URLSession(configuration: configuration)
+        self.session = URLSession(
+            configuration: NetworkSecurityPolicy.makeLMSConfiguration()
+        )
         self.isLoggedIn = hasSessionCookie
 
         if isLoggedIn, let cached = cachedCourseResult() {
@@ -165,8 +160,10 @@ extension LMSService {
     }
 
     private static func validatedHTML(data: Data, response: URLResponse) throws -> String {
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw LMSError.invalidResponse
+        guard let httpResponse = response as? HTTPURLResponse,
+              let responseURL = httpResponse.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL) else {
+            throw NetworkSecurityError.untrustedURL
         }
         if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
             throw LMSError.sessionExpired
@@ -253,7 +250,16 @@ extension LMSService {
 extension LMSService {
     func fetchCourseDetail(id: Int) async throws -> LMSCourseDetail {
         logService.log("🔍 LMS: Fetching detail for ID \(id)")
-        let url = URL(string: "https://lms.bsuir.by/course/view.php?id=\(id)")!
+        var components = URLComponents(
+            url: NetworkSecurityPolicy.lmsBaseURL
+                .appendingPathComponent("course")
+                .appendingPathComponent("view.php"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [URLQueryItem(name: "id", value: String(id))]
+        guard let url = components?.url else {
+            throw NetworkSecurityError.untrustedURL
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
 
@@ -262,7 +268,10 @@ extension LMSService {
         do {
             let (data, response) = try await session.data(for: request)
 
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            guard let httpResponse = response as? HTTPURLResponse,
+                  let responseURL = httpResponse.url,
+                  NetworkSecurityPolicy.isTrustedLMSURL(responseURL),
+                  httpResponse.statusCode == 200 else {
                 logService.log("❌ LMS detail failed: code \((response as? HTTPURLResponse)?.statusCode ?? -1)")
                 throw LMSError.invalidResponse
             }
@@ -340,7 +349,7 @@ extension LMSService {
     }
 
     private var hasSessionCookie: Bool {
-        let lmsURL = URL(string: "https://lms.bsuir.by")!
+        let lmsURL = NetworkSecurityPolicy.lmsBaseURL
         let cookies = HTTPCookieStorage.shared.cookies(for: lmsURL) ?? []
         return cookies.contains { cookie in
             cookie.name == "MoodleSession" && (cookie.expiresDate == nil || cookie.expiresDate! > Date())
@@ -355,30 +364,39 @@ extension LMSService {
     }
 
     @MainActor
-    func login() async throws {
+    func login(
+        username: String,
+        password: String,
+        persistCredentials: Bool
+    ) async throws {
         guard !isLoading else { return }
-        guard let credentials = try credentialStore.retrieve() else {
-            throw LMSError.noCredentials
+        let trimmedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedUsername.isEmpty, !password.isEmpty else {
+            throw LMSError.invalidCredentials
         }
 
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
 
-        logService.log("🔐 LMS: Logging in as \(credentials.username)")
-        let url = URL(string: "https://lms.bsuir.by/login/index.php")!
+        logService.log("🔐 LMS: Logging in as \(trimmedUsername)")
+        let url = NetworkSecurityPolicy.lmsBaseURL
+            .appendingPathComponent("login")
+            .appendingPathComponent("index.php")
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 20
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
         let bodyComponents = [
-            "username": credentials.username,
-            "password": credentials.password
+            "username": trimmedUsername,
+            "password": password
         ]
         let bodyString = bodyComponents
             .compactMap { key, value -> String? in
-                guard let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryValueAllowed) else {
+                guard let encodedValue = value.addingPercentEncoding(
+                    withAllowedCharacters: .urlQueryValueAllowed
+                ) else {
                     return nil
                 }
                 return "\(key)=\(encodedValue)"
@@ -387,10 +405,14 @@ extension LMSService {
 
         request.httpBody = bodyString.data(using: .utf8)
         let (data, response) = try await session.data(for: request)
+        guard let responseURL = response.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL) else {
+            throw NetworkSecurityError.untrustedURL
+        }
         let html = String(data: data, encoding: .utf8) ?? ""
 
         guard hasSessionCookie,
-              !Self.isLoginPage(html: html, responseURL: response.url) else {
+              !Self.isLoginPage(html: html, responseURL: responseURL) else {
             isLoggedIn = false
             if html.localizedCaseInsensitiveContains("loginerrormessage") {
                 logService.log("❌ LMS: Invalid credentials.")
@@ -398,6 +420,14 @@ extension LMSService {
             }
             logService.log("❌ LMS: Login failed.")
             throw LMSError.loginFailed
+        }
+
+        if persistCredentials {
+            try credentialStore.save(
+                StoredCredentials(username: trimmedUsername, password: password)
+            )
+        } else {
+            try credentialStore.clear()
         }
 
         isLoggedIn = true
@@ -410,14 +440,14 @@ extension LMSService {
         logService.log("✅ LMS: Login and session validation succeeded.")
     }
 
+    func savedUsername() -> String {
+        (try? credentialStore.retrieve()?.username) ?? ""
+    }
+
     @MainActor
     func logout() {
-        let storage = HTTPCookieStorage.shared
-        if let cookies = storage.cookies(for: URL(string: "https://lms.bsuir.by")!) {
-            for cookie in cookies {
-                storage.deleteCookie(cookie)
-            }
-        }
+        NetworkSecurityPolicy.removeCookies(forHost: NetworkSecurityPolicy.lmsHost)
+        try? credentialStore.clear()
         isLoggedIn = false
         courses = []
         errorMessage = nil

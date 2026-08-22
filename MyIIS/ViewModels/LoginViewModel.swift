@@ -47,7 +47,11 @@ final class LoginViewModel {
 
     func login() async {
         guard validateInput() else { return }
+        #if DEBUG
         let usesDemoCredentials = username == APIService.demoUsername && password == APIService.demoPassword
+        #else
+        let usesDemoCredentials = false
+        #endif
         if !usesDemoCredentials && isServerActive == false {
             errorMessage = NSLocalizedString("server_unavailable_error", comment: "")
             return

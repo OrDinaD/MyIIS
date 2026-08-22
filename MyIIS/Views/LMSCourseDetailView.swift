@@ -207,6 +207,21 @@ struct LMSCourseDetailView: View {
             return
         }
 
+        if module.type == .url,
+           !NetworkSecurityPolicy.isTrustedLMSURL(url) {
+            guard NetworkSecurityPolicy.isSecureURL(url) else {
+                resourceErrorMessage = NetworkSecurityError.untrustedURL.localizedDescription
+                return
+            }
+            UIApplication.shared.open(url)
+            return
+        }
+
+        guard NetworkSecurityPolicy.isTrustedLMSURL(url) else {
+            resourceErrorMessage = NetworkSecurityError.untrustedURL.localizedDescription
+            return
+        }
+
         if module.type == .quiz {
             presentedQuiz = LMSPresentedQuiz(url: url)
             return
@@ -226,11 +241,6 @@ struct LMSCourseDetailView: View {
             Task {
                 await openResource(url)
             }
-            return
-        }
-
-        if module.type == .url, let host = url.host, host != "lms.bsuir.by" {
-            UIApplication.shared.open(url)
             return
         }
 
@@ -379,27 +389,34 @@ private struct LMSQuickLookPreview: UIViewControllerRepresentable {
 }
 
 private enum LMSResourceDownloader {
+    private static let session = URLSession(
+        configuration: NetworkSecurityPolicy.makeLMSConfiguration()
+    )
+
     static func download(url: URL) async throws -> URL {
-        var request = URLRequest(url: normalized(url: url))
+        let trustedURL = normalized(url: url)
+        guard NetworkSecurityPolicy.isTrustedLMSURL(trustedURL) else {
+            throw NetworkSecurityError.untrustedURL
+        }
+
+        var request = URLRequest(url: trustedURL)
         request.httpMethod = "GET"
         request.timeoutInterval = 60
 
-        if let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://lms.bsuir.by")!) {
-            let cookieHeaders = HTTPCookie.requestHeaderFields(with: cookies)
-            for (key, value) in cookieHeaders {
-                request.setValue(value, forHTTPHeaderField: key)
-            }
-        }
-
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse,
+              let responseURL = httpResponse.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL),
               (200 ... 399).contains(httpResponse.statusCode)
         else {
             throw URLError(.badServerResponse)
         }
 
-        let fileName = resolvedFileName(response: response, fallbackURL: request.url ?? url)
+        let fileName = NetworkSecurityPolicy.sanitizedFilename(
+            resolvedFileName(response: response, fallbackURL: request.url ?? url),
+            fallback: "material"
+        )
         let destination = FileManager.default.temporaryDirectory.appendingPathComponent("LMS-")
             .appendingPathComponent(UUID().uuidString)
             .appendingPathComponent(fileName)
@@ -542,7 +559,9 @@ private struct LMSMaterialWebView: UIViewRepresentable {
             }
 
             let store = webView.configuration.websiteDataStore.httpCookieStore
-            let cookies = HTTPCookieStorage.shared.cookies(for: URL(string: "https://lms.bsuir.by")!) ?? []
+            let cookies = HTTPCookieStorage.shared.cookies(
+                for: NetworkSecurityPolicy.lmsBaseURL
+            ) ?? []
             guard !cookies.isEmpty else {
                 completion()
                 return

@@ -4,11 +4,17 @@ import Foundation
 
 class APIService {
 
+    #if DEBUG
     static var isDemoMode = false
     static let demoUsername = "demo"
     static let demoPassword = "demo"
+    #else
+    static var isDemoMode: Bool { false }
+    #endif
 
-    let baseURL = URLFactory.require("https://iis.bsuir.by/api/v1")
+    let baseURL = NetworkSecurityPolicy.iisBaseURL
+        .appendingPathComponent("api")
+        .appendingPathComponent("v1")
     private let session: URLSession
     private let logService = LogService.shared
     private let userDefaults = UserDefaults.standard
@@ -51,7 +57,9 @@ class APIService {
     }()
 
     static func resetDemoMode() {
+        #if DEBUG
         isDemoMode = false
+        #endif
     }
 
     static func clearResponseCache(in defaults: UserDefaults = .standard) {
@@ -64,11 +72,13 @@ class APIService {
     ///   - password: Пароль пользователя
     /// - Returns: LoginResponse с данными пользователя
     func login(username: String, password: String) async throws -> LoginResponse {
+        #if DEBUG
         if username == Self.demoUsername && password == Self.demoPassword {
             APIService.isDemoMode = true
             return DemoMockData.loginResponse
         }
-        APIService.isDemoMode = false
+        #endif
+        Self.resetDemoMode()
 
         let endpoint = baseURL.appendingPathComponent("auth").appendingPathComponent("login")
         let loginRequest = LoginRequest(username: username, password: password)
@@ -211,10 +221,18 @@ class APIService {
 
             let suggestedName = httpResponse.value(forHTTPHeaderField: "Content-Disposition")
                 .flatMap(Self.filenameFromContentDisposition(_:))
-                ?? "group-list.xlsx"
-
-            let temporaryURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent(suggestedName)
+            let fileName = NetworkSecurityPolicy.sanitizedFilename(
+                suggestedName,
+                fallback: "group-list.xlsx"
+            )
+            let downloadDirectory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("MyIIS-Downloads", isDirectory: true)
+                .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(
+                at: downloadDirectory,
+                withIntermediateDirectories: true
+            )
+            let temporaryURL = downloadDirectory.appendingPathComponent(fileName)
 
             try data.write(to: temporaryURL, options: [.atomic])
             return temporaryURL

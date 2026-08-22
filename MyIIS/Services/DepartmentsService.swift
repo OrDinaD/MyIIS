@@ -9,6 +9,10 @@ final class DepartmentsService: ObservableObject {
     @Published var departments: [DepartmentNode] = []
     @Published var isLoading = false
 
+    private static let apiBaseURL = NetworkSecurityPolicy.iisBaseURL
+        .appendingPathComponent("api")
+        .appendingPathComponent("v1")
+
     private init() {}
 
     func loadMockData() {
@@ -23,13 +27,15 @@ final class DepartmentsService: ObservableObject {
     }
 
     private func refreshRemoteData() async {
-        guard let url = URL(string: "https://iis.bsuir.by/api/v1/departments/tree") else { return }
+        let url = Self.apiBaseURL
+            .appendingPathComponent("departments")
+            .appendingPathComponent("tree")
 
         isLoading = true
         defer { isLoading = false }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let data = try await fetchData(from: url)
             let decoded = try JSONDecoder().decode([DepartmentNode].self, from: data)
             if !decoded.isEmpty {
                 departments = decoded
@@ -40,35 +46,70 @@ final class DepartmentsService: ObservableObject {
             if departments.isEmpty {
                 departments = DepartmentsMockData.departments
             }
-            print("Failed to load departments: \\(error)")
+            print("Failed to load departments: \(error)")
         }
     }
 
     func fetchEmployees(for urlId: String) async -> [DepartmentEmployeeDetail] {
-        guard let url = URL(string: "https://iis.bsuir.by/api/v1/employees?departmentUrlId=\\(urlId)") else { return [] }
+        guard let url = Self.endpoint(
+            path: "employees",
+            queryItems: [URLQueryItem(name: "departmentUrlId", value: urlId)]
+        ) else {
+            return []
+        }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode([DepartmentEmployeeDetail].self, from: data)
-            return decoded
+            let data = try await fetchData(from: url)
+            return try JSONDecoder().decode([DepartmentEmployeeDetail].self, from: data)
         } catch {
-            print("Failed to fetch employees: \\(error)")
+            print("Failed to fetch employees: \(error)")
             return []
         }
     }
 
     func fetchEmployeeDetails(for urlId: String) async -> DepartmentEmployeeDetail? {
-        guard let url = URL(string: "https://iis.bsuir.by/api/v1/employees/details-url?urlId=\\(urlId)") else { return nil }
-
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            let decoder = JSONDecoder()
-            let decoded = try decoder.decode(DepartmentEmployeeDetail.self, from: data)
-            return decoded
-        } catch {
-            print("Failed to fetch employee details: \\(error)")
+        guard let url = Self.endpoint(
+            path: "employees/details-url",
+            queryItems: [URLQueryItem(name: "urlId", value: urlId)]
+        ) else {
             return nil
         }
+
+        do {
+            let data = try await fetchData(from: url)
+            return try JSONDecoder().decode(DepartmentEmployeeDetail.self, from: data)
+        } catch {
+            print("Failed to fetch employee details: \(error)")
+            return nil
+        }
+    }
+
+    private func fetchData(from url: URL) async throws -> Data {
+        guard NetworkSecurityPolicy.isSecureURL(url),
+              url.host?.lowercased() == NetworkSecurityPolicy.iisHost else {
+            throw NetworkSecurityError.untrustedURL
+        }
+
+        let (data, response) = try await URLSession.shared.data(from: url)
+        guard let response = response as? HTTPURLResponse,
+              let responseURL = response.url,
+              responseURL.host?.lowercased() == NetworkSecurityPolicy.iisHost,
+              NetworkSecurityPolicy.isSecureURL(responseURL),
+              (200 ... 299).contains(response.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return data
+    }
+
+    private static func endpoint(
+        path: String,
+        queryItems: [URLQueryItem]
+    ) -> URL? {
+        var components = URLComponents(
+            url: apiBaseURL.appendingPathComponent(path),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = queryItems
+        return components?.url
     }
 }

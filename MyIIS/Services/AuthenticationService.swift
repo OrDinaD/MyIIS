@@ -46,6 +46,7 @@ class AuthenticationService: ObservableObject {
             self.clearCachedUser()
             UserDefaults.standard.set(true, forKey: FirstLaunchView.completionKey)
 
+            #if DEBUG
             if Self.isRunningScreenshotTests {
                 Task { [weak self] in
                     await self?.login(
@@ -55,6 +56,7 @@ class AuthenticationService: ObservableObject {
                     )
                 }
             }
+            #endif
         } else if let cachedUserData = UserDefaultsPayloadStore.load(forKey: Self.cachedUserDefaultsKey, from: UserDefaults.standard),
            let cachedUser = try? JSONDecoder().decode(User.self, from: cachedUserData) {
             self.currentUser = cachedUser
@@ -75,7 +77,15 @@ class AuthenticationService: ObservableObject {
 
     func checkServerStatus() async -> Bool {
         do {
-            let request = URLRequest(url: URL(string: "https://iis.bsuir.by/api/v1/faculties")!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 5.0)
+            let url = NetworkSecurityPolicy.iisBaseURL
+                .appendingPathComponent("api")
+                .appendingPathComponent("v1")
+                .appendingPathComponent("faculties")
+            let request = URLRequest(
+                url: url,
+                cachePolicy: .reloadIgnoringLocalCacheData,
+                timeoutInterval: 5.0
+            )
             let (_, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse {
                 return (200 ... 299).contains(httpResponse.statusCode)
@@ -323,6 +333,8 @@ class AuthenticationService: ObservableObject {
         self.isRestoringSession = false
         APIService.resetDemoMode()
         APIService.clearResponseCache()
+        NetworkSecurityPolicy.removeCookies(forHost: NetworkSecurityPolicy.iisHost)
+        LMSService.shared.logout()
         AppRouter.shared.resetForLogout()
         clearCachedUser()
 

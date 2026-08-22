@@ -6,11 +6,9 @@ final class LMSActivityContentService {
     private let session: URLSession
 
     private init() {
-        let configuration = URLSessionConfiguration.default
-        configuration.httpCookieStorage = .shared
-        configuration.httpShouldSetCookies = true
-        configuration.httpCookieAcceptPolicy = .always
-        session = URLSession(configuration: configuration)
+        session = URLSession(
+            configuration: NetworkSecurityPolicy.makeLMSConfiguration()
+        )
     }
 
     func fetchPage(url: URL) async throws -> LMSPageContent {
@@ -124,12 +122,18 @@ private extension LMSActivityContentService {
     }
 
     func loadHTML(url: URL) async throws -> String {
+        guard NetworkSecurityPolicy.isTrustedLMSURL(url) else {
+            throw NetworkSecurityError.untrustedURL
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 60
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode),
+        guard let http = response as? HTTPURLResponse,
+              let responseURL = http.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL),
+              (200 ... 399).contains(http.statusCode),
               let html = String(data: data, encoding: .utf8) else {
             throw LMSActivityContentError.invalidResponse
         }
@@ -137,6 +141,9 @@ private extension LMSActivityContentService {
     }
 
     func submit(url: URL, method: String, fields: [String: String]) async throws -> HTMLResponse {
+        guard NetworkSecurityPolicy.isTrustedLMSURL(url) else {
+            throw NetworkSecurityError.untrustedURL
+        }
         var requestURL = url
         var request = URLRequest(url: url)
         let normalizedMethod = method.uppercased()
@@ -156,9 +163,15 @@ private extension LMSActivityContentService {
             request.httpBody = Self.percentEncoded(fields)
         }
 
+        guard NetworkSecurityPolicy.isTrustedLMSURL(requestURL) else {
+            throw NetworkSecurityError.untrustedURL
+        }
         request.timeoutInterval = 60
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode),
+        guard let http = response as? HTTPURLResponse,
+              let responseURL = http.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL),
+              (200 ... 399).contains(http.statusCode),
               let html = String(data: data, encoding: .utf8) else {
             throw LMSActivityContentError.invalidResponse
         }
@@ -375,11 +388,7 @@ private extension LMSActivityContentService {
     }
 
     static func absoluteURL(_ raw: String) -> URL? {
-        let decoded = raw.decodingHTMLEntities()
-        if let url = URL(string: decoded), url.scheme != nil {
-            return url
-        }
-        return URL(string: decoded, relativeTo: URL(string: "https://lms.bsuir.by"))?.absoluteURL
+        NetworkSecurityPolicy.trustedLMSURL(raw)
     }
 
     static func percentEncoded(_ fields: [String: String]) -> Data? {
