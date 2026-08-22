@@ -127,7 +127,11 @@ enum MessageGradebookDataStore {
     }
 
     static func loadSnapshot() -> MessageGradebookSnapshot? {
-        guard let defaults, let data = MessagePayloadStore.load(forKey: Key.snapshot, from: defaults) else {
+        guard let defaults,
+              let data = MessagePayloadStore.load(
+                forKey: Key.snapshot,
+                from: defaults
+              ) else {
             return nil
         }
         return try? JSONDecoder().decode(MessageGradebookSnapshot.self, from: data)
@@ -135,13 +139,27 @@ enum MessageGradebookDataStore {
 }
 
 private enum MessagePayloadStore {
-    private static let maxPayloadBytes = 3_500_000
+    private static let appGroupIdentifier = "group.com.OrDinaD.MyIIS"
 
     static func load(forKey key: String, from defaults: UserDefaults) -> Data? {
-        guard let data = defaults.data(forKey: key), data.count < maxPayloadBytes else {
-            return nil
+        let fileManager = FileManager.default
+        let baseURL = fileManager.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroupIdentifier
+        ) ?? fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
+
+        if let baseURL {
+            let safeKey = key
+                .replacingOccurrences(of: "/", with: "_")
+                .replacingOccurrences(of: ":", with: "_")
+            let fileURL = baseURL
+                .appendingPathComponent("PayloadStore", isDirectory: true)
+                .appendingPathComponent("\(safeKey).dat")
+            if let data = try? Data(contentsOf: fileURL) {
+                return data
+            }
         }
-        return data
+
+        return defaults.data(forKey: key)
     }
 }
 

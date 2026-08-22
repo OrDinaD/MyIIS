@@ -366,9 +366,12 @@ final class ServiceEndpointsAPI {
     private let baseURL: URL
     private let session: URLSession
     private let logService: LogService
-    private let userDefaults = UserDefaults.standard
+    private let userDefaults: UserDefaults
+    private let now: () -> Date
 
     private static let cachePrefix = "ServiceEndpointsAPI.cache."
+    private static let responseCacheLifetime: TimeInterval = 24 * 60 * 60
+    private static let currentWeekCacheLifetime: TimeInterval = 60 * 60
 
     private struct CachedEnvelope: Codable {
         let data: Data
@@ -378,11 +381,21 @@ final class ServiceEndpointsAPI {
     init(
         baseURL: URL = URLFactory.require("https://iis.bsuir.by/api/v1"),
         session: URLSession = .shared,
-        logService: LogService = .shared
+        logService: LogService = .shared,
+        userDefaults: UserDefaults = .standard,
+        now: @escaping () -> Date = Date.init
     ) {
         self.baseURL = baseURL
         self.session = session
         self.logService = logService
+        self.userDefaults = userDefaults
+        self.now = now
+    }
+
+    static func clearResponseCache(
+        in defaults: UserDefaults = .standard
+    ) {
+        UserDefaultsPayloadStore.clear(prefix: cachePrefix, from: defaults)
     }
 
     func fetchLibraryBooks() async throws -> [ServiceJSONObject] {
@@ -572,6 +585,18 @@ final class ServiceEndpointsAPI {
                 throw CancellationError()
             }
 
+            if let apiError = error as? APIError {
+                switch apiError {
+                case .unauthorized:
+                    AuthenticationSessionEvents.reportUnauthorized()
+                    throw apiError
+                case .invalidURL, .invalidResponse, .decodingError:
+                    throw apiError
+                case .serviceUnavailable, .serverError, .networkError:
+                    break
+                }
+            }
+
             if let cached = cachedData(for: request) {
                 logService.log("⚠️ Service endpoints: using offline cache for \(endpoint.absoluteString). Original error: \(error.localizedDescription)")
                 return cached
@@ -624,7 +649,11 @@ final class ServiceEndpointsAPI {
             persistCache(data: data, for: request)
             return data
         case 401:
-            throw APIError.unauthorized(message: "Сессия истекла. Войдите заново.")
+            throw APIError.unauthorized(message: NSLocalizedString(
+                "api_error_session_expired",
+                value: "Сессия истекла. Войдите заново.",
+                comment: ""
+            ))
         case 418:
             throw APIError.serviceUnavailable(message: "Сервис временно недоступен")
         default:
@@ -648,7 +677,7 @@ final class ServiceEndpointsAPI {
 
     private func persistCache(data: Data, for request: URLRequest) {
         guard let key = cacheKey(for: request) else { return }
-        let envelope = CachedEnvelope(data: data, cachedAt: Date())
+        let envelope = CachedEnvelope(data: data, cachedAt: now())
         guard let payload = try? JSONEncoder().encode(envelope) else { return }
         _ = UserDefaultsPayloadStore.save(payload, forKey: key, in: userDefaults)
     }
@@ -659,7 +688,20 @@ final class ServiceEndpointsAPI {
               let envelope = try? JSONDecoder().decode(CachedEnvelope.self, from: payload) else {
             return nil
         }
+
+        let age = now().timeIntervalSince(envelope.cachedAt)
+        guard age >= 0, age <= cacheLifetime(for: request) else {
+            UserDefaultsPayloadStore.clear(forKey: key, from: userDefaults)
+            return nil
+        }
         return envelope.data
+    }
+
+    private func cacheLifetime(for request: URLRequest) -> TimeInterval {
+        if request.url?.path.hasSuffix("/schedule/current-week") == true {
+            return Self.currentWeekCacheLifetime
+        }
+        return Self.responseCacheLifetime
     }
 
     private func cacheKey(for request: URLRequest) -> String? {

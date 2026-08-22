@@ -237,6 +237,10 @@ class APIService {
             try data.write(to: temporaryURL, options: [.atomic])
             return temporaryURL
         } catch let apiError as APIError {
+            if case .unauthorized = apiError,
+               request.url?.path.hasSuffix("/auth/login") != true {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             throw apiError
         } catch {
             throw APIError.networkError(error)
@@ -299,6 +303,11 @@ class APIService {
             do {
                 return try await performSingleRequest(request)
             } catch {
+                if let apiError = error as? APIError,
+                   case .unauthorized = apiError {
+                    throw apiError
+                }
+
                 attempt += 1
                 if attempt <= retryPolicy.maxRetries && retryPolicy.shouldRetry(error: error) {
                     let delay = retryPolicy.delay(forAttempt: attempt)
@@ -329,6 +338,10 @@ class APIService {
             persistCache(data: data, for: request)
             return try decode(data)
         } catch let apiError as APIError {
+            if case .unauthorized = apiError,
+               request.url?.path.hasSuffix("/auth/login") != true {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             throw apiError
         } catch {
             if isCancellationError(error) {
@@ -350,6 +363,10 @@ class APIService {
 
             try handleStatusCode(httpResponse.statusCode, data: data)
         } catch let apiError as APIError {
+            if case .unauthorized = apiError,
+               request.url?.path.hasSuffix("/auth/login") != true {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             throw apiError
         } catch {
             if isCancellationError(error) {

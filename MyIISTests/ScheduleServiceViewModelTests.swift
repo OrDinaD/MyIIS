@@ -432,6 +432,80 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         }
     }
 
+    func testRotatingWeekNumberUsesPublishedTermStartDate() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let termStart = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))
+        )
+        let sameWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 6))
+        )
+        let nextWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 7))
+        )
+        let fourthWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 21))
+        )
+        let fifthWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 28))
+        )
+
+        XCTAssertEqual(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: sameWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            ),
+            1
+        )
+        XCTAssertEqual(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: nextWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            ),
+            2
+        )
+        XCTAssertEqual(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: fourthWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            ),
+            4
+        )
+        XCTAssertEqual(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: fifthWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            ),
+            1
+        )
+    }
+
+    func testRotatingWeekNumberRejectsDatesBeforeTerm() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let termStart = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))
+        )
+        let previousWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 8, day: 24))
+        )
+
+        XCTAssertNil(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: previousWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            )
+        )
+    }
+
     private func makeDefaults(_ identifier: String) -> UserDefaults {
         let suiteName = defaultsSuiteName(identifier)
         let defaults = UserDefaults(suiteName: suiteName)!

@@ -35,6 +35,34 @@ struct SessionScheduleWidgetSnapshot: Codable, Sendable {
     }
 }
 
+enum ScheduleWidgetTimelinePolicy {
+    static let maximumEntries = 64
+
+    static func makeDates(
+        snapshot: SessionScheduleWidgetSnapshot?,
+        from now: Date,
+        calendar: Calendar = .current
+    ) -> [Date] {
+        guard let snapshot else { return [now] }
+
+        var dates: Set<Date> = [now]
+        for event in snapshot.events {
+            guard let interval = event.interval(calendar: calendar),
+                  interval.end >= now else {
+                continue
+            }
+            dates.insert(interval.start)
+            dates.insert(interval.end)
+        }
+
+        return dates
+            .filter { $0 >= now }
+            .sorted()
+            .prefix(maximumEntries)
+            .map { $0 }
+    }
+}
+
 enum SessionScheduleWidgetConstants {
     static let kind = "com.OrDinaD.MyIIS.sessionSchedule"
 }

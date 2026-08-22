@@ -181,6 +181,7 @@ final class ScheduleServiceViewModel {
     private let api: ServiceEndpointsAPI
     private let authService: AuthenticationService
     private let defaults: UserDefaults
+    private let usesSharedSnapshotCache: Bool
     private var hasLoadedInitialData = false
     private var shouldResetQueryOnModeChange = true
     private var isDirectoryLoading = false
@@ -236,6 +237,7 @@ final class ScheduleServiceViewModel {
     ) {
         self.api = api ?? ServiceEndpointsAPI()
         self.authService = authService ?? .shared
+        self.usesSharedSnapshotCache = defaults == nil
         self.defaults = defaults ?? (UserDefaults(suiteName: AppGroup.identifier) ?? .standard)
 
         if let modeRaw = self.defaults.string(forKey: Self.displayModeDefaultsKey),
@@ -291,7 +293,7 @@ final class ScheduleServiceViewModel {
 
     @discardableResult
     private func applyCachedSnapshotIfAvailable() -> Bool {
-        guard defaults == (UserDefaults(suiteName: AppGroup.identifier) ?? .standard) else {
+        guard usesSharedSnapshotCache else {
             return false
         }
         guard let snapshot = Self.cachedSnapshot,
@@ -880,7 +882,7 @@ final class ScheduleServiceViewModel {
         var generated: [ScheduleContinuousDay] = []
         while cursor < currentEarliest {
             if let weekday = studyWeekday(for: cursor),
-               let weekNumber = universityWeekNumber(on: cursor) {
+               let weekNumber = timelineWeekNumber(on: cursor) {
                 let lessons = lessonsForContinuousDay(weekday: weekday, weekNumber: weekNumber, date: cursor)
                 if !lessons.isEmpty {
                     generated.append(
@@ -940,7 +942,7 @@ final class ScheduleServiceViewModel {
 
         while processedDays < Self.continuousChunkSizeDays, cursor <= endBound {
             guard let weekday = studyWeekday(for: cursor),
-                  let weekNumber = universityWeekNumber(on: cursor) else {
+                  let weekNumber = timelineWeekNumber(on: cursor) else {
                 processedDays += 1
                 cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? cursor
                 continue
@@ -1316,23 +1318,64 @@ final class ScheduleServiceViewModel {
         return formatter
     }()
 
-    private func resolveCurrentWeekNumber(backendValue: Int?, termStartDate: Date?) -> Int? {
+    private func resolveCurrentWeekNumber(
+        backendValue: Int?,
+        termStartDate: Date?,
+        now: Date = Date()
+    ) -> Int? {
         if let backendValue, (1 ... 4).contains(backendValue) {
             return backendValue
         }
 
-        if let calculated = universityWeekNumber(on: Date()) {
+        if let termStartDate,
+           let calculated = Self.rotatingWeekNumber(
+               on: now,
+               termStartDate: termStartDate
+           ) {
             return calculated
         }
 
-        guard let termStartDate else { return nil }
-        let calendar = Calendar(identifier: .gregorian)
-        let start = calendar.startOfDay(for: termStartDate)
-        let now = calendar.startOfDay(for: Date())
-        guard let distance = calendar.dateComponents([.weekOfYear], from: start, to: now).weekOfYear else {
+        return universityWeekNumber(on: now)
+    }
+
+    private func timelineWeekNumber(on date: Date) -> Int? {
+        if let termStartDate = schedule?.startDate,
+           let weekNumber = Self.rotatingWeekNumber(
+               on: date,
+               termStartDate: termStartDate
+           ) {
+            return weekNumber
+        }
+        return universityWeekNumber(on: date)
+    }
+
+    static func rotatingWeekNumber(
+        on date: Date,
+        termStartDate: Date,
+        calendar: Calendar = Calendar(identifier: .gregorian)
+    ) -> Int? {
+        var academicCalendar = calendar
+        academicCalendar.firstWeekday = 2
+        academicCalendar.minimumDaysInFirstWeek = 4
+
+        guard let startOfTermWeek = Self.startOfWeek(
+            for: termStartDate,
+            calendar: academicCalendar
+        ),
+        let startOfTargetWeek = Self.startOfWeek(
+            for: date,
+            calendar: academicCalendar
+        ),
+        let distance = academicCalendar.dateComponents(
+            [.weekOfYear],
+            from: startOfTermWeek,
+            to: startOfTargetWeek
+        ).weekOfYear,
+        distance >= 0 else {
             return nil
         }
-        return ((abs(distance) % 4) + 1)
+
+        return (distance % 4) + 1
     }
 
     private func universityWeekNumber(on date: Date, now: Date = Date()) -> Int? {
@@ -1351,8 +1394,8 @@ final class ScheduleServiceViewModel {
             septemberStart = previousSeptemberStart
         }
 
-        guard let startOfAnchorWeek = startOfWeek(for: septemberStart, calendar: calendar),
-              let startOfTargetWeek = startOfWeek(for: date, calendar: calendar),
+        guard let startOfAnchorWeek = Self.startOfWeek(for: septemberStart, calendar: calendar),
+              let startOfTargetWeek = Self.startOfWeek(for: date, calendar: calendar),
               let weeksDistance = calendar.dateComponents([.weekOfYear], from: startOfAnchorWeek, to: startOfTargetWeek).weekOfYear else {
             return nil
         }
@@ -1360,7 +1403,7 @@ final class ScheduleServiceViewModel {
         return (abs(weeksDistance) % 4) + 1
     }
 
-    private func startOfWeek(for date: Date, calendar: Calendar) -> Date? {
+    private static func startOfWeek(for date: Date, calendar: Calendar) -> Date? {
         let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
         return calendar.date(from: components)
     }
@@ -1402,7 +1445,7 @@ final class ScheduleServiceViewModel {
     }
 
     private func saveSnapshot() {
-        guard defaults == (UserDefaults(suiteName: AppGroup.identifier) ?? .standard) else { return }
+        guard usesSharedSnapshotCache else { return }
         guard let schedule else { return }
         Self.cachedSnapshot = Snapshot(
             dataSource: dataSource,

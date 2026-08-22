@@ -116,7 +116,7 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
         let snapshot = SessionScheduleWidgetDataStore.loadSnapshot()
         let now = Date()
 
-        let dates = Self.makeTimelineDates(snapshot: snapshot, from: now)
+        let dates = ScheduleWidgetTimelinePolicy.makeDates(snapshot: snapshot, from: now)
         let entries = dates.map {
             SessionScheduleWidgetEntry(date: $0, snapshot: snapshot)
         }
@@ -124,41 +124,6 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
         let nextRefresh = Self.nextRefreshDate(snapshot: snapshot, from: now)
 
         completion(Timeline(entries: entries, policy: .after(nextRefresh)))
-    }
-
-    static func makeTimelineDates(
-        snapshot: SessionScheduleWidgetSnapshot?,
-        from now: Date,
-        calendar: Calendar = .current
-    ) -> [Date] {
-        guard let snapshot else { return [now] }
-
-        var dates: Set<Date> = [now]
-
-        for event in snapshot.events {
-            guard let interval = event.interval(calendar: calendar) else { continue }
-
-            if interval.end >= now {
-                dates.insert(interval.start)
-                dates.insert(interval.end)
-
-                var cursor = max(interval.start, now)
-                while cursor < interval.end {
-                    if let next = calendar.date(byAdding: .minute, value: 5, to: cursor) {
-                        dates.insert(next)
-                        cursor = next
-                    } else {
-                        break
-                    }
-                }
-            }
-        }
-
-        return dates
-            .filter { $0 >= now }
-            .sorted()
-            .prefix(64)
-            .map { $0 }
     }
 
     static func nextRefreshDate(
@@ -195,13 +160,18 @@ struct ClassScheduleWidgetProvider: TimelineProvider {
             completion(placeholder(in: context))
             return
         }
-        completion(SessionScheduleWidgetEntry(date: .now, snapshot: ClassScheduleWidgetDataStore.loadSnapshot() ?? SessionScheduleWidgetEntry.classPreviewSnapshot))
+        completion(
+            SessionScheduleWidgetEntry(
+                date: .now,
+                snapshot: ClassScheduleWidgetDataStore.loadSnapshot()
+            )
+        )
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
         let snapshot = ClassScheduleWidgetDataStore.loadSnapshot()
         let now = Date()
-        let dates = SessionScheduleWidgetProvider.makeTimelineDates(snapshot: snapshot, from: now)
+        let dates = ScheduleWidgetTimelinePolicy.makeDates(snapshot: snapshot, from: now)
         let entries = dates.map { SessionScheduleWidgetEntry(date: $0, snapshot: snapshot) }
         let nextRefresh = SessionScheduleWidgetProvider.nextRefreshDate(snapshot: snapshot, from: now)
         completion(Timeline(entries: entries, policy: .after(nextRefresh)))
