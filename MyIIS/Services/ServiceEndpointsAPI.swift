@@ -33,7 +33,7 @@ struct ScheduleEmployeeDirectoryEntry: Decodable, Identifiable, Hashable {
     }
 }
 
-struct PublicScheduleResponse: Decodable {
+struct PublicScheduleResponse: Decodable, Sendable {
     let employee: DisciplineEmployee?
     let group: StudyGroup?
     let exams: [DisciplineSchedule]
@@ -441,8 +441,11 @@ final class ServiceEndpointsAPI {
         try await decodeJSONArray(path: "activity/research-work")
     }
 
-    func fetchCurrentWeek() async throws -> Int {
-        let data = try await fetchData(path: "schedule/current-week")
+    func fetchCurrentWeek(preferCachedResponse: Bool = true) async throws -> Int {
+        let data = try await fetchData(
+            path: "schedule/current-week",
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode(Int.self, from: data)
         } catch {
@@ -453,8 +456,11 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    func fetchAllStudentGroups() async throws -> [StudyGroup] {
-        let data = try await fetchData(path: "student-groups")
+    func fetchAllStudentGroups(preferCachedResponse: Bool = true) async throws -> [StudyGroup] {
+        let data = try await fetchData(
+            path: "student-groups",
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode([StudyGroup].self, from: data)
         } catch {
@@ -462,8 +468,11 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    func fetchAllEmployees() async throws -> [ScheduleEmployeeDirectoryEntry] {
-        let data = try await fetchData(path: "employees/all")
+    func fetchAllEmployees(preferCachedResponse: Bool = true) async throws -> [ScheduleEmployeeDirectoryEntry] {
+        let data = try await fetchData(
+            path: "employees/all",
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode([ScheduleEmployeeDirectoryEntry].self, from: data)
         } catch {
@@ -471,10 +480,15 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    func fetchGroupSchedule(groupNumber: String) async throws -> PublicScheduleResponse {
-        let data = try await fetchData(path: "schedule", queryItems: [
-            URLQueryItem(name: "studentGroup", value: groupNumber)
-        ])
+    func fetchGroupSchedule(
+        groupNumber: String,
+        preferCachedResponse: Bool = true
+    ) async throws -> PublicScheduleResponse {
+        let data = try await fetchData(
+            path: "schedule",
+            queryItems: [URLQueryItem(name: "studentGroup", value: groupNumber)],
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode(PublicScheduleResponse.self, from: data)
         } catch {
@@ -482,8 +496,14 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    func fetchEmployeeSchedule(urlId: String) async throws -> PublicScheduleResponse {
-        let data = try await fetchData(path: "employees/schedule/\(urlId)")
+    func fetchEmployeeSchedule(
+        urlId: String,
+        preferCachedResponse: Bool = true
+    ) async throws -> PublicScheduleResponse {
+        let data = try await fetchData(
+            path: "employees/schedule/\(urlId)",
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode(PublicScheduleResponse.self, from: data)
         } catch {
@@ -564,9 +584,18 @@ final class ServiceEndpointsAPI {
         )
     }
 
-    private func fetchData(path: String, queryItems: [URLQueryItem]? = nil) async throws -> Data {
+    private func fetchData(
+        path: String,
+        queryItems: [URLQueryItem]? = nil,
+        preferCachedResponse: Bool = false
+    ) async throws -> Data {
         let request = try makeGETRequest(path: path, queryItems: queryItems)
         guard let endpoint = request.url else { throw APIError.invalidURL }
+
+        if preferCachedResponse, let cached = cachedData(for: request) {
+            logService.log("Service endpoints: using fresh cache for \(endpoint.absoluteString)")
+            return cached
+        }
 
         let method = request.httpMethod ?? "GET"
         logService.log("Service endpoint request: \(method) \(endpoint.absoluteString)")

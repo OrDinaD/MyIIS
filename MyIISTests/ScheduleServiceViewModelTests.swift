@@ -95,7 +95,7 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         )
     }
 
-    func testDateJumpBuildsTimelineAroundSelectedDate() throws {
+    func testDateJumpBuildsTimelineAroundSelectedDate() async throws {
         let defaults = makeDefaults("date-jump")
         defer { removeDefaults("date-jump") }
         let viewModel = ScheduleServiceViewModel(defaults: defaults)
@@ -110,7 +110,7 @@ final class ScheduleServiceViewModelTests: XCTestCase {
             )
         )
 
-        let dayID = viewModel.prepareContinuousTimeline(around: requestedDate)
+        let dayID = await viewModel.prepareContinuousTimeline(around: requestedDate)
 
         XCTAssertNotNil(dayID)
         XCTAssertTrue(
@@ -140,7 +140,7 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.query, document.title)
     }
 
-    func testGroupSearchTrimsQueryAndMatchesSpeciality() {
+    func testGroupSearchTrimsQueryAndMatchesSpeciality() async throws {
         let defaults = makeDefaults("group-search")
         defer { removeDefaults("group-search") }
         let viewModel = ScheduleServiceViewModel(defaults: defaults)
@@ -150,9 +150,11 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         ]
 
         viewModel.query = "  4206  "
+        try await Task.sleep(for: .milliseconds(180))
         XCTAssertEqual(viewModel.filteredGroups.map(\.name), ["420603"])
 
         viewModel.query = "ИНЖЕНЕРИЯ"
+        try await Task.sleep(for: .milliseconds(180))
         XCTAssertEqual(viewModel.filteredGroups.map(\.name), ["310901"])
     }
 

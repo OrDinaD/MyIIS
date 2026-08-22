@@ -61,8 +61,8 @@ final class ServiceEndpointsAPICacheTests: XCTestCase {
         }
 
         do {
-            _ = try await api.fetchCurrentWeek()
-            XCTFail("401 must not be masked by cached data")
+            _ = try await api.fetchCurrentWeek(preferCachedResponse: false)
+            XCTFail("401 must not be masked during an explicit refresh")
         } catch APIError.unauthorized {
             // Expected.
         } catch {
