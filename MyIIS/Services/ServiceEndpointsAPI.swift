@@ -33,6 +33,20 @@ struct ScheduleEmployeeDirectoryEntry: Decodable, Identifiable, Hashable {
     }
 }
 
+enum ScheduleEmployeePhotoURL {
+    static func make(photoLink: String?, employeeID: Int) -> URL? {
+        if let link = photoLink?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !link.isEmpty {
+            return URL(string: link
+                .replacingOccurrences(of: "http://", with: "https://")
+                .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
+        }
+
+        guard employeeID > 0 else { return nil }
+        return URL(string: "https://iis.bsuir.by/api/v1/employees/photo/\(employeeID)")
+    }
+}
+
 struct PublicScheduleResponse: Decodable, Sendable {
     let employee: DisciplineEmployee?
     let group: StudyGroup?
@@ -41,9 +55,9 @@ struct PublicScheduleResponse: Decodable, Sendable {
     let endDate: Date?
     let startExamsDate: Date?
     let endExamsDate: Date?
-    let scheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
-    let previousScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
-    let nextScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
+    private let scheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
+    private let previousScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
+    private let nextScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
 
     enum CodingKeys: String, CodingKey {
         case employee = "employeeDto"

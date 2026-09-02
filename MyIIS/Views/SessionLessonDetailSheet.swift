@@ -313,10 +313,10 @@ private struct TeacherPhotoPreview: View {
     }
 
     private var photoURL: URL? {
-        guard let link = teacher.photoLink.nilIfBlank else { return nil }
-        return URL(string: link
-            .replacingOccurrences(of: "http://", with: "https://")
-            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
+        ScheduleEmployeePhotoURL.make(
+            photoLink: teacher.photoLink,
+            employeeID: teacher.id
+        )
     }
 }
 
@@ -342,10 +342,10 @@ private struct TeacherAvatarView: View {
     }
 
     private var photoURL: URL? {
-        guard let link = teacher.photoLink.nilIfBlank else { return nil }
-        return URL(string: link
-            .replacingOccurrences(of: "http://", with: "https://")
-            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
+        ScheduleEmployeePhotoURL.make(
+            photoLink: teacher.photoLink,
+            employeeID: teacher.id
+        )
     }
 
     private var avatarPlaceholder: some View {

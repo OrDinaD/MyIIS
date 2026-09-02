@@ -938,10 +938,10 @@ private struct ScheduleTeacherHeader: View {
     }
 
     private var photoURL: URL? {
-        guard let link = employee.photoLink.nilIfBlank else { return nil }
-        return URL(string: link
-            .replacingOccurrences(of: "http://", with: "https://")
-            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
+        ScheduleEmployeePhotoURL.make(
+            photoLink: employee.photoLink,
+            employeeID: employee.id
+        )
     }
 
     private var placeholder: some View {
@@ -1250,10 +1250,11 @@ private struct ScheduleLessonCard: View {
     }
 
     private func teacherPhotoURL(for teacher: DisciplineEmployee?) -> URL? {
-        guard let link = teacher?.photoLink.nilIfBlank else { return nil }
-        return URL(string: link
-            .replacingOccurrences(of: "http://", with: "https://")
-            .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
+        guard let teacher else { return nil }
+        return ScheduleEmployeePhotoURL.make(
+            photoLink: teacher.photoLink,
+            employeeID: teacher.id
+        )
     }
 
     private var displayedTeachers: [DisciplineEmployee] {
