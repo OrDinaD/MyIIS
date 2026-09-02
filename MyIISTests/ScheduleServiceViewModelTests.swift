@@ -95,7 +95,7 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         )
     }
 
-    func testDateJumpBuildsTimelineAroundSelectedDate() throws {
+    func testDateJumpBuildsTimelineAroundSelectedDate() async throws {
         let defaults = makeDefaults("date-jump")
         defer { removeDefaults("date-jump") }
         let viewModel = ScheduleServiceViewModel(defaults: defaults)
@@ -110,7 +110,7 @@ final class ScheduleServiceViewModelTests: XCTestCase {
             )
         )
 
-        let dayID = viewModel.prepareContinuousTimeline(around: requestedDate)
+        let dayID = await viewModel.prepareContinuousTimeline(around: requestedDate)
 
         XCTAssertNotNil(dayID)
         XCTAssertTrue(
@@ -140,7 +140,7 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.query, document.title)
     }
 
-    func testGroupSearchTrimsQueryAndMatchesSpeciality() {
+    func testGroupSearchTrimsQueryAndMatchesSpeciality() async throws {
         let defaults = makeDefaults("group-search")
         defer { removeDefaults("group-search") }
         let viewModel = ScheduleServiceViewModel(defaults: defaults)
@@ -150,9 +150,11 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         ]
 
         viewModel.query = "  4206  "
+        try await Task.sleep(for: .milliseconds(180))
         XCTAssertEqual(viewModel.filteredGroups.map(\.name), ["420603"])
 
         viewModel.query = "ИНЖЕНЕРИЯ"
+        try await Task.sleep(for: .milliseconds(180))
         XCTAssertEqual(viewModel.filteredGroups.map(\.name), ["310901"])
     }
 
@@ -430,6 +432,80 @@ final class ScheduleServiceViewModelTests: XCTestCase {
                 _ = viewModel.subgroupFilters
             }
         }
+    }
+
+    func testRotatingWeekNumberUsesPublishedTermStartDate() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let termStart = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))
+        )
+        let sameWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 6))
+        )
+        let nextWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 7))
+        )
+        let fourthWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 21))
+        )
+        let fifthWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 28))
+        )
+
+        XCTAssertEqual(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: sameWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            ),
+            1
+        )
+        XCTAssertEqual(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: nextWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            ),
+            2
+        )
+        XCTAssertEqual(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: fourthWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            ),
+            4
+        )
+        XCTAssertEqual(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: fifthWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            ),
+            1
+        )
+    }
+
+    func testRotatingWeekNumberRejectsDatesBeforeTerm() throws {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let termStart = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))
+        )
+        let previousWeek = try XCTUnwrap(
+            calendar.date(from: DateComponents(year: 2026, month: 8, day: 24))
+        )
+
+        XCTAssertNil(
+            ScheduleServiceViewModel.rotatingWeekNumber(
+                on: previousWeek,
+                termStartDate: termStart,
+                calendar: calendar
+            )
+        )
     }
 
     private func makeDefaults(_ identifier: String) -> UserDefaults {

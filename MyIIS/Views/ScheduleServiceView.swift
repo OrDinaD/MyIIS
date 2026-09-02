@@ -156,21 +156,21 @@ struct ScheduleServiceView: View {
             }
             .onChange(of: dateJumpTarget) { _, target in
                 guard let target else { return }
-                if let dayID = viewModel.prepareContinuousTimeline(around: target) {
-                    Task { @MainActor in
+                Task { @MainActor in
+                    if let dayID = await viewModel.prepareContinuousTimeline(around: target) {
                         await Task.yield()
                         withAnimation(.easeInOut(duration: 0.3)) {
                             proxy.scrollTo(dayID, anchor: .top)
                         }
+                    } else {
+                        viewModel.noticeMessage = NSLocalizedString(
+                            "schedule_date_has_no_lessons",
+                            value: "На выбранную дату занятий не найдено.",
+                            comment: ""
+                        )
                     }
-                } else {
-                    viewModel.noticeMessage = NSLocalizedString(
-                        "schedule_date_has_no_lessons",
-                        value: "На выбранную дату занятий не найдено.",
-                        comment: ""
-                    )
+                    dateJumpTarget = nil
                 }
-                dateJumpTarget = nil
             }
         }
         .refreshable {

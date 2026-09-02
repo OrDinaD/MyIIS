@@ -22,6 +22,8 @@ class AuthenticationService: ObservableObject {
     private static let cachedUserDefaultsKey = "MyIIS.cachedUser"
     private var token: String?
     private let allowSessionRestore: Bool
+    private var sessionExpirationObservationTask: Task<Void, Never>?
+    private var sessionRecoveryTask: Task<Void, Never>?
     private static let isRunningInPreviews =
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     private static let isRunningUnitTests =
@@ -39,6 +41,15 @@ class AuthenticationService: ObservableObject {
         self.apiService = apiService ?? APIService()
         self.logService = logService ?? LogService.shared
         self.allowSessionRestore = allowSessionRestore
+        self.sessionExpirationObservationTask = Task { [weak self] in
+            let notifications = NotificationCenter.default.notifications(
+                named: .myiisAuthenticationSessionExpired
+            )
+            for await _ in notifications {
+                guard let self, !Task.isCancelled else { return }
+                self.recoverExpiredSessionIfNeeded()
+            }
+        }
 
         if Self.isRunningUITests {
             self.currentUser = nil
@@ -46,6 +57,7 @@ class AuthenticationService: ObservableObject {
             self.clearCachedUser()
             UserDefaults.standard.set(true, forKey: FirstLaunchView.completionKey)
 
+            #if DEBUG
             if Self.isRunningScreenshotTests {
                 Task { [weak self] in
                     await self?.login(
@@ -55,6 +67,7 @@ class AuthenticationService: ObservableObject {
                     )
                 }
             }
+            #endif
         } else if let cachedUserData = UserDefaultsPayloadStore.load(forKey: Self.cachedUserDefaultsKey, from: UserDefaults.standard),
            let cachedUser = try? JSONDecoder().decode(User.self, from: cachedUserData) {
             self.currentUser = cachedUser
@@ -75,7 +88,15 @@ class AuthenticationService: ObservableObject {
 
     func checkServerStatus() async -> Bool {
         do {
-            let request = URLRequest(url: URL(string: "https://iis.bsuir.by/api/v1/faculties")!, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 5.0)
+            let url = NetworkSecurityPolicy.iisBaseURL
+                .appendingPathComponent("api")
+                .appendingPathComponent("v1")
+                .appendingPathComponent("faculties")
+            let request = URLRequest(
+                url: url,
+                cachePolicy: .reloadIgnoringLocalCacheData,
+                timeoutInterval: 5.0
+            )
             let (_, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse {
                 return (200 ... 299).contains(httpResponse.statusCode)
@@ -316,13 +337,66 @@ class AuthenticationService: ObservableObject {
             canStudentNote: loginResponse.canStudentNote
         )
     }
+    private func recoverExpiredSessionIfNeeded() {
+        guard allowSessionRestore,
+              currentUser != nil,
+              !isLoading,
+              sessionRecoveryTask == nil else {
+            return
+        }
+
+        isRestoringSession = true
+        sessionRecoveryTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                guard try self.credentialStore.retrieve() != nil else {
+                    self.requireInteractiveLoginAfterSessionExpiry()
+                    self.sessionRecoveryTask = nil
+                    return
+                }
+            } catch {
+                self.logService.log(
+                    "⚠️ Failed to access credentials for session recovery: \(error.localizedDescription)"
+                )
+                self.requireInteractiveLoginAfterSessionExpiry()
+                self.sessionRecoveryTask = nil
+                return
+            }
+
+            await self.restoreSessionIfPossible()
+            self.sessionRecoveryTask = nil
+        }
+    }
+
+    private func requireInteractiveLoginAfterSessionExpiry() {
+        currentUser = nil
+        token = nil
+        isSessionReady = false
+        isRestoringSession = false
+        errorMessage = APIError.unauthorized(
+            message: NSLocalizedString(
+                "api_error_session_expired",
+                value: "Сессия истекла. Войдите заново.",
+                comment: ""
+            )
+        ).localizedDescription
+        clearCachedUser()
+        NetworkSecurityPolicy.removeCookies(forHost: NetworkSecurityPolicy.iisHost)
+        AppRouter.shared.resetForLogout()
+    }
+
     func logout() {
+        sessionRecoveryTask?.cancel()
+        sessionRecoveryTask = nil
         self.currentUser = nil
         self.token = nil
         self.isSessionReady = false
         self.isRestoringSession = false
         APIService.resetDemoMode()
         APIService.clearResponseCache()
+        NetworkSecurityPolicy.removeCookies(forHost: NetworkSecurityPolicy.iisHost)
+        LMSService.shared.logout()
         AppRouter.shared.resetForLogout()
         clearCachedUser()
 
@@ -338,5 +412,10 @@ class AuthenticationService: ObservableObject {
         WatchScheduleConnectivityService.shared.clear()
         UserDefaultsPayloadStore.clearAll()
         logService.log("User logged out.")
+    }
+
+    deinit {
+        sessionExpirationObservationTask?.cancel()
+        sessionRecoveryTask?.cancel()
     }
 }

@@ -2,6 +2,9 @@ import SwiftUI
 
 struct LMSLoginView: View {
     @StateObject private var lmsService = LMSService.shared
+    @State private var username = ""
+    @State private var password = ""
+    @State private var persistCredentials = false
     @State private var showingError = false
     @State private var errorMessage = ""
 
@@ -18,92 +21,24 @@ struct LMSLoginView: View {
                             .font(.headline)
                     }
 
-                    Text("СЭО (Система электронного обучения) БГУИР на базе Moodle.")
+                    Text("СЭО БГУИР на базе Moodle использует отдельную авторизацию.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
                 .padding(.vertical, 8)
             }
 
-            Section {
-                if lmsService.isLoggedIn {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text("Вы авторизованы")
-                        Spacer()
-                        Button("Выйти") {
-                            lmsService.logout()
-                        }
-                        .foregroundColor(.red)
-                    }
-
-                    Link(destination: URL(string: "https://lms.bsuir.by")!) {
-                        HStack {
-                            Text("Перейти на сайт СЭО")
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square")
-                        }
-                    }
-                } else {
-                    HStack {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.red)
-                        Text("Не авторизован")
-                    }
-
-                    Button {
-                        Task {
-                            do {
-                                try await lmsService.login()
-                            } catch {
-                                errorMessage = error.localizedDescription
-                                showingError = true
-                            }
-                        }
-                    } label: {
-                        if lmsService.isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle())
-                        } else {
-                            Text("Войти используя данные IIS")
-                        }
-                    }
-                    .disabled(lmsService.isLoading)
-                }
-            } header: {
-                Text("Статус")
-            } footer: {
-                if !lmsService.isLoggedIn {
-                    Text("Для входа используются те же данные, что и для личного кабинета ИИС БГУИР.")
-                }
+            if lmsService.isLoggedIn {
+                authorizedSection
+                coursesSection
+            } else {
+                credentialsSection
             }
 
             if let message = lmsService.errorMessage {
                 Section {
                     Label(message, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                }
-            }
-
-            if lmsService.isLoggedIn && !lmsService.courses.isEmpty {
-                Section {
-                    ForEach(lmsService.courses) { course in
-                        NavigationLink(destination: LMSCourseDetailView(course: course)) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(course.name)
-                                    .font(.headline)
-                                if !course.teachers.isEmpty {
-                                    Text(course.teachersString)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    }
-                } header: {
-                    Text("Мои курсы")
                 }
             }
         }
@@ -115,10 +50,118 @@ struct LMSLoginView: View {
             Text(errorMessage)
         }
         .task {
+            if username.isEmpty {
+                username = lmsService.savedUsername()
+                persistCredentials = !username.isEmpty
+            }
             await lmsService.checkSession()
         }
         .refreshable {
             await lmsService.refreshCourses(force: true)
+        }
+    }
+
+    private var authorizedSection: some View {
+        Section {
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                Text("Вы авторизованы")
+                Spacer()
+                Button("Выйти", role: .destructive) {
+                    lmsService.logout()
+                    password = ""
+                    persistCredentials = false
+                }
+            }
+
+            Link(destination: NetworkSecurityPolicy.lmsBaseURL) {
+                HStack {
+                    Text("Перейти на сайт СЭО")
+                    Spacer()
+                    Image(systemName: "arrow.up.right.square")
+                }
+            }
+        } header: {
+            Text("Статус")
+        }
+    }
+
+    private var credentialsSection: some View {
+        Section {
+            TextField("Логин СЭО", text: $username)
+                .textContentType(.username)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+
+            SecureField("Пароль СЭО", text: $password)
+                .textContentType(.password)
+
+            Toggle("Сохранить данные СЭО в Keychain", isOn: $persistCredentials)
+
+            Button {
+                login()
+            } label: {
+                HStack {
+                    if lmsService.isLoading {
+                        ProgressView()
+                    }
+                    Text("Войти в СЭО")
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .disabled(
+                lmsService.isLoading
+                    || username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    || password.isEmpty
+            )
+        } header: {
+            Text("Отдельные данные СЭО")
+        } footer: {
+            Text(
+                "Пароль СЭО не читается из хранилища ИИС. "
+                    + "При включённом переключателе он сохраняется в отдельной записи Keychain."
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var coursesSection: some View {
+        if !lmsService.courses.isEmpty {
+            Section {
+                ForEach(lmsService.courses) { course in
+                    NavigationLink(destination: LMSCourseDetailView(course: course)) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(course.name)
+                                .font(.headline)
+                            if !course.teachers.isEmpty {
+                                Text(course.teachersString)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            } header: {
+                Text("Мои курсы")
+            }
+        }
+    }
+
+    private func login() {
+        Task {
+            do {
+                try await lmsService.login(
+                    username: username,
+                    password: password,
+                    persistCredentials: persistCredentials
+                )
+                password = ""
+            } catch {
+                errorMessage = error.localizedDescription
+                showingError = true
+            }
         }
     }
 }

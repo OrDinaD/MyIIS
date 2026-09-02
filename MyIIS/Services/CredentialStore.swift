@@ -24,12 +24,16 @@ enum CredentialStoreError: LocalizedError {
 }
 
 final class CredentialStore {
-    static let shared = CredentialStore()
+    static let shared = CredentialStore(service: "by.bsuir.MyIIS.auth")
+    static let lms = CredentialStore(service: "by.bsuir.MyIIS.lms")
 
-    private let service = "by.bsuir.MyIIS.auth"
-    private let account = "userCredentials"
+    private let service: String
+    private let account: String
 
-    private init() {}
+    init(service: String, account: String = "userCredentials") {
+        self.service = service
+        self.account = account
+    }
 
     func save(_ credentials: StoredCredentials) throws {
         let encoded = try JSONEncoder().encode(credentials)

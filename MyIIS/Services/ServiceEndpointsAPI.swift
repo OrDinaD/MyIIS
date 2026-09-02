@@ -33,7 +33,7 @@ struct ScheduleEmployeeDirectoryEntry: Decodable, Identifiable, Hashable {
     }
 }
 
-struct PublicScheduleResponse: Decodable {
+struct PublicScheduleResponse: Decodable, Sendable {
     let employee: DisciplineEmployee?
     let group: StudyGroup?
     let exams: [DisciplineSchedule]
@@ -366,9 +366,12 @@ final class ServiceEndpointsAPI {
     private let baseURL: URL
     private let session: URLSession
     private let logService: LogService
-    private let userDefaults = UserDefaults.standard
+    private let userDefaults: UserDefaults
+    private let now: () -> Date
 
     private static let cachePrefix = "ServiceEndpointsAPI.cache."
+    private static let responseCacheLifetime: TimeInterval = 24 * 60 * 60
+    private static let currentWeekCacheLifetime: TimeInterval = 60 * 60
 
     private struct CachedEnvelope: Codable {
         let data: Data
@@ -378,11 +381,21 @@ final class ServiceEndpointsAPI {
     init(
         baseURL: URL = URLFactory.require("https://iis.bsuir.by/api/v1"),
         session: URLSession = .shared,
-        logService: LogService = .shared
+        logService: LogService = .shared,
+        userDefaults: UserDefaults = .standard,
+        now: @escaping () -> Date = Date.init
     ) {
         self.baseURL = baseURL
         self.session = session
         self.logService = logService
+        self.userDefaults = userDefaults
+        self.now = now
+    }
+
+    static func clearResponseCache(
+        in defaults: UserDefaults = .standard
+    ) {
+        UserDefaultsPayloadStore.clear(prefix: cachePrefix, from: defaults)
     }
 
     func fetchLibraryBooks() async throws -> [ServiceJSONObject] {
@@ -428,8 +441,11 @@ final class ServiceEndpointsAPI {
         try await decodeJSONArray(path: "activity/research-work")
     }
 
-    func fetchCurrentWeek() async throws -> Int {
-        let data = try await fetchData(path: "schedule/current-week")
+    func fetchCurrentWeek(preferCachedResponse: Bool = true) async throws -> Int {
+        let data = try await fetchData(
+            path: "schedule/current-week",
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode(Int.self, from: data)
         } catch {
@@ -440,8 +456,11 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    func fetchAllStudentGroups() async throws -> [StudyGroup] {
-        let data = try await fetchData(path: "student-groups")
+    func fetchAllStudentGroups(preferCachedResponse: Bool = true) async throws -> [StudyGroup] {
+        let data = try await fetchData(
+            path: "student-groups",
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode([StudyGroup].self, from: data)
         } catch {
@@ -449,8 +468,11 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    func fetchAllEmployees() async throws -> [ScheduleEmployeeDirectoryEntry] {
-        let data = try await fetchData(path: "employees/all")
+    func fetchAllEmployees(preferCachedResponse: Bool = true) async throws -> [ScheduleEmployeeDirectoryEntry] {
+        let data = try await fetchData(
+            path: "employees/all",
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode([ScheduleEmployeeDirectoryEntry].self, from: data)
         } catch {
@@ -458,10 +480,15 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    func fetchGroupSchedule(groupNumber: String) async throws -> PublicScheduleResponse {
-        let data = try await fetchData(path: "schedule", queryItems: [
-            URLQueryItem(name: "studentGroup", value: groupNumber)
-        ])
+    func fetchGroupSchedule(
+        groupNumber: String,
+        preferCachedResponse: Bool = true
+    ) async throws -> PublicScheduleResponse {
+        let data = try await fetchData(
+            path: "schedule",
+            queryItems: [URLQueryItem(name: "studentGroup", value: groupNumber)],
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode(PublicScheduleResponse.self, from: data)
         } catch {
@@ -469,8 +496,14 @@ final class ServiceEndpointsAPI {
         }
     }
 
-    func fetchEmployeeSchedule(urlId: String) async throws -> PublicScheduleResponse {
-        let data = try await fetchData(path: "employees/schedule/\(urlId)")
+    func fetchEmployeeSchedule(
+        urlId: String,
+        preferCachedResponse: Bool = true
+    ) async throws -> PublicScheduleResponse {
+        let data = try await fetchData(
+            path: "employees/schedule/\(urlId)",
+            preferCachedResponse: preferCachedResponse
+        )
         do {
             return try JSONDecoder().decode(PublicScheduleResponse.self, from: data)
         } catch {
@@ -551,9 +584,18 @@ final class ServiceEndpointsAPI {
         )
     }
 
-    private func fetchData(path: String, queryItems: [URLQueryItem]? = nil) async throws -> Data {
+    private func fetchData(
+        path: String,
+        queryItems: [URLQueryItem]? = nil,
+        preferCachedResponse: Bool = false
+    ) async throws -> Data {
         let request = try makeGETRequest(path: path, queryItems: queryItems)
         guard let endpoint = request.url else { throw APIError.invalidURL }
+
+        if preferCachedResponse, let cached = cachedData(for: request) {
+            logService.log("Service endpoints: using fresh cache for \(endpoint.absoluteString)")
+            return cached
+        }
 
         let method = request.httpMethod ?? "GET"
         logService.log("Service endpoint request: \(method) \(endpoint.absoluteString)")
@@ -570,6 +612,18 @@ final class ServiceEndpointsAPI {
         } catch {
             if isCancellationError(error) {
                 throw CancellationError()
+            }
+
+            if let apiError = error as? APIError {
+                switch apiError {
+                case .unauthorized:
+                    AuthenticationSessionEvents.reportUnauthorized()
+                    throw apiError
+                case .invalidURL, .invalidResponse, .decodingError:
+                    throw apiError
+                case .serviceUnavailable, .serverError, .networkError:
+                    break
+                }
             }
 
             if let cached = cachedData(for: request) {
@@ -624,7 +678,11 @@ final class ServiceEndpointsAPI {
             persistCache(data: data, for: request)
             return data
         case 401:
-            throw APIError.unauthorized(message: "Сессия истекла. Войдите заново.")
+            throw APIError.unauthorized(message: NSLocalizedString(
+                "api_error_session_expired",
+                value: "Сессия истекла. Войдите заново.",
+                comment: ""
+            ))
         case 418:
             throw APIError.serviceUnavailable(message: "Сервис временно недоступен")
         default:
@@ -648,7 +706,7 @@ final class ServiceEndpointsAPI {
 
     private func persistCache(data: Data, for request: URLRequest) {
         guard let key = cacheKey(for: request) else { return }
-        let envelope = CachedEnvelope(data: data, cachedAt: Date())
+        let envelope = CachedEnvelope(data: data, cachedAt: now())
         guard let payload = try? JSONEncoder().encode(envelope) else { return }
         _ = UserDefaultsPayloadStore.save(payload, forKey: key, in: userDefaults)
     }
@@ -659,7 +717,20 @@ final class ServiceEndpointsAPI {
               let envelope = try? JSONDecoder().decode(CachedEnvelope.self, from: payload) else {
             return nil
         }
+
+        let age = now().timeIntervalSince(envelope.cachedAt)
+        guard age >= 0, age <= cacheLifetime(for: request) else {
+            UserDefaultsPayloadStore.clear(forKey: key, from: userDefaults)
+            return nil
+        }
         return envelope.data
+    }
+
+    private func cacheLifetime(for request: URLRequest) -> TimeInterval {
+        if request.url?.path.hasSuffix("/schedule/current-week") == true {
+            return Self.currentWeekCacheLifetime
+        }
+        return Self.responseCacheLifetime
     }
 
     private func cacheKey(for request: URLRequest) -> String? {

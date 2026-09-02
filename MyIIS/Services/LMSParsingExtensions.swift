@@ -153,8 +153,7 @@ extension LMSService {
                 moduleFull.captureGroup(at: 1, pattern: #"<a[^>]*class="[^"]*aalink[^"]*"[^>]*href="([^"]+)""#)
                 ?? moduleFull.captureGroup(at: 1, pattern: #"href="([^"]+)""#)
             let modUrl = modHref
-                .map { $0.decodingHTMLEntities() }
-                .flatMap { URL(string: $0, relativeTo: URL(string: "https://lms.bsuir.by"))?.absoluteURL }
+                .flatMap { NetworkSecurityPolicy.secureURL($0) }
 
             let descriptionRaw = moduleFull.captureGroup(
                 at: 1,
@@ -203,8 +202,7 @@ extension LMSService {
                     moduleBlock.captureGroup(at: 1, pattern: #"<a[^>]*class="[^"]*aalink[^"]*"[^>]*href="([^"]+)""#)
                     ?? moduleBlock.captureGroup(at: 1, pattern: #"href="([^"]+)""#)
                 let modUrl = modHref
-                    .map { $0.decodingHTMLEntities() }
-                    .flatMap { URL(string: $0, relativeTo: URL(string: "https://lms.bsuir.by"))?.absoluteURL }
+                    .flatMap { NetworkSecurityPolicy.secureURL($0) }
 
                 modules.append(
                     LMSModule(

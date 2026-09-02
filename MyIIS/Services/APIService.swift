@@ -4,11 +4,17 @@ import Foundation
 
 class APIService {
 
+    #if DEBUG
     static var isDemoMode = false
     static let demoUsername = "demo"
     static let demoPassword = "demo"
+    #else
+    static var isDemoMode: Bool { false }
+    #endif
 
-    let baseURL = URLFactory.require("https://iis.bsuir.by/api/v1")
+    let baseURL = NetworkSecurityPolicy.iisBaseURL
+        .appendingPathComponent("api")
+        .appendingPathComponent("v1")
     private let session: URLSession
     private let logService = LogService.shared
     private let userDefaults = UserDefaults.standard
@@ -51,7 +57,9 @@ class APIService {
     }()
 
     static func resetDemoMode() {
+        #if DEBUG
         isDemoMode = false
+        #endif
     }
 
     static func clearResponseCache(in defaults: UserDefaults = .standard) {
@@ -64,11 +72,13 @@ class APIService {
     ///   - password: Пароль пользователя
     /// - Returns: LoginResponse с данными пользователя
     func login(username: String, password: String) async throws -> LoginResponse {
+        #if DEBUG
         if username == Self.demoUsername && password == Self.demoPassword {
             APIService.isDemoMode = true
             return DemoMockData.loginResponse
         }
-        APIService.isDemoMode = false
+        #endif
+        Self.resetDemoMode()
 
         let endpoint = baseURL.appendingPathComponent("auth").appendingPathComponent("login")
         let loginRequest = LoginRequest(username: username, password: password)
@@ -211,14 +221,26 @@ class APIService {
 
             let suggestedName = httpResponse.value(forHTTPHeaderField: "Content-Disposition")
                 .flatMap(Self.filenameFromContentDisposition(_:))
-                ?? "group-list.xlsx"
-
-            let temporaryURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent(suggestedName)
+            let fileName = NetworkSecurityPolicy.sanitizedFilename(
+                suggestedName,
+                fallback: "group-list.xlsx"
+            )
+            let downloadDirectory = FileManager.default.temporaryDirectory
+                .appendingPathComponent("MyIIS-Downloads", isDirectory: true)
+                .appendingPathComponent(UUID().uuidString, isDirectory: true)
+            try FileManager.default.createDirectory(
+                at: downloadDirectory,
+                withIntermediateDirectories: true
+            )
+            let temporaryURL = downloadDirectory.appendingPathComponent(fileName)
 
             try data.write(to: temporaryURL, options: [.atomic])
             return temporaryURL
         } catch let apiError as APIError {
+            if case .unauthorized = apiError,
+               request.url?.path.hasSuffix("/auth/login") != true {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             throw apiError
         } catch {
             throw APIError.networkError(error)
@@ -281,6 +303,11 @@ class APIService {
             do {
                 return try await performSingleRequest(request)
             } catch {
+                if let apiError = error as? APIError,
+                   case .unauthorized = apiError {
+                    throw apiError
+                }
+
                 attempt += 1
                 if attempt <= retryPolicy.maxRetries && retryPolicy.shouldRetry(error: error) {
                     let delay = retryPolicy.delay(forAttempt: attempt)
@@ -311,6 +338,10 @@ class APIService {
             persistCache(data: data, for: request)
             return try decode(data)
         } catch let apiError as APIError {
+            if case .unauthorized = apiError,
+               request.url?.path.hasSuffix("/auth/login") != true {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             throw apiError
         } catch {
             if isCancellationError(error) {
@@ -332,6 +363,10 @@ class APIService {
 
             try handleStatusCode(httpResponse.statusCode, data: data)
         } catch let apiError as APIError {
+            if case .unauthorized = apiError,
+               request.url?.path.hasSuffix("/auth/login") != true {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             throw apiError
         } catch {
             if isCancellationError(error) {

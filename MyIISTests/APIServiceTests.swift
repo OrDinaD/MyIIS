@@ -120,6 +120,39 @@ final class APIServiceTests: XCTestCase {
         XCTAssertEqual(result, "")
     }
 
+    func testDownloadGroupListReportSanitizesServerFilename() async throws {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let session = URLSession(configuration: configuration)
+        let service = APIService(session: session)
+        MockURLProtocol.requestHandler = { request in
+            let response = try XCTUnwrap(
+                HTTPURLResponse(
+                    url: try XCTUnwrap(request.url),
+                    statusCode: 200,
+                    httpVersion: nil,
+                    headerFields: [
+                        "Content-Disposition": "attachment; filename*=UTF-8''..%2F..%2Fsecret%3Anotes.xlsx"
+                    ]
+                )
+            )
+            return (response, Data("report".utf8))
+        }
+        defer {
+            MockURLProtocol.requestHandler = nil
+        }
+
+        let fileURL = try await service.downloadGroupListReport()
+        defer {
+            try? FileManager.default.removeItem(
+                at: fileURL.deletingLastPathComponent()
+            )
+        }
+
+        XCTAssertEqual(fileURL.lastPathComponent, "secret_notes.xlsx")
+        XCTAssertEqual(try Data(contentsOf: fileURL), Data("report".utf8))
+    }
+
     // MARK: - NetworkRetryPolicy Tests
 
     func testNetworkRetryPolicy_ShouldRetryOnServerAndConnectionErrors() {

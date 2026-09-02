@@ -6,11 +6,9 @@ final class LMSQuizService {
     private let session: URLSession
 
     private init() {
-        let configuration = URLSessionConfiguration.default
-        configuration.httpCookieStorage = .shared
-        configuration.httpShouldSetCookies = true
-        configuration.httpCookieAcceptPolicy = .always
-        session = URLSession(configuration: configuration)
+        session = URLSession(
+            configuration: NetworkSecurityPolicy.makeLMSConfiguration()
+        )
     }
 
     func fetchOverview(quizURL: URL) async throws -> LMSQuizOverview {
@@ -436,12 +434,18 @@ private extension LMSQuizService {
     }
 
     private func loadHTML(url: URL) async throws -> String {
+        guard NetworkSecurityPolicy.isTrustedLMSURL(url) else {
+            throw NetworkSecurityError.untrustedURL
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 60
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse,
+              let responseURL = http.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL),
+              (200 ... 399).contains(http.statusCode) else {
             throw LMSError.invalidResponse
         }
 
@@ -452,6 +456,9 @@ private extension LMSQuizService {
     }
 
     private func submit(form: LMSQuizForm) async throws -> HTMLResponse {
+        guard NetworkSecurityPolicy.isTrustedLMSURL(form.actionURL) else {
+            throw NetworkSecurityError.untrustedURL
+        }
         var requestURL = form.actionURL
         var request = URLRequest(url: requestURL)
         let method = form.method.uppercased()
@@ -473,9 +480,15 @@ private extension LMSQuizService {
             request.httpBody = percentEncoded(form.fields)
         }
 
+        guard NetworkSecurityPolicy.isTrustedLMSURL(requestURL) else {
+            throw NetworkSecurityError.untrustedURL
+        }
         request.timeoutInterval = 60
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse,
+              let responseURL = http.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL),
+              (200 ... 399).contains(http.statusCode) else {
             throw LMSError.invalidResponse
         }
 
@@ -487,6 +500,9 @@ private extension LMSQuizService {
     }
 
     private func submitMultipart(form: LMSQuizForm) async throws -> HTMLResponse {
+        guard NetworkSecurityPolicy.isTrustedLMSURL(form.actionURL) else {
+            throw NetworkSecurityError.untrustedURL
+        }
         var request = URLRequest(url: form.actionURL)
         request.httpMethod = "POST"
         request.timeoutInterval = 60
@@ -496,7 +512,10 @@ private extension LMSQuizService {
         request.httpBody = multipartBody(fields: form.fields, boundary: boundary)
 
         let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse, (200 ... 399).contains(http.statusCode) else {
+        guard let http = response as? HTTPURLResponse,
+              let responseURL = http.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL),
+              (200 ... 399).contains(http.statusCode) else {
             throw LMSError.invalidResponse
         }
 
@@ -598,11 +617,7 @@ private extension LMSQuizService {
     }
 
     func absoluteURL(_ raw: String) -> URL? {
-        let decoded = raw.decodingHTMLEntities()
-        if let url = URL(string: decoded), url.scheme != nil {
-            return url
-        }
-        return URL(string: decoded, relativeTo: URL(string: "https://lms.bsuir.by"))?.absoluteURL
+        NetworkSecurityPolicy.trustedLMSURL(raw)
     }
 }
 

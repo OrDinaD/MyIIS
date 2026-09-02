@@ -181,6 +181,7 @@ final class ScheduleServiceViewModel {
     private let api: ServiceEndpointsAPI
     private let authService: AuthenticationService
     private let defaults: UserDefaults
+    private let usesSharedSnapshotCache: Bool
     private var hasLoadedInitialData = false
     private var shouldResetQueryOnModeChange = true
     private var isDirectoryLoading = false
@@ -189,6 +190,7 @@ final class ScheduleServiceViewModel {
     private var isContinuousEndReached = false
     private var isLoadingContinuousChunk = false
     private var searchDebounceTask: Task<Void, Never>?
+    private var timelineGenerationTask: Task<Void, Never>?
     private(set) var localScheduleDocument: LocalScheduleDocument?
 
     private static let displayModeDefaultsKey = "services.schedule.displayMode"
@@ -202,8 +204,8 @@ final class ScheduleServiceViewModel {
     private static let pinnedTeachersDefaultsKey = "services.schedule.pinnedTeachers"
     private static let recentGroupsDefaultsKey = "services.schedule.recentGroups"
     private static let recentTeachersDefaultsKey = "services.schedule.recentTeachers"
-    private static let continuousChunkSizeDays = 28
-    private static let continuousFallbackHorizonDays = 120
+    nonisolated private static let continuousChunkSizeDays = 28
+    nonisolated private static let continuousFallbackHorizonDays = 120
     private static var cachedSnapshot: Snapshot?
 
     private struct Snapshot {
@@ -217,6 +219,20 @@ final class ScheduleServiceViewModel {
         let displayMode: ScheduleDisplayMode
         let subgroupFilter: ScheduleSubgroupFilter
         let continuousTimelineDays: [ScheduleContinuousDay]
+    }
+
+    private struct TimelineBuildInput: Sendable {
+        let orderedDays: [StudyDaySchedule]
+        let startDate: Date?
+        let endDate: Date?
+        let selectedSubgroup: Int?
+        let includesOtherSubgroups: Bool
+    }
+
+    private struct TimelineBuildResult: Sendable {
+        let days: [ScheduleContinuousDay]
+        let nextCursor: Date
+        let reachedEnd: Bool
     }
 
     static func isPublicationPendingError(_ error: Error) -> Bool {
@@ -236,6 +252,7 @@ final class ScheduleServiceViewModel {
     ) {
         self.api = api ?? ServiceEndpointsAPI()
         self.authService = authService ?? .shared
+        self.usesSharedSnapshotCache = defaults == nil
         self.defaults = defaults ?? (UserDefaults(suiteName: AppGroup.identifier) ?? .standard)
 
         if let modeRaw = self.defaults.string(forKey: Self.displayModeDefaultsKey),
@@ -272,8 +289,8 @@ final class ScheduleServiceViewModel {
             query = lastTeacherName
         }
 
-        if dataSource == .api, !applyCachedSnapshotIfAvailable() {
-            restorePersistedScheduleIfAvailable()
+        if dataSource == .api {
+            _ = applyCachedSnapshotIfAvailable()
         }
         debouncedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -291,7 +308,7 @@ final class ScheduleServiceViewModel {
 
     @discardableResult
     private func applyCachedSnapshotIfAvailable() -> Bool {
-        guard defaults == (UserDefaults(suiteName: AppGroup.identifier) ?? .standard) else {
+        guard usesSharedSnapshotCache else {
             return false
         }
         guard let snapshot = Self.cachedSnapshot,
@@ -419,6 +436,10 @@ final class ScheduleServiceViewModel {
             return
         }
 
+        await Task.yield()
+        if schedule == nil {
+            restorePersistedScheduleIfAvailable()
+        }
         await loadDirectoryIfNeeded(force: false)
 
         if schedule == nil {
@@ -454,7 +475,7 @@ final class ScheduleServiceViewModel {
             loadLocalSchedule()
             return
         }
-        await loadDirectoryIfNeeded(force: true)
+        await loadDirectoryIfNeeded(force: false)
         switch mode {
         case .group:
             let targetGroup = schedule?.group?.name.nilIfBlank
@@ -462,14 +483,14 @@ final class ScheduleServiceViewModel {
                 ?? pinnedGroupNames.first
                 ?? accountGroupName
             if let targetGroup {
-                await loadGroup(targetGroup)
+                await loadGroup(targetGroup, forceRefresh: true)
             }
         case .teacher:
             if let employee = selectedEmployee {
-                await loadEmployee(employee)
+                await loadEmployee(employee, forceRefresh: true)
             } else if let urlId = defaults.string(forKey: Self.lastTeacherURLIDDefaultsKey)?.nilIfBlank ?? pinnedTeachers.first?.urlId {
                 if let found = employees.first(where: { $0.urlId == urlId }) {
-                    await loadEmployee(found)
+                    await loadEmployee(found, forceRefresh: true)
                 }
             }
         }
@@ -511,7 +532,7 @@ final class ScheduleServiceViewModel {
         }
     }
 
-    func loadGroup(_ groupName: String) async {
+    func loadGroup(_ groupName: String, forceRefresh: Bool = false) async {
         let trimmed = groupName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
@@ -528,9 +549,13 @@ final class ScheduleServiceViewModel {
         }
 
         do {
-            let response = try await api.fetchGroupSchedule(groupNumber: trimmed)
-            guard activeScheduleRequestID == requestID else { return }
-            let week = try? await api.fetchCurrentWeek()
+            async let scheduleRequest = api.fetchGroupSchedule(
+                groupNumber: trimmed,
+                preferCachedResponse: !forceRefresh
+            )
+            async let weekRequest = api.fetchCurrentWeek(preferCachedResponse: !forceRefresh)
+            let response = try await scheduleRequest
+            let week = try? await weekRequest
             guard activeScheduleRequestID == requestID else { return }
             applyGroupSchedule(response, week: week, groupNumber: trimmed)
         } catch is CancellationError {
@@ -547,7 +572,10 @@ final class ScheduleServiceViewModel {
         }
     }
 
-    func loadEmployee(_ employee: ScheduleEmployeeDirectoryEntry) async {
+    func loadEmployee(
+        _ employee: ScheduleEmployeeDirectoryEntry,
+        forceRefresh: Bool = false
+    ) async {
         guard let urlId = employee.urlId, !urlId.isEmpty else {
             errorMessage = NSLocalizedString("services_schedule_teacher_not_found", comment: "")
             return
@@ -567,9 +595,13 @@ final class ScheduleServiceViewModel {
         }
 
         do {
-            let response = try await api.fetchEmployeeSchedule(urlId: urlId)
-            guard activeScheduleRequestID == requestID else { return }
-            let week = try? await api.fetchCurrentWeek()
+            async let scheduleRequest = api.fetchEmployeeSchedule(
+                urlId: urlId,
+                preferCachedResponse: !forceRefresh
+            )
+            async let weekRequest = api.fetchCurrentWeek(preferCachedResponse: !forceRefresh)
+            let response = try await scheduleRequest
+            let week = try? await weekRequest
             guard activeScheduleRequestID == requestID else { return }
             applyEmployeeSchedule(response, week: week, employee: employee, urlId: urlId)
         } catch is CancellationError {
@@ -839,49 +871,183 @@ final class ScheduleServiceViewModel {
         guard mode == .group || mode == .teacher else { return }
         guard displayMode == .continuous else { return }
         guard continuousTimelineDays.last?.id == lastVisibleDayID else { return }
-        Task { @MainActor in
-            appendContinuousChunkIfNeeded()
-        }
+        appendContinuousChunkIfNeeded()
     }
 
     /// Prepares the lazy timeline around a user-selected date and returns the
-    /// closest day containing lessons so ScrollViewReader can reveal it without clearing past history.
-    func prepareContinuousTimeline(around requestedDate: Date) -> String? {
-        guard let schedule else { return nil }
+    /// closest day containing lessons so ScrollViewReader can reveal it without blocking the UI.
+    func prepareContinuousTimeline(around requestedDate: Date) async -> String? {
+        guard let input = timelineBuildInput() else { return nil }
 
         let calendar = Calendar.current
         let requestedDay = calendar.startOfDay(for: requestedDate)
-        let lowerBound = schedule.startDate.map { calendar.startOfDay(for: $0) } ?? requestedDay
-        let upperBound = continuousEndBound(for: schedule, calendar: calendar, now: requestedDay)
+        let lowerBound = input.startDate.map { calendar.startOfDay(for: $0) } ?? requestedDay
+        let upperBound = Self.timelineEndBound(for: input, calendar: calendar, now: requestedDay)
         let targetDay = min(max(requestedDay, lowerBound), upperBound)
+        let rangeStart = max(
+            lowerBound,
+            calendar.date(byAdding: .day, value: -3, to: targetDay) ?? targetDay
+        )
+        let rangeEnd = min(
+            upperBound,
+            calendar.date(
+                byAdding: .day,
+                value: Self.continuousChunkSizeDays,
+                to: targetDay
+            ) ?? targetDay
+        )
 
-        // Make sure continuous days up to targetDay are generated
-        var attempts = 0
-        while ((continuousCursorDate ?? .distantPast) <= targetDay) && !isContinuousEndReached && attempts < 20 {
-            appendContinuousChunkIfNeeded()
-            attempts += 1
-        }
+        let result = await Task.detached(priority: .userInitiated) {
+            Self.buildTimeline(
+                input: input,
+                from: rangeStart,
+                through: rangeEnd
+            )
+        }.value
+        guard !Task.isCancelled else { return nil }
 
-        // If targetDay is before our earliest continuous day, prepend days
-        if let earliest = continuousTimelineDays.first?.date, targetDay < earliest {
-            prependContinuousDays(from: targetDay, to: earliest)
+        var merged = Dictionary(
+            uniqueKeysWithValues: continuousTimelineDays.map { ($0.id, $0) }
+        )
+        for day in result.days {
+            merged[day.id] = day
         }
+        continuousTimelineDays = merged.values.sorted { $0.date < $1.date }
 
         return continuousTimelineDays.first(where: { $0.date >= targetDay })?.id
             ?? continuousTimelineDays.last?.id
     }
 
-    private func prependContinuousDays(from targetStart: Date, to currentEarliest: Date) {
-        guard let schedule else { return }
-        let calendar = Calendar.current
-        let startBound = schedule.startDate.map { calendar.startOfDay(for: $0) } ?? targetStart
-        var cursor = max(startBound, calendar.date(byAdding: .day, value: -3, to: targetStart) ?? targetStart)
+    private func rebuildContinuousTimeline(reset: Bool) {
+        timelineGenerationTask?.cancel()
+        isLoadingContinuousChunk = false
+        if reset {
+            continuousTimelineDays = []
+            continuousCursorDate = nil
+            isContinuousEndReached = false
+        }
+        appendContinuousChunkIfNeeded()
+    }
 
+    private func appendContinuousChunkIfNeeded() {
+        guard let input = timelineBuildInput() else {
+            continuousTimelineDays = []
+            continuousCursorDate = nil
+            isContinuousEndReached = false
+            return
+        }
+        guard !isContinuousEndReached, !isLoadingContinuousChunk else { return }
+
+        isLoadingContinuousChunk = true
+        let cursor = continuousCursorDate
+        let now = Date()
+        timelineGenerationTask = Task { [weak self] in
+            let result = await Task.detached(priority: .userInitiated) {
+                Self.buildTimelineChunk(
+                    input: input,
+                    cursor: cursor,
+                    now: now
+                )
+            }.value
+            guard let self, !Task.isCancelled else { return }
+
+            self.continuousCursorDate = result.nextCursor
+            self.isContinuousEndReached = result.reachedEnd
+            self.isLoadingContinuousChunk = false
+            if !result.days.isEmpty {
+                self.continuousTimelineDays.append(contentsOf: result.days)
+            }
+            if let schedule = self.schedule {
+                self.saveSnapshot()
+                self.updateClassScheduleWidgetSnapshot(from: schedule)
+                self.updateSessionScheduleWidgetSnapshot(from: schedule)
+            }
+        }
+    }
+
+    private func timelineBuildInput() -> TimelineBuildInput? {
+        guard let schedule else { return nil }
+        let selectedSubgroup: Int?
+        switch subgroupFilter {
+        case .all:
+            selectedSubgroup = nil
+        case .subgroup(let value):
+            selectedSubgroup = value
+        }
+        let rawDisplay = defaults.string(
+            forKey: ScheduleDisplayPreferences.otherSubgroupDisplayKey
+        )
+        let display = rawDisplay.flatMap(ScheduleOtherSubgroupDisplay.init(rawValue:))
+            ?? .compact
+        return TimelineBuildInput(
+            orderedDays: schedule.orderedDays,
+            startDate: schedule.startDate,
+            endDate: schedule.endDate,
+            selectedSubgroup: selectedSubgroup,
+            includesOtherSubgroups: display != .hidden
+        )
+    }
+
+    nonisolated private static func buildTimelineChunk(
+        input: TimelineBuildInput,
+        cursor: Date?,
+        now: Date
+    ) -> TimelineBuildResult {
+        let calendar = Calendar.current
+        let startBound = input.startDate.map { calendar.startOfDay(for: $0) }
+        let endBound = timelineEndBound(for: input, calendar: calendar, now: now)
+        let initialStart = calendar.date(byAdding: .day, value: -2, to: now) ?? now
+        let proposedStart = cursor ?? calendar.startOfDay(for: initialStart)
+        let start = max(startBound ?? proposedStart, proposedStart)
+        let proposedEnd = calendar.date(
+            byAdding: .day,
+            value: continuousChunkSizeDays - 1,
+            to: start
+        ) ?? start
+        let end = min(proposedEnd, endBound)
+        let result = buildTimeline(input: input, from: start, through: end)
+        let nextCursor = calendar.date(byAdding: .day, value: 1, to: end) ?? end
+        return TimelineBuildResult(
+            days: result.days,
+            nextCursor: nextCursor,
+            reachedEnd: nextCursor > endBound
+        )
+    }
+
+    nonisolated private static func buildTimeline(
+        input: TimelineBuildInput,
+        from start: Date,
+        through end: Date
+    ) -> TimelineBuildResult {
+        let calendar = Calendar.current
+        let lessonsByWeekday = Dictionary(
+            uniqueKeysWithValues: input.orderedDays.map { ($0.weekday, $0.lessons) }
+        )
+        var cursor = calendar.startOfDay(for: start)
+        let endDay = calendar.startOfDay(for: end)
         var generated: [ScheduleContinuousDay] = []
-        while cursor < currentEarliest {
-            if let weekday = studyWeekday(for: cursor),
-               let weekNumber = universityWeekNumber(on: cursor) {
-                let lessons = lessonsForContinuousDay(weekday: weekday, weekNumber: weekNumber, date: cursor)
+
+        while cursor <= endDay {
+            if let weekday = timelineWeekday(for: cursor),
+               let weekNumber = timelineWeekNumber(
+                   on: cursor,
+                   termStartDate: input.startDate
+               ) {
+                let lessons = (lessonsByWeekday[weekday] ?? []).filter { lesson in
+                    let keepsSubgroup: Bool
+                    if let selectedSubgroup = input.selectedSubgroup {
+                        keepsSubgroup = lesson.subgroup == 0
+                            || lesson.subgroup == selectedSubgroup
+                            || input.includesOtherSubgroups
+                    } else {
+                        keepsSubgroup = true
+                    }
+                    let keepsWeek = lesson.weekNumbers.isEmpty
+                        || lesson.weekNumbers.contains(weekNumber)
+                    return keepsSubgroup
+                        && keepsWeek
+                        && isLessonScheduledOnContinuousDay(lesson, date: cursor)
+                }
                 if !lessons.isEmpty {
                     generated.append(
                         ScheduleContinuousDay(
@@ -893,82 +1059,83 @@ final class ScheduleServiceViewModel {
                     )
                 }
             }
-            cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? cursor
+            cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? endDay.addingTimeInterval(1)
         }
-        if !generated.isEmpty {
-            continuousTimelineDays.insert(contentsOf: generated, at: 0)
+
+        return TimelineBuildResult(
+            days: generated,
+            nextCursor: cursor,
+            reachedEnd: cursor > endDay
+        )
+    }
+
+    nonisolated private static func timelineEndBound(
+        for input: TimelineBuildInput,
+        calendar: Calendar,
+        now: Date
+    ) -> Date {
+        let fallback = calendar.date(
+            byAdding: .day,
+            value: continuousFallbackHorizonDays,
+            to: calendar.startOfDay(for: now)
+        ) ?? now
+        return input.endDate.map { calendar.startOfDay(for: $0) } ?? fallback
+    }
+
+    nonisolated private static func timelineWeekday(for date: Date) -> StudyWeekday? {
+        switch Calendar.current.component(.weekday, from: date) {
+        case 2: return .monday
+        case 3: return .tuesday
+        case 4: return .wednesday
+        case 5: return .thursday
+        case 6: return .friday
+        case 7: return .saturday
+        case 1: return .sunday
+        default: return nil
         }
     }
 
-    private func rebuildContinuousTimeline(reset: Bool) {
-        guard schedule != nil else {
-            continuousTimelineDays = []
-            continuousCursorDate = nil
-            isContinuousEndReached = false
-            return
+    nonisolated private static func timelineWeekNumber(
+        on date: Date,
+        termStartDate: Date?
+    ) -> Int? {
+        if let termStartDate,
+           let week = rotatingWeekNumber(
+               on: date,
+               termStartDate: termStartDate
+           ) {
+            return week
         }
 
-        if reset {
-            continuousTimelineDays = []
-            continuousCursorDate = nil
-            isContinuousEndReached = false
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: "ru_BY")
+        let components = calendar.dateComponents([.month, .year], from: date)
+        guard var septemberStart = calendar.date(
+            from: DateComponents(year: components.year, month: 9, day: 1)
+        ), let julyStart = calendar.date(
+            from: DateComponents(year: components.year, month: 7, day: 1)
+        ) else {
+            return nil
         }
-
-        appendContinuousChunkIfNeeded()
-    }
-
-    private func appendContinuousChunkIfNeeded() {
-        guard let schedule else { return }
-        guard !isContinuousEndReached, !isLoadingContinuousChunk else { return }
-
-        isLoadingContinuousChunk = true
-        defer { isLoadingContinuousChunk = false }
-
-        let calendar = Calendar.current
-        let now = Date()
-        let startBound = schedule.startDate.map { calendar.startOfDay(for: $0) }
-        let endBound = continuousEndBound(for: schedule, calendar: calendar, now: now)
-        let initialStart = calendar.date(byAdding: .day, value: -2, to: now) ?? now
-        var cursor = continuousCursorDate ?? calendar.startOfDay(for: initialStart)
-
-        if let startBound, cursor < startBound {
-            cursor = startBound
+        if date < septemberStart,
+           date < julyStart,
+           let previousSeptember = calendar.date(
+               byAdding: .year,
+               value: -1,
+               to: septemberStart
+           ) {
+            septemberStart = previousSeptember
         }
-
-        var generated: [ScheduleContinuousDay] = []
-        var processedDays = 0
-
-        while processedDays < Self.continuousChunkSizeDays, cursor <= endBound {
-            guard let weekday = studyWeekday(for: cursor),
-                  let weekNumber = universityWeekNumber(on: cursor) else {
-                processedDays += 1
-                cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? cursor
-                continue
-            }
-
-            let lessons = lessonsForContinuousDay(weekday: weekday, weekNumber: weekNumber, date: cursor)
-            if !lessons.isEmpty {
-                generated.append(
-                    ScheduleContinuousDay(
-                        date: cursor,
-                        weekday: weekday,
-                        weekNumber: weekNumber,
-                        lessons: lessons
-                    )
-                )
-            }
-
-            processedDays += 1
-            cursor = calendar.date(byAdding: .day, value: 1, to: cursor) ?? cursor
+        guard let anchorWeek = startOfWeek(for: septemberStart, calendar: calendar),
+              let targetWeek = startOfWeek(for: date, calendar: calendar),
+              let distance = calendar.dateComponents(
+                  [.weekOfYear],
+                  from: anchorWeek,
+                  to: targetWeek
+              ).weekOfYear else {
+            return nil
         }
-
-        continuousCursorDate = cursor
-        if cursor > endBound {
-            isContinuousEndReached = true
-        }
-        if !generated.isEmpty {
-            continuousTimelineDays.append(contentsOf: generated)
-        }
+        return (abs(distance) % 4) + 1
     }
 
     private func continuousEndBound(
@@ -999,7 +1166,7 @@ final class ScheduleServiceViewModel {
         return weekScoped.filter { Self.isLessonScheduledOnContinuousDay($0, date: date) }
     }
 
-    static func isLessonScheduledOnContinuousDay(_ lesson: DisciplineSchedule, date: Date) -> Bool {
+    nonisolated static func isLessonScheduledOnContinuousDay(_ lesson: DisciplineSchedule, date: Date) -> Bool {
         let hasExplicitDateConstraint = lesson.lessonDate != nil
             || lesson.startLessonDate != nil
             || lesson.endLessonDate != nil
@@ -1192,11 +1359,13 @@ final class ScheduleServiceViewModel {
 
         do {
             if shouldLoadGroups {
-                groups = try await api.fetchAllStudentGroups()
+                groups = try await api.fetchAllStudentGroups(preferCachedResponse: !force)
                     .sorted { $0.name < $1.name }
             }
             if shouldLoadEmployees {
-                employees = Self.filteredEmployeeDirectory(try await api.fetchAllEmployees())
+                employees = Self.filteredEmployeeDirectory(
+                    try await api.fetchAllEmployees(preferCachedResponse: !force)
+                )
             }
             errorMessage = nil
         } catch is CancellationError {
@@ -1316,23 +1485,64 @@ final class ScheduleServiceViewModel {
         return formatter
     }()
 
-    private func resolveCurrentWeekNumber(backendValue: Int?, termStartDate: Date?) -> Int? {
+    private func resolveCurrentWeekNumber(
+        backendValue: Int?,
+        termStartDate: Date?,
+        now: Date = Date()
+    ) -> Int? {
         if let backendValue, (1 ... 4).contains(backendValue) {
             return backendValue
         }
 
-        if let calculated = universityWeekNumber(on: Date()) {
+        if let termStartDate,
+           let calculated = Self.rotatingWeekNumber(
+               on: now,
+               termStartDate: termStartDate
+           ) {
             return calculated
         }
 
-        guard let termStartDate else { return nil }
-        let calendar = Calendar(identifier: .gregorian)
-        let start = calendar.startOfDay(for: termStartDate)
-        let now = calendar.startOfDay(for: Date())
-        guard let distance = calendar.dateComponents([.weekOfYear], from: start, to: now).weekOfYear else {
+        return universityWeekNumber(on: now)
+    }
+
+    private func timelineWeekNumber(on date: Date) -> Int? {
+        if let termStartDate = schedule?.startDate,
+           let weekNumber = Self.rotatingWeekNumber(
+               on: date,
+               termStartDate: termStartDate
+           ) {
+            return weekNumber
+        }
+        return universityWeekNumber(on: date)
+    }
+
+    nonisolated static func rotatingWeekNumber(
+        on date: Date,
+        termStartDate: Date,
+        calendar: Calendar = Calendar(identifier: .gregorian)
+    ) -> Int? {
+        var academicCalendar = calendar
+        academicCalendar.firstWeekday = 2
+        academicCalendar.minimumDaysInFirstWeek = 4
+
+        guard let startOfTermWeek = Self.startOfWeek(
+            for: termStartDate,
+            calendar: academicCalendar
+        ),
+        let startOfTargetWeek = Self.startOfWeek(
+            for: date,
+            calendar: academicCalendar
+        ),
+        let distance = academicCalendar.dateComponents(
+            [.weekOfYear],
+            from: startOfTermWeek,
+            to: startOfTargetWeek
+        ).weekOfYear,
+        distance >= 0 else {
             return nil
         }
-        return ((abs(distance) % 4) + 1)
+
+        return (distance % 4) + 1
     }
 
     private func universityWeekNumber(on date: Date, now: Date = Date()) -> Int? {
@@ -1351,8 +1561,8 @@ final class ScheduleServiceViewModel {
             septemberStart = previousSeptemberStart
         }
 
-        guard let startOfAnchorWeek = startOfWeek(for: septemberStart, calendar: calendar),
-              let startOfTargetWeek = startOfWeek(for: date, calendar: calendar),
+        guard let startOfAnchorWeek = Self.startOfWeek(for: septemberStart, calendar: calendar),
+              let startOfTargetWeek = Self.startOfWeek(for: date, calendar: calendar),
               let weeksDistance = calendar.dateComponents([.weekOfYear], from: startOfAnchorWeek, to: startOfTargetWeek).weekOfYear else {
             return nil
         }
@@ -1360,7 +1570,7 @@ final class ScheduleServiceViewModel {
         return (abs(weeksDistance) % 4) + 1
     }
 
-    private func startOfWeek(for date: Date, calendar: Calendar) -> Date? {
+    nonisolated private static func startOfWeek(for date: Date, calendar: Calendar) -> Date? {
         let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
         return calendar.date(from: components)
     }
@@ -1402,7 +1612,7 @@ final class ScheduleServiceViewModel {
     }
 
     private func saveSnapshot() {
-        guard defaults == (UserDefaults(suiteName: AppGroup.identifier) ?? .standard) else { return }
+        guard usesSharedSnapshotCache else { return }
         guard let schedule else { return }
         Self.cachedSnapshot = Snapshot(
             dataSource: dataSource,
@@ -1512,8 +1722,7 @@ extension ScheduleServiceViewModel {
     }
 
     var filteredGroups: [StudyGroup] {
-        let activeQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let needle = activeQuery.isEmpty ? debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines) : activeQuery
+        let needle = debouncedQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else {
             return prioritizedGroups(groups)
         }

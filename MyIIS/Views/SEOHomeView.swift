@@ -2,8 +2,6 @@ import SwiftUI
 
 struct SEOHomeView: View {
     @StateObject private var lmsService = LMSService.shared
-    @State private var showingError = false
-    @State private var errorMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -45,11 +43,6 @@ struct SEOHomeView: View {
             }
             .refreshable {
                 await lmsService.refreshCourses(force: true)
-            }
-            .alert("Ошибка", isPresented: $showingError) {
-                Button("ОК", role: .cancel) {}
-            } message: {
-                Text(errorMessage)
             }
         }
     }
@@ -135,39 +128,27 @@ struct SEOHomeView: View {
                     .foregroundStyle(.secondary)
                     .padding(.top, 8)
 
-                Text("Требуется авторизация")
+                Text("Требуется отдельная авторизация СЭО")
                     .font(.headline)
 
-                Text("Для входа используются те же данные, что и для личного кабинета ИИС БГУИР.")
+                Text("Пароль СЭО не используется из хранилища ИИС без вашего ввода.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
-                Button {
-                    Task {
-                        do {
-                            try await lmsService.login()
-                        } catch {
-                            errorMessage = error.localizedDescription
-                            showingError = true
-                        }
-                    }
+                NavigationLink {
+                    LMSLoginView()
                 } label: {
-                    HStack {
-                        if lmsService.isLoading {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        } else {
-                            Text("Войти через ИИС")
-                        }
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .foregroundColor(.white)
-                    .font(.headline)
+                    Text("Ввести данные СЭО")
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(
+                            Color.accentColor,
+                            in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        )
+                        .foregroundColor(.white)
+                        .font(.headline)
                 }
-                .disabled(lmsService.isLoading)
                 .padding(.top, 8)
             }
             .padding(16)

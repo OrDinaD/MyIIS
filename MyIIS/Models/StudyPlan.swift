@@ -122,7 +122,7 @@ struct StudyPlan: Decodable, Equatable {
 }
 // MARK: - Supporting Models
 
-struct StudyGroup: Decodable, Equatable {
+struct StudyGroup: Decodable, Equatable, Sendable {
     let name: String
     let facultyId: Int?
     let facultyAbbrev: String?
@@ -136,14 +136,14 @@ struct StudyGroup: Decodable, Equatable {
     let educationDegree: Int?
 }
 
-struct StudyDaySchedule: Identifiable, Equatable {
+struct StudyDaySchedule: Identifiable, Equatable, Sendable {
     let weekday: StudyWeekday
     let lessons: [DisciplineSchedule]
 
     var id: StudyWeekday { weekday }
 }
 
-enum StudyWeekday: String, CaseIterable, Decodable, Identifiable {
+enum StudyWeekday: String, CaseIterable, Decodable, Identifiable, Sendable {
     case monday = "Понедельник"
     case tuesday = "Вторник"
     case wednesday = "Среда"
@@ -183,7 +183,7 @@ enum StudyWeekday: String, CaseIterable, Decodable, Identifiable {
     }
 }
 
-struct DisciplineSchedule: Decodable, Identifiable, Equatable {
+struct DisciplineSchedule: Decodable, Identifiable, Equatable, Sendable {
     let id: String
     let auditories: [String]
     let endLessonTime: String
@@ -373,7 +373,7 @@ struct DisciplineSchedule: Decodable, Identifiable, Equatable {
     }
 }
 
-struct DisciplineStudentGroup: Decodable, Equatable {
+struct DisciplineStudentGroup: Decodable, Equatable, Sendable {
     let specialityName: String?
     let specialityCode: String?
     let numberOfStudents: Int?
@@ -381,7 +381,7 @@ struct DisciplineStudentGroup: Decodable, Equatable {
     let educationDegree: Int?
 }
 
-struct DisciplineEmployee: Decodable, Equatable, Identifiable {
+struct DisciplineEmployee: Decodable, Equatable, Identifiable, Sendable {
     let id: Int
     let firstName: String?
     let middleName: String?
