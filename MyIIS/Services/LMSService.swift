@@ -363,6 +363,28 @@ extension LMSService {
         return Self.cachePrefix + Data(composite.utf8).base64EncodedString()
     }
 
+    private func prepareLoginPage() async throws -> (url: URL, token: String?) {
+        let url = NetworkSecurityPolicy.lmsBaseURL
+            .appendingPathComponent("login")
+            .appendingPathComponent("index.php")
+        var request = URLRequest(url: url)
+        request.timeoutInterval = 20
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              let responseURL = httpResponse.url,
+              NetworkSecurityPolicy.isTrustedLMSURL(responseURL),
+              (200 ... 399).contains(httpResponse.statusCode),
+              let html = String(data: data, encoding: .utf8) else {
+            throw LMSError.invalidResponse
+        }
+
+        let tokenPattern = #"name=["']logintoken["'][^>]*value=["']([^"']+)["']"#
+        let token = html.captureGroup(at: 1, pattern: tokenPattern)
+        return (url, token)
+    }
+
     @MainActor
     func login(
         username: String,
@@ -380,18 +402,19 @@ extension LMSService {
         defer { isLoading = false }
 
         logService.log("🔐 LMS: Logging in as \(trimmedUsername)")
-        let url = NetworkSecurityPolicy.lmsBaseURL
-            .appendingPathComponent("login")
-            .appendingPathComponent("index.php")
-        var request = URLRequest(url: url)
+        let loginPage = try await prepareLoginPage()
+        var request = URLRequest(url: loginPage.url)
         request.httpMethod = "POST"
         request.timeoutInterval = 20
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
 
-        let bodyComponents = [
+        var bodyComponents = [
             "username": trimmedUsername,
             "password": password
         ]
+        if let token = loginPage.token {
+            bodyComponents["logintoken"] = token
+        }
         let bodyString = bodyComponents
             .compactMap { key, value -> String? in
                 guard let encodedValue = value.addingPercentEncoding(
@@ -457,5 +480,21 @@ extension LMSService {
     @MainActor
     func checkSession() async {
         await refreshCourses()
+        guard !isLoggedIn, !Task.isCancelled else { return }
+
+        do {
+            guard let credentials = try credentialStore.retrieve() else { return }
+            logService.log("ℹ️ LMS: Restoring an expired session from saved credentials.")
+            try await login(
+                username: credentials.username,
+                password: credentials.password,
+                persistCredentials: true
+            )
+        } catch is CancellationError {
+            return
+        } catch {
+            errorMessage = error.localizedDescription
+            logService.log("⚠️ LMS: Automatic session restoration failed: \(error.localizedDescription)")
+        }
     }
 }

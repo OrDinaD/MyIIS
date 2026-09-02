@@ -20,6 +20,7 @@ final class RatingViewModel {
     private(set) var subjectOmissions: [String: Int] = [:]
     private(set) var userCheckpoints: [RatingCheckpoint] = []
     private(set) var gradebookAverage: Double?
+    private(set) var coursePlace: Int?
 
     private let apiService: APIService
     private let userDefaults: UserDefaults
@@ -59,6 +60,7 @@ final class RatingViewModel {
             summary = RatingSummary(students: students)
             disciplines = Gradebook.previewData.semesters.flatMap { $0.sortedDisciplines() }
             gradebookAverage = Gradebook.previewData.averageGrade
+            coursePlace = 5
             userCheckpoints = students.first?.checkpoints.sorted { $0.number < $1.number } ?? []
             isGradebookUnavailable = false
             isUsingScheduleFallback = false
@@ -113,10 +115,23 @@ extension RatingViewModel {
             _ = applyCachedSnapshotIfAvailable(group: group, studentId: studentId)
         }
 
+        await refreshCoursePlace()
         await loadByGroup(group, targetRecordBookNumber: studentId, force: true)
 
         currentStudentId = studentId
         saveCurrentStateToCache(group: group, studentId: studentId)
+    }
+
+    private func refreshCoursePlace() async {
+        do {
+            let profile = try await apiService.getPersonalProfile()
+            coursePlace = profile.rating.flatMap { $0 > 0 ? $0 : nil }
+        } catch is CancellationError {
+            return
+        } catch {
+            coursePlace = nil
+            logService.log("⚠️ Rating: Failed to refresh live course place: \(error.localizedDescription)")
+        }
     }
 
     private func loadByGroup(_ group: String?, targetRecordBookNumber: String?, force: Bool) async {

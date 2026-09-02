@@ -176,8 +176,25 @@ struct ScheduleLessonDetailSheet: View {
                 Text(fullSubjectTitle)
                     .font(.title2.bold())
                     .foregroundStyle(.primary)
-                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.bottom, 14)
+
+                if let note = lesson.note.nilIfBlank {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Описание")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+
+                        Text(note)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .textSelection(.enabled)
+                    }
+                    .padding(.bottom, 14)
+
+                    Divider()
+                }
 
                 detailRow("Время", value: lesson.timeRange.nilIfBlank ?? "--")
                 detailRow("День", value: lessonDateText)

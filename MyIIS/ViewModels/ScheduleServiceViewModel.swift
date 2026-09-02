@@ -826,12 +826,13 @@ final class ScheduleServiceViewModel {
     // MARK: - Apply Schedules
 
     func applyGroupSchedule(_ scheduleResponse: PublicScheduleResponse, week: Int?, groupNumber: String) {
-        schedule = scheduleResponse
+        let enrichedSchedule = scheduleResponse.enrichingEmployees(using: employees)
+        schedule = enrichedSchedule
         currentWeekNumber = resolveCurrentWeekNumber(
             backendValue: week,
-            termStartDate: scheduleResponse.startDate
+            termStartDate: enrichedSchedule.startDate
         )
-        preferExamDisplayIfNeeded(for: scheduleResponse)
+        preferExamDisplayIfNeeded(for: enrichedSchedule)
         applyDefaultWeekFilter()
         setMode(.group, preservingQuery: groupNumber)
         if let savedValue = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
@@ -842,8 +843,8 @@ final class ScheduleServiceViewModel {
         persistGroupSelection(groupNumber)
         saveSnapshot()
         errorMessage = nil
-        updateClassScheduleWidgetSnapshot(from: scheduleResponse)
-        updateSessionScheduleWidgetSnapshot(from: scheduleResponse)
+        updateClassScheduleWidgetSnapshot(from: enrichedSchedule)
+        updateSessionScheduleWidgetSnapshot(from: enrichedSchedule)
         scheduleExamRemindersIfAuthorized()
     }
 
@@ -853,10 +854,11 @@ final class ScheduleServiceViewModel {
         employee: ScheduleEmployeeDirectoryEntry,
         urlId: String
     ) {
-        schedule = scheduleResponse
+        let enrichedSchedule = scheduleResponse.enrichingEmployees(using: employees)
+        schedule = enrichedSchedule
         currentWeekNumber = resolveCurrentWeekNumber(
             backendValue: week,
-            termStartDate: scheduleResponse.startDate
+            termStartDate: enrichedSchedule.startDate
         )
         setMode(.teacher, preservingQuery: employee.displayName)
         subgroupFilter = .all

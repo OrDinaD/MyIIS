@@ -91,7 +91,8 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
             return
         }
 
-        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
+        var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
+        request.timeoutInterval = 15
 
         if let cached = URLCache.shared.cachedResponse(for: request),
            let image = await downsampleImage(from: cached.data, maxPixelSize: maxPixelSize) {
@@ -103,18 +104,44 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
             return
         }
 
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard !Task.isCancelled,
-                  let image = await downsampleImage(from: data, maxPixelSize: maxPixelSize),
-                  !Task.isCancelled else { return }
-            CachedAsyncImageMemoryCache.shared.setObject(image, forKey: cacheKey, cost: image.estimatedMemoryCost)
-            URLCache.shared.storeCachedResponse(CachedURLResponse(response: response, data: data), for: request)
-            withTransaction(transaction) {
-                uiImage = image
+        for attempt in 0 ..< 3 {
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard !Task.isCancelled else { return }
+
+                if let httpResponse = response as? HTTPURLResponse,
+                   !(200 ... 299).contains(httpResponse.statusCode) {
+                    if attempt < 2 {
+                        try await Task.sleep(nanoseconds: UInt64(attempt + 1) * 350_000_000)
+                    }
+                    continue
+                }
+
+                guard let image = await downsampleImage(from: data, maxPixelSize: maxPixelSize) else {
+                    if attempt < 2 {
+                        try await Task.sleep(nanoseconds: UInt64(attempt + 1) * 350_000_000)
+                    }
+                    continue
+                }
+                guard !Task.isCancelled else { return }
+
+                CachedAsyncImageMemoryCache.shared.setObject(image, forKey: cacheKey, cost: image.estimatedMemoryCost)
+                URLCache.shared.storeCachedResponse(CachedURLResponse(response: response, data: data), for: request)
+                withTransaction(transaction) {
+                    uiImage = image
+                }
+                return
+            } catch is CancellationError {
+                return
+            } catch {
+                if attempt < 2 {
+                    try? await Task.sleep(nanoseconds: UInt64(attempt + 1) * 350_000_000)
+                }
             }
-        } catch {
-            if Task.isCancelled { return }
+        }
+
+        if loadedCacheKey == cacheIdentity {
+            loadedCacheKey = nil
         }
     }
 }

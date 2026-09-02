@@ -41,9 +41,9 @@ struct PublicScheduleResponse: Decodable, Sendable {
     let endDate: Date?
     let startExamsDate: Date?
     let endExamsDate: Date?
-    private let scheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
-    private let previousScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
-    private let nextScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
+    let scheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
+    let previousScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
+    let nextScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
 
     enum CodingKeys: String, CodingKey {
         case employee = "employeeDto"

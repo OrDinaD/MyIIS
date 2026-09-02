@@ -118,11 +118,11 @@ struct RatingView: View {
             Group {
                 if dynamicTypeSize.isAccessibilitySize {
                     VStack(spacing: 10) {
-                        ratingHeaderMetrics(user: user)
+                        ratingHeaderMetrics
                     }
                 } else {
                     HStack(spacing: 10) {
-                        ratingHeaderMetrics(user: user)
+                        ratingHeaderMetrics
                     }
                 }
             }
@@ -134,11 +134,11 @@ struct RatingView: View {
     }
 
     @ViewBuilder
-    private func ratingHeaderMetrics(user: User) -> some View {
-        if user.displayRating > 0, !viewModel.disciplines.isEmpty {
+    private var ratingHeaderMetrics: some View {
+        if let coursePlace = viewModel.coursePlace, !viewModel.disciplines.isEmpty {
             RatingHeaderMetric(
                 title: NSLocalizedString("rating_place_in_course", comment: ""),
-                value: "№ \(user.displayRating)",
+                value: "№ \(coursePlace)",
                 systemImage: "trophy.fill",
                 tint: .yellow
             )

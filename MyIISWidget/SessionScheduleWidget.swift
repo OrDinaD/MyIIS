@@ -187,6 +187,7 @@ enum ScheduleWidgetStyle {
 struct SessionScheduleWidgetView: View {
     @Environment(\.widgetFamily) private var family
     @Environment(\.widgetContentMargins) private var widgetContentMargins
+    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
     let entry: SessionScheduleWidgetEntry
     var style: ScheduleWidgetStyle = .session
 
@@ -642,6 +643,13 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var widgetBackgroundColor: Color {
+        switch widgetRenderingMode {
+        case .fullColor:
+            break
+        default:
+            return .clear
+        }
+
         if style == .session {
             return Color(red: 0.04, green: 0.08, blue: 0.10)
         }
@@ -692,9 +700,28 @@ struct SessionScheduleWidgetView: View {
                 design: .rounded)
     }
 
+    @ViewBuilder
+    private var headerBackground: some View {
+        switch widgetRenderingMode {
+        case .fullColor:
+            headerGradient
+        default:
+            Color.clear
+        }
+    }
+
+    private var headerForegroundColor: Color {
+        switch widgetRenderingMode {
+        case .fullColor:
+            return .white
+        default:
+            return .primary
+        }
+    }
+
     private var header: some View {
         ZStack {
-            headerGradient
+            headerBackground
 
             HStack(spacing: 8) {
                 Text(headerDateText)
@@ -713,7 +740,8 @@ struct SessionScheduleWidgetView: View {
                     .minimumScaleFactor(0.72)
                     .allowsTightening(true)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(headerForegroundColor)
+            .widgetAccentable()
             .padding(.horizontal, family == .systemLarge ? 16 : 14)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
         }

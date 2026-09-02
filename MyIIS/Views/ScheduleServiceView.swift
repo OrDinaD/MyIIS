@@ -45,6 +45,10 @@ struct ScheduleServiceView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 32) {
+                    if viewModel.isLoading, viewModel.schedule != nil {
+                        scheduleLoadingBanner
+                    }
+
                     if viewModel.isShowingStaleDataWarning {
                         StaleDataBanner(
                             lastUpdateTime: nil,
@@ -787,6 +791,35 @@ struct ScheduleServiceView: View {
         viewModel.applyLocalSchedule(document)
     }
 
+    private var scheduleLoadingBanner: some View {
+        HStack(spacing: 12) {
+            ProgressView()
+                .controlSize(.small)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(NSLocalizedString(
+                    "services_schedule_loading_selection",
+                    value: "Загружаем выбранное расписание…",
+                    comment: ""
+                ))
+                .font(.subheadline.weight(.semibold))
+
+                Text(NSLocalizedString(
+                    "services_schedule_loading_network_hint",
+                    value: "При медленной сети это может занять немного времени.",
+                    comment: ""
+                ))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(12)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .combine)
+    }
+
     private var scheduleInitialErrorView: some View {
         ContentUnavailableView {
             Label(
@@ -1052,7 +1085,8 @@ private struct ScheduleLessonCard: View {
 
                     if let note = lesson.note.nilIfBlank, !note.isEmpty {
                         Text(note)
-                            .lineLimit(1)
+                            .lineLimit(cardDensity == .compact ? 1 : 3)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
                 .font(.footnote)
