@@ -160,6 +160,10 @@ final class APIServiceTests: XCTestCase {
 
         XCTAssertTrue(policy.shouldRetry(error: APIError.serviceUnavailable(message: "418")))
         XCTAssertTrue(policy.shouldRetry(error: APIError.serverError(statusCode: 503, message: "Server Error")))
+        XCTAssertTrue(policy.shouldRetry(error: APIError.serverError(statusCode: 500, message: "Internal Server Error")))
+        XCTAssertTrue(policy.shouldRetry(error: APIError.serverError(statusCode: 429, message: "Too Many Requests")))
+        XCTAssertFalse(policy.shouldRetry(error: APIError.serverError(statusCode: 403, message: "Forbidden")))
+        XCTAssertFalse(policy.shouldRetry(error: APIError.serverError(statusCode: 404, message: "Not Found")))
         XCTAssertTrue(policy.shouldRetry(error: URLError(.timedOut)))
         XCTAssertTrue(policy.shouldRetry(error: URLError(.networkConnectionLost)))
 

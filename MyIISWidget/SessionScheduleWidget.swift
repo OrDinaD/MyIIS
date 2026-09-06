@@ -315,10 +315,10 @@ struct SessionScheduleWidgetView: View {
                     .lineLimit(1)
                 Spacer(minLength: 4)
             }
-            .foregroundStyle(Color.white.opacity(0.85))
+            .foregroundStyle(secondaryTextColor)
 
             Rectangle()
-                .fill(Color.white.opacity(0.18))
+                .fill(separatorColor)
                 .frame(height: 1)
         }
         .padding(.horizontal, 2)
@@ -342,7 +342,7 @@ struct SessionScheduleWidgetView: View {
             HStack {
                 Text(entry.groupName)
                     .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(primaryTextColor)
                     .lineLimit(1)
 
                 Spacer(minLength: 2)
@@ -358,7 +358,7 @@ struct SessionScheduleWidgetView: View {
                     } else {
                         Text(event.startTime)
                             .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.7))
+                            .foregroundStyle(secondaryTextColor)
                     }
                 }
             }
@@ -375,24 +375,24 @@ struct SessionScheduleWidgetView: View {
                         HStack(spacing: 4) {
                             Text(event.title)
                                 .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundStyle(.white)
+                                .foregroundStyle(primaryTextColor)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.75)
 
                             if let subgroup = event.subgroup, subgroup > 0 {
                                 Text("[\(subgroup)]")
                                     .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(.white.opacity(0.75))
+                                    .foregroundStyle(secondaryTextColor)
                             }
                         }
 
                         Text("\(event.startTime)–\(event.endTime)")
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundStyle(.white.opacity(0.75))
+                            .foregroundStyle(secondaryTextColor)
 
                         Text(classLocationText(for: event))
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.65))
+                            .foregroundStyle(secondaryTextColor)
                             .lineLimit(1)
                     }
                 }
@@ -402,10 +402,10 @@ struct SessionScheduleWidgetView: View {
                     HStack(spacing: 4) {
                         Text("Далее:")
                             .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.5))
+                            .foregroundStyle(tertiaryTextColor)
                         Text("\(nextEvent.startTime) \(nextEvent.title)")
                             .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(primaryTextColor)
                             .lineLimit(1)
                     }
                     .padding(.top, 2)
@@ -414,7 +414,7 @@ struct SessionScheduleWidgetView: View {
                 Spacer()
                 Text("Занятий нет")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(secondaryTextColor)
                 Spacer()
             }
         }
@@ -522,9 +522,9 @@ struct SessionScheduleWidgetView: View {
         VStack(spacing: 1) {
             Text(event.startTime)
                 .fontWeight(.semibold)
-                .foregroundStyle(.white)
+                .foregroundStyle(primaryTextColor)
             Text(event.endTime)
-                .foregroundStyle(.white.opacity(0.72))
+                .foregroundStyle(secondaryTextColor)
         }
         .font(.system(
             size: family == .systemLarge ? 13 : 11.5,
@@ -585,7 +585,7 @@ struct SessionScheduleWidgetView: View {
                         weight: .bold,
                         design: .rounded
                     ))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(primaryTextColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.66)
                     .privacySensitive()
@@ -593,7 +593,7 @@ struct SessionScheduleWidgetView: View {
                 if let subgroup = event.subgroup, subgroup > 0 {
                     Text("[\(subgroup)]")
                         .font(.system(size: family == .systemLarge ? 9 : 8.5, weight: .bold, design: .monospaced))
-                        .foregroundStyle(.white.opacity(0.75))
+                        .foregroundStyle(secondaryTextColor)
                 }
             }
 
@@ -612,7 +612,7 @@ struct SessionScheduleWidgetView: View {
                 }
             }
             .font(.system(size: family == .systemLarge ? 11 : 10.5, weight: .medium))
-            .foregroundStyle(.white.opacity(0.7))
+            .foregroundStyle(secondaryTextColor)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -719,6 +719,42 @@ struct SessionScheduleWidgetView: View {
         }
     }
 
+    private var primaryTextColor: Color {
+        switch widgetRenderingMode {
+        case .fullColor:
+            return .white
+        default:
+            return .primary
+        }
+    }
+
+    private var secondaryTextColor: Color {
+        switch widgetRenderingMode {
+        case .fullColor:
+            return Color.white.opacity(0.75)
+        default:
+            return .secondary
+        }
+    }
+
+    private var tertiaryTextColor: Color {
+        switch widgetRenderingMode {
+        case .fullColor:
+            return Color.white.opacity(0.55)
+        default:
+            return Color.secondary.opacity(0.8)
+        }
+    }
+
+    private var separatorColor: Color {
+        switch widgetRenderingMode {
+        case .fullColor:
+            return Color.white.opacity(0.18)
+        default:
+            return Color.primary.opacity(0.15)
+        }
+    }
+
     private var header: some View {
         ZStack {
             headerBackground
@@ -754,7 +790,8 @@ struct SessionScheduleWidgetView: View {
             if day.id != groupedVisibleEvents.first?.id {
                 Text(dateText(for: day.date))
                     .font(.system(size: family == .systemLarge ? 13 : 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(primaryTextColor)
+                    .widgetAccentable()
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
@@ -771,15 +808,15 @@ struct SessionScheduleWidgetView: View {
         HStack(spacing: 7) {
             Text(dateText(for: hiddenEvents.first?.date))
                 .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.55))
+                .foregroundStyle(tertiaryTextColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
             Circle()
-                .fill(.white.opacity(0.55))
+                .fill(tertiaryTextColor)
                 .frame(width: 6, height: 6)
             Text(hiddenSummary)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(.white.opacity(0.6))
+                .foregroundStyle(secondaryTextColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .allowsTightening(true)
@@ -805,11 +842,21 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var messagePrimaryColor: Color {
-        style == .session ? .white : .primary
+        switch widgetRenderingMode {
+        case .fullColor:
+            return style == .session ? .white : .primary
+        default:
+            return .primary
+        }
     }
 
     private var messageSecondaryColor: Color {
-        style == .session ? .white.opacity(0.68) : .secondary
+        switch widgetRenderingMode {
+        case .fullColor:
+            return style == .session ? .white.opacity(0.68) : .secondary
+        default:
+            return .secondary
+        }
     }
 
     private func widgetMessageContent(icon: String, title: String, subtitle: String) -> some View {
@@ -902,9 +949,28 @@ private struct SessionWidgetDay: Identifiable {
 }
 
 private struct SessionWidgetEventRow: View {
+    @Environment(\.widgetRenderingMode) private var widgetRenderingMode
     let event: SessionScheduleWidgetSnapshot.Event
     let compact: Bool
     let now: Date
+
+    private var primaryTextColor: Color {
+        switch widgetRenderingMode {
+        case .fullColor:
+            return .white
+        default:
+            return .primary
+        }
+    }
+
+    private var secondaryTextColor: Color {
+        switch widgetRenderingMode {
+        case .fullColor:
+            return Color.white.opacity(0.72)
+        default:
+            return .secondary
+        }
+    }
 
     var body: some View {
         HStack(spacing: compact ? 8 : 9) {
@@ -915,7 +981,7 @@ private struct SessionWidgetEventRow: View {
             .font(.system(size: compact ? 15 : 14,
                           weight: .medium,
                           design: .monospaced))
-            .foregroundStyle(.white)
+            .foregroundStyle(primaryTextColor)
             .lineLimit(1)
             .minimumScaleFactor(0.76)
             .frame(width: compact ? 58 : 54)
@@ -928,7 +994,7 @@ private struct SessionWidgetEventRow: View {
                     .font(.system(size: compact ? 18 : 17,
                                   weight: .bold,
                                   design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(primaryTextColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.62)
                     .allowsTightening(true)
@@ -939,7 +1005,7 @@ private struct SessionWidgetEventRow: View {
                         .font(.system(size: 14,
                                       weight: .regular,
                                       design: .rounded))
-                        .foregroundStyle(.white.opacity(0.72))
+                        .foregroundStyle(secondaryTextColor)
                         .lineLimit(1)
                         .minimumScaleFactor(0.68)
                         .allowsTightening(true)

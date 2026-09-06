@@ -172,7 +172,13 @@ final class ScheduleServiceViewModel {
     var noticeMessage: String?
     private(set) var isShowingStaleDataWarning = false
     private(set) var staleErrorMessage: String?
-    private(set) var continuousTimelineDays: [ScheduleContinuousDay] = []
+    private(set) var continuousTimelineDays: [ScheduleContinuousDay] = [] {
+        didSet {
+            updateContinuousDayPartitions()
+        }
+    }
+    private(set) var pastContinuousDays: [ScheduleContinuousDay] = []
+    private(set) var upcomingContinuousDays: [ScheduleContinuousDay] = []
     private(set) var pinnedGroupNames: [String] = []
     private(set) var pinnedTeachers: [PinnedTeacher] = []
     private(set) var recentGroupNames: [String] = []
@@ -957,10 +963,8 @@ final class ScheduleServiceViewModel {
             if !result.days.isEmpty {
                 self.continuousTimelineDays.append(contentsOf: result.days)
             }
-            if let schedule = self.schedule {
+            if self.schedule != nil {
                 self.saveSnapshot()
-                self.updateClassScheduleWidgetSnapshot(from: schedule)
-                self.updateSessionScheduleWidgetSnapshot(from: schedule)
             }
         }
     }
@@ -2079,16 +2083,18 @@ extension ScheduleServiceViewModel {
         displayedDays
     }
 
-    var pastContinuousDays: [ScheduleContinuousDay] {
-        continuousTimelineDays.filter { day in
-            day.lessons.allSatisfy { isExamPast($0, on: day.date) }
+    private func updateContinuousDayPartitions() {
+        var past: [ScheduleContinuousDay] = []
+        var upcoming: [ScheduleContinuousDay] = []
+        for day in continuousTimelineDays {
+            if day.lessons.allSatisfy({ isExamPast($0, on: day.date) }) {
+                past.append(day)
+            } else {
+                upcoming.append(day)
+            }
         }
-    }
-
-    var upcomingContinuousDays: [ScheduleContinuousDay] {
-        continuousTimelineDays.filter { day in
-            !day.lessons.allSatisfy { isExamPast($0, on: day.date) }
-        }
+        self.pastContinuousDays = past
+        self.upcomingContinuousDays = upcoming
     }
 
     var subgroupFilters: [ScheduleSubgroupFilter] {

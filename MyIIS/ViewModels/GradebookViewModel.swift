@@ -175,7 +175,11 @@ final class GradebookViewModel {
         if let previousSelection, semesterKeys.contains(previousSelection) {
             selectedSemesterKey = previousSelection
         } else {
-            selectedSemesterKey = latestSemesterKey(from: semesterKeys)
+            selectedSemesterKey = Self.resolveDefaultSemesterKey(
+                from: semesterKeys,
+                markPages: markbook.markPages,
+                currentCourse: currentCourse
+            )
         }
     }
 
@@ -185,8 +189,32 @@ final class GradebookViewModel {
         }
     }
 
-    private func latestSemesterKey(from keys: [String]) -> String? {
-        keys.last
+    static func resolveDefaultSemesterKey(
+        from keys: [String],
+        markPages: [String: MarkbookSemester],
+        currentCourse: Int?,
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current
+    ) -> String? {
+        guard !keys.isEmpty else { return nil }
+
+        if let course = currentCourse, course > 0 {
+            let month = calendar.component(.month, from: referenceDate)
+            let isAutumnSemester = month >= 9 || month == 1
+            let expectedSemester = isAutumnSemester ? (course * 2 - 1) : (course * 2)
+            let expectedKey = String(expectedSemester)
+            if keys.contains(expectedKey) {
+                return expectedKey
+            }
+        }
+
+        if let latestWithMarks = keys.reversed().first(where: { key in
+            !(markPages[key]?.marks.isEmpty ?? true)
+        }) {
+            return latestWithMarks
+        }
+
+        return keys.last
     }
 
     private func saveGradebookMessageSnapshot(markbook: MarkbookResponse) {

@@ -88,53 +88,78 @@ final class AttendanceViewModel {
         }
     }
 
+    private enum AttendanceSectionFetchResult: Sendable {
+        case applications(Result<[OmissionApplication], Error>)
+        case counts(Result<[MonthlyOmissionCount], Error>)
+        case certificates(Result<OmissionsByStudentResponse, Error>)
+    }
+
     func loadDataIfNeeded() async { await loadData(force: false) }
     func reload() async { await loadData(force: true) }
 
     private func loadData(force: Bool) async {
         if isLoading { return }
+        if !force && hasLoadedOnce && hasVisibleData {
+            if let last = lastUpdateTime, Date().timeIntervalSince(last) < 300 {
+                return
+            }
+        }
 
         isLoading = true
         errorMessage = nil
         sectionErrors = [:]
 
-        async let applicationsTask: Result<[OmissionApplication], Error> = resultOf { try await apiService.getOmissionApplications() }
-        async let countsTask: Result<[MonthlyOmissionCount], Error> = resultOf { try await apiService.getMonthlyOmissionCounts() }
-        async let certificatesTask: Result<OmissionsByStudentResponse, Error> = resultOf { try await apiService.getOmissionsByStudent() }
-
-        let applicationsResult = await applicationsTask
-        let countsResult = await countsTask
-        let certificatesResult = await certificatesTask
-
-        if isCancellation(applicationsResult)
-            || isCancellation(countsResult)
-            || isCancellation(certificatesResult) {
-            isLoading = false
-            return
-        }
-
         var errors: [String] = []
         var nextSectionErrors: [Section: String] = [:]
         var loadedSections = 0
 
-        applyApplicationsResult(
-            applicationsResult,
-            errors: &errors,
-            sectionErrors: &nextSectionErrors,
-            loadedSections: &loadedSections
-        )
-        applyCountsResult(
-            countsResult,
-            errors: &errors,
-            sectionErrors: &nextSectionErrors,
-            loadedSections: &loadedSections
-        )
-        applyCertificatesResult(
-            certificatesResult,
-            errors: &errors,
-            sectionErrors: &nextSectionErrors,
-            loadedSections: &loadedSections
-        )
+        await withTaskGroup(of: AttendanceSectionFetchResult.self) { group in
+            group.addTask {
+                let res = await self.resultOf { try await self.apiService.getOmissionApplications() }
+                return .applications(res)
+            }
+            group.addTask {
+                let res = await self.resultOf { try await self.apiService.getMonthlyOmissionCounts() }
+                return .counts(res)
+            }
+            group.addTask {
+                let res = await self.resultOf { try await self.apiService.getOmissionsByStudent() }
+                return .certificates(res)
+            }
+
+            for await sectionResult in group {
+                guard !Task.isCancelled else { continue }
+                switch sectionResult {
+                case .applications(let result):
+                    self.applyApplicationsResult(
+                        result,
+                        errors: &errors,
+                        sectionErrors: &nextSectionErrors,
+                        loadedSections: &loadedSections
+                    )
+                case .counts(let result):
+                    self.applyCountsResult(
+                        result,
+                        errors: &errors,
+                        sectionErrors: &nextSectionErrors,
+                        loadedSections: &loadedSections
+                    )
+                case .certificates(let result):
+                    self.applyCertificatesResult(
+                        result,
+                        errors: &errors,
+                        sectionErrors: &nextSectionErrors,
+                        loadedSections: &loadedSections
+                    )
+                }
+            }
+        }
+
+        guard !Task.isCancelled else {
+            isLoading = false
+            return
+        }
+
         finalizeLoad(loadedSections: loadedSections, errors: errors, nextSectionErrors: nextSectionErrors)
         isLoading = false
     }
@@ -175,7 +200,7 @@ final class AttendanceViewModel {
             self.applications = applications.sorted { $0.createdDate > $1.createdDate }
             loadedSections += 1
         case .failure(let error):
-            if isNotFoundError(error) {
+            if isNotFoundOrForbiddenError(error) {
                 self.applications = []
                 loadedSections += 1
             } else {
@@ -258,6 +283,13 @@ final class AttendanceViewModel {
     private func isNotFoundError(_ error: Error) -> Bool {
         if let apiError = error as? APIError, case .serverError(let statusCode, _) = apiError, statusCode == 404 {
             return true
+        }
+        return false
+    }
+
+    private func isNotFoundOrForbiddenError(_ error: Error) -> Bool {
+        if let apiError = error as? APIError, case .serverError(let statusCode, _) = apiError {
+            return statusCode == 404 || statusCode == 403
         }
         return false
     }

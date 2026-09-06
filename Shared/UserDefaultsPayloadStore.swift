@@ -3,18 +3,31 @@ import Foundation
 enum UserDefaultsPayloadStore {
     private static let appGroup = "group.com.OrDinaD.MyIIS"
 
-    private static func cacheDirectory() -> URL? {
+    private static let resolvedCacheDirectory: URL? = {
+        let baseDir: URL?
         if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) {
-            return containerURL.appendingPathComponent("PayloadStore", isDirectory: true)
+            baseDir = containerURL.appendingPathComponent("PayloadStore", isDirectory: true)
+        } else {
+            baseDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent("PayloadStore", isDirectory: true)
         }
-        return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent("PayloadStore")
+        if let baseDir, !FileManager.default.fileExists(atPath: baseDir.path) {
+            try? FileManager.default.createDirectory(at: baseDir, withIntermediateDirectories: true)
+        }
+        return baseDir
+    }()
+
+    private static func cacheDirectory() -> URL? {
+        if let resolved = resolvedCacheDirectory {
+            if !FileManager.default.fileExists(atPath: resolved.path) {
+                try? FileManager.default.createDirectory(at: resolved, withIntermediateDirectories: true)
+            }
+            return resolved
+        }
+        return nil
     }
 
     private static func fileURL(forKey key: String) -> URL? {
         guard let cacheDir = cacheDirectory() else { return nil }
-        if !FileManager.default.fileExists(atPath: cacheDir.path) {
-            try? FileManager.default.createDirectory(at: cacheDir, withIntermediateDirectories: true)
-        }
         let safeKey = key.replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: ":", with: "_")
         return cacheDir.appendingPathComponent("\(safeKey).dat")
     }

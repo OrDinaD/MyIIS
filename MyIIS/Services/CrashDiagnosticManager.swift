@@ -12,6 +12,7 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
         let signal: String?
         let terminationReason: String?
         let summary: String
+        var callStackTreeJSON: String? = nil
     }
 
     struct DiagnosticReport: Codable, Sendable {
@@ -64,6 +65,36 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
         Task { @MainActor in
             LogService.shared.log("MetricKit: Received \(count) metric payload(s)")
         }
+
+        var newDiagnostics: [SavedCrashDiagnostic] = []
+        for payload in payloads {
+            let timeStampEnd = payload.timeStampEnd
+            let metricJSON = String(data: payload.jsonRepresentation(), encoding: .utf8)
+            var summaryParts: [String] = []
+
+            if let scrollHitchRatio = payload.animationMetrics?.scrollHitchTimeRatio {
+                summaryParts.append("ScrollHitchRatio: \(scrollHitchRatio.value)")
+            }
+            if let fgTime = payload.applicationTimeMetrics?.cumulativeForegroundTime {
+                summaryParts.append("ForegroundTime: \(fgTime.value)")
+            }
+
+            let summary = summaryParts.isEmpty ? "MetricKitMetrics" : "MetricKitMetrics [\(summaryParts.joined(separator: ", "))]"
+            newDiagnostics.append(
+                SavedCrashDiagnostic(
+                    date: timeStampEnd,
+                    exceptionType: "MetricKitMetrics",
+                    signal: nil,
+                    terminationReason: nil,
+                    summary: summary,
+                    callStackTreeJSON: metricJSON
+                )
+            )
+        }
+
+        if !newDiagnostics.isEmpty {
+            self.saveDiagnostics(newDiagnostics)
+        }
     }
 
     nonisolated func didReceive(_ payloads: [MXDiagnosticPayload]) {
@@ -82,6 +113,7 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
                     let excType = crash.exceptionType?.stringValue
                     let sig = crash.signal?.stringValue
                     let termReason = crash.terminationReason
+                    let callStackJSON = String(data: crash.callStackTree.jsonRepresentation(), encoding: .utf8)
 
                     let summary = "Crash [signal: \(sig ?? "N/A"), excType: \(excType ?? "N/A"), reason: \(termReason ?? "N/A")]"
                     newDiagnostics.append(
@@ -90,7 +122,8 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
                             exceptionType: excType,
                             signal: sig,
                             terminationReason: termReason,
-                            summary: summary
+                            summary: summary,
+                            callStackTreeJSON: callStackJSON
                         )
                     )
                 }
@@ -98,6 +131,7 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
 
             if let hangDiagnostics = payload.hangDiagnostics {
                 for hang in hangDiagnostics {
+                    let callStackJSON = String(data: hang.callStackTree.jsonRepresentation(), encoding: .utf8)
                     let summary = "Hang [duration: \(hang.hangDuration.formatted())]"
                     newDiagnostics.append(
                         SavedCrashDiagnostic(
@@ -105,7 +139,8 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
                             exceptionType: "Hang",
                             signal: nil,
                             terminationReason: nil,
-                            summary: summary
+                            summary: summary,
+                            callStackTreeJSON: callStackJSON
                         )
                     )
                 }

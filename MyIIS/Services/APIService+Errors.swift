@@ -22,8 +22,10 @@ struct NetworkRetryPolicy: Sendable {
 
         if let apiError = error as? APIError {
             switch apiError {
-            case .serviceUnavailable, .serverError:
+            case .serviceUnavailable:
                 return true
+            case .serverError(let statusCode, _):
+                return statusCode == 408 || statusCode == 429 || (statusCode >= 500 && statusCode < 600)
             case .unauthorized, .decodingError, .invalidURL, .invalidResponse:
                 return false
             case .networkError(let underlying):

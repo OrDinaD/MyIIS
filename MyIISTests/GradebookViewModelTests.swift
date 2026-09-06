@@ -360,4 +360,96 @@ final class GradebookViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.errorMessage)
         XCTAssertNotNil(viewModel.markbook) // Keeps old data
     }
+
+    // MARK: - Semester Selection Tests
+
+    func testResolveDefaultSemesterKey_AutumnSemester_SelectsOddSemester() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let autumnDate = calendar.date(from: DateComponents(year: 2026, month: 10, day: 15))!
+
+        let markPages: [String: MarkbookSemester] = [
+            "1": MarkbookSemester(averageMark: 8.0, marks: []),
+            "2": MarkbookSemester(averageMark: 8.5, marks: []),
+            "3": MarkbookSemester(averageMark: 0.0, marks: []),
+            "4": MarkbookSemester(averageMark: 0.0, marks: [])
+        ]
+        let keys = ["1", "2", "3", "4"]
+
+        let selected = GradebookViewModel.resolveDefaultSemesterKey(
+            from: keys,
+            markPages: markPages,
+            currentCourse: 2,
+            referenceDate: autumnDate,
+            calendar: calendar
+        )
+        XCTAssertEqual(selected, "3", "For 2nd year student in autumn (October), semester 3 should be selected, not 4")
+    }
+
+    func testResolveDefaultSemesterKey_SpringSemester_SelectsEvenSemester() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let springDate = calendar.date(from: DateComponents(year: 2026, month: 3, day: 15))!
+
+        let markPages: [String: MarkbookSemester] = [
+            "1": MarkbookSemester(averageMark: 8.0, marks: []),
+            "2": MarkbookSemester(averageMark: 8.5, marks: []),
+            "3": MarkbookSemester(averageMark: 9.0, marks: []),
+            "4": MarkbookSemester(averageMark: 0.0, marks: [])
+        ]
+        let keys = ["1", "2", "3", "4"]
+
+        let selected = GradebookViewModel.resolveDefaultSemesterKey(
+            from: keys,
+            markPages: markPages,
+            currentCourse: 2,
+            referenceDate: springDate,
+            calendar: calendar
+        )
+        XCTAssertEqual(selected, "4", "For 2nd year student in spring (March), semester 4 should be selected")
+    }
+
+    func testResolveDefaultSemesterKey_FutureSemesterCreated_SelectsCurrentExpectedSemester() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let autumnDate = calendar.date(from: DateComponents(year: 2026, month: 9, day: 1))!
+
+        let markPages: [String: MarkbookSemester] = [
+            "1": MarkbookSemester(averageMark: 8.0, marks: []),
+            "2": MarkbookSemester(averageMark: 8.5, marks: []),
+            "3": MarkbookSemester(averageMark: 0.0, marks: []),
+            "4": MarkbookSemester(averageMark: 0.0, marks: []),
+            "5": MarkbookSemester(averageMark: 0.0, marks: [])
+        ]
+        let keys = ["1", "2", "3", "4", "5"]
+
+        let selected = GradebookViewModel.resolveDefaultSemesterKey(
+            from: keys,
+            markPages: markPages,
+            currentCourse: 2,
+            referenceDate: autumnDate,
+            calendar: calendar
+        )
+        XCTAssertEqual(selected, "3", "Backend future semester 5 must not be selected over current semester 3")
+    }
+
+    func testResolveDefaultSemesterKey_MissingCurrentSemester_SelectsLatestWithMarks() {
+        let dummyMark = MarkbookMark(
+            subject: "Math", formOfControl: "Exam", fullSubject: "Math",
+            hours: "10", credits: nil, mark: "9", date: "01.01.2025",
+            teacher: nil, commonMark: nil, commonRetakes: nil, retakesCount: 0
+        )
+        let markPages: [String: MarkbookSemester] = [
+            "1": MarkbookSemester(averageMark: 8.0, marks: [dummyMark]),
+            "2": MarkbookSemester(averageMark: 8.5, marks: [dummyMark])
+        ]
+        let keys = ["1", "2"]
+
+        let selected = GradebookViewModel.resolveDefaultSemesterKey(
+            from: keys,
+            markPages: markPages,
+            currentCourse: 4
+        )
+        XCTAssertEqual(selected, "2", "Fallback should select the latest semester with actual marks")
+    }
 }

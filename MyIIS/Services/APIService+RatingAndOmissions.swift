@@ -39,10 +39,17 @@ extension APIService {
     }
 
     /// Информация о справках и пропусках по уважительной причине
-    func getOmissionsByStudent() async throws -> OmissionsByStudentResponse {
+    func getOmissionsByStudent(term: Int? = nil) async throws -> OmissionsByStudentResponse {
         if APIService.isDemoMode { return DemoMockData.omissionsByStudent }
         let endpoint = baseURL.appendingPathComponent("omissions-by-student")
-        let request = URLRequest(url: endpoint)
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+        if let term {
+            components?.queryItems = [URLQueryItem(name: "term", value: String(term))]
+        }
+        guard let url = components?.url else {
+            throw APIError.invalidURL
+        }
+        let request = URLRequest(url: url)
         logRequestDetails(request)
         return try await performRequest(request)
     }

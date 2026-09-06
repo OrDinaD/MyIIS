@@ -130,7 +130,7 @@ struct HeadmanView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Label("Вкладка доступна только старосте или назначенному отмечающему.", systemImage: "lock.fill")
                     .font(.headline)
-                Text("Проверка выполняется через endpoints `grade-book/is-group-head`, `grade-book/who-can-note` и список студентов группы из HAR.")
+                Text("Если вы являетесь старостой группы или назначенным отмечающим, обратитесь в деканат для подтверждения полномочий в системе ИИС БГУИР.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
