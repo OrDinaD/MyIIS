@@ -16,11 +16,13 @@ final class GradebookViewModel {
     var isCheckingForUpdates = false
 
     private let apiService: APIService
+    private let authService: AuthenticationService
     private var hasLoadedOnce = false
     private let staleWarningInterval: TimeInterval = 5 * 60
 
-    init(apiService: APIService? = nil) {
+    init(apiService: APIService? = nil, authService: AuthenticationService = .shared) {
         self.apiService = apiService ?? APIService()
+        self.authService = authService
         loadCache()
     }
 
@@ -109,13 +111,19 @@ final class GradebookViewModel {
 
         do {
             async let markbookRequest = apiService.getMarkbook()
-            async let personalRequest = apiService.getPersonalProfile()
+            let knownCourse = authService.currentUser?.education.course ?? currentCourse
+            let resolvedCourse: Int?
+            if let knownCourse {
+                resolvedCourse = knownCourse
+            } else {
+                resolvedCourse = try? await apiService.getPersonalProfile().course
+            }
 
-            let (markbook, personal) = try await (markbookRequest, personalRequest)
+            let markbook = try await markbookRequest
             let now = Date()
-            apply(markbook: markbook, personalProfile: personal)
+            apply(markbook: markbook, currentCourse: resolvedCourse)
             lastUpdateTime = now
-            saveCache(markbook: markbook, currentCourse: personal.course, updatedAt: now)
+            saveCache(markbook: markbook, currentCourse: resolvedCourse, updatedAt: now)
         } catch is CancellationError {
             return
         } catch let apiError as APIError {
@@ -149,13 +157,17 @@ final class GradebookViewModel {
         selectedSemesterKey = key
     }
 
-    private func apply(markbook: MarkbookResponse, personalProfile: PersonalProfile) {
+    private func apply(markbook: MarkbookResponse, currentCourse: Int?) {
         self.markbook = markbook
-        self.currentCourse = personalProfile.course
+        self.currentCourse = currentCourse
         MyIISDataStore.update(averageScore: markbook.averageMark)
         saveGradebookMessageSnapshot(markbook: markbook)
 
         updateSemesterSelection(with: markbook)
+    }
+
+    private func apply(markbook: MarkbookResponse, personalProfile: PersonalProfile) {
+        apply(markbook: markbook, currentCourse: personalProfile.course)
     }
 
     private func applyCached(markbook: MarkbookResponse, currentCourse: Int?, updatedAt: Date) {

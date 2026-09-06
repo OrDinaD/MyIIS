@@ -368,4 +368,30 @@ final class HeadmanViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.weeklyStudents.count, 0)
         XCTAssertNil(viewModel.errorMessage)
     }
+
+    func testLoadInitialData_WhenNotGroupHeadAndNoResponsibles_GracefullyHasNoAccess() async {
+        MockURLProtocol.requestHandler = { request in
+            guard let url = request.url else { throw URLError(.badURL) }
+            let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
+
+            if url.path.contains("grade-book/is-group-head") {
+                return (response, Data("false".utf8))
+            } else if url.path.contains("grade-book/who-can-note") {
+                return (response, Data("[]".utf8))
+            } else if url.path.contains("grade-book/group-students") || url.path.contains("grade-book/subjects") {
+                XCTFail("Should not request students or subjects when user has no headman access")
+                let errorResponse = HTTPURLResponse(url: url, statusCode: 404, httpVersion: nil, headerFields: nil)!
+                return (errorResponse, Data())
+            }
+            return (response, Data())
+        }
+
+        await viewModel.loadInitialData()
+
+        XCTAssertFalse(viewModel.hasAccess)
+        XCTAssertFalse(viewModel.isGroupHead)
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertTrue(viewModel.students.isEmpty)
+        XCTAssertTrue(viewModel.subjectOptions.isEmpty)
+    }
 }

@@ -122,27 +122,45 @@ final class HeadmanViewModel {
         do {
             async let groupHeadRequest = apiService.getHeadmanIsGroupHead()
             async let whoCanNoteRequest = apiService.getHeadmanWhoCanNote()
-            async let studentsRequest = apiService.getHeadmanGroupStudents()
-            async let subjectsRequest = apiService.getHeadmanSubjects()
 
-            let (groupHead, responsibleIDs, loadedStudents, subjects) = try await (
-                groupHeadRequest,
-                whoCanNoteRequest,
-                studentsRequest,
-                subjectsRequest
-            )
-            applyAccessSnapshot(groupHead: groupHead, responsibleIDs: responsibleIDs, loadedStudents: loadedStudents)
-            subjectOptions = Self.flattenSubjects(subjects)
-            selectedSubjectID = selectedSubjectID ?? subjectOptions.first?.id
-            selectedSubgroup = availableSubgroups.first ?? 0
+            let (groupHead, responsibleIDs) = try await (groupHeadRequest, whoCanNoteRequest)
 
-            if hasAccess {
-                await loadLessonsForSelectedDate()
-                if selectedSubjectID != nil {
-                    await loadSummary()
-                }
-                await loadWeeklySummary()
+            // If neither group head nor any responsibles exist, user has no access.
+            // Avoid querying group-students and subjects which 404 for non-headman accounts.
+            if !groupHead && responsibleIDs.isEmpty {
+                applyAccessSnapshot(groupHead: false, responsibleIDs: [], loadedStudents: [])
+                subjectOptions = []
+                lastUpdateTime = Date()
+                saveSnapshot()
+                isLoadingAccess = false
+                return
             }
+
+            do {
+                async let studentsRequest = apiService.getHeadmanGroupStudents()
+                async let subjectsRequest = apiService.getHeadmanSubjects()
+
+                let (loadedStudents, subjects) = try await (studentsRequest, subjectsRequest)
+                applyAccessSnapshot(groupHead: groupHead, responsibleIDs: responsibleIDs, loadedStudents: loadedStudents)
+                subjectOptions = Self.flattenSubjects(subjects)
+                selectedSubjectID = selectedSubjectID ?? subjectOptions.first?.id
+                selectedSubgroup = availableSubgroups.first ?? 0
+
+                if hasAccess {
+                    await loadLessonsForSelectedDate()
+                    if selectedSubjectID != nil {
+                        await loadSummary()
+                    }
+                    await loadWeeklySummary()
+                }
+            } catch let apiError as APIError {
+                if case .serverError(let code, _) = apiError, code == 403 || code == 404 {
+                    applyAccessSnapshot(groupHead: groupHead, responsibleIDs: responsibleIDs, loadedStudents: [])
+                } else {
+                    throw apiError
+                }
+            }
+
             lastUpdateTime = Date()
             saveSnapshot()
         } catch is CancellationError {
