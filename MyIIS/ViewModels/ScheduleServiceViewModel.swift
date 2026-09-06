@@ -963,8 +963,11 @@ final class ScheduleServiceViewModel {
             if !result.days.isEmpty {
                 self.continuousTimelineDays.append(contentsOf: result.days)
             }
-            if self.schedule != nil {
+            if let schedule = self.schedule {
                 self.saveSnapshot()
+                if cursor == nil {
+                    self.updateClassScheduleWidgetSnapshot(from: schedule)
+                }
             }
         }
     }
@@ -1223,16 +1226,35 @@ final class ScheduleServiceViewModel {
             .sorted(by: Self.widgetEventSortingComparator)
 
         if events.isEmpty {
-            let calendar = Calendar.current
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.firstWeekday = 2
             let today = calendar.startOfDay(for: now)
+            let weekdayComponent = calendar.component(.weekday, from: today)
+            let currentWeekdayOrdinal = (weekdayComponent + 5) % 7
+            let mondayOfCurrentWeek = calendar.date(byAdding: .day, value: -currentWeekdayOrdinal, to: today) ?? today
+            let referenceMonday = currentWeekdayOrdinal == 6
+                ? (calendar.date(byAdding: .day, value: 7, to: mondayOfCurrentWeek) ?? mondayOfCurrentWeek)
+                : mondayOfCurrentWeek
+
             var fallbackEvents: [SessionScheduleWidgetSnapshot.Event] = []
             for day in scheduleResponse.orderedDays {
+                let dayOffset: Int
+                switch day.weekday {
+                case .monday: dayOffset = 0
+                case .tuesday: dayOffset = 1
+                case .wednesday: dayOffset = 2
+                case .thursday: dayOffset = 3
+                case .friday: dayOffset = 4
+                case .saturday: dayOffset = 5
+                case .sunday: dayOffset = 6
+                }
+                let dayDate = calendar.date(byAdding: .day, value: dayOffset, to: referenceMonday) ?? today
                 for lesson in day.lessons where shouldKeepLessonForWidget(lesson) {
-                    let event = Self.widgetEvent(from: lesson, on: today)
+                    let event = Self.widgetEvent(from: lesson, on: dayDate)
                     fallbackEvents.append(event)
                 }
             }
-            events = fallbackEvents
+            events = fallbackEvents.sorted(by: Self.widgetEventSortingComparator)
         }
 
         let snapshot = SessionScheduleWidgetSnapshot(

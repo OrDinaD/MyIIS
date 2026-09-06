@@ -20,7 +20,9 @@ final class RatingViewModel {
     private(set) var subjectOmissions: [String: Int] = [:]
     private(set) var userCheckpoints: [RatingCheckpoint] = []
     private(set) var gradebookAverage: Double?
-    private(set) var coursePlace: Int?
+    private(set) var deadlineItems: [DisciplineDeadlineItem] = []
+    private(set) var checkpointSummaries: [CheckpointSummaryItem] = []
+    private(set) var percentageMarks: [PortalPercentageMark] = []
 
     private let apiService: APIService
     private let userDefaults: UserDefaults
@@ -41,6 +43,9 @@ final class RatingViewModel {
         let currentGroup: String
         let currentStudentId: String
         let updatedAt: Date
+        var deadlineItems: [DisciplineDeadlineItem]? = []
+        var checkpointSummaries: [CheckpointSummaryItem]? = []
+        var percentageMarks: [PortalPercentageMark]? = []
     }
 
     private static let ratingCachePrefix = "RatingViewModel.snapshot."
@@ -60,8 +65,33 @@ final class RatingViewModel {
             summary = RatingSummary(students: students)
             disciplines = Gradebook.previewData.semesters.flatMap { $0.sortedDisciplines() }
             gradebookAverage = Gradebook.previewData.averageGrade
-            coursePlace = 5
             userCheckpoints = students.first?.checkpoints.sorted { $0.number < $1.number } ?? []
+            deadlineItems = [
+                DisciplineDeadlineItem(
+                    id: "САиИО",
+                    discipline: "САиИО",
+                    fullDisciplineName: "Системный анализ и исследование операций",
+                    submitted: 2,
+                    total: 8,
+                    nearestDeadline: "15.10.2026",
+                    nearestDeadlineTaskNumber: 3,
+                    nearestDeadlineOverdue: false,
+                    overdueDeadlines: [],
+                    deadlinesMissing: false
+                ),
+                DisciplineDeadlineItem(
+                    id: "ОМО",
+                    discipline: "ОМО",
+                    fullDisciplineName: "Основы машинного обучения",
+                    submitted: 1,
+                    total: 4,
+                    nearestDeadline: "10.09.2026",
+                    nearestDeadlineTaskNumber: 2,
+                    nearestDeadlineOverdue: false,
+                    overdueDeadlines: [],
+                    deadlinesMissing: false
+                )
+            ]
             isGradebookUnavailable = false
             isUsingScheduleFallback = false
             isLoadingSubjects = false
@@ -115,23 +145,10 @@ extension RatingViewModel {
             _ = applyCachedSnapshotIfAvailable(group: group, studentId: studentId)
         }
 
-        await refreshCoursePlace()
         await loadByGroup(group, targetRecordBookNumber: studentId, force: true)
 
         currentStudentId = studentId
         saveCurrentStateToCache(group: group, studentId: studentId)
-    }
-
-    private func refreshCoursePlace() async {
-        do {
-            let profile = try await apiService.getPersonalProfile()
-            coursePlace = profile.rating.flatMap { $0 > 0 ? $0 : nil }
-        } catch is CancellationError {
-            return
-        } catch {
-            coursePlace = nil
-            logService.log("⚠️ Rating: Failed to refresh live course place: \(error.localizedDescription)")
-        }
     }
 
     private func loadByGroup(_ group: String?, targetRecordBookNumber: String?, force: Bool) async {
@@ -202,6 +219,9 @@ extension RatingViewModel {
         subjectOmissions = cached.subjectOmissions
         userCheckpoints = cached.userCheckpoints
         gradebookAverage = cached.gradebookAverage
+        deadlineItems = cached.deadlineItems ?? []
+        checkpointSummaries = cached.checkpointSummaries ?? []
+        percentageMarks = cached.percentageMarks ?? []
         isGradebookUnavailable = cached.isGradebookUnavailable
         isRatingPendingForNewSemester = false
         isUsingScheduleFallback = false
@@ -226,7 +246,10 @@ extension RatingViewModel {
             resolvedRecordBookNumber: resolvedRecordBookNumber,
             currentGroup: group,
             currentStudentId: studentId,
-            updatedAt: lastUpdateTime ?? Date()
+            updatedAt: lastUpdateTime ?? Date(),
+            deadlineItems: deadlineItems,
+            checkpointSummaries: checkpointSummaries,
+            percentageMarks: percentageMarks
         )
         guard let payload = try? JSONEncoder().encode(snapshot) else { return }
         _ = UserDefaultsPayloadStore.save(payload, forKey: cacheKey(group: group, studentId: studentId), in: userDefaults)
@@ -234,7 +257,9 @@ extension RatingViewModel {
 
     private func loadFromPortalGradeBook(targetRecordBookNumber: String?) async {
         do {
-            let lessons = try await apiService.getPortalGradeBookLessons()
+            let student = try await apiService.getPortalGradeBookStudent()
+            let lessons = student?.lessons ?? []
+            percentageMarks = student?.percentageMarks ?? []
 
             guard !lessons.isEmpty else {
                 disciplines = []
@@ -242,6 +267,8 @@ extension RatingViewModel {
                 students = []
                 userCheckpoints = []
                 checkpointNumbers = []
+                deadlineItems = []
+                checkpointSummaries = []
                 summary = nil
                 gradebookAverage = nil
                 isGradebookUnavailable = false
@@ -254,9 +281,11 @@ extension RatingViewModel {
             isRatingPendingForNewSemester = false
             applyPortalGradeBookLessons(lessons)
             buildPersonalRating(from: lessons, targetRecordBookNumber: targetRecordBookNumber)
+            deadlineItems = Self.buildDeadlineItems(from: lessons)
+            checkpointSummaries = Self.buildCheckpointSummaries(from: lessons)
             isGradebookUnavailable = disciplines.isEmpty
             errorMessage = nil
-            logService.log("✅ Rating loaded from grade-book only. Lessons: \(lessons.count), disciplines: \(disciplines.count)")
+            logService.log("✅ Rating loaded from grade-book. Lessons: \(lessons.count), disciplines: \(disciplines.count), deadlines: \(deadlineItems.count)")
         } catch is CancellationError {
             return
         } catch let error as APIError {
@@ -266,6 +295,8 @@ extension RatingViewModel {
             students = []
             userCheckpoints = []
             checkpointNumbers = []
+            deadlineItems = []
+            checkpointSummaries = []
             summary = nil
             gradebookAverage = nil
 
@@ -286,6 +317,8 @@ extension RatingViewModel {
             students = []
             userCheckpoints = []
             checkpointNumbers = []
+            deadlineItems = []
+            checkpointSummaries = []
             summary = nil
             gradebookAverage = nil
             isGradebookUnavailable = true
@@ -348,12 +381,14 @@ extension RatingViewModel {
     }
 
     private func appendMarks(from lesson: PortalGradeBookLesson, to attempts: inout [GradeAttempt]) {
-        for mark in lesson.marks {
+        for detail in lesson.markDetails {
+            let taskSuffix = detail.taskNumber.map { " (№ \($0))" } ?? ""
+            let typeTitle = "\(lesson.lessonTypeAbbrev)\(taskSuffix)"
             attempts.append(
                 GradeAttempt(
                     attempt: attempts.count + 1,
-                    type: lesson.lessonTypeAbbrev,
-                    grade: .numeric(Double(mark)),
+                    type: typeTitle,
+                    grade: .numeric(Double(detail.mark)),
                     date: lesson.dateString,
                     status: .passed
                 )
@@ -460,6 +495,203 @@ extension RatingViewModel {
     private static func makeCheckpointNumbers(from students: [StudentRating]) -> [Int] {
         let numbers = Set(students.flatMap { $0.checkpoints.map { $0.number } })
         return numbers.filter { $0 > 0 }.sorted()
+    }
+
+    static func buildDeadlineItems(from lessons: [PortalGradeBookLesson]) -> [DisciplineDeadlineItem] {
+        var disciplinesOrder: [String] = []
+        var fullNames: [String: String] = [:]
+        for lesson in lessons {
+            let abbrev = lesson.lessonNameAbbrev.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !abbrev.isEmpty else { continue }
+            if !disciplinesOrder.contains(abbrev) {
+                disciplinesOrder.append(abbrev)
+            }
+            if let fullName = lesson.lessonName?.trimmingCharacters(in: .whitespacesAndNewlines), !fullName.isEmpty {
+                fullNames[abbrev] = fullName
+            }
+        }
+
+        var items: [DisciplineDeadlineItem] = []
+        for disciplineCode in disciplinesOrder {
+            let discLessons = lessons.filter {
+                $0.lessonNameAbbrev.trimmingCharacters(in: .whitespacesAndNewlines) == disciplineCode
+            }
+            let labLessons = discLessons.filter { $0.lessonTypeId == 4 }
+                .sorted { $0.dateString < $1.dateString }
+            guard !labLessons.isEmpty else { continue }
+
+            if let item = buildDisciplineDeadlineItem(
+                discipline: disciplineCode,
+                fullName: fullNames[disciplineCode],
+                labLessons: labLessons
+            ) {
+                items.append(item)
+            }
+        }
+
+        return items.sorted(by: deadlineItemSort)
+    }
+
+    private static func buildDisciplineDeadlineItem(
+        discipline: String,
+        fullName: String?,
+        labLessons: [PortalGradeBookLesson]
+    ) -> DisciplineDeadlineItem? {
+        let total = labLessons.first?.labCount
+        let submitted = labLessons.filter { !$0.marks.isEmpty }.count
+
+        let deadlines = labLessons.filter {
+            $0.marks.isEmpty && $0.deadline != nil && $0.deadlineOverdue != true
+        }.sorted { (lhs, rhs) -> Bool in
+            let lDate = parseDate(lhs.deadline) ?? .distantFuture
+            let rDate = parseDate(rhs.deadline) ?? .distantFuture
+            return lDate < rDate
+        }
+
+        let nearest = deadlines.first
+        let nearestDeadline = nearest?.deadline
+        let nearestTaskNumber = nearest?.deadlineTaskNumber
+
+        var seenOverdue = Set<String>()
+        var overdueItems: [OverdueDeadlineItem] = []
+        for lesson in labLessons where lesson.marks.isEmpty && lesson.deadline != nil && lesson.deadlineOverdue == true {
+            if let deadlineDate = lesson.deadline {
+                let key = "\(deadlineDate)|\(lesson.deadlineTaskNumber ?? 0)"
+                if !seenOverdue.contains(key) {
+                    seenOverdue.insert(key)
+                    overdueItems.append(OverdueDeadlineItem(date: deadlineDate, taskNumber: lesson.deadlineTaskNumber))
+                }
+            }
+        }
+
+        let deadlinesMissing = labLessons.allSatisfy { $0.deadline == nil }
+        if total == 0 && deadlinesMissing && overdueItems.isEmpty {
+            return nil
+        }
+
+        return DisciplineDeadlineItem(
+            id: discipline,
+            discipline: discipline,
+            fullDisciplineName: fullName,
+            submitted: submitted,
+            total: total,
+            nearestDeadline: nearestDeadline,
+            nearestDeadlineTaskNumber: nearestTaskNumber,
+            nearestDeadlineOverdue: false,
+            overdueDeadlines: overdueItems,
+            deadlinesMissing: deadlinesMissing
+        )
+    }
+
+    private static func deadlineItemSort(_ lhs: DisciplineDeadlineItem, _ rhs: DisciplineDeadlineItem) -> Bool {
+        let lHasNearest = lhs.nearestDeadline != nil
+        let rHasNearest = rhs.nearestDeadline != nil
+        if lHasNearest && rHasNearest {
+            let lDate = parseDate(lhs.nearestDeadline) ?? .distantFuture
+            let rDate = parseDate(rhs.nearestDeadline) ?? .distantFuture
+            if lDate != rDate {
+                return lDate < rDate
+            }
+            return lhs.discipline.localizedCaseInsensitiveCompare(rhs.discipline) == .orderedAscending
+        }
+        if lHasNearest && !rHasNearest {
+            return true
+        }
+        if !lHasNearest && rHasNearest {
+            return false
+        }
+        return lhs.discipline.localizedCaseInsensitiveCompare(rhs.discipline) == .orderedAscending
+    }
+
+    static func buildCheckpointSummaries(from lessons: [PortalGradeBookLesson]) -> [CheckpointSummaryItem] {
+        var cpDates: [String] = []
+        for lesson in lessons {
+            let controlPointName = lesson.controlPoint.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !controlPointName.isEmpty && controlPointName != "Вне КТ" && !cpDates.contains(controlPointName) {
+                cpDates.append(controlPointName)
+            }
+        }
+        cpDates.sort { (lhs, rhs) -> Bool in
+            let lDate = parseDate(lhs) ?? .distantFuture
+            let rDate = parseDate(rhs) ?? .distantFuture
+            return lDate < rDate
+        }
+
+        guard !cpDates.isEmpty else { return [] }
+
+        var items: [CheckpointSummaryItem] = []
+        var previousAverage: Double?
+
+        for (idx, cpDate) in cpDates.enumerated() {
+            let cpLessons = lessons.filter {
+                $0.controlPoint.trimmingCharacters(in: .whitespacesAndNewlines) == cpDate
+            }
+            let marks = cpLessons.flatMap(\.marks)
+            let avg: Double? = marks.isEmpty ? nil : Double(marks.reduce(0, +)) / Double(marks.count)
+            let delta: Double?
+            if let avg, let prev = previousAverage {
+                delta = round((avg - prev) * 100.0) / 100.0
+            } else {
+                delta = nil
+            }
+            if let avg {
+                previousAverage = avg
+            }
+
+            let absences = cpLessons.reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
+            let submittedLabs = cpLessons.filter { $0.lessonTypeId == 4 && !$0.marks.isEmpty }.count
+
+            items.append(
+                CheckpointSummaryItem(
+                    id: cpDate,
+                    number: idx + 1,
+                    date: cpDate,
+                    averageGrade: avg,
+                    delta: delta,
+                    absences: absences,
+                    submittedLabs: submittedLabs,
+                    expectedLabs: nil,
+                    isTotal: false,
+                    isAfterCp: false
+                )
+            )
+        }
+
+        let allMarks = lessons.flatMap(\.marks)
+        let totalAvg: Double? = allMarks.isEmpty ? nil : Double(allMarks.reduce(0, +)) / Double(allMarks.count)
+        let totalAbsences = lessons.reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
+        let totalLabs = lessons.filter { $0.lessonTypeId == 4 && !$0.marks.isEmpty }.count
+
+        items.append(
+            CheckpointSummaryItem(
+                id: "total",
+                number: nil,
+                date: "Итого",
+                averageGrade: totalAvg,
+                delta: nil,
+                absences: totalAbsences,
+                submittedLabs: totalLabs,
+                expectedLabs: nil,
+                isTotal: true,
+                isAfterCp: false
+            )
+        )
+
+        return items
+    }
+
+    private static func parseDate(_ str: String?) -> Date? {
+        guard let str, !str.isEmpty else { return nil }
+        let parts = str.split(separator: ".")
+        guard parts.count == 3,
+              let day = Int(parts[0]),
+              let month = Int(parts[1]),
+              let year = Int(parts[2]) else { return nil }
+        var comps = DateComponents()
+        comps.year = year
+        comps.month = month
+        comps.day = day
+        return Calendar(identifier: .gregorian).date(from: comps)
     }
 }
 

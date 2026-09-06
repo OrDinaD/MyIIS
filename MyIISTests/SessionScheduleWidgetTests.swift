@@ -541,4 +541,24 @@ final class ScheduleMultiTeacherContractTests: XCTestCase {
         }
         XCTAssertTrue(hasMultipleTeachers, "No multi-teacher subject decoded for \(groupName)")
     }
+
+    func testFallbackEventsHaveDistinctWeekdayDates() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.firstWeekday = 2
+        let now = Date()
+        let today = calendar.startOfDay(for: now)
+        let weekdayComponent = calendar.component(.weekday, from: today)
+        let currentWeekdayOrdinal = (weekdayComponent + 5) % 7
+        let mondayOfCurrentWeek = calendar.date(byAdding: .day, value: -currentWeekdayOrdinal, to: today) ?? today
+        let referenceMonday = currentWeekdayOrdinal == 6
+            ? (calendar.date(byAdding: .day, value: 7, to: mondayOfCurrentWeek) ?? mondayOfCurrentWeek)
+            : mondayOfCurrentWeek
+
+        let monDate = calendar.date(byAdding: .day, value: 0, to: referenceMonday)!
+        let tueDate = calendar.date(byAdding: .day, value: 1, to: referenceMonday)!
+
+        XCTAssertNotEqual(monDate, tueDate)
+        XCTAssertEqual(calendar.component(.weekday, from: monDate), 2) // Monday in Gregorian
+        XCTAssertEqual(calendar.component(.weekday, from: tueDate), 3) // Tuesday in Gregorian
+    }
 }

@@ -135,14 +135,6 @@ struct RatingView: View {
 
     @ViewBuilder
     private var ratingHeaderMetrics: some View {
-        if let coursePlace = viewModel.coursePlace, !viewModel.disciplines.isEmpty {
-            RatingHeaderMetric(
-                title: NSLocalizedString("rating_place_in_course", comment: ""),
-                value: "№ \(coursePlace)",
-                systemImage: "trophy.fill",
-                tint: .yellow
-            )
-        }
         RatingHeaderMetric(
             title: NSLocalizedString("rating_average_grade", comment: ""),
             value: formattedGrade(viewModel.gradebookAverage ?? viewModel.students.first?.averageGrade),
@@ -237,6 +229,10 @@ struct RatingView: View {
 
     @ViewBuilder
     private var disciplinesRatingList: some View {
+        if !viewModel.deadlineItems.isEmpty {
+            deadlinesSection
+        }
+
         Section(NSLocalizedString("rating_section_subjects", comment: "")) {
             if viewModel.isUsingScheduleFallback {
                 RatingInfoBanner(

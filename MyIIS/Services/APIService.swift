@@ -276,11 +276,9 @@ class APIService {
         return gradebook.normalized()
     }
 
-    /// Данные рейтинга по предметам из веб-вкладки "Рейтинг".
-    /// Используется как основной источник предметов/оценок вместо /gradebook/{id},
-    /// потому что для части аккаунтов этот endpoint стабильно возвращает 404.
-    func getPortalGradeBookLessons() async throws -> [PortalGradeBookLesson] {
-        if APIService.isDemoMode { return DemoMockData.portalGradeBookLessons }
+    /// Получение данных успеваемости (включая занятия, дедлайны и percentageMarks) из /grade-book.
+    func getPortalGradeBookStudent() async throws -> PortalGradeBookStudent? {
+        if APIService.isDemoMode { return PortalGradeBookStudent(lessons: DemoMockData.portalGradeBookLessons) }
         let endpoint = baseURL.appendingPathComponent("grade-book")
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
@@ -288,9 +286,17 @@ class APIService {
         logRequestDetails(request)
 
         let response: [PortalGradeBookEntry] = try await performRequest(request)
-        return response
-            .compactMap { $0.student }
-            .flatMap { $0.lessons }
+        return response.compactMap(\.student).first
+    }
+
+    /// Данные рейтинга по предметам из веб-вкладки "Успеваемость".
+    /// Используется как основной источник предметов/оценок вместо /gradebook/{id},
+    /// потому что для части аккаунтов этот endpoint стабильно возвращает 404.
+    func getPortalGradeBookLessons() async throws -> [PortalGradeBookLesson] {
+        if let student = try await getPortalGradeBookStudent() {
+            return student.lessons
+        }
+        return []
     }
 
     func execute<T: Decodable>(_ request: URLRequest) async throws -> T {

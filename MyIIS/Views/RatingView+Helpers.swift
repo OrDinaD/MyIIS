@@ -2,6 +2,104 @@ import SwiftUI
 
 extension RatingView {
     @ViewBuilder
+    var deadlinesSection: some View {
+        Section {
+            ForEach(viewModel.deadlineItems) { item in
+                disciplineDeadlineRow(for: item)
+            }
+        } header: {
+            HStack {
+                Text(NSLocalizedString("performance_deadlines_title", comment: ""))
+                Spacer()
+                let totalOverdue = viewModel.deadlineItems.reduce(0) { $0 + $1.overdueDeadlines.count }
+                if totalOverdue > 0 {
+                    Text("\(totalOverdue) просрочено")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Color.red, in: Capsule())
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func disciplineDeadlineRow(for item: DisciplineDeadlineItem) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.discipline)
+                        .font(.headline)
+                    if let fullName = item.fullDisciplineName, fullName != item.discipline {
+                        Text(fullName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer()
+                if let total = item.total, total > 0 {
+                    Text(String(format: NSLocalizedString("performance_lab_progress_format", comment: ""), Int64(item.submitted), Int64(total)))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(item.allSubmitted ? .green : .secondary)
+                        .monospacedDigit()
+                } else {
+                    Text(String(format: NSLocalizedString("performance_lab_progress_simple", comment: ""), Int64(item.submitted)))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+
+            if let total = item.total, total > 0 {
+                ProgressView(value: Double(min(item.submitted, total)), total: Double(total))
+                    .tint(item.allSubmitted ? .green : (item.urgencyStatus == .critical ? .red : .blue))
+            }
+
+            HStack(spacing: 8) {
+                if item.allSubmitted {
+                    Label(NSLocalizedString("performance_all_submitted", comment: ""), systemImage: "checkmark.circle.fill")
+                        .font(.footnote.weight(.medium))
+                        .foregroundStyle(.green)
+                } else if item.deadlinesMissing {
+                    Label(NSLocalizedString("performance_no_deadlines", comment: ""), systemImage: "calendar.badge.clock")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else if let nearest = item.nearestDeadline {
+                    let taskSuffix = item.nearestDeadlineTaskNumber.map { " (№ \($0))" } ?? ""
+                    HStack(spacing: 4) {
+                        Image(systemName: item.urgencyStatus.iconName)
+                        Text(String(format: NSLocalizedString("performance_nearest_deadline_format", comment: ""), "\(nearest)\(taskSuffix)"))
+                    }
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(item.urgencyStatus.tintColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(item.urgencyStatus.tintColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+                Spacer()
+            }
+
+            if !item.overdueDeadlines.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(item.overdueDeadlines) { overdue in
+                        let taskSuffix = overdue.taskNumber.map { " (№ \($0))" } ?? ""
+                        HStack(spacing: 4) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                            Text("\(NSLocalizedString("performance_overdue_prefix", comment: "")) \(overdue.date)\(taskSuffix)")
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.red)
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
     var checkpointsRatingSection: some View {
         Section(NSLocalizedString("rating_section_missed", comment: "")) {
             HStack {
@@ -13,7 +111,11 @@ extension RatingView {
                     .monospacedDigit()
             }
 
-            if viewModel.userCheckpoints.isEmpty {
+            if !viewModel.checkpointSummaries.isEmpty {
+                ForEach(viewModel.checkpointSummaries) { summary in
+                    checkpointSummaryRow(summary)
+                }
+            } else if viewModel.userCheckpoints.isEmpty {
                 Text(NSLocalizedString("rating_checkpoints_not_found", comment: ""))
                     .foregroundStyle(.secondary)
             } else {
@@ -39,6 +141,64 @@ extension RatingView {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func checkpointSummaryRow(_ item: CheckpointSummaryItem) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                if item.isTotal {
+                    Text(NSLocalizedString("performance_checkpoint_total", comment: ""))
+                        .font(.body.weight(.bold))
+                } else if let number = item.number {
+                    Text(String(format: NSLocalizedString("rating_checkpoint_format", comment: ""), Int64(number)))
+                        .font(.body.weight(.medium))
+                    Text(item.date)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text(item.date)
+                        .font(.body.weight(.medium))
+                }
+            }
+
+            Spacer()
+
+            if let delta = item.delta, delta != 0 {
+                HStack(spacing: 2) {
+                    Image(systemName: delta > 0 ? "arrow.up.right" : "arrow.down.right")
+                        .font(.caption2.weight(.bold))
+                    Text(String(format: "%+.2f", delta))
+                        .font(.caption.weight(.semibold))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(delta > 0 ? .green : .red)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background((delta > 0 ? Color.green : Color.red).opacity(0.12), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
+            }
+
+            if item.submittedLabs > 0 {
+                Text(String(format: NSLocalizedString("performance_checkpoint_labs_format", comment: ""), Int64(item.submittedLabs)))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
+            }
+
+            Text(formattedGrade(item.averageGrade))
+                .font(item.isTotal ? .body.weight(.bold) : .body.weight(.semibold))
+                .foregroundStyle(gradeTint(item.averageGrade))
+                .monospacedDigit()
+
+            Text("·")
+                .foregroundStyle(.tertiary)
+
+            Text("\(item.absences) ч")
+                .font(.subheadline)
+                .foregroundStyle(checkpointMissedTint(item.absences))
+                .monospacedDigit()
+        }
+        .padding(.vertical, item.isTotal ? 4 : 2)
     }
 
     func formattedGrade(_ value: Double?) -> String {

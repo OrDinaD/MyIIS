@@ -149,11 +149,55 @@ struct PortalGradeBookEntry: Decodable {
     let student: PortalGradeBookStudent?
 }
 
-struct PortalGradeBookStudent: Decodable {
-    let lessons: [PortalGradeBookLesson]
+struct PortalLessonMark: Codable, Equatable, Sendable {
+    let mark: Int
+    let taskNumber: Int?
+
+    init(mark: Int, taskNumber: Int? = nil) {
+        self.mark = mark
+        self.taskNumber = taskNumber
+    }
+
+    init(from decoder: Decoder) throws {
+        if let singleVal = try? decoder.singleValueContainer(), let intVal = try? singleVal.decode(Int.self) {
+            self.mark = intVal
+            self.taskNumber = nil
+            return
+        }
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.mark = (try? container.decode(Int.self, forKey: .mark)) ?? 0
+        self.taskNumber = try? container.decodeIfPresent(Int.self, forKey: .taskNumber)
+    }
 }
 
-struct PortalGradeBookLesson: Decodable {
+struct PortalPercentageMark: Codable, Equatable, Sendable {
+    let discipline: String
+    let date: String
+    let number: Double
+}
+
+struct PortalGradeBookStudent: Decodable, Sendable {
+    let lessons: [PortalGradeBookLesson]
+    let percentageMarks: [PortalPercentageMark]
+
+    private enum CodingKeys: String, CodingKey {
+        case lessons
+        case percentageMarks
+    }
+
+    init(lessons: [PortalGradeBookLesson], percentageMarks: [PortalPercentageMark] = []) {
+        self.lessons = lessons
+        self.percentageMarks = percentageMarks
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.lessons = (try? container.decode([PortalGradeBookLesson].self, forKey: .lessons)) ?? []
+        self.percentageMarks = (try? container.decodeIfPresent([PortalPercentageMark].self, forKey: .percentageMarks)) ?? []
+    }
+}
+
+struct PortalGradeBookLesson: Decodable, Sendable {
     let id: Int
     let dateString: String
     let gradeBookOmissions: Int
@@ -161,9 +205,15 @@ struct PortalGradeBookLesson: Decodable {
     let lessonTypeId: Int
     let lessonTypeAbbrev: String
     let lessonNameAbbrev: String
+    let lessonName: String?
     let subGroup: Int
     let marks: [Int]
+    let markDetails: [PortalLessonMark]
     let controlPoint: String
+    let labCount: Int?
+    let deadline: String?
+    let deadlineOverdue: Bool?
+    let deadlineTaskNumber: Int?
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -174,9 +224,14 @@ struct PortalGradeBookLesson: Decodable {
         case lessonTypeId
         case lessonTypeAbbrev
         case lessonNameAbbrev
+        case lessonName
         case subGroup
         case marks
         case controlPoint
+        case labCount
+        case deadline
+        case deadlineOverdue
+        case deadlineTaskNumber
     }
 
     init(
@@ -187,9 +242,15 @@ struct PortalGradeBookLesson: Decodable {
         lessonTypeId: Int,
         lessonTypeAbbrev: String,
         lessonNameAbbrev: String,
+        lessonName: String? = nil,
         subGroup: Int,
         marks: [Int],
-        controlPoint: String
+        markDetails: [PortalLessonMark]? = nil,
+        controlPoint: String,
+        labCount: Int? = nil,
+        deadline: String? = nil,
+        deadlineOverdue: Bool? = nil,
+        deadlineTaskNumber: Int? = nil
     ) {
         self.id = id
         self.dateString = dateString
@@ -198,9 +259,15 @@ struct PortalGradeBookLesson: Decodable {
         self.lessonTypeId = lessonTypeId
         self.lessonTypeAbbrev = lessonTypeAbbrev
         self.lessonNameAbbrev = lessonNameAbbrev
+        self.lessonName = lessonName
         self.subGroup = subGroup
         self.marks = marks
+        self.markDetails = markDetails ?? marks.map { PortalLessonMark(mark: $0) }
         self.controlPoint = controlPoint
+        self.labCount = labCount
+        self.deadline = deadline
+        self.deadlineOverdue = deadlineOverdue
+        self.deadlineTaskNumber = deadlineTaskNumber
     }
 
     init(from decoder: Decoder) throws {
@@ -214,9 +281,18 @@ struct PortalGradeBookLesson: Decodable {
         self.lessonTypeId = (try? container.decode(Int.self, forKey: .lessonTypeId)) ?? 0
         self.lessonTypeAbbrev = (try? container.decode(String.self, forKey: .lessonTypeAbbrev)) ?? ""
         self.lessonNameAbbrev = (try? container.decode(String.self, forKey: .lessonNameAbbrev)) ?? ""
+        self.lessonName = try? container.decodeIfPresent(String.self, forKey: .lessonName)
         self.subGroup = (try? container.decode(Int.self, forKey: .subGroup)) ?? 0
-        self.marks = (try? container.decode([Int].self, forKey: .marks)) ?? []
+
+        let decodedDetails = (try? container.decode([PortalLessonMark].self, forKey: .marks)) ?? []
+        self.markDetails = decodedDetails
+        self.marks = decodedDetails.map(\.mark)
+
         self.controlPoint = (try? container.decode(String.self, forKey: .controlPoint)) ?? ""
+        self.labCount = try? container.decodeIfPresent(Int.self, forKey: .labCount)
+        self.deadline = try? container.decodeIfPresent(String.self, forKey: .deadline)
+        self.deadlineOverdue = try? container.decodeIfPresent(Bool.self, forKey: .deadlineOverdue)
+        self.deadlineTaskNumber = try? container.decodeIfPresent(Int.self, forKey: .deadlineTaskNumber)
     }
 }
 
