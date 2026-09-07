@@ -411,4 +411,28 @@ final class APIDecodingBehaviorTests: XCTestCase {
         XCTAssertEqual(dto["certificateType"] as? String, "обычная")
         XCTAssertEqual(dto["provisionPlace"] as? String, "по месту работы родителей (ТЦСОН Островца)")
     }
+
+    func testMarkSheetRequestDecodesStringAndIntNumber() throws {
+        let jsonStringNumber = """
+        [
+          {
+            "id": 101,
+            "number": "42",
+            "status": "одобрено"
+          },
+          {
+            "id": 102,
+            "number": 43,
+            "status": "отклонено"
+          }
+        ]
+        """
+
+        let decoded = try JSONDecoder().decode([MarkSheetRequest].self, from: Data(jsonStringNumber.utf8))
+        XCTAssertEqual(decoded.count, 2)
+        XCTAssertEqual(decoded[0].id, 101)
+        XCTAssertEqual(decoded[0].number, 42)
+        XCTAssertEqual(decoded[1].id, 102)
+        XCTAssertEqual(decoded[1].number, 43)
+    }
 }

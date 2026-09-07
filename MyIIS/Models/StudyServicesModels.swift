@@ -65,7 +65,13 @@ struct MarkSheetRequest: Codable, Equatable, Identifiable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(Int.self, forKey: .id) ?? UUID().hashValue
-        number = try container.decodeIfPresent(Int.self, forKey: .number)
+        if let intNumber = try? container.decodeIfPresent(Int.self, forKey: .number) {
+            number = intNumber
+        } else if let stringNumber = try? container.decodeIfPresent(String.self, forKey: .number) {
+            number = Int(stringNumber.trimmingCharacters(in: .whitespacesAndNewlines))
+        } else {
+            number = nil
+        }
         createdDate = try container.decodeFirstString(for: [.createdDate, .createDate, .dateCreate, .dateOrder])
         absentDate = try container.decodeFirstString(for: [.absentDate, .dateAbsent])
         status = try container.decodeIfPresent(String.self, forKey: .status) ?? "обрабатывается"

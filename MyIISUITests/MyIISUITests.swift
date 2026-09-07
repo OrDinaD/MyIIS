@@ -60,7 +60,7 @@ final class MyIISUITests: XCTestCase {
         selectTab(app, title: "Пропуски")
         capture(app, name: "03_Attendance")
 
-        selectTab(app, title: "Рейтинг")
+        selectTab(app, title: "Успеваемость")
         capture(app, name: "04_Rating")
 
         expandElement(app, identifier: "ratingDiscipline_gradebook_Базы данных")

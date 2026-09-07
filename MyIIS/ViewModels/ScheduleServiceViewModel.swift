@@ -295,9 +295,6 @@ final class ScheduleServiceViewModel {
             query = lastTeacherName
         }
 
-        if dataSource == .api {
-            _ = applyCachedSnapshotIfAvailable()
-        }
         debouncedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
@@ -349,8 +346,6 @@ final class ScheduleServiceViewModel {
         }
 
         continuousTimelineDays = snapshot.continuousTimelineDays
-        updateClassScheduleWidgetSnapshot(from: snapshot.schedule)
-        updateSessionScheduleWidgetSnapshot(from: snapshot.schedule)
         hasLoadedInitialData = false
         return true
     }
@@ -443,6 +438,9 @@ final class ScheduleServiceViewModel {
         }
 
         await Task.yield()
+        if schedule == nil, dataSource == .api {
+            _ = applyCachedSnapshotIfAvailable()
+        }
         if schedule == nil {
             restorePersistedScheduleIfAvailable()
         }
