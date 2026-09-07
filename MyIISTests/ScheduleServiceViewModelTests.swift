@@ -171,6 +171,19 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         XCTAssertEqual(restored.subgroupFilter, .subgroup(2))
     }
 
+    func testInitializationIsLightweightAndDoesNotPerformSynchronousSnapshotRestore() {
+        let defaults = makeDefaults("lightweight_init")
+        defer { removeDefaults("lightweight_init") }
+
+        let start = CFAbsoluteTimeGetCurrent()
+        for _ in 0..<50 {
+            let instance = ScheduleServiceViewModel(defaults: defaults)
+            XCTAssertNil(instance.schedule)
+        }
+        let elapsed = CFAbsoluteTimeGetCurrent() - start
+        XCTAssertLessThan(elapsed, 0.2, "Initializing ScheduleServiceViewModel must be lightweight (< 200ms for 50 instances)")
+    }
+
     func testAPIScheduleSeparatesRegularAndExamLikeEvents() {
         let document = makeDocument(events: [
             makeEvent(id: "lesson", type: .lecture),
