@@ -184,6 +184,50 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         XCTAssertLessThan(elapsed, 0.2, "Initializing ScheduleServiceViewModel must be lightweight (< 200ms for 50 instances)")
     }
 
+    func testLessonTrackingPersistsSelectedSubject() {
+        let defaults = makeDefaults("lesson-tracking")
+        defer { removeDefaults("lesson-tracking") }
+        let lesson = makeLesson(id: "database-lab", subgroup: 2)
+
+        XCTAssertFalse(LessonTrackingStore.isTracked(lesson, defaults: defaults))
+
+        LessonTrackingStore.setTracked(true, for: lesson, defaults: defaults)
+        XCTAssertTrue(LessonTrackingStore.isTracked(lesson, defaults: defaults))
+
+        LessonTrackingStore.setTracked(false, for: lesson, defaults: defaults)
+        XCTAssertFalse(LessonTrackingStore.isTracked(lesson, defaults: defaults))
+    }
+
+    func testNextOccurrenceFindsNearestMatchingLesson() async throws {
+        let defaults = makeDefaults("next-occurrence")
+        defer { removeDefaults("next-occurrence") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        let lesson = makeLesson(id: "database-lab", subgroup: 1)
+        viewModel.applyGroupSchedule(
+            makePublicSchedule(lessons: [lesson]),
+            week: 1,
+            groupNumber: "420602"
+        )
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .autoupdatingCurrent
+        let monday = try XCTUnwrap(
+            calendar.nextDate(
+                after: Date(),
+                matching: DateComponents(weekday: 2),
+                matchingPolicy: .nextTime
+            )
+        )
+        let referenceDate = calendar.startOfDay(for: monday)
+        _ = await viewModel.prepareContinuousTimeline(around: referenceDate)
+
+        let nextDate = try XCTUnwrap(
+            viewModel.nextOccurrenceDate(for: lesson, after: referenceDate)
+        )
+        XCTAssertTrue(calendar.isDate(nextDate, inSameDayAs: monday))
+        XCTAssertEqual(calendar.component(.hour, from: nextDate), 9)
+    }
+
     func testAPIScheduleSeparatesRegularAndExamLikeEvents() {
         let document = makeDocument(events: [
             makeEvent(id: "lesson", type: .lecture),

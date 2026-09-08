@@ -18,6 +18,9 @@ struct ScheduleSettingsView: View {
     @AppStorage(ScheduleDisplayPreferences.otherSubgroupDisplayKey, store: ScheduleDisplayPreferences.defaults)
     private var otherSubgroupRaw = ScheduleOtherSubgroupDisplay.compact.rawValue
 
+    @AppStorage(ScheduleDisplayPreferences.lessonTrackingEnabledKey, store: ScheduleDisplayPreferences.defaults)
+    private var lessonTrackingEnabled = true
+
     @AppStorage("schedule.widget.customGroup", store: ScheduleDisplayPreferences.defaults)
     private var widgetCustomGroup = ""
 
@@ -95,6 +98,21 @@ struct ScheduleSettingsView: View {
                 } icon: {
                     Image(systemName: "clock.badge.checkmark.fill")
                         .foregroundStyle(.blue)
+                }
+            }
+
+            Toggle(isOn: $lessonTrackingEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(NSLocalizedString("schedule_tracking_title", value: "Отслеживание предметов", comment: ""))
+                            .fontWeight(.medium)
+                        Text(NSLocalizedString("schedule_tracking_subtitle", value: "Показывать срок до следующей пары в деталях занятия", comment: ""))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "clock.arrow.2.circlepath")
+                        .foregroundStyle(.orange)
                 }
             }
 
@@ -215,6 +233,7 @@ struct ScheduleSettingsView: View {
         hidePastLessons = true
         cardDensityRaw = ScheduleCardDensity.regular.rawValue
         otherSubgroupRaw = ScheduleOtherSubgroupDisplay.compact.rawValue
+        lessonTrackingEnabled = true
         widgetCustomGroup = ""
         resetAllColors()
     }

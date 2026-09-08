@@ -290,7 +290,7 @@ struct SessionScheduleWidgetView: View {
                                 classDaySeparator(for: day.date)
                             }
 
-                            ForEach(day.events) { event in
+                            ForEach(day.events, id: \.presentationIdentity) { event in
                                 classEventTile(for: event)
                             }
                         }
@@ -798,7 +798,7 @@ struct SessionScheduleWidgetView: View {
                     .allowsTightening(true)
             }
 
-            ForEach(day.events) { event in
+            ForEach(day.events, id: \.presentationIdentity) { event in
                 SessionWidgetEventRow(event: event, compact: family != .systemLarge, now: entry.date)
             }
         }

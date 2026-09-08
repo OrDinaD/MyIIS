@@ -32,6 +32,39 @@ struct SessionScheduleWidgetSnapshot: Codable, Sendable {
         let lessonType: String?
         let kind: SessionScheduleWidgetEventKind
         var subgroup: Int?
+
+        nonisolated var presentationIdentity: String {
+            let dateComponent = date.map { String($0.timeIntervalSinceReferenceDate.bitPattern) } ?? "nil"
+            let components = [
+                dateComponent,
+                startTime,
+                endTime,
+                title,
+                subtitle ?? "",
+                location ?? "",
+                lessonType ?? "",
+                kind.rawValue,
+                subgroup.map(String.init) ?? ""
+            ]
+            return components
+                .map { "\($0.utf8.count):\($0)" }
+                .joined(separator: "|")
+        }
+    }
+
+    nonisolated func removingDuplicateEvents() -> Self {
+        var seenIdentities = Set<String>()
+        let uniqueEvents = events.filter { event in
+            seenIdentities.insert(event.presentationIdentity).inserted
+        }
+        guard uniqueEvents.count != events.count else { return self }
+        return Self(
+            groupName: groupName,
+            startDate: startDate,
+            endDate: endDate,
+            events: uniqueEvents,
+            updatedAt: updatedAt
+        )
     }
 }
 
@@ -157,6 +190,7 @@ enum ScheduleDisplayPreferences {
     static let hidePastLessonsKey = "schedule.display.hidePastLessons"
     static let cardDensityKey = "schedule.display.cardDensity"
     static let otherSubgroupDisplayKey = "schedule.display.otherSubgroup"
+    static let lessonTrackingEnabledKey = "schedule.display.lessonTrackingEnabled"
 
     static var defaults: UserDefaults {
         UserDefaults(suiteName: AppGroup.identifier) ?? .standard
@@ -323,7 +357,7 @@ private enum ScheduleWidgetSnapshotStore {
     static func save(_ snapshot: SessionScheduleWidgetSnapshot, key: String, widgetKind: String) {
         guard let defaults else { return }
         do {
-            let data = try JSONEncoder().encode(snapshot)
+            let data = try JSONEncoder().encode(snapshot.removingDuplicateEvents())
             _ = UserDefaultsPayloadStore.save(data, forKey: key, in: defaults)
 #if canImport(WidgetKit)
             WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
@@ -338,7 +372,9 @@ private enum ScheduleWidgetSnapshotStore {
     static func load(key: String) -> SessionScheduleWidgetSnapshot? {
         guard let defaults else { return nil }
         if let data = defaults.data(forKey: key) ?? UserDefaultsPayloadStore.load(forKey: key, from: defaults) {
-            return try? JSONDecoder().decode(SessionScheduleWidgetSnapshot.self, from: data)
+            return try? JSONDecoder()
+                .decode(SessionScheduleWidgetSnapshot.self, from: data)
+                .removingDuplicateEvents()
         }
         return nil
     }

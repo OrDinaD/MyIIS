@@ -241,6 +241,49 @@ final class SessionScheduleWidgetTests: XCTestCase {
         ScheduleDisplayPreferences.reloadClassScheduleWidget()
     }
 
+    func testSnapshotRemovesDuplicateWidgetEventsAndPreservesDistinctOccurrences() {
+        let date = calendar.date(from: DateComponents(year: 2026, month: 9, day: 8))!
+        let event = SessionScheduleWidgetSnapshot.Event(
+            id: "shared-model-id",
+            date: date,
+            startTime: "13:35",
+            endTime: "15:00",
+            title: "Инф. час",
+            subtitle: nil,
+            location: "601б-5",
+            lessonType: nil,
+            kind: .other
+        )
+        let distinctEventWithSameModelID = SessionScheduleWidgetSnapshot.Event(
+            id: "shared-model-id",
+            date: date,
+            startTime: "15:30",
+            endTime: "16:55",
+            title: "Другая пара",
+            subtitle: "ЛР",
+            location: "605-5",
+            lessonType: "ЛР",
+            kind: .other
+        )
+        let snapshot = SessionScheduleWidgetSnapshot(
+            groupName: "420603",
+            startDate: date,
+            endDate: date,
+            events: [event, event, event, distinctEventWithSameModelID],
+            updatedAt: date
+        )
+
+        let normalized = snapshot.removingDuplicateEvents()
+
+        XCTAssertEqual(normalized.events.count, 2)
+        XCTAssertEqual(normalized.events.map(\.title), ["Инф. час", "Другая пара"])
+        XCTAssertNotEqual(event.presentationIdentity, distinctEventWithSameModelID.presentationIdentity)
+
+        defer { ClassScheduleWidgetDataStore.clear() }
+        ClassScheduleWidgetDataStore.save(snapshot)
+        XCTAssertEqual(ClassScheduleWidgetDataStore.loadSnapshot()?.events.count, 2)
+    }
+
     func testWidgetDataStoresSaveLoadClear() {
         let event = SessionScheduleWidgetSnapshot.Event(
             id: "test-widget-event",

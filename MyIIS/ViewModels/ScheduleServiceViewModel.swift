@@ -2247,6 +2247,35 @@ extension ScheduleServiceViewModel {
         return now.timeIntervalSince(interval.start) / all
     }
 
+    func nextOccurrenceDate(
+        for lesson: DisciplineSchedule,
+        after referenceDate: Date = Date()
+    ) -> Date? {
+        let subject = lesson.subject.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !subject.isEmpty else { return nil }
+
+        var nearestDate: Date?
+        for day in continuousTimelineDays {
+            for candidate in day.lessons where
+                candidate.subject.caseInsensitiveCompare(subject) == .orderedSame &&
+                candidate.lessonTypeAbbrev.caseInsensitiveCompare(lesson.lessonTypeAbbrev) == .orderedSame &&
+                candidate.subgroup == lesson.subgroup {
+                guard let interval = lessonInterval(for: candidate, on: day.date),
+                      interval.start > referenceDate else {
+                    continue
+                }
+                if let currentNearest = nearestDate {
+                    if interval.start < currentNearest {
+                        nearestDate = interval.start
+                    }
+                } else {
+                    nearestDate = interval.start
+                }
+            }
+        }
+        return nearestDate
+    }
+
     func isExamPast(_ exam: DisciplineSchedule, on date: Date, now: Date = Date()) -> Bool {
         guard date != Date.distantFuture else { return false }
         if let interval = lessonInterval(for: exam, on: date) {

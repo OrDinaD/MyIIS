@@ -2,10 +2,14 @@ import SwiftUI
 
 struct ScheduleLessonDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(ScheduleDisplayPreferences.lessonTrackingEnabledKey, store: ScheduleDisplayPreferences.defaults)
+    private var lessonTrackingEnabled = true
     @State private var photoTeacher: DisciplineEmployee?
+    @State private var isTracked = false
 
     let lesson: DisciplineSchedule
     var currentGroupName: String? = nil
+    var nextOccurrenceDate: Date? = nil
     let onTeacherScheduleTap: (DisciplineEmployee) -> Void
     var onGroupTap: ((String) -> Void)?
 
@@ -27,6 +31,9 @@ struct ScheduleLessonDetailSheet: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
                 header
+                if lessonTrackingEnabled, !lesson.isAnnouncement {
+                    trackingSection
+                }
                 teachersSection
                 if !displayedStudentGroups.isEmpty {
                     groupsSection
@@ -40,6 +47,9 @@ struct ScheduleLessonDetailSheet: View {
         .background(Color(uiColor: .systemGroupedBackground))
         .fullScreenCover(item: $photoTeacher) { teacher in
             TeacherPhotoPreview(teacher: teacher)
+        }
+        .onAppear {
+            isTracked = LessonTrackingStore.isTracked(lesson)
         }
     }
 
@@ -62,6 +72,67 @@ struct ScheduleLessonDetailSheet: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
         }
+    }
+
+    private var trackingSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Toggle(isOn: Binding(
+                get: { isTracked },
+                set: { newValue in
+                    isTracked = newValue
+                    LessonTrackingStore.setTracked(newValue, for: lesson)
+                }
+            )) {
+                Label {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Отслеживать предмет")
+                            .font(.headline)
+                        Text("Показывать, когда снова будет такая пара")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "clock.arrow.2.circlepath")
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+
+            if isTracked {
+                Divider()
+
+                if let nextOccurrenceDate {
+                    HStack(alignment: .firstTextBaseline) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Следующая пара")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                            Text(nextOccurrenceDate, style: .relative)
+                                .font(.title3.bold())
+                                .foregroundStyle(.primary)
+                            Text(Self.nextOccurrenceFormatter.string(from: nextOccurrenceDate))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer(minLength: 12)
+
+                        Image(systemName: "calendar.badge.clock")
+                            .font(.title2)
+                            .foregroundStyle(Color.accentColor)
+                    }
+                    .accessibilityElement(children: .combine)
+                } else {
+                    Label("Следующего занятия пока нет в расписании", systemImage: "calendar.badge.exclamationmark")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(16)
+        .background(
+            Color(uiColor: .secondarySystemGroupedBackground),
+            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+        )
     }
 
     private var teachersSection: some View {
@@ -258,6 +329,48 @@ struct ScheduleLessonDetailSheet: View {
         formatter.timeStyle = .none
         return formatter
     }()
+
+    private static let nextOccurrenceFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
+}
+
+enum LessonTrackingStore {
+    private static let trackedLessonsKey = "schedule.trackedLessons"
+
+    static func identifier(for lesson: DisciplineSchedule) -> String {
+        let subject = lesson.subject
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .autoupdatingCurrent)
+            .split(whereSeparator: \.isWhitespace)
+            .joined(separator: " ")
+        let lessonType = lesson.lessonTypeAbbrev
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .autoupdatingCurrent)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return "\(subject)|\(lessonType)|\(lesson.subgroup)"
+    }
+
+    static func isTracked(_ lesson: DisciplineSchedule, defaults: UserDefaults = .standard) -> Bool {
+        Set(defaults.stringArray(forKey: trackedLessonsKey) ?? []).contains(identifier(for: lesson))
+    }
+
+    static func setTracked(
+        _ isTracked: Bool,
+        for lesson: DisciplineSchedule,
+        defaults: UserDefaults = .standard
+    ) {
+        var identifiers = Set(defaults.stringArray(forKey: trackedLessonsKey) ?? [])
+        let identifier = identifier(for: lesson)
+        if isTracked {
+            identifiers.insert(identifier)
+        } else {
+            identifiers.remove(identifier)
+        }
+        defaults.set(identifiers.sorted(), forKey: trackedLessonsKey)
+    }
 }
 
 // MARK: - Teacher Photo Preview
@@ -356,4 +469,32 @@ private struct TeacherAvatarView: View {
                 .foregroundStyle(.secondary)
         }
     }
+}
+
+#Preview("Отслеживание предмета") {
+    ScheduleLessonDetailSheet(
+        lesson: DisciplineSchedule(
+            id: "preview-database-lab",
+            auditories: ["510-5"],
+            endLessonTime: "12:35",
+            lessonTypeAbbrev: "ЛР",
+            note: nil,
+            subgroup: 1,
+            startLessonTime: "11:00",
+            studentGroups: [],
+            subject: "БД",
+            subjectFullName: "Базы данных",
+            weekNumbers: [1, 2, 3, 4],
+            employees: [],
+            lessonDate: Date(),
+            startLessonDate: nil,
+            endLessonDate: nil,
+            isAnnouncement: false,
+            isSplit: false
+        ),
+        currentGroupName: "420602",
+        nextOccurrenceDate: Calendar.current.date(byAdding: .day, value: 7, to: Date()),
+        onTeacherScheduleTap: { _ in },
+        onGroupTap: { _ in }
+    )
 }

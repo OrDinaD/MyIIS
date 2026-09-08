@@ -266,6 +266,25 @@ jobs:
             -authenticationKeyID "$APPSTORE_API_KEY_ID" \
             -authenticationKeyIssuerID "$APPSTORE_API_ISSUER_ID"
 
+      - name: Wait for App Store Connect processing
+        if: steps.credentials.outputs.should_upload == 'true'
+        shell: bash
+        env:
+          APPSTORE_API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          APPSTORE_API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+
+          python3 .github/scripts/wait_for_app_store_build.py \
+            --bundle-id "$BUNDLE_ID" \
+            --marketing-version "${{ steps.metadata.outputs.marketing_version }}" \
+            --build-number "${{ steps.metadata.outputs.build_number }}" \
+            --key-id "$APPSTORE_API_KEY_ID" \
+            --issuer-id "$APPSTORE_API_ISSUER_ID" \
+            --key-path "${{ steps.asc_key.outputs.key_path }}" \
+            --timeout-seconds 900 \
+            --poll-interval-seconds 20
+
       - name: Upload release diagnostics
         if: ${{ always() && steps.credentials.outputs.should_upload == 'true' }}
         uses: actions/upload-artifact@v7
