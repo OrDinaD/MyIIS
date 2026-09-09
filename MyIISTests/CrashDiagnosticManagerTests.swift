@@ -1,5 +1,5 @@
-import XCTest
 @testable import MyIIS
+import XCTest
 
 @MainActor
 final class CrashDiagnosticManagerTests: XCTestCase {
@@ -36,6 +36,21 @@ final class CrashDiagnosticManagerTests: XCTestCase {
         XCTAssertTrue(sanitized.contains("session=[REDACTED]"))
     }
 
+    func testLogSanitizationMasksStudentIdentity() {
+        let rawLogs = [
+            "Attempting to log in user: 42850094",
+            "Restored cached user profile for Иванов Иван Иванович",
+            "User profile loaded: Иванов Иван Иванович"
+        ]
+
+        let sanitized = rawLogs.map(CrashDiagnosticManager.sanitizeLogMessage)
+
+        XCTAssertFalse(sanitized.joined().contains("42850094"))
+        XCTAssertFalse(sanitized.joined().contains("Иванов"))
+        XCTAssertTrue(sanitized[0].contains("[STUDENT_ID_REDACTED]"))
+        XCTAssertTrue(sanitized[1].contains("[NAME_REDACTED]"))
+    }
+
     func testDiagnosticReportGeneration() async {
         let report = await CrashDiagnosticManager.shared.generateReport()
 
@@ -46,6 +61,13 @@ final class CrashDiagnosticManagerTests: XCTestCase {
         XCTAssertFalse(report.deviceModel.isEmpty)
         XCTAssertFalse(report.locale.isEmpty)
         XCTAssertFalse(report.timeZone.isEmpty)
+        XCTAssertGreaterThanOrEqual(report.performance.monitoringDurationSeconds, 0)
+        XCTAssertGreaterThanOrEqual(report.performance.totalDroppedFrameEstimate, 0)
+        XCTAssertGreaterThanOrEqual(report.performance.mainThreadStallCount, 0)
+        XCTAssertFalse(report.performance.thermalState.isEmpty)
+        XCTAssertFalse(report.storageFootprint.isEmpty)
+        XCTAssertGreaterThanOrEqual(report.scheduleCache.responseCacheFileCount, 0)
+        XCTAssertGreaterThanOrEqual(report.scheduleCache.responseCacheBytes, 0)
     }
 
     func testDiagnosticReportTextGeneration() async {
@@ -54,6 +76,9 @@ final class CrashDiagnosticManagerTests: XCTestCase {
         XCTAssertTrue(text.contains("### 📱 Диагностика MyIIS"))
         XCTAssertTrue(text.contains("Bundle ID"))
         XCTAssertTrue(text.contains("Устройство"))
+        XCTAssertTrue(text.contains("Производительность"))
+        XCTAssertTrue(text.contains("Кэш расписания"))
+        XCTAssertTrue(text.contains("Хранилище и кэши"))
     }
 
     func testExportReportFileCreationAndValidJSON() async throws {
