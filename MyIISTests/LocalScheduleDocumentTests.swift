@@ -288,7 +288,7 @@ final class LocalScheduleDocumentTests: XCTestCase {
     func testEventIntervalEdgeCases() {
         let timeZone = TimeZone(identifier: "Europe/Minsk")!
         var event = makeEvent(id: "e1")
-        
+
         // Invalid start time
         event.startTime = "invalid"
         XCTAssertNil(event.interval(timeZone: timeZone))
@@ -388,21 +388,21 @@ final class LocalScheduleDocumentTests: XCTestCase {
         // 2026-08-20 is Thursday (5)
         // 2026-08-21 is Friday (6)
         // 2026-08-22 is Saturday (7)
-        let datesAndTypes: [(String, LocalScheduleEventType, String)] = [
-            ("2026-08-16", .lecture, "ЛК"),
-            ("2026-08-17", .practice, "ПЗ"),
-            ("2026-08-18", .lab, "ЛР"),
-            ("2026-08-19", .exam, "Экзамен"),
-            ("2026-08-20", .consultation, "Консультация"),
-            ("2026-08-21", .announcement, "Объявление"),
-            ("2026-08-22", .other, "Событие")
+        let datesAndTypes: [(date: String, type: LocalScheduleEventType)] = [
+            ("2026-08-16", .lecture),
+            ("2026-08-17", .practice),
+            ("2026-08-18", .lab),
+            ("2026-08-19", .exam),
+            ("2026-08-20", .consultation),
+            ("2026-08-21", .announcement),
+            ("2026-08-22", .other)
         ]
 
         var events: [LocalScheduleDocument.Event] = []
         for (idx, item) in datesAndTypes.enumerated() {
             var evt = makeEvent(id: "evt-\(idx)")
-            evt.date = item.0
-            evt.type = item.1
+            evt.date = item.date
+            evt.type = item.type
             evt.teacherDetails = teacher
             events.append(evt)
         }
@@ -509,7 +509,6 @@ final class LocalScheduleDocumentTests: XCTestCase {
         )
     }
 }
-
 @MainActor
 final class LocalScheduleViewModelTests: XCTestCase {
     private var suiteName: String = ""
@@ -536,7 +535,7 @@ final class LocalScheduleViewModelTests: XCTestCase {
 
     func testViewModelImportDataAndSecurityScopedFile() throws {
         let viewModel = LocalScheduleViewModel(defaults: defaults)
-        
+
         let validJSON = """
         {
           "schemaVersion": 1,
@@ -650,4 +649,3 @@ final class LocalScheduleViewModelTests: XCTestCase {
         XCTAssertNotNil(viewModel.noticeMessage)
     }
 }
-

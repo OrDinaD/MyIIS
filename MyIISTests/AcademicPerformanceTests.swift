@@ -1,5 +1,5 @@
-import XCTest
 @testable import MyIIS
+import XCTest
 
 @MainActor
 final class AcademicPerformanceTests: XCTestCase {
@@ -187,7 +187,7 @@ final class AcademicPerformanceTests: XCTestCase {
     }
 
     func testPortalGradeBookLessonMixedMarksDecoding() throws {
-        let jsonObjectMarks = """
+        let jsonObjectMarks = Data("""
         {
             "id": 100,
             "date": "10.09.2026",
@@ -208,7 +208,7 @@ final class AcademicPerformanceTests: XCTestCase {
             "deadlineTaskNumber": 3,
             "labCount": 8
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let lesson1 = try JSONDecoder().decode(PortalGradeBookLesson.self, from: jsonObjectMarks)
         XCTAssertEqual(lesson1.marks, [8, 9])
@@ -218,7 +218,7 @@ final class AcademicPerformanceTests: XCTestCase {
         XCTAssertEqual(lesson1.deadline, "15.09.2026")
         XCTAssertEqual(lesson1.labCount, 8)
 
-        let jsonNumericMarks = """
+        let jsonNumericMarks = Data("""
         {
             "id": 101,
             "date": "12.09.2026",
@@ -234,7 +234,7 @@ final class AcademicPerformanceTests: XCTestCase {
             "deadline": null,
             "labCount": null
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let lesson2 = try JSONDecoder().decode(PortalGradeBookLesson.self, from: jsonNumericMarks)
         XCTAssertEqual(lesson2.marks, [7, 6])

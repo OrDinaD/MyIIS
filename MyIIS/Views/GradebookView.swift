@@ -102,12 +102,15 @@ struct GradebookView: View {
         }
 
         isPreparingShareImage = true
-        defer { isPreparingShareImage = false }
 
-        do {
-            sharePayload = try GradebookShareImageExporter.renderPNG(snapshot: snapshot)
-        } catch {
-            shareErrorMessage = error.localizedDescription
+        Task {
+            defer { isPreparingShareImage = false }
+
+            do {
+                sharePayload = try await GradebookShareImageExporter.renderPNG(snapshot: snapshot)
+            } catch {
+                shareErrorMessage = error.localizedDescription
+            }
         }
     }
 

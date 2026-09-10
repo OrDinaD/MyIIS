@@ -241,15 +241,7 @@ private struct DormitoryPlacementTiles: View {
     let placement: DormitoryPlacement
 
     var body: some View {
-        Group {
-            if #available(iOS 26.0, *) {
-                GlassEffectContainer(spacing: 12) {
-                    tiles
-                }
-            } else {
-                tiles
-            }
-        }
+        tiles
     }
 
     private var tiles: some View {
@@ -570,22 +562,31 @@ private final class DormitoryCardMotion: ObservableObject {
     @Published private(set) var vertical = 0.0
 
     private let motionManager = CMMotionManager()
+    private let motionQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.name = "by.bsuir.myiis.dormitoryMotion"
+        queue.qualityOfService = .userInteractive
+        return queue
+    }()
 
     func start() {
         guard motionManager.isDeviceMotionAvailable, !motionManager.isDeviceMotionActive else {
             return
         }
 
-        motionManager.deviceMotionUpdateInterval = 1.0 / 30.0
-        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+        motionManager.deviceMotionUpdateInterval = 1.0 / 20.0
+        motionManager.startDeviceMotionUpdates(to: motionQueue) { [weak self] motion, _ in
             guard let motion else { return }
 
             let horizontal = Self.clamped(motion.attitude.roll / 0.65)
             let vertical = Self.clamped(motion.attitude.pitch / 0.65)
 
             Task { @MainActor [weak self] in
-                self?.horizontal = horizontal
-                self?.vertical = vertical
+                guard let self else { return }
+                if abs(self.horizontal - horizontal) > 0.02 || abs(self.vertical - vertical) > 0.02 {
+                    self.horizontal = horizontal
+                    self.vertical = vertical
+                }
             }
         }
     }

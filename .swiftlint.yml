@@ -62,7 +62,13 @@ type_body_length:
 included:
   - MyIIS
   - Shared
+  - MyIISWidget
+  - MyIISIntents
+  - MyIISMessages
+  - MyIIS Watch App Watch App
+  - MyIIS Watch Widget
+  - MyIISTests
+  - MyIISUITests
+  - fastlane
 
-excluded:
-  - MyIIS/Resources/AppMockData.swift
-  - MyIISUITests/SnapshotHelper.swift
+excluded: []

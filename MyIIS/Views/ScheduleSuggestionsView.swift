@@ -15,7 +15,7 @@ struct ScheduleSuggestionsView: View {
         if groups.isEmpty {
             ServiceEmptyState(text: NSLocalizedString("services_schedule_groups_empty", comment: ""))
         } else if isSearching {
-            VStack(alignment: .leading, spacing: 6) {
+            LazyVStack(alignment: .leading, spacing: 6) {
                 ForEach(groups, id: \.name) { group in
                     groupRowButton(group, isPinned: pinnedGroupNames.contains(group.name))
                 }
@@ -58,18 +58,25 @@ struct ScheduleSuggestionsView: View {
         }
     }
 
+    private var groupLookup: [String: StudyGroup] {
+        Dictionary(groups.map { ($0.name, $0) }, uniquingKeysWith: { current, _ in current })
+    }
+
     private var pinnedGroups: [StudyGroup] {
-        pinnedGroupNames.compactMap { name in groups.first { $0.name == name } }
+        let lookup = groupLookup
+        return pinnedGroupNames.compactMap { lookup[$0] }
     }
 
     private var recentGroups: [StudyGroup] {
-        recentGroupNames
-            .filter { !pinnedGroupNames.contains($0) }
-            .compactMap { name in groups.first { $0.name == name } }
+        let lookup = groupLookup
+        let pinnedSet = Set(pinnedGroupNames)
+        return recentGroupNames
+            .filter { !pinnedSet.contains($0) }
+            .compactMap { lookup[$0] }
     }
 
     private var visibleGroups: [StudyGroup] {
-        let exclude = Set(pinnedGroups.map(\.name) + recentGroups.map(\.name))
+        let exclude = Set(pinnedGroupNames + recentGroupNames)
         let remaining = groups.filter { !exclude.contains($0.name) }
         return Array(remaining.prefix(showsAllGroups ? 35 : 5))
     }

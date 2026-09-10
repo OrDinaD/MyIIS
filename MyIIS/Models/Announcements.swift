@@ -154,17 +154,11 @@ struct Announcement: Codable, Identifiable, Hashable, Equatable {
     }
 
     var relativePublishedAt: String {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .short
-        return formatter.localizedString(for: publishedAt, relativeTo: Date())
+        announcementRelativeFormatter.localizedString(for: publishedAt, relativeTo: Date())
     }
 
     var formattedDate: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: publishedAt)
+        announcementDateFormatter.string(from: publishedAt)
     }
 
     private static func decodeDate(from container: KeyedDecodingContainer<CodingKeys>, forKey key: CodingKeys) throws -> Date {
@@ -207,5 +201,19 @@ private let iso8601FractionalFormatter: ISO8601DateFormatter = {
         .withColonSeparatorInTime,
         .withDashSeparatorInDate
     ]
+    return formatter
+}()
+
+private let announcementRelativeFormatter: RelativeDateTimeFormatter = {
+    let formatter = RelativeDateTimeFormatter()
+    formatter.unitsStyle = .short
+    return formatter
+}()
+
+private let announcementDateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.locale = Locale(identifier: "ru_RU")
+    formatter.dateStyle = .medium
+    formatter.timeStyle = .short
     return formatter
 }()

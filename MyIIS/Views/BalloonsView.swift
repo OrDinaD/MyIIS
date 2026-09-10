@@ -174,17 +174,24 @@ struct BirthdayBalloonsModifier: ViewModifier {
         }
     }
 
-    private func isBirthday(_ dateString: String) -> Bool {
+    nonisolated private static let isoDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
-        var parsedDate = formatter.date(from: dateString)
+        return formatter
+    }()
 
-        if parsedDate == nil {
-            formatter.dateFormat = "dd.MM.yyyy"
-            parsedDate = formatter.date(from: dateString)
+    nonisolated private static let dotDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "dd.MM.yyyy"
+        return formatter
+    }()
+
+    private func isBirthday(_ dateString: String) -> Bool {
+        guard let date = Self.isoDateFormatter.date(from: dateString) ?? Self.dotDateFormatter.date(from: dateString) else {
+            return false
         }
-
-        guard let date = parsedDate else { return false }
 
         let today = Date()
         let cal = Calendar.current

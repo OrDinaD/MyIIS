@@ -32,16 +32,21 @@ final class UserModelTests: XCTestCase {
     }
 
     func testIsHeadmanOrNoteAllowed() {
-        let onlyHeadman = User(id: 1, firstName: "A", lastName: "B", middleName: "C", belarusianFirstName: nil, belarusianLastName: nil, belarusianMiddleName: nil, birthDay: "", email: nil, phone: nil, photo: nil, summary: nil, rating: 0, education: Education(faculty: "", course: 1, speciality: "", group: ""), skills: [], references: [], settings: .default, isHeadman: true, canStudentNote: false)
-        let onlyNoteAllowed = User(id: 2, firstName: "A", lastName: "B", middleName: "C", belarusianFirstName: nil, belarusianLastName: nil, belarusianMiddleName: nil, birthDay: "", email: nil, phone: nil, photo: nil, summary: nil, rating: 0, education: Education(faculty: "", course: 1, speciality: "", group: ""), skills: [], references: [], settings: .default, isHeadman: false, canStudentNote: true)
-        let neither = User(id: 3, firstName: "A", lastName: "B", middleName: "C", belarusianFirstName: nil, belarusianLastName: nil, belarusianMiddleName: nil, birthDay: "", email: nil, phone: nil, photo: nil, summary: nil, rating: 0, education: Education(faculty: "", course: 1, speciality: "", group: ""), skills: [], references: [], settings: .default, isHeadman: false, canStudentNote: false)
+        let onlyHeadman = makeUser(isHeadman: true, canStudentNote: false)
+        let onlyNoteAllowed = makeUser(isHeadman: false, canStudentNote: true)
+        let neither = makeUser(isHeadman: false, canStudentNote: false)
 
         XCTAssertTrue(onlyHeadman.isHeadmanOrNoteAllowed)
         XCTAssertTrue(onlyNoteAllowed.isHeadmanOrNoteAllowed)
         XCTAssertFalse(neither.isHeadmanOrNoteAllowed)
     }
 
-    private func makeUser(photo: String? = nil, settings: UserSettings = .default) -> User {
+    private func makeUser(
+        photo: String? = nil,
+        settings: UserSettings = .default,
+        isHeadman: Bool = false,
+        canStudentNote: Bool = false
+    ) -> User {
         User(
             id: 1,
             firstName: "Иван",
@@ -60,8 +65,8 @@ final class UserModelTests: XCTestCase {
             skills: [UserSkill(id: 1, name: "Swift")],
             references: [UserReference(id: 1, name: "telegram", reference: "https://t.me/user")],
             settings: settings,
-            isHeadman: false,
-            canStudentNote: false
+            isHeadman: isHeadman,
+            canStudentNote: canStudentNote
         )
     }
 }

@@ -145,7 +145,7 @@ extension RatingViewModel {
             _ = applyCachedSnapshotIfAvailable(group: group, studentId: studentId)
         }
 
-        await loadByGroup(group, targetRecordBookNumber: studentId, force: true)
+        await loadByGroup(group, targetRecordBookNumber: studentId, force: force)
 
         currentStudentId = studentId
         saveCurrentStateToCache(group: group, studentId: studentId)
@@ -448,12 +448,12 @@ extension RatingViewModel {
     private func sortedCheckpointKeys(
         in groups: [String: [(String, PortalGradeBookLesson)]]
     ) -> [String] {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd.MM.yyyy"
+        var minDateByKey: [String: Date] = [:]
+        for (key, list) in groups {
+            minDateByKey[key] = list.compactMap { Self.parseDate($0.1.dateString) }.min() ?? .distantFuture
+        }
         return groups.keys.sorted { lhs, rhs in
-            let lhsDate = groups[lhs]?.compactMap { formatter.date(from: $0.1.dateString) }.min()
-            let rhsDate = groups[rhs]?.compactMap { formatter.date(from: $0.1.dateString) }.min()
-            return (lhsDate ?? .distantFuture) < (rhsDate ?? .distantFuture)
+            (minDateByKey[lhs] ?? .distantFuture) < (minDateByKey[rhs] ?? .distantFuture)
         }
     }
 

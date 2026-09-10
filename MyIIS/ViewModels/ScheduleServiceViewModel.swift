@@ -874,7 +874,8 @@ final class ScheduleServiceViewModel {
     func loadMoreContinuousDaysIfNeeded(lastVisibleDayID: String) {
         guard mode == .group || mode == .teacher else { return }
         guard displayMode == .continuous else { return }
-        guard continuousTimelineDays.last?.id == lastVisibleDayID else { return }
+        let thresholdIDs = continuousTimelineDays.suffix(4).map(\.id)
+        guard thresholdIDs.contains(lastVisibleDayID) else { return }
         appendContinuousChunkIfNeeded()
     }
 
@@ -926,14 +927,13 @@ final class ScheduleServiceViewModel {
         timelineGenerationTask?.cancel()
         isLoadingContinuousChunk = false
         if reset {
-            continuousTimelineDays = []
             continuousCursorDate = nil
             isContinuousEndReached = false
         }
-        appendContinuousChunkIfNeeded()
+        appendContinuousChunkIfNeeded(isReset: reset)
     }
 
-    private func appendContinuousChunkIfNeeded() {
+    private func appendContinuousChunkIfNeeded(isReset: Bool = false) {
         guard let input = timelineBuildInput() else {
             continuousTimelineDays = []
             continuousCursorDate = nil
@@ -943,7 +943,7 @@ final class ScheduleServiceViewModel {
         guard !isContinuousEndReached, !isLoadingContinuousChunk else { return }
 
         isLoadingContinuousChunk = true
-        let cursor = continuousCursorDate
+        let cursor = isReset ? nil : continuousCursorDate
         let now = Date()
         timelineGenerationTask = Task { [weak self] in
             let result = await Task.detached(priority: .userInitiated) {
@@ -958,7 +958,9 @@ final class ScheduleServiceViewModel {
             self.continuousCursorDate = result.nextCursor
             self.isContinuousEndReached = result.reachedEnd
             self.isLoadingContinuousChunk = false
-            if !result.days.isEmpty {
+            if isReset {
+                self.continuousTimelineDays = result.days
+            } else if !result.days.isEmpty {
                 self.continuousTimelineDays.append(contentsOf: result.days)
             }
             if let schedule = self.schedule {
@@ -1440,9 +1442,13 @@ final class ScheduleServiceViewModel {
         return display != .hidden
     }
 
-    private func lessonInterval(for lesson: DisciplineSchedule, on date: Date) -> (start: Date, end: Date)? {
-        guard let start = parse(time: lesson.startLessonTime, on: date),
-              let end = parse(time: lesson.endLessonTime, on: date) else {
+    private func lessonInterval(
+        for lesson: DisciplineSchedule,
+        on date: Date,
+        calendar: Calendar = .current
+    ) -> (start: Date, end: Date)? {
+        guard let start = parse(time: lesson.startLessonTime, on: date, calendar: calendar),
+              let end = parse(time: lesson.endLessonTime, on: date, calendar: calendar) else {
             return nil
         }
         if end > start {
@@ -1451,14 +1457,14 @@ final class ScheduleServiceViewModel {
         return nil
     }
 
-    private func parse(time: String, on date: Date) -> Date? {
+    private func parse(time: String, on date: Date, calendar: Calendar = .current) -> Date? {
         let components = time.split(separator: ":")
         guard components.count >= 2,
               let hour = Int(components[0]),
               let minute = Int(components[1]) else {
             return nil
         }
-        return Calendar.current.date(
+        return calendar.date(
             bySettingHour: hour,
             minute: minute,
             second: 0,
@@ -2077,14 +2083,38 @@ extension ScheduleServiceViewModel {
     }
 
     var pastExamDays: [ExamScheduleDay] {
-        examDays.filter { day in
-            day.lessons.allSatisfy { isExamPast($0, on: day.date) }
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfToday = calendar.startOfDay(for: now)
+        let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday) ?? startOfToday.addingTimeInterval(86400)
+
+        return examDays.filter { day in
+            let dayStart = calendar.startOfDay(for: day.date)
+            if dayStart < startOfToday {
+                return true
+            } else if dayStart >= startOfTomorrow {
+                return false
+            } else {
+                return day.lessons.allSatisfy { isExamPast($0, on: day.date, now: now, calendar: calendar) }
+            }
         }
     }
 
     var upcomingExamDays: [ExamScheduleDay] {
-        examDays.filter { day in
-            !day.lessons.allSatisfy { isExamPast($0, on: day.date) }
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfToday = calendar.startOfDay(for: now)
+        let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday) ?? startOfToday.addingTimeInterval(86400)
+
+        return examDays.filter { day in
+            let dayStart = calendar.startOfDay(for: day.date)
+            if dayStart < startOfToday {
+                return false
+            } else if dayStart >= startOfTomorrow {
+                return true
+            } else {
+                return !day.lessons.allSatisfy { isExamPast($0, on: day.date, now: now, calendar: calendar) }
+            }
         }
     }
 
@@ -2104,13 +2134,28 @@ extension ScheduleServiceViewModel {
     }
 
     private func updateContinuousDayPartitions() {
+        let calendar = Calendar.current
+        let now = Date()
+        let startOfToday = calendar.startOfDay(for: now)
+        let startOfTomorrow = calendar.date(byAdding: .day, value: 1, to: startOfToday) ?? startOfToday.addingTimeInterval(86400)
+
         var past: [ScheduleContinuousDay] = []
         var upcoming: [ScheduleContinuousDay] = []
+        past.reserveCapacity(continuousTimelineDays.count)
+        upcoming.reserveCapacity(continuousTimelineDays.count)
+
         for day in continuousTimelineDays {
-            if day.lessons.allSatisfy({ isExamPast($0, on: day.date) }) {
+            let dayStart = calendar.startOfDay(for: day.date)
+            if dayStart < startOfToday {
                 past.append(day)
-            } else {
+            } else if dayStart >= startOfTomorrow {
                 upcoming.append(day)
+            } else {
+                if day.lessons.allSatisfy({ isExamPast($0, on: day.date, now: now, calendar: calendar) }) {
+                    past.append(day)
+                } else {
+                    upcoming.append(day)
+                }
             }
         }
         self.pastContinuousDays = past
@@ -2254,13 +2299,17 @@ extension ScheduleServiceViewModel {
         let subject = lesson.subject.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !subject.isEmpty else { return nil }
 
+        let calendar = Calendar.current
         var nearestDate: Date?
         for day in continuousTimelineDays {
+            if day.date.addingTimeInterval(86400) <= referenceDate {
+                continue
+            }
             for candidate in day.lessons where
                 candidate.subject.caseInsensitiveCompare(subject) == .orderedSame &&
                 candidate.lessonTypeAbbrev.caseInsensitiveCompare(lesson.lessonTypeAbbrev) == .orderedSame &&
                 candidate.subgroup == lesson.subgroup {
-                guard let interval = lessonInterval(for: candidate, on: day.date),
+                guard let interval = lessonInterval(for: candidate, on: day.date, calendar: calendar),
                       interval.start > referenceDate else {
                     continue
                 }
@@ -2276,14 +2325,19 @@ extension ScheduleServiceViewModel {
         return nearestDate
     }
 
-    func isExamPast(_ exam: DisciplineSchedule, on date: Date, now: Date = Date()) -> Bool {
+    func isExamPast(
+        _ exam: DisciplineSchedule,
+        on date: Date,
+        now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Bool {
         guard date != Date.distantFuture else { return false }
-        if let interval = lessonInterval(for: exam, on: date) {
+        if let interval = lessonInterval(for: exam, on: date, calendar: calendar) {
             return interval.end < now
         }
 
-        let startOfDay = Calendar.current.startOfDay(for: date)
-        let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
+        let startOfDay = calendar.startOfDay(for: date)
+        let nextDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? startOfDay
         return nextDay <= now
     }
 

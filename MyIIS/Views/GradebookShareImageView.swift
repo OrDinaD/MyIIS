@@ -32,7 +32,7 @@ struct GradebookShareImagePayload: Identifiable {
 
 @MainActor
 enum GradebookShareImageExporter {
-    static func renderPNG(snapshot: GradebookShareSnapshot) throws -> GradebookShareImagePayload {
+    static func renderPNG(snapshot: GradebookShareSnapshot) async throws -> GradebookShareImagePayload {
         let imageView = GradebookShareImageView(snapshot: snapshot)
             .frame(width: GradebookShareImageView.canvasWidth)
             .fixedSize(horizontal: false, vertical: true)
@@ -40,15 +40,20 @@ enum GradebookShareImageExporter {
         let renderer = ImageRenderer(content: imageView)
         renderer.scale = 1
 
-        guard let image = renderer.uiImage,
-              let data = image.pngData()
-        else {
+        guard let image = renderer.uiImage else {
             throw GradebookShareImageExportError.renderingFailed
         }
 
         let fileName = "myiis-gradebook-semester-\(snapshot.semesterKey.sanitizedForFileName).png"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
-        try data.write(to: url, options: .atomic)
+        let url = try await Task.detached(priority: .userInitiated) { () -> URL in
+            guard let data = image.pngData() else {
+                throw GradebookShareImageExportError.renderingFailed
+            }
+            let fileURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            try data.write(to: fileURL, options: .atomic)
+            return fileURL
+        }.value
+
         return GradebookShareImagePayload(url: url, image: image)
     }
 }

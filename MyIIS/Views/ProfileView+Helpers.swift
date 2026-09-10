@@ -1,15 +1,23 @@
 import SwiftUI
 
 extension ProfileView {
-    func formatDate(_ dateString: String) -> String {
+    nonisolated private static let inputDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
-        guard let date = formatter.date(from: dateString) else { return dateString }
+        return formatter
+    }()
 
+    nonisolated private static let outputDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
         formatter.locale = .autoupdatingCurrent
         formatter.dateFormat = "d MMMM yyyy"
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    func formatDate(_ dateString: String) -> String {
+        guard let date = Self.inputDateFormatter.date(from: dateString) else { return dateString }
+        return Self.outputDateFormatter.string(from: date)
     }
 
     func primaryFullName(for user: User, locale: Locale) -> String {

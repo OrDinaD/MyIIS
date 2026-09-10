@@ -178,22 +178,35 @@ final class HeadmanViewModel {
         await loadInitialData()
     }
 
+    private var dateLoadTask: Task<Void, Never>?
+
     func loadLessonsForSelectedDate() async {
         guard hasAccess else { return }
-        isLoadingLessons = true
-        errorMessage = nil
-        pendingOmissions.removeAll()
+        dateLoadTask?.cancel()
+        let task = Task { @MainActor in
+            isLoadingLessons = true
+            errorMessage = nil
+            pendingOmissions.removeAll()
 
-        do {
-            lessonsByDate = try await apiService.getHeadmanLessonsByDate(selectedDate)
-            saveSnapshot()
-        } catch let apiError as APIError {
-            errorMessage = apiError.localizedDescription
-        } catch {
-            errorMessage = error.localizedDescription
+            do {
+                let result = try await apiService.getHeadmanLessonsByDate(selectedDate)
+                guard !Task.isCancelled else { return }
+                lessonsByDate = result
+                saveSnapshot()
+            } catch is CancellationError {
+                return
+            } catch let apiError as APIError {
+                guard !Task.isCancelled else { return }
+                errorMessage = apiError.localizedDescription
+            } catch {
+                guard !Task.isCancelled else { return }
+                errorMessage = error.localizedDescription
+            }
+
+            isLoadingLessons = false
         }
-
-        isLoadingLessons = false
+        dateLoadTask = task
+        await task.value
     }
 
     func selectSubject(_ subjectID: Int) async {

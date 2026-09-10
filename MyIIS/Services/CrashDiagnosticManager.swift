@@ -159,19 +159,7 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
             object: nil
         )
 
-        let timer = DispatchSource.makeTimerSource(
-            queue: DispatchQueue(label: "com.OrDinaD.MyIIS.performance-heartbeat", qos: .utility)
-        )
-        timer.schedule(
-            deadline: .now() + .milliseconds(500),
-            repeating: .milliseconds(500),
-            leeway: .milliseconds(100)
-        )
-        timer.setEventHandler { [weak self] in
-            self?.scheduleMainThreadHeartbeat()
-        }
-        timer.resume()
-        heartbeatTimer = timer
+        heartbeatTimer = makeHeartbeatTimer()
     }
 
     @MainActor
@@ -249,10 +237,28 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
         sampleMaximumFrameGap = 0
     }
 
-    private func scheduleMainThreadHeartbeat() {
+    nonisolated private func makeHeartbeatTimer() -> DispatchSourceTimer {
+        let timer = DispatchSource.makeTimerSource(
+            queue: DispatchQueue(label: "com.OrDinaD.MyIIS.performance-heartbeat", qos: .utility)
+        )
+        timer.schedule(
+            deadline: .now() + .milliseconds(500),
+            repeating: .milliseconds(500),
+            leeway: .milliseconds(100)
+        )
+        timer.setEventHandler { [weak self] in
+            self?.scheduleMainThreadHeartbeat()
+        }
+        timer.resume()
+        return timer
+    }
+
+    nonisolated private func scheduleMainThreadHeartbeat() {
         let sentAt = CACurrentMediaTime()
         DispatchQueue.main.async { [weak self] in
-            self?.recordMainThreadHeartbeat(sentAt: sentAt)
+            MainActor.assumeIsolated {
+                self?.recordMainThreadHeartbeat(sentAt: sentAt)
+            }
         }
     }
 

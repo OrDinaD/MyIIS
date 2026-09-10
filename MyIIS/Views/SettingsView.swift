@@ -84,8 +84,6 @@ struct SettingsView: View {
             }
         }
         .reduceMotionSensitive()
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.hasPendingChanges)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: viewModel.isSaving)
     }
 
     private var header: some View {

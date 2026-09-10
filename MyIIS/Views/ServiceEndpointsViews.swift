@@ -51,7 +51,7 @@ struct LibraryServiceView: View {
                     if viewModel.books.isEmpty {
                         ServiceEmptyState(text: NSLocalizedString("services_library_books_empty", comment: ""))
                     } else {
-                        VStack(spacing: 10) {
+                        LazyVStack(spacing: 10) {
                             ForEach(viewModel.books, id: \.stableID) { item in
                                 ServiceJSONItemCard(item: item)
                             }
@@ -278,7 +278,7 @@ struct AnnouncementsServiceView: View {
                     if viewModel.items.isEmpty {
                         ServiceEmptyState(text: NSLocalizedString("services_announcements_empty", comment: ""))
                     } else {
-                        VStack(spacing: 10) {
+                        LazyVStack(spacing: 10) {
                             ForEach(viewModel.items, id: \.stableID) { item in
                                 ServiceJSONItemCard(item: item)
                             }
@@ -411,7 +411,7 @@ struct PenaltiesServiceView: View {
                     if viewModel.items.isEmpty {
                         ServiceEmptyState(text: NSLocalizedString("services_penalties_empty", comment: ""))
                     } else {
-                        VStack(spacing: 10) {
+                        LazyVStack(spacing: 10) {
                             ForEach(viewModel.items, id: \.stableID) { item in
                                 PenaltyItemCard(item: item)
                             }

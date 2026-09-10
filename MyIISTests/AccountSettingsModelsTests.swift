@@ -60,4 +60,27 @@ final class AccountSettingsModelsTests: XCTestCase {
         XCTAssertEqual(settings.emailAttempts, 0)
         XCTAssertNil(settings.contactBanExpiredTime)
     }
+
+    func testPasswordValidation() {
+        let viewModel = AccountSettingsViewModel()
+
+        XCTAssertTrue(viewModel.isPasswordValid("Abcdef1!"))
+        XCTAssertTrue(viewModel.isPasswordValid("P@ssw0rd2026#Valid"))
+
+        // Too short (< 8)
+        XCTAssertFalse(viewModel.isPasswordValid("Ab1!"))
+        // Too long (> 30)
+        XCTAssertFalse(viewModel.isPasswordValid("A1!" + String(repeating: "a", count: 28)))
+        // Missing uppercase
+        XCTAssertFalse(viewModel.isPasswordValid("abcdef1!"))
+        // Missing lowercase
+        XCTAssertFalse(viewModel.isPasswordValid("ABCDEF1!"))
+        // Missing digit
+        XCTAssertFalse(viewModel.isPasswordValid("Abcdefg!"))
+        // Missing special char
+        XCTAssertFalse(viewModel.isPasswordValid("Abcdef12"))
+        // Disallowed char (e.g. whitespace or Cyrillic)
+        XCTAssertFalse(viewModel.isPasswordValid("Abcdef1! "))
+        XCTAssertFalse(viewModel.isPasswordValid("Abcdef1!Пароль"))
+    }
 }

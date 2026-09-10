@@ -3,15 +3,35 @@ import SwiftUI
 struct SummaryTable: View {
     let students: [HeadmanSummaryStudent]
     let responsibleStudentIDs: Set<Int>
+    let dates: [String]
+    private let studentLessonsByDate: [Int: [String: (text: String, color: Color)]]
     private let numberColumnWidth: CGFloat = 44
     private let nameColumnWidth: CGFloat = 240
     private let totalColumnWidth: CGFloat = 64
     private let dateColumnWidth: CGFloat = 62
 
-    private var dates: [String] {
-        Array(Set(students.flatMap { student in
-            student.lessons.map(\.dateString)
-        })).sorted(by: SummaryTable.compareDateStrings)
+    init(students: [HeadmanSummaryStudent], responsibleStudentIDs: Set<Int>) {
+        self.students = students
+        self.responsibleStudentIDs = responsibleStudentIDs
+
+        let uniqueDates = Array(Set(students.flatMap { $0.lessons.map(\.dateString) }))
+            .sorted(by: SummaryTable.compareDateStrings)
+        self.dates = uniqueDates
+
+        var lookup: [Int: [String: (text: String, color: Color)]] = [:]
+        for student in students {
+            var dateMap: [String: (text: String, color: Color)] = [:]
+            let grouped = Dictionary(grouping: student.lessons, by: \.dateString)
+            for (date, lessons) in grouped {
+                let totalHours = lessons.reduce(0) { $0 + $1.gradeBookOmissions }
+                if totalHours > 0 {
+                    let hasNonRespectful = lessons.contains { $0.gradeBookOmissions > 0 && !$0.isRespectfulOmission }
+                    dateMap[date] = (String(totalHours), hasNonRespectful ? .red : .green)
+                }
+            }
+            lookup[student.id] = dateMap
+        }
+        self.studentLessonsByDate = lookup
     }
 
     var body: some View {
@@ -62,7 +82,7 @@ struct SummaryTable: View {
             )
             cell(String(student.totalMissedHours), width: totalColumnWidth, rowBackground: rowBackground)
             ForEach(dates, id: \.self) { date in
-                let aggregate = aggregateForDate(date, student: student)
+                let aggregate = studentLessonsByDate[student.id]?[date] ?? ("", .primary)
                 cell(
                     aggregate.text,
                     width: dateColumnWidth,
@@ -82,7 +102,7 @@ struct SummaryTable: View {
         isResponsible: Bool = false,
         rowBackground: Color = .clear
     ) -> some View {
-        Text(LocalizedStringKey(text))
+        (isHeader ? Text(LocalizedStringKey(text)) : Text(text))
             .fontWeight(isHeader ? .semibold : .regular)
             .foregroundColor(isHeader ? .secondary : foreground)
             .lineLimit(2)

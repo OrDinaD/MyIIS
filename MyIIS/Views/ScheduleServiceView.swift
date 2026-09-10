@@ -1178,18 +1178,24 @@ private struct ScheduleLessonCard: View {
         )?.compactText
     }
 
+    @ViewBuilder
     private func accentBar(width: CGFloat) -> some View {
-        GeometryReader { proxy in
-            VStack(spacing: 0) {
-                if let progress {
+        if let progress {
+            GeometryReader { proxy in
+                VStack(spacing: 0) {
                     Color.clear.frame(height: proxy.size.height * min(max(progress, 0), 1))
+                    RoundedRectangle(cornerRadius: 3, style: .continuous)
+                        .fill(accentColor)
                 }
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(accentColor)
             }
+            .frame(width: width)
+            .accessibilityHidden(true)
+        } else {
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(accentColor)
+                .frame(width: width)
+                .accessibilityHidden(true)
         }
-        .frame(width: width)
-        .accessibilityHidden(true)
     }
 
     private var currentBadge: some View {

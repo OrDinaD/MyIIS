@@ -2,10 +2,14 @@ import SwiftUI
 
 extension SummaryTable {
     nonisolated static func compareDateStrings(_ lhs: String, _ rhs: String) -> Bool {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "dd.MM.yyyy"
-        if let lhsDate = formatter.date(from: lhs), let rhsDate = formatter.date(from: rhs) {
-            return lhsDate < rhsDate
+        let lhsParts = lhs.split(separator: ".")
+        let rhsParts = rhs.split(separator: ".")
+        if lhsParts.count == 3, rhsParts.count == 3,
+           let lDay = Int(lhsParts[0]), let lMonth = Int(lhsParts[1]), let lYear = Int(lhsParts[2]),
+           let rDay = Int(rhsParts[0]), let rMonth = Int(rhsParts[1]), let rYear = Int(rhsParts[2]) {
+            if lYear != rYear { return lYear < rYear }
+            if lMonth != rMonth { return lMonth < rMonth }
+            return lDay < rDay
         }
         return lhs < rhs
     }

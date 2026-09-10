@@ -9,7 +9,7 @@ import SwiftUI
 import WidgetKit
 
 @main
-struct MyIIS_Watch_WidgetBundle: WidgetBundle {
+struct MyIISWatchWidgetBundle: WidgetBundle {
     var body: some Widget {
         MyIIS_Watch_Widget()
     }

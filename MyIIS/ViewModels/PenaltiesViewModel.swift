@@ -138,6 +138,20 @@ extension PenaltiesViewModel {
         let items: [PenaltyRecord]
     }
 
+    private static let monthTitleFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.dateFormat = "LLLL yyyy"
+        return formatter
+    }()
+
+    private static let sectionIsoFormatter: ISO8601DateFormatter = {
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime]
+        isoFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return isoFormatter
+    }()
+
     static func buildSections(from records: [PenaltyRecord], calendar: Calendar = .current) -> [PenaltySection] {
         guard !records.isEmpty else { return [] }
 
@@ -146,17 +160,10 @@ extension PenaltiesViewModel {
             return calendar.date(from: components) ?? record.issuedAt
         }
 
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
-        formatter.dateFormat = "LLLL yyyy"
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime]
-        isoFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-
         return groups.map { date, items in
             PenaltySection(
-                id: isoFormatter.string(from: date),
-                title: formatter.string(from: date).capitalized,
+                id: sectionIsoFormatter.string(from: date),
+                title: monthTitleFormatter.string(from: date).capitalized,
                 date: date,
                 items: items.sorted(by: PenaltyRecord.defaultSort)
             )

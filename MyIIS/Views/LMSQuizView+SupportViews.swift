@@ -48,18 +48,20 @@ struct QuizTimerBanner: View {
 }
 
 struct HTMLTextBlock: View {
-    let html: String
+    private let content: AttributedString
+
+    init(html: String) {
+        if let attributed = html.toMarkdownAttributedString() {
+            self.content = attributed
+        } else {
+            self.content = AttributedString(html.strippingSimpleHTML())
+        }
+    }
 
     var body: some View {
-        if let attributed = html.toAttributedString() {
-            Text(attributed)
-                .font(.body)
-                .fixedSize(horizontal: false, vertical: true)
-        } else {
-            Text(html.strippingSimpleHTML())
-                .font(.body)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        Text(content)
+            .font(.body)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 
@@ -106,18 +108,22 @@ struct AttemptMetaRow: View {
 }
 
 extension String {
-    func toAttributedString() -> AttributedString? {
-        guard let data = data(using: .utf8) else { return nil }
-        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
-            .documentType: NSAttributedString.DocumentType.html,
-            .characterEncoding: String.Encoding.utf8.rawValue
-        ]
+    func toMarkdownAttributedString() -> AttributedString? {
+        let markdown = replacingOccurrences(of: "(?i)<br\\s*/?>", with: "\n", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)</p>", with: "\n\n", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)<(strong|b)>", with: "**", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)</(strong|b)>", with: "**", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)<(em|i)>", with: "*", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)</(em|i)>", with: "*", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)<code>", with: "`", options: .regularExpression)
+            .replacingOccurrences(of: "(?i)</code>", with: "`", options: .regularExpression)
+            .replacingOccurrences(of: #"(?i)<a\s+(?:[^>]*?\s+)?href="([^"]*)"[^>]*>(.*?)</a>"#, with: "[$2]($1)", options: .regularExpression)
+            .replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
+            .decodingHTMLEntities()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        guard let nsAttr = try? NSAttributedString(data: data, options: options, documentAttributes: nil) else {
-            return nil
-        }
-
-        return try? AttributedString(nsAttr, including: \.foundation)
+        guard !markdown.isEmpty else { return nil }
+        return try? AttributedString(markdown: markdown, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))
     }
 
     func strippingSimpleHTML() -> String {
