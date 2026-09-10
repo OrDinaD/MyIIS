@@ -2,25 +2,55 @@ import ImageIO
 import SwiftUI
 import UIKit
 
-private final class CachedAsyncImageMemoryCache {
-    static let shared: NSCache<NSString, UIImage> = {
+private final class CachedAsyncImageMemoryCache: @unchecked Sendable {
+    nonisolated(unsafe) private static let sharedCache: NSCache<NSString, UIImage> = {
         let cache = NSCache<NSString, UIImage>()
-        cache.countLimit = 160
+        cache.countLimit = 200
         cache.totalCostLimit = 64 * 1024 * 1024
         return cache
     }()
+
+    nonisolated(unsafe) private static let missingCache: NSCache<NSString, NSNumber> = {
+        let cache = NSCache<NSString, NSNumber>()
+        cache.countLimit = 500
+        return cache
+    }()
+
+    nonisolated static func image(forKey key: NSString) -> UIImage? {
+        sharedCache.object(forKey: key)
+    }
+
+    nonisolated static func setImage(_ image: UIImage, forKey key: NSString) {
+        sharedCache.setObject(image, forKey: key, cost: image.estimatedMemoryCost)
+    }
+
+    nonisolated static func isMarkedMissing(_ identity: String) -> Bool {
+        missingCache.object(forKey: identity as NSString) != nil
+    }
+
+    nonisolated static func markMissing(_ identity: String) {
+        missingCache.setObject(1, forKey: identity as NSString)
+    }
+
+    nonisolated static func clearMissing(_ identity: String) {
+        missingCache.removeObject(forKey: identity as NSString)
+    }
 }
 
-@MainActor
-private final class CachedAsyncImageDataLoader {
-    static let shared = CachedAsyncImageDataLoader()
+private actor AsyncImagePipeline {
+    static let shared = AsyncImagePipeline()
 
     private var inFlightTasks: [String: Task<UIImage?, Never>] = [:]
 
     func loadImage(for url: URL, cacheIdentity: String, maxPixelSize: CGFloat) async -> UIImage? {
         let cacheKey = cacheIdentity as NSString
-        if let cachedImage = CachedAsyncImageMemoryCache.shared.object(forKey: cacheKey) {
+
+        if let cachedImage = CachedAsyncImageMemoryCache.image(forKey: cacheKey) {
             return cachedImage
+        }
+
+        if CachedAsyncImageMemoryCache.isMarkedMissing(cacheIdentity) {
+            return nil
         }
 
         if let inFlight = inFlightTasks[cacheIdentity] {
@@ -29,51 +59,42 @@ private final class CachedAsyncImageDataLoader {
 
         let task = Task<UIImage?, Never> {
             var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
-            request.timeoutInterval = 15
+            request.timeoutInterval = 8
 
             if let cached = URLCache.shared.cachedResponse(for: request),
-               let image = await downsampleImage(from: cached.data, maxPixelSize: maxPixelSize) {
-                await MainActor.run {
-                    CachedAsyncImageMemoryCache.shared.setObject(image, forKey: cacheKey, cost: image.estimatedMemoryCost)
-                }
+               let image = downsampleImage(from: cached.data, maxPixelSize: maxPixelSize) {
+                CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
                 return image
             }
 
-            for attempt in 0 ..< 3 {
-                do {
-                    let (data, response) = try await URLSession.shared.data(for: request)
-                    guard !Task.isCancelled else { return nil }
+            guard !Task.isCancelled else { return nil }
 
-                    if let httpResponse = response as? HTTPURLResponse,
-                       !(200 ... 299).contains(httpResponse.statusCode) {
-                        if attempt < 2 {
-                            try await Task.sleep(nanoseconds: UInt64(attempt + 1) * 350_000_000)
-                        }
-                        continue
-                    }
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                guard !Task.isCancelled else { return nil }
 
-                    guard let image = await downsampleImage(from: data, maxPixelSize: maxPixelSize) else {
-                        if attempt < 2 {
-                            try await Task.sleep(nanoseconds: UInt64(attempt + 1) * 350_000_000)
-                        }
-                        continue
+                if let httpResponse = response as? HTTPURLResponse {
+                    if httpResponse.statusCode == 404 || httpResponse.statusCode == 410 {
+                        CachedAsyncImageMemoryCache.markMissing(cacheIdentity)
+                        return nil
                     }
-                    guard !Task.isCancelled else { return nil }
-
-                    await MainActor.run {
-                        CachedAsyncImageMemoryCache.shared.setObject(image, forKey: cacheKey, cost: image.estimatedMemoryCost)
-                    }
-                    URLCache.shared.storeCachedResponse(CachedURLResponse(response: response, data: data), for: request)
-                    return image
-                } catch is CancellationError {
-                    return nil
-                } catch {
-                    if attempt < 2 {
-                        try? await Task.sleep(nanoseconds: UInt64(attempt + 1) * 350_000_000)
+                    guard (200 ... 299).contains(httpResponse.statusCode) else {
+                        return nil
                     }
                 }
+
+                guard let image = downsampleImage(from: data, maxPixelSize: maxPixelSize) else {
+                    CachedAsyncImageMemoryCache.markMissing(cacheIdentity)
+                    return nil
+                }
+                guard !Task.isCancelled else { return nil }
+
+                CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
+                URLCache.shared.storeCachedResponse(CachedURLResponse(response: response, data: data), for: request)
+                return image
+            } catch {
+                return nil
             }
-            return nil
         }
 
         inFlightTasks[cacheIdentity] = task
@@ -81,18 +102,10 @@ private final class CachedAsyncImageDataLoader {
         inFlightTasks.removeValue(forKey: cacheIdentity)
         return result
     }
-}
 
-private struct SendableImage: @unchecked Sendable {
-    let value: UIImage
-}
-
-nonisolated private func downsampleImage(from data: Data, maxPixelSize: CGFloat) async -> UIImage? {
-    let box = await Task.detached(priority: .userInitiated) {
+    private func downsampleImage(from data: Data, maxPixelSize: CGFloat) -> UIImage? {
         ImageDownsampler.image(from: data, maxPixelSize: maxPixelSize)
-            .map(SendableImage.init(value:))
-    }.value
-    return box?.value
+    }
 }
 
 enum ImageDownsampler {
@@ -153,17 +166,21 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
         }
         guard loadedCacheKey != cacheIdentity else { return }
         loadedCacheKey = cacheIdentity
-        uiImage = nil
 
         let cacheKey = cacheIdentity as NSString
-        if let cachedImage = CachedAsyncImageMemoryCache.shared.object(forKey: cacheKey) {
-            withTransaction(transaction) {
-                uiImage = cachedImage
-            }
+        if let cachedImage = CachedAsyncImageMemoryCache.image(forKey: cacheKey) {
+            uiImage = cachedImage
             return
         }
 
-        if let image = await CachedAsyncImageDataLoader.shared.loadImage(
+        if CachedAsyncImageMemoryCache.isMarkedMissing(cacheIdentity) {
+            uiImage = nil
+            return
+        }
+
+        uiImage = nil
+
+        if let image = await AsyncImagePipeline.shared.loadImage(
             for: url,
             cacheIdentity: cacheIdentity,
             maxPixelSize: maxPixelSize
@@ -182,7 +199,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
 }
 
 private extension UIImage {
-    var estimatedMemoryCost: Int {
+    nonisolated var estimatedMemoryCost: Int {
         if let cgImage {
             return cgImage.bytesPerRow * cgImage.height
         }

@@ -138,10 +138,8 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
     private func startPerformanceMonitoring() {
         guard displayLink == nil else { return }
 
-        lock.lock()
         monitoringStartedAt = Date()
         isApplicationActive = UIApplication.shared.applicationState == .active
-        lock.unlock()
 
         let link = CADisplayLink(target: self, selector: #selector(handleDisplayLink(_:)))
         link.add(to: .main, forMode: .common)
@@ -189,21 +187,17 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
     @MainActor
     @objc private func applicationDidEnterBackground() {
         displayLink?.isPaused = true
-        lock.lock()
         isApplicationActive = false
         lastFrameTimestamp = nil
         sampleStartedAt = nil
         heartbeatPending = false
-        lock.unlock()
     }
 
     @MainActor
     @objc private func applicationDidBecomeActive() {
-        lock.lock()
         isApplicationActive = true
         lastFrameTimestamp = nil
         sampleStartedAt = nil
-        lock.unlock()
         displayLink?.isPaused = false
     }
 
@@ -212,9 +206,6 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
         let timestamp = link.timestamp
         let expectedInterval = max(link.targetTimestamp - link.timestamp, link.duration)
         let expectedFramesPerSecond = expectedInterval > 0 ? 1.0 / expectedInterval : 0
-
-        lock.lock()
-        defer { lock.unlock() }
 
         guard isApplicationActive else { return }
         if sampleStartedAt == nil {
@@ -260,15 +251,6 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
 
     private func scheduleMainThreadHeartbeat() {
         let sentAt = CACurrentMediaTime()
-
-        lock.lock()
-        guard isApplicationActive, !heartbeatPending else {
-            lock.unlock()
-            return
-        }
-        heartbeatPending = true
-        lock.unlock()
-
         DispatchQueue.main.async { [weak self] in
             self?.recordMainThreadHeartbeat(sentAt: sentAt)
         }
@@ -276,15 +258,12 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
 
     @MainActor
     private func recordMainThreadHeartbeat(sentAt: CFTimeInterval) {
+        guard isApplicationActive else { return }
         let delayMilliseconds = max(0, (CACurrentMediaTime() - sentAt) * 1_000)
-
-        lock.lock()
-        heartbeatPending = false
         if delayMilliseconds >= 250 {
             mainThreadStallCount += 1
             maximumMainThreadStallMilliseconds = max(maximumMainThreadStallMilliseconds, delayMilliseconds)
         }
-        lock.unlock()
     }
 
     // MARK: - MXMetricManagerSubscriber
@@ -484,13 +463,12 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
 
     // MARK: - Performance snapshot
 
+    @MainActor
     private func performanceSnapshot() -> PerformanceSnapshot {
-        lock.lock()
         let samples = recentPerformanceSamples
         let startedAt = monitoringStartedAt
         let stallCount = mainThreadStallCount
         let maximumStall = maximumMainThreadStallMilliseconds
-        lock.unlock()
 
         let averageFPS: Double?
         if samples.isEmpty {
@@ -612,7 +590,7 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
 
         let lastError = await MainActor.run { LogService.shared.lastNetworkError }
         let metricDiagnostics = loadSavedDiagnostics()
-        let performance = performanceSnapshot()
+        let performance = await MainActor.run { performanceSnapshot() }
         let appGroupIdentifier = await MainActor.run { AppGroup.identifier }
         async let storageFootprint = Self.collectStorageFootprint(
             limit: storageEnumerationLimit,

@@ -3,6 +3,13 @@ import Foundation
 enum UserDefaultsPayloadStore {
     private static let appGroup = "group.com.OrDinaD.MyIIS"
 
+    nonisolated(unsafe) private static let memoryCache: NSCache<NSString, NSData> = {
+        let cache = NSCache<NSString, NSData>()
+        cache.countLimit = 64
+        cache.totalCostLimit = 16 * 1024 * 1024
+        return cache
+    }()
+
     private static let resolvedCacheDirectory: URL? = {
         let baseDir: URL?
         if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroup) {
@@ -17,13 +24,7 @@ enum UserDefaultsPayloadStore {
     }()
 
     private static func cacheDirectory() -> URL? {
-        if let resolved = resolvedCacheDirectory {
-            if !FileManager.default.fileExists(atPath: resolved.path) {
-                try? FileManager.default.createDirectory(at: resolved, withIntermediateDirectories: true)
-            }
-            return resolved
-        }
-        return nil
+        resolvedCacheDirectory
     }
 
     private static func fileURL(forKey key: String) -> URL? {
@@ -34,6 +35,9 @@ enum UserDefaultsPayloadStore {
 
     @discardableResult
     static func save(_ data: Data, forKey key: String, in defaults: UserDefaults) -> Bool {
+        // Update fast memory cache immediately
+        memoryCache.setObject(data as NSData, forKey: key as NSString, cost: data.count)
+
         // Clean up any old data from UserDefaults to free up space (fixes the 4MB limit bug)
         defaults.removeObject(forKey: key)
 
@@ -47,14 +51,19 @@ enum UserDefaultsPayloadStore {
     }
 
     static func load(forKey key: String, from defaults: UserDefaults) -> Data? {
-        // 1. Try to load from the new file storage
+        // 1. Check in-memory cache first
+        if let inMemory = memoryCache.object(forKey: key as NSString) {
+            return inMemory as Data
+        }
+
+        // 2. Try to load from file storage
         if let url = fileURL(forKey: key), let data = try? Data(contentsOf: url) {
+            memoryCache.setObject(data as NSData, forKey: key as NSString, cost: data.count)
             return data
         }
 
-        // 2. Migration: load from UserDefaults if it's still there
+        // 3. Migration: load from UserDefaults if it's still there
         if let oldData = defaults.data(forKey: key) {
-            // Save it to disk for next time and remove from UserDefaults
             save(oldData, forKey: key, in: defaults)
             return oldData
         }
@@ -63,6 +72,7 @@ enum UserDefaultsPayloadStore {
     }
 
     static func clear(forKey key: String, from defaults: UserDefaults) {
+        memoryCache.removeObject(forKey: key as NSString)
         defaults.removeObject(forKey: key)
         if let url = fileURL(forKey: key), FileManager.default.fileExists(atPath: url.path) {
             try? FileManager.default.removeItem(at: url)
@@ -70,6 +80,7 @@ enum UserDefaultsPayloadStore {
     }
 
     static func clear(prefix: String, from defaults: UserDefaults = .standard) {
+        memoryCache.removeAllObjects()
         for key in defaults.dictionaryRepresentation().keys where key.hasPrefix(prefix) {
             defaults.removeObject(forKey: key)
         }
@@ -83,6 +94,7 @@ enum UserDefaultsPayloadStore {
     }
 
     static func clearAll(in defaults: UserDefaults = .standard) {
+        memoryCache.removeAllObjects()
         guard let cacheDir = cacheDirectory() else { return }
         if let files = try? FileManager.default.contentsOfDirectory(at: cacheDir, includingPropertiesForKeys: nil) {
             for file in files {

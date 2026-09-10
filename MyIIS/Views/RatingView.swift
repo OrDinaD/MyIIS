@@ -56,9 +56,6 @@ struct RatingView: View {
                 ratingStateView(user: user)
             }
             .listStyle(.insetGrouped)
-            .animation(ratingAnimation, value: viewModel.isShowingStaleDataWarning)
-            .animation(ratingAnimation, value: viewModel.disciplines.count)
-            .animation(ratingAnimation, value: viewModel.isLoading)
             .task(id: user.id) {
                 revealContentIfNeeded()
                 await viewModel.loadRating(for: user)

@@ -281,8 +281,12 @@ extension RatingViewModel {
             isRatingPendingForNewSemester = false
             applyPortalGradeBookLessons(lessons)
             buildPersonalRating(from: lessons, targetRecordBookNumber: targetRecordBookNumber)
-            deadlineItems = Self.buildDeadlineItems(from: lessons)
-            checkpointSummaries = Self.buildCheckpointSummaries(from: lessons)
+            let (deadlines, summaries) = await Task.detached(priority: .userInitiated) {
+                (Self.buildDeadlineItems(from: lessons), Self.buildCheckpointSummaries(from: lessons))
+            }.value
+            guard !Task.isCancelled else { return }
+            self.deadlineItems = deadlines
+            self.checkpointSummaries = summaries
             isGradebookUnavailable = disciplines.isEmpty
             errorMessage = nil
             logService.log("✅ Rating loaded from grade-book. Lessons: \(lessons.count), disciplines: \(disciplines.count), deadlines: \(deadlineItems.count)")
@@ -497,7 +501,7 @@ extension RatingViewModel {
         return numbers.filter { $0 > 0 }.sorted()
     }
 
-    static func buildDeadlineItems(from lessons: [PortalGradeBookLesson]) -> [DisciplineDeadlineItem] {
+    nonisolated static func buildDeadlineItems(from lessons: [PortalGradeBookLesson]) -> [DisciplineDeadlineItem] {
         var disciplinesOrder: [String] = []
         var fullNames: [String: String] = [:]
         for lesson in lessons {
@@ -532,7 +536,7 @@ extension RatingViewModel {
         return items.sorted(by: deadlineItemSort)
     }
 
-    private static func buildDisciplineDeadlineItem(
+    nonisolated private static func buildDisciplineDeadlineItem(
         discipline: String,
         fullName: String?,
         labLessons: [PortalGradeBookLesson]
@@ -583,7 +587,7 @@ extension RatingViewModel {
         )
     }
 
-    private static func deadlineItemSort(_ lhs: DisciplineDeadlineItem, _ rhs: DisciplineDeadlineItem) -> Bool {
+    nonisolated private static func deadlineItemSort(_ lhs: DisciplineDeadlineItem, _ rhs: DisciplineDeadlineItem) -> Bool {
         let lHasNearest = lhs.nearestDeadline != nil
         let rHasNearest = rhs.nearestDeadline != nil
         if lHasNearest && rHasNearest {
@@ -603,7 +607,7 @@ extension RatingViewModel {
         return lhs.discipline.localizedCaseInsensitiveCompare(rhs.discipline) == .orderedAscending
     }
 
-    static func buildCheckpointSummaries(from lessons: [PortalGradeBookLesson]) -> [CheckpointSummaryItem] {
+    nonisolated static func buildCheckpointSummaries(from lessons: [PortalGradeBookLesson]) -> [CheckpointSummaryItem] {
         var cpDates: [String] = []
         for lesson in lessons {
             let controlPointName = lesson.controlPoint.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -680,7 +684,9 @@ extension RatingViewModel {
         return items
     }
 
-    private static func parseDate(_ str: String?) -> Date? {
+    nonisolated private static let parsingCalendar = Calendar(identifier: .gregorian)
+
+    nonisolated private static func parseDate(_ str: String?) -> Date? {
         guard let str, !str.isEmpty else { return nil }
         let parts = str.split(separator: ".")
         guard parts.count == 3,
@@ -691,7 +697,7 @@ extension RatingViewModel {
         comps.year = year
         comps.month = month
         comps.day = day
-        return Calendar(identifier: .gregorian).date(from: comps)
+        return parsingCalendar.date(from: comps)
     }
 }
 
