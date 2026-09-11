@@ -208,6 +208,7 @@ struct ScheduleServiceView: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            .presentationBackground(.ultraThinMaterial)
         }
         .sheet(isPresented: $isDatePickerPresented) {
             jumpDatePickerSheet
@@ -1056,7 +1057,7 @@ private struct ScheduleLessonCard: View {
             timeColumn
                 .frame(width: cardDensity == .compact ? 58 : 62, alignment: .trailing)
 
-            accentBar(width: 7)
+            accentBar(width: cardDensity == .compact ? 7 : 9)
 
             VStack(alignment: .leading, spacing: cardDensity == .compact ? 2 : 4) {
                 HStack(spacing: 6) {
@@ -1064,10 +1065,6 @@ private struct ScheduleLessonCard: View {
                         .font((cardDensity == .compact ? Font.subheadline : Font.headline).weight(.semibold))
                         .foregroundStyle(cardPrimaryForeground)
                         .lineLimit(2)
-
-                    if isCurrent {
-                        currentBadge
-                    }
 
                     if lesson.subgroup > 0 {
                         subgroupBadge
@@ -1131,16 +1128,13 @@ private struct ScheduleLessonCard: View {
     }
 
     private var subgroupBadge: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 3) {
             Image(systemName: "person")
-                .font(.system(size: 8, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
             Text("\(lesson.subgroup)")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
         }
         .foregroundStyle(cardSecondaryForeground)
-        .padding(.horizontal, 4)
-        .padding(.vertical, 1.5)
-        .background(Color(uiColor: .tertiarySystemFill), in: RoundedRectangle(cornerRadius: 4, style: .continuous))
     }
 
     private func weeksBadge(_ text: String) -> some View {
@@ -1181,17 +1175,21 @@ private struct ScheduleLessonCard: View {
     @ViewBuilder
     private func accentBar(width: CGFloat) -> some View {
         if let progress {
-            GeometryReader { proxy in
-                VStack(spacing: 0) {
-                    Color.clear.frame(height: proxy.size.height * min(max(progress, 0), 1))
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(accentColor)
+            ZStack(alignment: .bottom) {
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .fill(accentColor.opacity(0.2))
+                GeometryReader { proxy in
+                    VStack(spacing: 0) {
+                        Color.clear.frame(height: proxy.size.height * min(max(progress, 0), 1))
+                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            .fill(accentColor)
+                    }
                 }
             }
             .frame(width: width)
             .accessibilityHidden(true)
         } else {
-            RoundedRectangle(cornerRadius: 3, style: .continuous)
+            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
                 .fill(accentColor)
                 .frame(width: width)
                 .accessibilityHidden(true)
@@ -1239,21 +1237,34 @@ private struct ScheduleLessonCard: View {
                 CachedAsyncImage(url: url) { image in
                     image.resizable().scaledToFill()
                 } placeholder: {
-                    Circle().fill(Color(uiColor: .tertiarySystemGroupedBackground))
+                    teacherPlaceholderAvatar(size: size)
                 }
             } else {
-                ZStack {
-                    Circle().fill(Color(uiColor: .tertiarySystemGroupedBackground))
-                    Image(systemName: "person.fill")
-                        .font(.caption2)
-                        .foregroundStyle(cardSecondaryForeground)
-                }
+                teacherPlaceholderAvatar(size: size)
             }
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
         .saturation(isPast ? 0 : 1)
         .opacity(isPast ? 0.7 : 1)
+    }
+
+    private func teacherPlaceholderAvatar(size: CGFloat) -> some View {
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(uiColor: .secondarySystemFill),
+                    Color(uiColor: .tertiarySystemFill)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            Image(systemName: "person.crop.circle.fill")
+                .resizable()
+                .scaledToFit()
+                .padding(size * 0.18)
+                .foregroundStyle(cardSecondaryForeground.opacity(0.75))
+        }
     }
 
     private func teacherPhotoURL(for teacher: DisciplineEmployee?) -> URL? {

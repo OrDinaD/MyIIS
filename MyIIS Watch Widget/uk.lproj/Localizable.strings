@@ -11,7 +11,10 @@
 "watch_widget_name" = "Наступне заняття";
 "watch_widget_description" = "Показує поточне або наступне заняття, час та аудиторію.";
 "watch_widget_no_events" = "Занять більше немає";
+"watch_widget_no_events_short" = "Пар немає";
 "watch_widget_until" = "до";
 "watch_widget_in" = "через";
+"watch_widget_at" = "о";
+"watch_widget_soon" = "незабаром";
 "watch_widget_current_class" = "Пара";
 "watch_widget_upcoming_class_short" = "П";

@@ -2045,6 +2045,28 @@
         }
       }
     },
+    "Консультация, рецензирование" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кансультацыя, рэцэнзаванне"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consultation, reviewing"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Консультация, рецензирование"
+          }
+        }
+      }
+    },
     "Моя группа" : {
       "localizations" : {
         "be" : {
@@ -3002,6 +3024,28 @@
         }
       }
     },
+    "Расписание" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расклад"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schedule"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Расписание"
+          }
+        }
+      }
+    },
     "Расписание не загружено" : {
       "localizations" : {
         "be" : {
@@ -3087,6 +3131,7 @@
       }
     },
     "Сдача задолженностей, рецензирование" : {
+      "extractionState" : "stale",
       "localizations" : {
         "be" : {
           "stringUnit" : {

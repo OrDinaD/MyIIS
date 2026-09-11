@@ -1,7 +1,7 @@
 import SwiftUI
 import WidgetKit
 
-private struct WatchWidgetSnapshot: Codable, Sendable {
+struct WatchWidgetSnapshot: Codable, Sendable {
     let groupName: String
     let startDate: Date?
     let endDate: Date?
@@ -34,57 +34,125 @@ private struct WatchWidgetSnapshot: Codable, Sendable {
             let endParts = endTime.split(separator: ":").compactMap { Int($0) }
             guard startParts.count == 2, endParts.count == 2 else { return nil }
 
-            var components = calendar.dateComponents([.year, .month, .day], from: date)
-            components.hour = startParts[0]
-            components.minute = startParts[1]
-            guard let start = calendar.date(from: components) else { return nil }
-            components.hour = endParts[0]
-            components.minute = endParts[1]
-            guard let end = calendar.date(from: components), end > start else { return nil }
+            var startComponents = calendar.dateComponents([.year, .month, .day], from: date)
+            startComponents.hour = startParts[0]
+            startComponents.minute = startParts[1]
+            guard let start = calendar.date(from: startComponents) else { return nil }
+
+            var endComponents = startComponents
+            endComponents.hour = endParts[0]
+            endComponents.minute = endParts[1]
+            guard var end = calendar.date(from: endComponents) else { return nil }
+
+            // Handle lessons crossing midnight gracefully
+            if end <= start {
+                guard let nextDayEnd = calendar.date(byAdding: .day, value: 1, to: end) else { return nil }
+                end = nextDayEnd
+            }
+
             return DateInterval(start: start, end: end)
         }
 
-        func isCurrent(at date: Date) -> Bool {
-            interval()?.contains(date) == true
+        func isCurrent(at date: Date, calendar: Calendar = .current) -> Bool {
+            interval(calendar: calendar)?.contains(date) == true
         }
 
-        func progress(at date: Date) -> Double {
-            guard let interval = interval() else { return 0 }
+        func progress(at date: Date, calendar: Calendar = .current) -> Double {
+            guard let interval = interval(calendar: calendar) else { return 0 }
             if date <= interval.start { return 0 }
             if date >= interval.end { return 1 }
             return date.timeIntervalSince(interval.start) / interval.duration
         }
+
+        func shortLocation() -> String? {
+            guard let location, !location.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return nil
+            }
+            var text = location.trimmingCharacters(in: .whitespacesAndNewlines)
+            if text.hasSuffix(" к.") {
+                text = String(text.dropLast(4)).trimmingCharacters(in: .whitespacesAndNewlines)
+            } else if text.hasSuffix(" к") {
+                text = String(text.dropLast(2)).trimmingCharacters(in: .whitespacesAndNewlines)
+            } else if text.hasSuffix(" корп.") {
+                text = String(text.dropLast(6)).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            return text.isEmpty ? nil : text
+        }
     }
 
-    func upcomingEvents(at date: Date) -> [Event] {
+    func relevantEvent(at date: Date, calendar: Calendar = .current) -> Event? {
+        let active = events.first { $0.isCurrent(at: date, calendar: calendar) }
+        if let active { return active }
+
+        return events
+            .compactMap { event -> (Event, Date)? in
+                guard let start = event.interval(calendar: calendar)?.start, start > date else {
+                    return nil
+                }
+                return (event, start)
+            }
+            .sorted { $0.1 < $1.1 }
+            .first?
+            .0
+    }
+
+    func upcomingEvents(at date: Date, calendar: Calendar = .current) -> [Event] {
         events
-            .filter { ($0.interval()?.end ?? $0.date ?? .distantPast) >= date }
+            .filter { ($0.interval(calendar: calendar)?.end ?? $0.date ?? .distantPast) >= date }
             .sorted {
-                ($0.interval()?.start ?? $0.date ?? .distantFuture) <
-                ($1.interval()?.start ?? $1.date ?? .distantFuture)
+                let leftStart = $0.interval(calendar: calendar)?.start ?? $0.date ?? .distantFuture
+                let rightStart = $1.interval(calendar: calendar)?.start ?? $1.date ?? .distantFuture
+                return leftStart < rightStart
             }
     }
 
     static func placeholder(now: Date = .now) -> WatchWidgetSnapshot {
         let calendar = Calendar.current
-        let start = calendar.date(byAdding: .minute, value: -20, to: now) ?? now
-        let end = calendar.date(byAdding: .minute, value: 65, to: now) ?? now
+        let start = calendar.date(byAdding: .minute, value: -25, to: now) ?? now
+        let end = calendar.date(byAdding: .minute, value: 55, to: now) ?? now
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         return WatchWidgetSnapshot(
-            groupName: "Летняя школа",
+            groupName: "420603",
             startDate: now,
             endDate: now,
             events: [
                 Event(
-                    id: "preview",
+                    id: "preview-current",
                     date: now,
                     startTime: formatter.string(from: start),
                     endTime: formatter.string(from: end),
-                    title: "SwiftUI",
+                    title: "АМД",
                     subtitle: "Лекция",
-                    location: "301",
+                    location: "409-1 к.",
                     lessonType: "Лекция",
+                    kind: .other
+                )
+            ],
+            updatedAt: now
+        )
+    }
+
+    static func upcomingPlaceholder(now: Date = .now) -> WatchWidgetSnapshot {
+        let calendar = Calendar.current
+        let start = calendar.date(byAdding: .minute, value: 35, to: now) ?? now
+        let end = calendar.date(byAdding: .minute, value: 115, to: now) ?? now
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return WatchWidgetSnapshot(
+            groupName: "420603",
+            startDate: now,
+            endDate: now,
+            events: [
+                Event(
+                    id: "preview-upcoming",
+                    date: now,
+                    startTime: formatter.string(from: start),
+                    endTime: formatter.string(from: end),
+                    title: "Базы данных",
+                    subtitle: "Практика",
+                    location: "305-4",
+                    lessonType: "ПЗ",
                     kind: .other
                 )
             ],
@@ -114,7 +182,7 @@ private struct ScheduleWidgetEntry: TimelineEntry {
     let snapshot: WatchWidgetSnapshot?
 
     var relevance: TimelineEntryRelevance? {
-        guard let event = snapshot?.upcomingEvents(at: date).first,
+        guard let event = snapshot?.relevantEvent(at: date),
               let interval = event.interval() else {
             return nil
         }
@@ -129,7 +197,7 @@ private struct ScheduleWidgetEntry: TimelineEntry {
     }
 
     var currentEvent: WatchWidgetSnapshot.Event? {
-        snapshot?.upcomingEvents(at: date).first
+        snapshot?.relevantEvent(at: date)
     }
 }
 
@@ -162,7 +230,10 @@ private struct ScheduleWidgetProvider: TimelineProvider {
             guard let interval = event.interval() else { continue }
             if interval.start >= now {
                 dates.insert(interval.start)
-                dates.insert(interval.start.addingTimeInterval(-30 * 60))
+                let leadTime = interval.start.addingTimeInterval(-30 * 60)
+                if leadTime >= now {
+                    dates.insert(leadTime)
+                }
             }
             if interval.end >= now {
                 dates.insert(interval.end)
@@ -205,73 +276,91 @@ private struct ScheduleWidgetView: View {
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
+    // MARK: - Rectangular (Max 3 lines, high-contrast, clean hierarchy)
+
     private var rectangularContent: some View {
         Group {
             if let event = entry.currentEvent {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 4) {
-                            Image(systemName: event.isCurrent(at: entry.date) ? "clock.fill" : "calendar")
-                            statusText(event)
-                                .monospacedDigit()
-                        }
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .widgetAccentable()
+                VStack(alignment: .leading, spacing: 2) {
+                    // Line 1: Status icon, time interval, and state pill
+                    HStack(alignment: .center, spacing: 4) {
+                        Image(systemName: event.isCurrent(at: entry.date) ? "clock.fill" : "calendar")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(event.isCurrent(at: entry.date) ? Color.green : Color.orange)
+                            .widgetAccentable()
 
-                        Text(event.title)
-                            .font(.headline.weight(.semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.72)
-
-                        Text([event.location, event.lessonType].compactMap { $0 }.joined(separator: " · "))
-                            .font(.caption)
+                        statusTimeText(event)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+
+                        Spacer(minLength: 4)
+
+                        statusBadge(event)
                     }
 
-                    Spacer(minLength: 4)
+                    // Line 2: Subject Title (prominent semibold)
+                    Text(event.title)
+                        .font(.headline.weight(.semibold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.72)
 
-                    VStack(alignment: .trailing, spacing: 3) {
-                        Text(
-                            event.isCurrent(at: entry.date)
-                                ? String(localized: "watch_widget_current_class")
-                                : String(localized: "watch_widget_upcoming_class_short")
-                        )
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(event.isCurrent(at: entry.date) ? Color.green : Color.orange)
-
-                        Text("\(event.startTime)-\(event.endTime)")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    // Line 3: Location and Lesson Type
+                    let details = detailsString(for: event)
+                    if !details.isEmpty {
+                        Text(details)
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
                 }
             } else {
-                Label("watch_widget_no_events", systemImage: "checkmark.circle")
-                    .font(.headline)
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                        .widgetAccentable()
+
+                    Text("watch_widget_no_events")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             }
         }
     }
+
+    // MARK: - Circular (Concentric progress ring or gauge + crisp central icon/time)
 
     private var circularContent: some View {
         Group {
             if let event = entry.currentEvent {
                 if event.isCurrent(at: entry.date), let interval = event.interval() {
-                    ProgressView(timerInterval: interval.start ... interval.end, countsDown: false)
-                        .labelsHidden()
-                        .tint(.green)
-                        .widgetAccentable()
-                        .accessibilityLabel(event.title)
-                        .accessibilityValue(Text(timerInterval: interval.start ... interval.end, countsDown: true))
+                    ZStack {
+                        ProgressView(timerInterval: interval.start ... interval.end, countsDown: false)
+                            .progressViewStyle(.circular)
+                            .tint(.green)
+                            .widgetAccentable()
+                            .labelsHidden()
+
+                        Image(systemName: "clock.fill")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.primary)
+                            .widgetAccentable()
+                    }
+                    .accessibilityLabel(event.title)
+                    .accessibilityValue(Text(timerInterval: interval.start ... interval.end, countsDown: true))
                 } else {
                     Gauge(value: 0) {
                         Image(systemName: "calendar")
+                            .widgetAccentable()
                     } currentValueLabel: {
                         Text(event.startTime)
-                            .font(.caption2.monospacedDigit())
-                            .minimumScaleFactor(0.5)
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.55)
                     }
                     .gaugeStyle(.accessoryCircular)
                     .widgetAccentable()
@@ -279,10 +368,16 @@ private struct ScheduleWidgetView: View {
                     .accessibilityValue(event.startTime)
                 }
             } else {
-                Image(systemName: "checkmark")
+                Image(systemName: "checkmark.circle")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .widgetAccentable()
+                    .accessibilityLabel(Text("watch_widget_no_events"))
             }
         }
     }
+
+    // MARK: - Inline
 
     private var inlineContent: some View {
         Group {
@@ -290,10 +385,13 @@ private struct ScheduleWidgetView: View {
                 Text("\(event.startTime) \(event.title)")
                     .lineLimit(1)
             } else {
-                Text("watch_widget_no_events")
+                Text("watch_widget_no_events_short")
+                    .lineLimit(1)
             }
         }
     }
+
+    // MARK: - Corner (watchOS)
 
 #if os(watchOS)
     private var cornerContent: some View {
@@ -302,12 +400,16 @@ private struct ScheduleWidgetView: View {
                 Text(event.isCurrent(at: entry.date) ? event.endTime : event.startTime)
                     .font(.headline.monospacedDigit())
                     .widgetLabel {
-                        Text(event.title)
+                        if let loc = event.shortLocation() {
+                            Text("\(event.title) · \(loc)")
+                        } else {
+                            Text(event.title)
+                        }
                     }
             } else {
-                Image(systemName: "checkmark")
+                Image(systemName: "checkmark.circle")
                     .widgetLabel {
-                        Text("watch_widget_no_events")
+                        Text("watch_widget_no_events_short")
                     }
             }
         }
@@ -315,16 +417,47 @@ private struct ScheduleWidgetView: View {
     }
 #endif
 
+    // MARK: - Helpers
+
     @ViewBuilder
-    private func statusText(_ event: WatchWidgetSnapshot.Event) -> some View {
+    private func statusTimeText(_ event: WatchWidgetSnapshot.Event) -> some View {
         if event.isCurrent(at: entry.date) {
-            HStack(spacing: 2) {
-                Text("watch_widget_until")
-                Text(event.endTime)
-            }
+            Text("\(String(localized: "watch_widget_until")) \(event.endTime)")
         } else {
-            Text(event.startTime)
+            Text("\(String(localized: "watch_widget_at")) \(event.startTime)")
         }
+    }
+
+    @ViewBuilder
+    private func statusBadge(_ event: WatchWidgetSnapshot.Event) -> some View {
+        if event.isCurrent(at: entry.date) {
+            Text(String(localized: "watch_widget_current_class"))
+                .font(.system(size: 9, weight: .bold))
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1.5)
+                .background(Capsule().fill(Color.green.opacity(0.2)))
+                .foregroundStyle(Color.green)
+                .widgetAccentable()
+        } else if let interval = event.interval(), interval.start.timeIntervalSince(entry.date) <= 45 * 60 {
+            Text(String(localized: "watch_widget_soon"))
+                .font(.system(size: 9, weight: .bold))
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1.5)
+                .background(Capsule().fill(Color.orange.opacity(0.2)))
+                .foregroundStyle(Color.orange)
+                .widgetAccentable()
+        } else {
+            Text("\(event.startTime)-\(event.endTime)")
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+    }
+
+    private func detailsString(for event: WatchWidgetSnapshot.Event) -> String {
+        [event.shortLocation(), event.lessonType]
+            .compactMap { $0 }
+            .joined(separator: " · ")
     }
 }
 
@@ -351,14 +484,40 @@ struct MyIIS_Watch_Widget: Widget {
     }
 }
 
-#Preview(as: .accessoryRectangular) {
+// MARK: - Previews
+
+#Preview("Rectangular (Идёт пара)", as: .accessoryRectangular) {
     MyIIS_Watch_Widget()
 } timeline: {
     ScheduleWidgetEntry(date: .now, snapshot: .placeholder())
 }
 
-#Preview(as: .accessoryCircular) {
+#Preview("Rectangular (Следующая)", as: .accessoryRectangular) {
+    MyIIS_Watch_Widget()
+} timeline: {
+    ScheduleWidgetEntry(date: .now, snapshot: .upcomingPlaceholder())
+}
+
+#Preview("Rectangular (Пусто)", as: .accessoryRectangular) {
+    MyIIS_Watch_Widget()
+} timeline: {
+    ScheduleWidgetEntry(date: .now, snapshot: nil)
+}
+
+#Preview("Circular (Идёт пара)", as: .accessoryCircular) {
     MyIIS_Watch_Widget()
 } timeline: {
     ScheduleWidgetEntry(date: .now, snapshot: .placeholder())
+}
+
+#Preview("Circular (Следующая)", as: .accessoryCircular) {
+    MyIIS_Watch_Widget()
+} timeline: {
+    ScheduleWidgetEntry(date: .now, snapshot: .upcomingPlaceholder())
+}
+
+#Preview("Circular (Пусто)", as: .accessoryCircular) {
+    MyIIS_Watch_Widget()
+} timeline: {
+    ScheduleWidgetEntry(date: .now, snapshot: nil)
 }

@@ -11,7 +11,10 @@
 "watch_widget_name" = "Next Class";
 "watch_widget_description" = "Shows the current or next class, time, and room.";
 "watch_widget_no_events" = "No more classes";
+"watch_widget_no_events_short" = "No classes";
 "watch_widget_until" = "until";
 "watch_widget_in" = "in";
+"watch_widget_at" = "at";
+"watch_widget_soon" = "soon";
 "watch_widget_current_class" = "Class";
 "watch_widget_upcoming_class_short" = "C";

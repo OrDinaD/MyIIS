@@ -43,7 +43,7 @@ struct AttendanceWidgetProvider: TimelineProvider {
 
     private static var placeholderMonth: String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "ru_RU")
+        formatter.locale = .autoupdatingCurrent
         formatter.setLocalizedDateFormatFromTemplate("LLLL")
         return formatter.string(from: Date()).capitalized
     }

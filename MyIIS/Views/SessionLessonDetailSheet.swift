@@ -44,7 +44,7 @@ struct ScheduleLessonDetailSheet: View {
             .padding(.top, 20)
             .padding(.bottom, 28)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(.clear)
         .fullScreenCover(item: $photoTeacher) { teacher in
             TeacherPhotoPreview(teacher: teacher)
         }
@@ -59,15 +59,18 @@ struct ScheduleLessonDetailSheet: View {
                 dismiss()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .frame(width: 48, height: 48)
-                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: Circle())
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay {
+                        Circle().strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5)
+                    }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(shortTitle)
-                .font(.title.bold())
+                .font(.title2.bold())
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
@@ -272,11 +275,31 @@ struct ScheduleLessonDetailSheet: View {
                 detailRow("Тип", value: lesson.lessonTypeAbbrev.nilIfBlank ?? "--")
                 detailRow("Подгруппа", value: lesson.subgroup > 0 ? String(lesson.subgroup) : "--")
                 detailRow("Аудитория", value: lesson.location.nilIfBlank ?? "--")
-                detailRow("Недели", value: weekText, showsDivider: false)
+                weeksRow
             }
             .padding(16)
             .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         }
+    }
+
+    private var weeksRow: some View {
+        HStack(alignment: .center) {
+            Text(LocalizedStringKey("Недели"))
+                .font(.title3.weight(.regular))
+                .foregroundStyle(.primary)
+
+            Spacer(minLength: 16)
+
+            HStack(spacing: 8) {
+                ForEach(1...4, id: \.self) { week in
+                    let isActive = lesson.weekNumbers.contains(week)
+                    Image(systemName: isActive ? "\(week).circle.fill" : "\(week).circle")
+                        .font(.title3.weight(isActive ? .semibold : .regular))
+                        .foregroundStyle(isActive ? Color.accentColor : Color.secondary.opacity(0.35))
+                }
+            }
+        }
+        .padding(.vertical, 13)
     }
 
     private func detailRow(_ title: String, value: String, showsDivider: Bool = true) -> some View {
@@ -379,48 +402,111 @@ private struct TeacherPhotoPreview: View {
     @Environment(\.dismiss) private var dismiss
     let teacher: DisciplineEmployee
 
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+    @State private var rotation: Angle = .zero
+    @State private var lastRotation: Angle = .zero
+
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.black
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismiss()
+                }
 
-            VStack(spacing: 24) {
-                HStack {
-                    Spacer()
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title)
-                            .foregroundStyle(.white.opacity(0.8))
-                    }
+            if let url = photoURL {
+                CachedAsyncImage(url: url) { image in
+                    image
+                        .resizable()
+                        .scaledToFit()
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                } placeholder: {
+                    ProgressView()
+                        .tint(.white)
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 16)
-
-                Spacer()
-
-                if let url = photoURL {
-                    CachedAsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    } placeholder: {
-                        ProgressView()
-                            .tint(.white)
+                .scaleEffect(scale)
+                .rotationEffect(rotation)
+                .offset(offset)
+                .gesture(
+                    SimultaneousGesture(
+                        MagnificationGesture()
+                            .onChanged { value in
+                                scale = max(0.8, lastScale * value)
+                            }
+                            .onEnded { _ in
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    if scale < 1.0 {
+                                        scale = 1.0
+                                        offset = .zero
+                                    } else if scale > 4.0 {
+                                        scale = 4.0
+                                    }
+                                    lastScale = scale
+                                }
+                            },
+                        RotationGesture()
+                            .onChanged { angle in
+                                rotation = lastRotation + angle
+                            }
+                            .onEnded { _ in
+                                lastRotation = rotation
+                            }
+                    )
+                )
+                .simultaneousGesture(
+                    DragGesture()
+                        .onChanged { value in
+                            if scale > 1.05 {
+                                offset = CGSize(
+                                    width: lastOffset.width + value.translation.width,
+                                    height: lastOffset.height + value.translation.height
+                                )
+                            } else {
+                                offset = CGSize(
+                                    width: value.translation.width * 0.4,
+                                    height: max(0, value.translation.height)
+                                )
+                            }
+                        }
+                        .onEnded { value in
+                            if scale <= 1.05 && value.translation.height > 90 {
+                                dismiss()
+                            } else {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                    if scale <= 1.05 {
+                                        offset = .zero
+                                        lastOffset = .zero
+                                    } else {
+                                        lastOffset = offset
+                                    }
+                                }
+                            }
+                        }
+                )
+                .onTapGesture(count: 2) {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        if scale > 1.2 {
+                            scale = 1.0
+                            lastScale = 1.0
+                            offset = .zero
+                            lastOffset = .zero
+                            rotation = .zero
+                            lastRotation = .zero
+                        } else {
+                            scale = 2.5
+                            lastScale = 2.5
+                        }
                     }
-                    .padding(.horizontal, 24)
-                } else {
-                    TeacherAvatarView(teacher: teacher, size: 160)
                 }
-
-                Text(teacher.fullName)
-                    .font(.title2.bold())
-                    .foregroundStyle(.white)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-
-                Spacer()
+            } else {
+                TeacherAvatarView(teacher: teacher, size: 160)
+                    .onTapGesture {
+                        dismiss()
+                    }
             }
         }
     }

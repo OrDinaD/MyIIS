@@ -19,7 +19,7 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
     let snapshot: SessionScheduleWidgetSnapshot?
 
     var groupName: String {
-        snapshot?.groupName ?? "420603"
+        snapshot?.groupName ?? String(localized: "Расписание")
     }
 
     var upcomingEvents: [SessionScheduleWidgetSnapshot.Event] {
@@ -36,39 +36,47 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
         }
     }
 
-    static let placeholderSnapshot = SessionScheduleWidgetSnapshot(
-        groupName: "420603",
-        startDate: Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 8)),
-        endDate: Calendar.current.date(from: DateComponents(year: 2026, month: 7, day: 2)),
-        events: [
-            .init(
-                id: "announcement-1",
-                date: Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 8)),
-                startTime: "14:00",
-                endTime: "16:00",
-                title: String(localized: "Объявление"),
-                subtitle: String(localized: "Сдача задолженностей, рецензирование"),
-                location: nil,
-                lessonType: String(localized: "Объявление"),
-                kind: .announcement
-            ),
-            .init(
-                id: "tppo-exam",
-                date: Calendar.current.date(from: DateComponents(year: 2026, month: 6, day: 12)),
-                startTime: "08:30",
-                endTime: "14:00",
-                title: "ТППО",
-                subtitle: "604-5 к",
-                location: "604-5 к",
-                lessonType: String(localized: "Экзамен"),
-                kind: .exam
-            )
-        ],
-        updatedAt: Date()
-    )
+    static var placeholderSnapshot: SessionScheduleWidgetSnapshot {
+        let calendar = Calendar.current
+        let now = Date()
+        let start = calendar.date(byAdding: .day, value: -1, to: now)
+        let end = calendar.date(byAdding: .day, value: 14, to: now)
+        return SessionScheduleWidgetSnapshot(
+            groupName: String(localized: "Расписание"),
+            startDate: start,
+            endDate: end,
+            events: [
+                .init(
+                    id: "announcement-1",
+                    date: now,
+                    startTime: "14:00",
+                    endTime: "16:00",
+                    title: String(localized: "Объявление"),
+                    subtitle: String(localized: "Консультация, рецензирование"),
+                    location: nil,
+                    lessonType: String(localized: "Объявление"),
+                    kind: .announcement
+                ),
+                .init(
+                    id: "tppo-exam",
+                    date: calendar.date(byAdding: .day, value: 3, to: now),
+                    startTime: "08:30",
+                    endTime: "14:00",
+                    title: "ТППО",
+                    subtitle: "604-5 к",
+                    location: "604-5 к",
+                    lessonType: String(localized: "Экзамен"),
+                    kind: .exam
+                )
+            ],
+            updatedAt: now
+        )
+    }
 
-    static let classPreviewSnapshot: SessionScheduleWidgetSnapshot = {
-        let day = Calendar.current.date(from: DateComponents(year: 2026, month: 9, day: 3))
+    static var classPreviewSnapshot: SessionScheduleWidgetSnapshot {
+        let calendar = Calendar.current
+        let now = Date()
+        let day = calendar.startOfDay(for: now)
         let values = [
             ClassPreviewValue(startTime: "10:05", endTime: "11:30", title: "АМД", location: "605-5 к.", lessonType: "ЛР"),
             ClassPreviewValue(startTime: "12:00", endTime: "13:25", title: "ОМО", location: "224-5 к.", lessonType: "ЛР"),
@@ -90,13 +98,13 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
             )
         }
         return SessionScheduleWidgetSnapshot(
-            groupName: "420603",
+            groupName: String(localized: "Расписание"),
             startDate: day,
             endDate: day,
             events: events,
-            updatedAt: Date()
+            updatedAt: now
         )
-    }()
+    }
 }
 
 struct SessionScheduleWidgetProvider: TimelineProvider {
@@ -544,10 +552,10 @@ struct SessionScheduleWidgetView: View {
         GeometryReader { proxy in
             Group {
                 if isActive, let interval = event.interval() {
-                    ProgressView(timerInterval: interval.start ... interval.end, countsDown: false)
+                    ProgressView(timerInterval: interval.start ... interval.end, countsDown: true)
                         .labelsHidden()
                         .tint(accent)
-                        .rotationEffect(.degrees(90))
+                        .rotationEffect(.degrees(-90))
                         .frame(width: proxy.size.height, height: 6)
                         .position(x: 3, y: proxy.size.height / 2)
                 } else {
@@ -1095,6 +1103,17 @@ struct SessionScheduleWidget: Widget {
 } timeline: {
     SessionScheduleWidgetEntry(
         date: SessionScheduleWidgetEntry.classPreviewSnapshot.startDate ?? .now,
+        snapshot: SessionScheduleWidgetEntry.classPreviewSnapshot
+    )
+}
+
+#Preview("Пары Medium (Идет пара)", as: .systemMedium) {
+    ClassScheduleWidget()
+} timeline: {
+    let base = Calendar.current.startOfDay(for: .now)
+    let activeTime = Calendar.current.date(byAdding: .minute, value: 10 * 60 + 35, to: base) ?? .now
+    SessionScheduleWidgetEntry(
+        date: activeTime,
         snapshot: SessionScheduleWidgetEntry.classPreviewSnapshot
     )
 }

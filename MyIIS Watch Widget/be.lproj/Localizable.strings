@@ -11,7 +11,10 @@
 "watch_widget_name" = "Наступны занятак";
 "watch_widget_description" = "Паказвае бягучы або наступны занятак, час і аўдыторыю.";
 "watch_widget_no_events" = "Заняткаў больш няма";
+"watch_widget_no_events_short" = "Параў няма";
 "watch_widget_until" = "да";
 "watch_widget_in" = "праз";
+"watch_widget_at" = "у";
+"watch_widget_soon" = "хутка";
 "watch_widget_current_class" = "Занятак";
 "watch_widget_upcoming_class_short" = "З";
