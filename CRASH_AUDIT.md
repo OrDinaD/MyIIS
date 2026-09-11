@@ -1,9 +1,17 @@
 # Отчёт о расследовании и устранении сбоев (Crash Rate Audit) MyIIS
 
-**Дата расследования:** 18 августа 2026 г.  
-**Целевая версия:** MyIIS 1.1.0 (Release)  
+**Дата расследования:** 18 августа 2026 г. – 11 сентября 2026 г.  
+**Целевая версия:** MyIIS 1.1.11 (Release)  
 **Базовая стабильная версия:** MyIIS 1.0.9  
-**Текущий статус:** `RESOLVED & VERIFIED` (Все 218 unit/regression тестов пройдены, сборка проекта успешна, 0 предупреждений)
+**Текущий статус кодовой базы:** `regression tested` (Целевые регрессионные наборы успешно пройдены, 0 ошибок сборки, 0 предупреждений анализаторов)
+
+### Шкала состояний дефектов (Defect Lifecycle)
+- `observed`: сбой зафиксирован в телеметрии App Store Connect / Xcode Organizer / логах.
+- `root cause confirmed`: первопричина сбоя локализована в коде и подтверждена трассировкой.
+- `fixed in HEAD`: исправление реализовано в рабочей ветке.
+- `regression tested`: написаны и успешно выполнены изолированные автоматические тесты против регрессии.
+- `shipped`: исправление включено в опубликованную в App Store версию.
+- `unresolved`: дефект не подтверждён либо требует дополнительной телеметрии.
 
 ---
 
@@ -161,3 +169,17 @@
    Добавить в CI прогон фоновых сценариев с симуляцией `e -l objc -- (void)[[BGTaskScheduler sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"com.OrDinaD.MyIIS.academic-refresh"]`.
 4. **Мониторинг TestFlight:**  
    Установить автоматический алерт в App Store Connect при превышении порога Crash Rate > 0.5%.
+
+---
+
+## 11. Анализ и статус сбоев версий 1.1.1–1.1.10 (App Store Connect / HEAD Audit)
+
+| Сигнатура сбоя | Первопричина | Исправление | Регрессионный тест | Статус |
+|---|---|---|---|---|
+| `libdispatch: _dispatch_assert_queue_fail` / `CrashDiagnosticManager.performance-heartbeat` | Callback фонового таймера GCD на utility queue унаследовал `@MainActor` изоляцию, что приводило к `_swift_task_checkIsolatedSwift` → SIGTRAP | Полное удаление `DispatchSourceTimer` и `assumeIsolated`, переход на `Task.detached(priority: .utility)` с явным `await MainActor.run` | `CrashDiagnosticManagerTests.testPerformanceHeartbeatRunsFromBackgroundQueueWithoutExecutorAssertion` | `fixed in HEAD`, `regression tested` |
+| `AttributeGraph: invalidation_precondition` / `EmployeeProfileView` | Синхронный парсинг HTML / WebKit / `NSAttributedString` в теле вычисляемого свойства `body` / `ForEach` во время прохода layout | Переход на чистый статический текст (`Text(section.textContent)`) без WebKit-парсинга в SwiftUI `body` | `EmployeesTests` / `EmployeeProfileViewModelTests` | `fixed in HEAD` |
+| `AppIntents: PerformActionExecutorTask.perform(intent:findViewIntent:) +972/+1396` | Изоляция `@MainActor` на data-only интентах (`ShowAverageScoreIntent`, `ShowAbsencesIntent`, `ShowGroupIntent`), из-за чего AppIntents искал окно / View в headless фоновом режиме | Снятие `@MainActor` с data-only интентов с безопасным чтением хранилища через `await MainActor.run`; сохранение `@MainActor` на навигационном `OpenMyIISSectionIntent` (`OpenIntent`) | `MyIISIntentsTests` (тесты значений, отсутствия данных, выполнение в фоновом потоке `Task.detached`, покрытие секций и шорткатов) | `root cause confirmed`, `fixed in HEAD`, `regression tested` |
+| `ScheduleServiceViewModel.parse(time:on:)` | Риск передачи некорректных или выходящих за границы диапазонов строк времени (`0...23`, `0...59`) | Валидация диапазонов часов и минут, тримминг пробелов, строгая обработка перехода на летнее время (DST) и UTC | `ScheduleTimeParsingTests` (8 тестов: стандартное время, полночь, границы суток, пробелы, невалидные часы/минуты, битый ввод, DST, UTC) | `fixed in HEAD`, `regression tested` |
+| `AccountSettingsViewModel.isPasswordValid` | Сбой регулярного выражения в `NSPredicate` со спецсимволами при вводе пароля | Замена `NSPredicate` на чистый Swift (`CharacterSet`, `Character`) | `AccountSettingsModelsTests.testPasswordValidation` | `shipped` |
+| `BGAppRefreshTask / AcademicChangeNotificationService` | Вызов `@MainActor` замыкания из системного пула очередей `BGTaskScheduler` | Регистрация с явным `using: .main`, атомарное завершение задачи по expiration | `CrashRegressionTests` (218 тестов) | `shipped` |
+

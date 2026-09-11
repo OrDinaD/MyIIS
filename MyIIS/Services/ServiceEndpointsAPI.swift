@@ -691,7 +691,7 @@ final class ServiceEndpointsAPI {
         case 200 ... 299:
             persistCache(data: data, for: request)
             return data
-        case 401:
+        case 401, 403:
             throw APIError.unauthorized(message: NSLocalizedString(
                 "api_error_session_expired",
                 value: "Сессия истекла. Войдите заново.",

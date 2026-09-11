@@ -77,6 +77,16 @@ final class APIServiceTests: XCTestCase {
         }
     }
 
+    func testHandleStatusCode_Forbidden_ThrowsUnauthorized() {
+        let emptyData = Data()
+        XCTAssertThrowsError(try apiService.handleStatusCode(403, data: emptyData)) { error in
+            guard case APIError.unauthorized = error else {
+                XCTFail("Expected APIError.unauthorized for 403")
+                return
+            }
+        }
+    }
+
     func testHandleStatusCode_Unavailable_ThrowsServiceUnavailable() {
         // Specific class: 418
         let emptyData = Data()

@@ -125,4 +125,21 @@ final class CrashDiagnosticManagerTests: XCTestCase {
         XCTAssertEqual(lastError?.statusCode, 502)
         XCTAssertEqual(lastError?.message, "Bad Gateway")
     }
+
+    func testPerformanceHeartbeatRunsFromBackgroundQueueWithoutExecutorAssertion() async {
+        let manager = CrashDiagnosticManager.shared
+        await MainActor.run {
+            manager.start()
+        }
+
+        // 1. Allow the detached background utility task to cycle multiple times
+        try? await Task.sleep(nanoseconds: 600_000_000)
+
+        // 2. Explicitly trigger background heartbeat tick from detached background context
+        await manager.triggerHeartbeatTickFromBackground()
+
+        await MainActor.run {
+            manager.stop()
+        }
+    }
 }

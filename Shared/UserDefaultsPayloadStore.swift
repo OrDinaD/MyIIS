@@ -24,7 +24,11 @@ enum UserDefaultsPayloadStore {
     }()
 
     private static func cacheDirectory() -> URL? {
-        resolvedCacheDirectory
+        guard let resolved = resolvedCacheDirectory else { return nil }
+        if !FileManager.default.fileExists(atPath: resolved.path) {
+            try? FileManager.default.createDirectory(at: resolved, withIntermediateDirectories: true)
+        }
+        return resolved
     }
 
     private static func fileURL(forKey key: String) -> URL? {
@@ -38,14 +42,22 @@ enum UserDefaultsPayloadStore {
         // Update fast memory cache immediately
         memoryCache.setObject(data as NSData, forKey: key as NSString, cost: data.count)
 
-        // Clean up any old data from UserDefaults to free up space (fixes the 4MB limit bug)
-        defaults.removeObject(forKey: key)
-
-        guard let url = fileURL(forKey: key) else { return false }
+        guard let url = fileURL(forKey: key) else {
+            defaults.set(data, forKey: key)
+            return false
+        }
         do {
+            let directory = url.deletingLastPathComponent()
+            if !FileManager.default.fileExists(atPath: directory.path) {
+                try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            }
             try data.write(to: url, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            // Clean up any old data from UserDefaults only after successful file write
+            defaults.removeObject(forKey: key)
             return true
         } catch {
+            // Fallback to defaults to prevent data loss if disk write fails
+            defaults.set(data, forKey: key)
             return false
         }
     }

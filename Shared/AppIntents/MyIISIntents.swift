@@ -58,16 +58,21 @@ enum SectionAppEnum: String, AppEnum {
 
 // MARK: - Intents
 
-struct OpenMyIISSectionIntent: AppIntent {
+struct OpenMyIISSectionIntent: OpenIntent {
     static let title: LocalizedStringResource = "intent_open_section_title"
-    static let openAppWhenRun = true
 
     @Parameter(title: "intent_section_parameter")
-    var section: SectionAppEnum
+    var target: SectionAppEnum
+
+    init() {}
+
+    init(target: SectionAppEnum) {
+        self.target = target
+    }
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        AppIntentNavigationStore.stage(section.appSection)
+        AppIntentNavigationStore.stage(target.appSection)
         return .result()
     }
 }
@@ -76,9 +81,10 @@ struct ShowAverageScoreIntent: AppIntent {
     static let title: LocalizedStringResource = "intent_average_title"
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
-    @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        let data = MyIISDataStore.loadData()
+        let data = await MainActor.run {
+            MyIISDataStore.loadData()
+        }
 
         guard let score = data?.averageScore else {
             return .result(
@@ -101,9 +107,10 @@ struct ShowAbsencesIntent: AppIntent {
     static let title: LocalizedStringResource = "intent_absences_title"
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
-    @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        let data = MyIISDataStore.loadData()
+        let data = await MainActor.run {
+            MyIISDataStore.loadData()
+        }
 
         guard let hours = data?.unexcusedAbsences else {
             return .result(
@@ -124,9 +131,10 @@ struct ShowGroupIntent: AppIntent {
     static let title: LocalizedStringResource = "intent_group_title"
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
-    @MainActor
     func perform() async throws -> some IntentResult & ReturnsValue<String> {
-        let data = MyIISDataStore.loadData()
+        let data = await MainActor.run {
+            MyIISDataStore.loadData()
+        }
 
         guard let group = data?.userGroup else {
             return .result(

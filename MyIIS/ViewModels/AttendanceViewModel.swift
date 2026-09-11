@@ -288,8 +288,15 @@ final class AttendanceViewModel {
     }
 
     private func isNotFoundOrForbiddenError(_ error: Error) -> Bool {
-        if let apiError = error as? APIError, case .serverError(let statusCode, _) = apiError {
-            return statusCode == 404 || statusCode == 403
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .serverError(let statusCode, _):
+                return statusCode == 404 || statusCode == 403
+            case .unauthorized:
+                return true
+            default:
+                return false
+            }
         }
         return false
     }

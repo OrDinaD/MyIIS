@@ -26,7 +26,18 @@ extension APIService {
         let endpoint = baseURL.appendingPathComponent("omissions-by-student-application")
         let request = URLRequest(url: endpoint)
         logRequestDetails(request)
-        return try await performRequest(request)
+        do {
+            return try await performRequest(request)
+        } catch let apiError as APIError {
+            switch apiError {
+            case .serverError(let statusCode, _) where statusCode == 404 || statusCode == 403:
+                return []
+            case .unauthorized:
+                return []
+            default:
+                throw apiError
+            }
+        }
     }
 
     /// Количество пропусков студента по месяцам семестра

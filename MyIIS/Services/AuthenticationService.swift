@@ -23,7 +23,7 @@ class AuthenticationService: ObservableObject {
     private var token: String?
     private let allowSessionRestore: Bool
     private var sessionExpirationObservationTask: Task<Void, Never>?
-    private var sessionRecoveryTask: Task<Void, Never>?
+    private var sessionRecoveryTask: Task<Bool, Never>?
     private static let isRunningInPreviews =
         ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
     private static let isRunningUnitTests =
@@ -337,35 +337,64 @@ class AuthenticationService: ObservableObject {
             canStudentNote: loginResponse.canStudentNote
         )
     }
-    private func recoverExpiredSessionIfNeeded() {
+    @discardableResult
+    func waitForSessionRecovery() async -> Bool {
+        if let existing = sessionRecoveryTask {
+            return await existing.value
+        }
+        return await recoverExpiredSession()
+    }
+
+    @discardableResult
+    func recoverExpiredSession() async -> Bool {
+        if let existing = sessionRecoveryTask {
+            return await existing.value
+        }
+
         guard allowSessionRestore,
               currentUser != nil,
-              !isLoading,
-              sessionRecoveryTask == nil else {
-            return
+              !isLoading else {
+            return false
         }
 
         isRestoringSession = true
-        sessionRecoveryTask = Task { [weak self] in
-            guard let self else { return }
-
-            do {
-                guard try self.credentialStore.retrieve() != nil else {
-                    self.requireInteractiveLoginAfterSessionExpiry()
+        let task = Task<Bool, Never> { [weak self] () -> Bool in
+            guard let self else { return false }
+            defer {
+                Task { @MainActor in
                     self.sessionRecoveryTask = nil
-                    return
+                    self.isRestoringSession = false
                 }
-            } catch {
-                self.logService.log(
-                    "⚠️ Failed to access credentials for session recovery: \(error.localizedDescription)"
-                )
-                self.requireInteractiveLoginAfterSessionExpiry()
-                self.sessionRecoveryTask = nil
-                return
             }
 
-            await self.restoreSessionIfPossible()
-            self.sessionRecoveryTask = nil
+            do {
+                guard let credentials = try self.credentialStore.retrieve() else {
+                    self.requireInteractiveLoginAfterSessionExpiry()
+                    return false
+                }
+
+                self.logService.log("🔁 Attempting silent login with stored credentials for session recovery.")
+                await self.login(
+                    username: credentials.username,
+                    password: credentials.password,
+                    persistCredentials: false,
+                    isSilent: true
+                )
+                return self.isSessionReady
+            } catch {
+                self.logService.log("⚠️ Failed to access credentials for session recovery: \(error.localizedDescription)")
+                self.requireInteractiveLoginAfterSessionExpiry()
+                return false
+            }
+        }
+
+        sessionRecoveryTask = task
+        return await task.value
+    }
+
+    private func recoverExpiredSessionIfNeeded() {
+        Task { [weak self] in
+            await self?.recoverExpiredSession()
         }
     }
 

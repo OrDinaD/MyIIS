@@ -1447,8 +1447,8 @@ final class ScheduleServiceViewModel {
         on date: Date,
         calendar: Calendar = .current
     ) -> (start: Date, end: Date)? {
-        guard let start = parse(time: lesson.startLessonTime, on: date, calendar: calendar),
-              let end = parse(time: lesson.endLessonTime, on: date, calendar: calendar) else {
+        guard let start = Self.parse(time: lesson.startLessonTime, on: date, calendar: calendar),
+              let end = Self.parse(time: lesson.endLessonTime, on: date, calendar: calendar) else {
             return nil
         }
         if end > start {
@@ -1457,13 +1457,20 @@ final class ScheduleServiceViewModel {
         return nil
     }
 
-    private func parse(time: String, on date: Date, calendar: Calendar = .current) -> Date? {
-        let components = time.split(separator: ":")
+    nonisolated static func parse(time: String, on date: Date, calendar: Calendar = .current) -> Date? {
+        let trimmed = time.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let components = trimmed.split(separator: ":")
         guard components.count >= 2,
-              let hour = Int(components[0]),
-              let minute = Int(components[1]) else {
+              let hour = Int(components[0].trimmingCharacters(in: .whitespaces)),
+              let minute = Int(components[1].trimmingCharacters(in: .whitespaces)),
+              (0...23).contains(hour),
+              (0...59).contains(minute)
+        else {
             return nil
         }
+
         return calendar.date(
             bySettingHour: hour,
             minute: minute,

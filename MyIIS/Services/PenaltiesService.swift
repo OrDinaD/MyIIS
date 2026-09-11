@@ -43,6 +43,9 @@ final class PenaltiesService: PenaltiesServicing {
             logService.log("Penalties status code: \(httpResponse.statusCode)")
             return try resolvePenalties(data: data, response: httpResponse, request: request)
         } catch let apiError as APIError {
+            if case .unauthorized = apiError {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             return try resolveFallback(for: request, error: apiError)
         } catch {
             return try resolveFallback(for: request, error: APIError.networkError(error))
@@ -96,7 +99,7 @@ final class PenaltiesService: PenaltiesServicing {
             }
             persistCache(data: data, for: request)
             return try decodePenaltyRecords(from: data)
-        case 401:
+        case 401, 403:
             throw APIError.unauthorized(message: "Сессия истекла. Пожалуйста, выполните вход снова.")
         case 418:
             throw APIError.serviceUnavailable(message: "Сервис дисциплинарных взысканий временно недоступен")

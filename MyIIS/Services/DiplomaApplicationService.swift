@@ -200,7 +200,7 @@ final class DiplomaApplicationService: DiplomaApplicationServicing {
             case 200 ... 299:
                 persistCache(data: data, for: request)
                 return data
-            case 401:
+            case 401, 403:
                 throw APIError.unauthorized(message: decodeErrorMessage(from: data) ?? "Сессия истекла. Войдите заново.")
             case 418, 503:
                 throw APIError.serviceUnavailable(message: decodeErrorMessage(from: data) ?? "Сервис временно недоступен")
@@ -211,6 +211,9 @@ final class DiplomaApplicationService: DiplomaApplicationServicing {
                 )
             }
         } catch let apiError as APIError {
+            if case .unauthorized = apiError {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             if let cached = tryDecodeCachedData(for: request, originalError: apiError.localizedDescription) {
                 return cached
             }

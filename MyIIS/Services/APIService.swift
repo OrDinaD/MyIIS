@@ -19,7 +19,9 @@ class APIService {
     private let logService = LogService.shared
     private let userDefaults = UserDefaults.standard
 
-    init(session: URLSession = APIService.createOptimizedSession()) {
+    private static let sharedOptimizedSession: URLSession = createOptimizedSession()
+
+    init(session: URLSession = APIService.sharedOptimizedSession) {
         self.session = session
     }
 
@@ -29,6 +31,10 @@ class APIService {
         config.timeoutIntervalForRequest = 20.0
         config.timeoutIntervalForResource = 60.0
         config.httpMaximumConnectionsPerHost = 8
+
+        config.httpCookieStorage = .shared
+        config.httpShouldSetCookies = true
+        config.httpCookieAcceptPolicy = .always
 
         let cache = URLCache(
             memoryCapacity: 20 * 1024 * 1024,
@@ -305,12 +311,21 @@ class APIService {
 
     func performRequest<T: Decodable>(_ request: URLRequest, retryPolicy: NetworkRetryPolicy = .default) async throws -> T {
         var attempt = 0
+        var didAttemptSessionRecovery = false
         while true {
             do {
                 return try await performSingleRequest(request)
             } catch {
                 if let apiError = error as? APIError,
                    case .unauthorized = apiError {
+                    if request.url?.path.hasSuffix("/auth/login") != true && !didAttemptSessionRecovery {
+                        didAttemptSessionRecovery = true
+                        let recovered = await AuthenticationService.shared.waitForSessionRecovery()
+                        if recovered {
+                            logService.log("🔁 Session recovered, retrying request for \(request.url?.path ?? "")")
+                            continue
+                        }
+                    }
                     throw apiError
                 }
 
@@ -359,27 +374,40 @@ class APIService {
     }
 
     func performEmptyRequest(_ request: URLRequest) async throws {
-        do {
-            let (data, response) = try await session.data(for: request)
-            logResponse(data, response)
+        var didAttemptSessionRecovery = false
+        while true {
+            do {
+                let (data, response) = try await session.data(for: request)
+                logResponse(data, response)
 
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.invalidResponse
-            }
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw APIError.invalidResponse
+                }
 
-            try handleStatusCode(httpResponse.statusCode, data: data)
-        } catch let apiError as APIError {
-            if case .unauthorized = apiError,
-               request.url?.path.hasSuffix("/auth/login") != true {
-                AuthenticationSessionEvents.reportUnauthorized()
+                try handleStatusCode(httpResponse.statusCode, data: data)
+                return
+            } catch let apiError as APIError {
+                if case .unauthorized = apiError {
+                    if request.url?.path.hasSuffix("/auth/login") != true {
+                        AuthenticationSessionEvents.reportUnauthorized()
+                        if !didAttemptSessionRecovery {
+                            didAttemptSessionRecovery = true
+                            let recovered = await AuthenticationService.shared.waitForSessionRecovery()
+                            if recovered {
+                                logService.log("🔁 Session recovered, retrying empty request for \(request.url?.path ?? "")")
+                                continue
+                            }
+                        }
+                    }
+                }
+                throw apiError
+            } catch {
+                if isCancellationError(error) {
+                    throw CancellationError()
+                }
+                logTransportFailure(error, request: request)
+                throw APIError.networkError(error)
             }
-            throw apiError
-        } catch {
-            if isCancellationError(error) {
-                throw CancellationError()
-            }
-            logTransportFailure(error, request: request)
-            throw APIError.networkError(error)
         }
     }
 
@@ -430,6 +458,15 @@ class APIService {
                 message: message ?? NSLocalizedString(
                     "api_error_bad_credentials",
                     value: "Неверный логин или пароль",
+                    comment: ""
+                )
+            )
+        case 403:
+            logService.log("❌ 403 Forbidden / Session Expired: \(message ?? "nil")")
+            throw APIError.unauthorized(
+                message: message ?? NSLocalizedString(
+                    "api_error_session_expired",
+                    value: "Сессия истекла. Войдите заново.",
                     comment: ""
                 )
             )

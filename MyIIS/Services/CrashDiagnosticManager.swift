@@ -85,7 +85,7 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
     private let lock = NSLock()
     private var isStarted = false
     private var displayLink: CADisplayLink?
-    private var heartbeatTimer: DispatchSourceTimer?
+    private var heartbeatTask: Task<Void, Never>?
     private var monitoringStartedAt: Date?
     private var isApplicationActive = true
     private var lastFrameTimestamp: CFTimeInterval?
@@ -159,15 +159,14 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
             object: nil
         )
 
-        heartbeatTimer = makeHeartbeatTimer()
+        startHeartbeat()
     }
 
     @MainActor
     private func stopPerformanceMonitoring() {
         displayLink?.invalidate()
         displayLink = nil
-        heartbeatTimer?.cancel()
-        heartbeatTimer = nil
+        stopHeartbeat()
         NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
     }
@@ -179,6 +178,7 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
         lastFrameTimestamp = nil
         sampleStartedAt = nil
         heartbeatPending = false
+        stopHeartbeat()
     }
 
     @MainActor
@@ -187,6 +187,7 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
         lastFrameTimestamp = nil
         sampleStartedAt = nil
         displayLink?.isPaused = false
+        startHeartbeat()
     }
 
     @MainActor
@@ -237,29 +238,25 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
         sampleMaximumFrameGap = 0
     }
 
-    nonisolated private func makeHeartbeatTimer() -> DispatchSourceTimer {
-        let timer = DispatchSource.makeTimerSource(
-            queue: DispatchQueue(label: "com.OrDinaD.MyIIS.performance-heartbeat", qos: .utility)
-        )
-        timer.schedule(
-            deadline: .now() + .milliseconds(500),
-            repeating: .milliseconds(500),
-            leeway: .milliseconds(100)
-        )
-        timer.setEventHandler { [weak self] in
-            self?.scheduleMainThreadHeartbeat()
-        }
-        timer.resume()
-        return timer
-    }
-
-    nonisolated private func scheduleMainThreadHeartbeat() {
-        let sentAt = CACurrentMediaTime()
-        DispatchQueue.main.async { [weak self] in
-            MainActor.assumeIsolated {
-                self?.recordMainThreadHeartbeat(sentAt: sentAt)
+    @MainActor
+    private func startHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = Task.detached(priority: .utility) { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                if Task.isCancelled { break }
+                let sentAt = CACurrentMediaTime()
+                await MainActor.run { [weak self] in
+                    self?.recordMainThreadHeartbeat(sentAt: sentAt)
+                }
             }
         }
+    }
+
+    @MainActor
+    private func stopHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = nil
     }
 
     @MainActor
@@ -270,6 +267,14 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
             mainThreadStallCount += 1
             maximumMainThreadStallMilliseconds = max(maximumMainThreadStallMilliseconds, delayMilliseconds)
         }
+    }
+
+    nonisolated func triggerHeartbeatTickFromBackground(sentAt: CFTimeInterval = CACurrentMediaTime()) async {
+        await Task.detached(priority: .utility) { [weak self] in
+            await MainActor.run { [weak self] in
+                self?.recordMainThreadHeartbeat(sentAt: sentAt)
+            }
+        }.value
     }
 
     // MARK: - MXMetricManagerSubscriber
@@ -380,9 +385,12 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
     }
 
     nonisolated private func saveDiagnostics(_ diagnostics: [SavedCrashDiagnostic]) {
+        lock.lock()
+        defer { lock.unlock() }
+
         guard let dir = diagnosticsDirectoryURL() else { return }
 
-        var existing = loadSavedDiagnostics()
+        var existing = loadSavedDiagnosticsLocked(in: dir)
         existing.append(contentsOf: diagnostics)
 
         if existing.count > maxSavedDiagnostics {
@@ -396,7 +404,13 @@ final class CrashDiagnosticManager: NSObject, MXMetricManagerSubscriber, @unchec
     }
 
     nonisolated func loadSavedDiagnostics() -> [SavedCrashDiagnostic] {
+        lock.lock()
+        defer { lock.unlock() }
         guard let dir = diagnosticsDirectoryURL() else { return [] }
+        return loadSavedDiagnosticsLocked(in: dir)
+    }
+
+    nonisolated private func loadSavedDiagnosticsLocked(in dir: URL) -> [SavedCrashDiagnostic] {
         let fileURL = dir.appendingPathComponent("saved_diagnostics.json")
         guard let data = try? Data(contentsOf: fileURL),
               let list = try? JSONDecoder().decode([SavedCrashDiagnostic].self, from: data) else {

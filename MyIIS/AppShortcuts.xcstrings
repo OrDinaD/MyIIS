@@ -1,314 +1,314 @@
 {
-  "sourceLanguage": "ru",
-  "strings": {
-    "Покажи мой средний балл в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Покажи мой средний балл в ${applicationName}"
+  "sourceLanguage" : "ru",
+  "strings" : {
+    "Какая у меня группа в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Якая ў мяне група ў ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пакажы мой сярэдні бал у ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What is my group in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show my average score in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Какая у меня группа в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Покажи мій середній бал у ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Яка в мене група в ${applicationName}"
           }
         }
       }
     },
-    "Какой у меня средний балл в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Какой у меня средний балл в ${applicationName}"
+    "Какой у меня средний балл в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Які ў мяне сярэдні бал у ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Які ў мяне сярэдні бал у ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What is my average score in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What is my average score in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Какой у меня средний балл в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Який у мене середній бал у ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Який у мене середній бал у ${applicationName}"
           }
         }
       }
     },
-    "Средний балл в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Средний балл в ${applicationName}"
+    "Моя группа в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Мая група ў ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сярэдні бал у ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "My group in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Average score in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Моя группа в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Середній бал у ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Моя група в ${applicationName}"
           }
         }
       }
     },
-    "Сколько у меня пропусков в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сколько у меня пропусков в ${applicationName}"
+    "Открой ${target} в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Адкрый ${target} у ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Колькі ў мяне пропускаў у ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open ${target} in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "How many absences do I have in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открой ${target} в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Скільки в мене пропусків у ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Відкрий ${target} у ${applicationName}"
           }
         }
       }
     },
-    "Покажи мои пропуски в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Покажи мои пропуски в ${applicationName}"
+    "Перейти в ${target} в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перайсці ў ${target} у ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пакажы мае пропускі ў ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Go to ${target} in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show my absences in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перейти в ${target} в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Покажи мої пропуски в ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перейти до ${target} у ${applicationName}"
           }
         }
       }
     },
-    "Пропуски в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пропуски в ${applicationName}"
+    "Покажи мои пропуски в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пакажы мае пропускі ў ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пропускі ў ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show my absences in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Absences in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Покажи мои пропуски в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пропуски в ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Покажи мої пропуски в ${applicationName}"
           }
         }
       }
     },
-    "Покажи мою группу в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Покажи мою группу в ${applicationName}"
+    "Покажи мой средний балл в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пакажы мой сярэдні бал у ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Пакажы маю групу ў ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show my average score in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show my group in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Покажи мой средний балл в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Покажи мою групу в ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Покажи мій середній бал у ${applicationName}"
           }
         }
       }
     },
-    "Какая у меня группа в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Какая у меня группа в ${applicationName}"
+    "Покажи мою группу в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пакажы маю групу ў ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Якая ў мяне група ў ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show my group in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "What is my group in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Покажи мою группу в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Яка в мене група в ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Покажи мою групу в ${applicationName}"
           }
         }
       }
     },
-    "Моя группа в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Моя группа в ${applicationName}"
+    "Пропуски в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропускі ў ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Мая група ў ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Absences in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "My group in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Моя група в ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуски в ${applicationName}"
           }
         }
       }
     },
-    "Открой ${section} в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Открой ${section} в ${applicationName}"
+    "Сколько у меня пропусков в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Колькі ў мяне пропускаў у ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Адкрый ${section} у ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How many absences do I have in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Open ${section} in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сколько у меня пропусков в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Відкрий ${section} у ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Скільки в мене пропусків у ${applicationName}"
           }
         }
       }
     },
-    "Перейти в ${section} в ${applicationName}": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Перейти в ${section} в ${applicationName}"
+    "Средний балл в ${applicationName}" : {
+      "localizations" : {
+        "be" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сярэдні бал у ${applicationName}"
           }
         },
-        "be": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Перайсці ў ${section} у ${applicationName}"
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Average score in ${applicationName}"
           }
         },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Go to ${section} in ${applicationName}"
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Средний балл в ${applicationName}"
           }
         },
-        "uk": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Перейти до ${section} у ${applicationName}"
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Середній бал у ${applicationName}"
           }
         }
       }
     }
   },
-  "version": "1.0"
+  "version" : "1.0"
 }

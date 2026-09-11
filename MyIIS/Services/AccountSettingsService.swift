@@ -117,7 +117,7 @@ final class AccountSettingsService {
             switch httpResponse.statusCode {
             case 200 ... 299:
                 return data
-            case 401:
+            case 401, 403:
                 throw APIError.unauthorized(
                     message: NSLocalizedString(
                         "api_error_session_expired",
@@ -139,6 +139,9 @@ final class AccountSettingsService {
                 throw APIError.serverError(statusCode: httpResponse.statusCode, message: serverMessage)
             }
         } catch let apiError as APIError {
+            if case .unauthorized = apiError {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             throw apiError
         } catch {
             throw APIError.networkError(error)

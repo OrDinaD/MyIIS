@@ -53,6 +53,9 @@ final class DiplomaService: DiplomaServicing {
             }
             return try resolveProgress(data: data, response: httpResponse, request: request)
         } catch let error as APIError {
+            if case .unauthorized = error {
+                AuthenticationSessionEvents.reportUnauthorized()
+            }
             return try resolveFallback(for: request, error: error)
         } catch {
             return try resolveFallback(for: request, error: APIError.networkError(error))
@@ -96,7 +99,7 @@ final class DiplomaService: DiplomaServicing {
         case 200:
             persistCache(data: data, for: request)
             return try decodeProgress(from: data)
-        case 401:
+        case 401, 403:
             let message = try Self.decodeErrorMessage(from: data)
             throw APIError.unauthorized(message: message ?? "Требуется авторизация")
         case 503:

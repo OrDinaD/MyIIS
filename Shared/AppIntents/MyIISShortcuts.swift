@@ -42,8 +42,8 @@ struct MyIISShortcuts: AppShortcutsProvider {
         AppShortcut(
             intent: OpenMyIISSectionIntent(),
             phrases: [
-                "Открой \(\.$section) в \(.applicationName)",
-                "Перейти в \(\.$section) в \(.applicationName)"
+                "Открой \(\.$target) в \(.applicationName)",
+                "Перейти в \(\.$target) в \(.applicationName)"
             ],
             shortTitle: "Открыть раздел",
             systemImageName: "arrow.up.right.square"
