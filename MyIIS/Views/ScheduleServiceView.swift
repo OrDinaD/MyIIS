@@ -208,7 +208,6 @@ struct ScheduleServiceView: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
-            .presentationBackground(.ultraThinMaterial)
         }
         .sheet(isPresented: $isDatePickerPresented) {
             jumpDatePickerSheet

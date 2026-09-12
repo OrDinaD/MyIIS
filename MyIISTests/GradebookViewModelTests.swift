@@ -25,6 +25,8 @@ final class GradebookViewModelTests: XCTestCase {
     }
 
     private func clearGradebookCaches() {
+        UserDefaultsPayloadStore.clear(forKey: "gradebook_offline_cache_v1", from: .standard)
+        UserDefaultsPayloadStore.clear(prefix: "APIService.responseCache.", from: .standard)
         let defaults = UserDefaults.standard
         defaults.removeObject(forKey: "gradebook_offline_cache_v1")
         for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("APIService.responseCache.") {

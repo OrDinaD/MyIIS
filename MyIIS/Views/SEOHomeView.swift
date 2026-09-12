@@ -4,46 +4,44 @@ struct SEOHomeView: View {
     @StateObject private var lmsService = LMSService.shared
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    headerCard
+        ScrollView {
+            VStack(spacing: 16) {
+                headerCard
 
-                    if let message = lmsService.errorMessage {
-                        refreshStatusCard(message)
-                    }
+                if let message = lmsService.errorMessage {
+                    refreshStatusCard(message)
+                }
 
-                    if lmsService.isLoggedIn {
-                        if lmsService.courses.isEmpty {
-                            if lmsService.isLoading {
-                                ProgressView("Загрузка курсов...")
-                                    .padding()
-                            } else {
-                                Text("Нет доступных курсов")
-                                    .foregroundStyle(.secondary)
-                                    .padding()
-                            }
+                if lmsService.isLoggedIn {
+                    if lmsService.courses.isEmpty {
+                        if lmsService.isLoading {
+                            ProgressView("Загрузка курсов...")
+                                .padding()
                         } else {
-                            coursesList
+                            Text("Нет доступных курсов")
+                                .foregroundStyle(.secondary)
+                                .padding()
                         }
                     } else {
-                        loginCard
+                        coursesList
                     }
+                } else {
+                    loginCard
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
             }
-            .background(Color(uiColor: .systemGroupedBackground))
-            .navigationTitle("СЭО")
-            .navigationBarTitleDisplayMode(.large)
-            .glassNavigationBar()
-            .hiddenNavigationBarBackground()
-            .task {
-                await lmsService.checkSession()
-            }
-            .refreshable {
-                await lmsService.refreshCourses(force: true)
-            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+        }
+        .background(Color(uiColor: .systemGroupedBackground))
+        .navigationTitle(NSLocalizedString("services_item_lms", value: "СЭО", comment: ""))
+        .navigationBarTitleDisplayMode(.inline)
+        .glassNavigationBar()
+        .hiddenNavigationBarBackground()
+        .task {
+            await lmsService.checkSession()
+        }
+        .refreshable {
+            await lmsService.refreshCourses(force: true)
         }
     }
 

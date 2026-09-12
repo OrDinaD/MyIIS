@@ -72,6 +72,9 @@ final class BelarusianLocalizationTests: XCTestCase {
 
         for relativePath in catalogPaths {
             let url = repositoryRoot.appending(path: relativePath)
+            guard FileManager.default.isReadableFile(atPath: url.path) else {
+                throw XCTSkip("Файл \(relativePath) недоступен из тестового окружения")
+            }
             let data = try Data(contentsOf: url)
             let catalog = try XCTUnwrap(
                 JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -98,6 +101,9 @@ final class BelarusianLocalizationTests: XCTestCase {
 
     func testAppShortcutVariablesArePreserved() throws {
         let url = repositoryRoot.appending(path: "MyIIS/AppShortcuts.xcstrings")
+        guard FileManager.default.isReadableFile(atPath: url.path) else {
+            throw XCTSkip("Файл AppShortcuts.xcstrings недоступен из тестового окружения")
+        }
         let data = try Data(contentsOf: url)
         let catalog = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let strings = try XCTUnwrap(catalog["strings"] as? [String: Any])

@@ -681,7 +681,16 @@ final class ScheduleServiceViewModel {
             applyLocalTeacherSchedule(teacher)
             return
         }
-        guard let urlId = teacher.urlId, !urlId.isEmpty else { return }
+        var targetURLID = teacher.urlId?.nilIfBlank
+        if targetURLID == nil {
+            targetURLID = employees.first { $0.id == teacher.id }?.urlId
+        }
+        if targetURLID == nil {
+            targetURLID = employees.first {
+                $0.displayName.localizedCaseInsensitiveCompare(teacher.fullName) == .orderedSame
+            }?.urlId
+        }
+        guard let urlId = targetURLID, !urlId.isEmpty else { return }
         let mapped = ScheduleEmployeeDirectoryEntry(
             firstName: teacher.firstName,
             lastName: teacher.lastName,

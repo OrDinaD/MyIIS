@@ -130,20 +130,40 @@ enum ImageDownsampler {
     }
 }
 
-struct CachedAsyncImage<Content: View, Placeholder: View>: View {
+struct CachedAsyncImage<Content: View, Placeholder: View, Failure: View>: View {
     let url: URL?
     var maxPixelSize: CGFloat = 1_024
     var transaction: Transaction = Transaction(animation: .easeInOut(duration: 0.18))
     @ViewBuilder let content: (Image) -> Content
     @ViewBuilder let placeholder: () -> Placeholder
+    @ViewBuilder let failure: () -> Failure
 
     @State private var uiImage: UIImage?
+    @State private var isFailed = false
     @State private var loadedCacheKey: String?
+
+    init(
+        url: URL?,
+        maxPixelSize: CGFloat = 1_024,
+        transaction: Transaction = Transaction(animation: .easeInOut(duration: 0.18)),
+        @ViewBuilder content: @escaping (Image) -> Content,
+        @ViewBuilder placeholder: @escaping () -> Placeholder,
+        @ViewBuilder failure: @escaping () -> Failure
+    ) {
+        self.url = url
+        self.maxPixelSize = maxPixelSize
+        self.transaction = transaction
+        self.content = content
+        self.placeholder = placeholder
+        self.failure = failure
+    }
 
     var body: some View {
         Group {
             if let uiImage {
                 content(Image(uiImage: uiImage))
+            } else if isFailed {
+                failure()
             } else {
                 placeholder()
             }
@@ -162,6 +182,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
         guard let url, let cacheIdentity else {
             loadedCacheKey = nil
             uiImage = nil
+            isFailed = true
             return
         }
         guard loadedCacheKey != cacheIdentity else { return }
@@ -170,15 +191,18 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
         let cacheKey = cacheIdentity as NSString
         if let cachedImage = CachedAsyncImageMemoryCache.image(forKey: cacheKey) {
             uiImage = cachedImage
+            isFailed = false
             return
         }
 
         if CachedAsyncImageMemoryCache.isMarkedMissing(cacheIdentity) {
             uiImage = nil
+            isFailed = true
             return
         }
 
         uiImage = nil
+        isFailed = false
 
         if let image = await AsyncImagePipeline.shared.loadImage(
             for: url,
@@ -188,13 +212,32 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
             guard !Task.isCancelled, loadedCacheKey == cacheIdentity else { return }
             withTransaction(transaction) {
                 uiImage = image
+                isFailed = false
             }
             return
         }
 
-        if loadedCacheKey == cacheIdentity {
-            loadedCacheKey = nil
-        }
+        guard !Task.isCancelled, loadedCacheKey == cacheIdentity else { return }
+        isFailed = true
+    }
+}
+
+extension CachedAsyncImage where Failure == Placeholder {
+    init(
+        url: URL?,
+        maxPixelSize: CGFloat = 1_024,
+        transaction: Transaction = Transaction(animation: .easeInOut(duration: 0.18)),
+        @ViewBuilder content: @escaping (Image) -> Content,
+        @ViewBuilder placeholder: @escaping () -> Placeholder
+    ) {
+        self.init(
+            url: url,
+            maxPixelSize: maxPixelSize,
+            transaction: transaction,
+            content: content,
+            placeholder: placeholder,
+            failure: placeholder
+        )
     }
 }
 

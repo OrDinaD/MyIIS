@@ -53,11 +53,11 @@ final class WatchScheduleComplicationTests: XCTestCase {
             }
             var text = location.trimmingCharacters(in: .whitespacesAndNewlines)
             if text.hasSuffix(" к.") {
-                text = String(text.dropLast(4)).trimmingCharacters(in: .whitespacesAndNewlines)
+                text = String(text.dropLast(" к.".count)).trimmingCharacters(in: .whitespacesAndNewlines)
             } else if text.hasSuffix(" к") {
-                text = String(text.dropLast(2)).trimmingCharacters(in: .whitespacesAndNewlines)
+                text = String(text.dropLast(" к".count)).trimmingCharacters(in: .whitespacesAndNewlines)
             } else if text.hasSuffix(" корп.") {
-                text = String(text.dropLast(6)).trimmingCharacters(in: .whitespacesAndNewlines)
+                text = String(text.dropLast(" корп.".count)).trimmingCharacters(in: .whitespacesAndNewlines)
             }
             return text.isEmpty ? nil : text
         }
