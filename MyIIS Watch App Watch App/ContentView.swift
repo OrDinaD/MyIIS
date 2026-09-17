@@ -4,11 +4,11 @@ struct ContentView: View {
     @ObservedObject var receiver: WatchScheduleReceiver
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 60)) { context in
+        TimelineView(.periodic(from: .now, by: 30)) { context in
             NavigationStack {
                 Group {
                     if let snapshot = receiver.snapshot {
-                        scheduleList(snapshot, now: context.date)
+                        scheduleFeed(snapshot, now: context.date)
                     } else {
                         emptyContent
                     }
@@ -18,30 +18,49 @@ struct ContentView: View {
         }
     }
 
-    private func scheduleList(_ snapshot: WatchScheduleSnapshot, now: Date) -> some View {
-        let events = snapshot.upcomingEvents(at: now)
+    // MARK: - Schedule Feed
+
+    private func scheduleFeed(_ snapshot: WatchScheduleSnapshot, now: Date) -> some View {
+        let active = snapshot.activeEvent(at: now)
+        let daySections = snapshot.daySections(at: now)
+
         return List {
-            if events.isEmpty {
+            // Active Hero Card if currently in class
+            if let active {
                 Section {
-                    Label("watch_widget_no_events", systemImage: "checkmark.circle")
-                        .font(.headline)
+                    activeEventHeroCard(active, now: now)
+                        .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
                 }
             }
 
-            if let event = events.first {
+            if daySections.isEmpty && active == nil {
                 Section {
-                    currentEventCard(event, now: now)
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.green)
+                        Text("watch_widget_no_events")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 8)
                 }
             }
 
-            if events.count > 1 {
-                Section("watch_schedule_next") {
-                    ForEach(events.dropFirst().prefix(8)) { event in
-                        eventRow(event)
+            // Timeline Feed grouped by days
+            ForEach(daySections) { section in
+                Section(header: Text(section.title).font(.footnote.weight(.semibold))) {
+                    ForEach(section.events) { event in
+                        // If it's the active event, skip here since it's displayed in the Hero Card
+                        if active?.id != event.id {
+                            lessonRowCard(event, now: now)
+                                .listRowInsets(EdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2))
+                        }
                     }
                 }
             }
 
+            // Footer metadata
             Section {
                 LabeledContent("watch_schedule_source", value: snapshot.groupName)
                 LabeledContent(
@@ -52,78 +71,224 @@ struct ContentView: View {
             .font(.caption2)
             .foregroundStyle(.secondary)
         }
+        .listStyle(.carousel)
     }
 
-    private func currentEventCard(_ event: WatchScheduleSnapshot.Event, now: Date) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(
-                event.isCurrent(at: now) ? "watch_schedule_now" : "watch_schedule_upcoming",
-                systemImage: event.isCurrent(at: now) ? "clock.fill" : "calendar"
-            )
-            .font(.caption.weight(.semibold))
-            .foregroundStyle(.tint)
+    // MARK: - Active Hero Card (iPhone-styled with Accent Bar & Live Progress)
 
-            Text(event.title)
-                .font(.headline)
-                .lineLimit(2)
-                .privacySensitive()
+    private func activeEventHeroCard(_ event: WatchScheduleEvent, now: Date) -> some View {
+        let progress = event.progress(at: now)
+        let interval = event.interval()
 
-            if let interval = event.interval() {
-                HStack {
-                    Text(event.isCurrent(at: now) ? "watch_schedule_ends_in" : "watch_schedule_starts_in")
-                    Text(event.isCurrent(at: now) ? interval.end : interval.start, style: .timer)
-                        .monospacedDigit()
+        return HStack(alignment: .top, spacing: 8) {
+            // Vertical Accent Bar with Live Progress Fill
+            GeometryReader { geo in
+                ZStack(alignment: .top) {
+                    Capsule()
+                        .fill(event.accentColor.opacity(0.25))
+                    Capsule()
+                        .fill(event.accentColor)
+                        .frame(height: max(geo.size.height * CGFloat(progress), 6))
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
             }
+            .frame(width: 4)
 
-            if let location = event.location, !location.isEmpty {
-                Label(location, systemImage: "mappin")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .privacySensitive()
-            }
-        }
-        .padding(.vertical, 4)
-    }
+            // Content Body
+            VStack(alignment: .leading, spacing: 4) {
+                // Top status badges
+                HStack(spacing: 4) {
+                    Text("watch_schedule_now")
+                        .font(.system(size: 10, weight: .bold))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(event.accentColor.opacity(0.25)))
+                        .foregroundStyle(event.accentColor)
 
-    private func eventRow(_ event: WatchScheduleSnapshot.Event) -> some View {
-        let dateText = event.date?.formatted(
-            .dateTime
-                .weekday(.abbreviated)
-                .day()
-                .month(.abbreviated)
-        )
-        let details = [dateText, event.location]
-            .compactMap { value in
-                guard let value, !value.isEmpty else { return nil }
-                return value
-            }
-            .joined(separator: " · ")
+                    if let type = event.lessonType, !type.isEmpty {
+                        Text(type.uppercased())
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(.quaternary))
+                            .foregroundStyle(.secondary)
+                    }
 
-        return VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                Text(event.startTime)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    if let subgroup = event.subgroupBadge {
+                        Text(subgroup)
+                            .font(.system(size: 10, weight: .semibold))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(.quaternary))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    // Trailing Teacher Avatar
+                    teacherAvatarView(for: event, size: 28)
+                }
+
+                // Lesson Title
                 Text(event.title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                    .privacySensitive()
-            }
+                    .font(.headline.weight(.semibold))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
 
-            if !details.isEmpty {
-                Text(details)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .privacySensitive()
+                // Time Range & Remaining Timer
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(event.accentColor)
+
+                    Text("\(event.startTime) – \(event.endTime)")
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+
+                    if let interval {
+                        Spacer()
+                        Text(interval.end, style: .timer)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                // Location & Teacher
+                HStack(spacing: 4) {
+                    if let location = event.shortLocation() {
+                        Label(location, systemImage: "mappin.and.ellipse")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let teacher = event.teacherName, !teacher.isEmpty {
+                        Text("· \(teacher)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .padding(.vertical, 6)
+            .padding(.trailing, 6)
+        }
+        .padding(.horizontal, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.gray.opacity(0.18))
+        )
+    }
+
+    // MARK: - Lesson Row Card (Clean feed card with stripe & teacher photo)
+
+    private func lessonRowCard(_ event: WatchScheduleEvent, now: Date) -> some View {
+        HStack(alignment: .top, spacing: 7) {
+            // Left Accent Bar (iPhone style)
+            Capsule()
+                .fill(event.accentColor)
+                .frame(width: 3.5)
+                .padding(.vertical, 4)
+
+            // Details Column
+            VStack(alignment: .leading, spacing: 3) {
+                // Time Range & Badges
+                HStack(alignment: .center, spacing: 4) {
+                    Text("\(event.startTime) – \(event.endTime)")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(.primary)
+
+                    if let type = event.lessonType, !type.isEmpty {
+                        Text(type.uppercased())
+                            .font(.system(size: 9, weight: .bold))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1.5)
+                            .background(Capsule().fill(event.accentColor.opacity(0.2)))
+                            .foregroundStyle(event.accentColor)
+                    }
+
+                    if let subgroup = event.subgroupBadge {
+                        Text(subgroup)
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    // Teacher avatar
+                    teacherAvatarView(for: event, size: 22)
+                }
+
+                // Subject Title
+                Text(event.title)
+                    .font(.system(size: 13, weight: .medium))
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+
+                // Location and Teacher Name
+                HStack(spacing: 4) {
+                    if let location = event.shortLocation() {
+                        Label(location, systemImage: "mappin")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let teacher = event.teacherName, !teacher.isEmpty {
+                        Text("· \(teacher)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+            .padding(.trailing, 4)
+        }
+        .padding(.horizontal, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.gray.opacity(0.12))
+        )
+    }
+
+    // MARK: - Teacher Avatar View (AsyncImage with Fallback Initials)
+
+    @ViewBuilder
+    private func teacherAvatarView(for event: WatchScheduleEvent, size: CGFloat) -> some View {
+        if let url = event.teacherPhotoURL {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size, height: size)
+                        .clipShape(Circle())
+                default:
+                    avatarPlaceholder(for: event, size: size)
+                }
+            }
+        } else if !event.teacherInitials.isEmpty {
+            avatarPlaceholder(for: event, size: size)
+        }
+    }
+
+    private func avatarPlaceholder(for event: WatchScheduleEvent, size: CGFloat) -> some View {
+        ZStack {
+            Circle()
+                .fill(event.accentColor.opacity(0.2))
+                .frame(width: size, height: size)
+
+            if !event.teacherInitials.isEmpty {
+                Text(event.teacherInitials)
+                    .font(.system(size: size * 0.42, weight: .bold))
+                    .foregroundStyle(event.accentColor)
+            } else {
+                Image(systemName: "person.fill")
+                    .font(.system(size: size * 0.45))
+                    .foregroundStyle(event.accentColor)
             }
         }
-        .accessibilityElement(children: .combine)
     }
+
+    // MARK: - Empty State
 
     private var emptyContent: some View {
         VStack(spacing: 10) {
@@ -140,8 +305,4 @@ struct ContentView: View {
         }
         .padding()
     }
-}
-
-#Preview {
-    ContentView(receiver: WatchScheduleReceiver())
 }

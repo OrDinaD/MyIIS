@@ -32,6 +32,36 @@ struct SessionScheduleWidgetSnapshot: Codable, Sendable {
         let lessonType: String?
         let kind: SessionScheduleWidgetEventKind
         var subgroup: Int?
+        var teacherName: String?
+        var teacherPhotoLink: String?
+
+        init(
+            id: String,
+            date: Date?,
+            startTime: String,
+            endTime: String,
+            title: String,
+            subtitle: String?,
+            location: String?,
+            lessonType: String?,
+            kind: SessionScheduleWidgetEventKind,
+            subgroup: Int? = nil,
+            teacherName: String? = nil,
+            teacherPhotoLink: String? = nil
+        ) {
+            self.id = id
+            self.date = date
+            self.startTime = startTime
+            self.endTime = endTime
+            self.title = title
+            self.subtitle = subtitle
+            self.location = location
+            self.lessonType = lessonType
+            self.kind = kind
+            self.subgroup = subgroup
+            self.teacherName = teacherName
+            self.teacherPhotoLink = teacherPhotoLink
+        }
 
         nonisolated var presentationIdentity: String {
             let dateComponent = date.map { String($0.timeIntervalSinceReferenceDate.bitPattern) } ?? "nil"
@@ -44,7 +74,8 @@ struct SessionScheduleWidgetSnapshot: Codable, Sendable {
                 location ?? "",
                 lessonType ?? "",
                 kind.rawValue,
-                subgroup.map(String.init) ?? ""
+                subgroup.map(String.init) ?? "",
+                teacherName ?? ""
             ]
             return components
                 .map { "\($0.utf8.count):\($0)" }

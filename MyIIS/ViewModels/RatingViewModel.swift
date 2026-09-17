@@ -25,6 +25,8 @@ final class RatingViewModel {
     private(set) var percentageMarks: [PortalPercentageMark] = []
 
     private let apiService: APIService
+    private let scheduleAPI: ServiceEndpointsAPI
+    private var lecturerSurnames: [String: String] = [:]
     private let userDefaults: UserDefaults
     private let logService = LogService.shared
     private var currentGroup: String?
@@ -53,9 +55,11 @@ final class RatingViewModel {
     init(
         apiService: APIService? = nil,
         isPreview: Bool = false,
-        userDefaults: UserDefaults = .standard
+        userDefaults: UserDefaults = .standard,
+        scheduleAPI: ServiceEndpointsAPI? = nil
     ) {
         self.apiService = apiService ?? APIService()
+        self.scheduleAPI = scheduleAPI ?? ServiceEndpointsAPI()
         self.isPreview = isPreview
         self.userDefaults = userDefaults
 
@@ -178,7 +182,7 @@ extension RatingViewModel {
         isUsingScheduleFallback = false
         isShowingStaleDataWarning = false
 
-        await loadFromPortalGradeBook(targetRecordBookNumber: targetRecordBookNumber)
+        await loadFromPortalGradeBook(group: group, targetRecordBookNumber: targetRecordBookNumber)
 
         guard !Task.isCancelled else {
             isLoadingSubjects = false
@@ -255,8 +259,16 @@ extension RatingViewModel {
         _ = UserDefaultsPayloadStore.save(payload, forKey: cacheKey(group: group, studentId: studentId), in: userDefaults)
     }
 
-    private func loadFromPortalGradeBook(targetRecordBookNumber: String?) async {
+    private func applyLecturers(from schedule: PublicScheduleResponse?, lessons: [PortalGradeBookLesson]) async {
+        guard !Task.isCancelled else { return }
+        lecturerSurnames = LecturerSurnames.group(schedule?.orderedDays.flatMap(\.lessons) ?? [])
+        applyPortalGradeBookLessons(lessons)
+    }
+
+    private func loadFromPortalGradeBook(group: String, targetRecordBookNumber: String?) async {
         do {
+            async let schedule = try? scheduleAPI.fetchGroupSchedule(groupNumber: group)
+            lecturerSurnames = [:]
             let student = try await apiService.getPortalGradeBookStudent()
             let lessons = student?.lessons ?? []
             percentageMarks = student?.percentageMarks ?? []
@@ -280,6 +292,8 @@ extension RatingViewModel {
 
             isRatingPendingForNewSemester = false
             applyPortalGradeBookLessons(lessons)
+            await applyLecturers(from: schedule, lessons: lessons)
+            guard !Task.isCancelled else { return }
             buildPersonalRating(from: lessons, targetRecordBookNumber: targetRecordBookNumber)
             let (deadlines, summaries) = await Task.detached(priority: .userInitiated) {
                 (Self.buildDeadlineItems(from: lessons), Self.buildCheckpointSummaries(from: lessons))
@@ -294,15 +308,7 @@ extension RatingViewModel {
             return
         } catch let error as APIError {
             logService.log("❌ grade-book API error: \(error.localizedDescription)")
-            disciplines = []
-            subjectOmissions = [:]
-            students = []
-            userCheckpoints = []
-            checkpointNumbers = []
-            deadlineItems = []
-            checkpointSummaries = []
-            summary = nil
-            gradebookAverage = nil
+            clearGradebookData()
 
             switch error {
             case .serverError(let statusCode, _) where statusCode == 403 || statusCode == 404:
@@ -316,19 +322,23 @@ extension RatingViewModel {
             }
         } catch {
             logService.log("❌ Unexpected grade-book error: \(error.localizedDescription)")
-            disciplines = []
-            subjectOmissions = [:]
-            students = []
-            userCheckpoints = []
-            checkpointNumbers = []
-            deadlineItems = []
-            checkpointSummaries = []
-            summary = nil
-            gradebookAverage = nil
+            clearGradebookData()
             isGradebookUnavailable = true
             isRatingPendingForNewSemester = false
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func clearGradebookData() {
+        disciplines = []
+        subjectOmissions = [:]
+        students = []
+        userCheckpoints = []
+        checkpointNumbers = []
+        deadlineItems = []
+        checkpointSummaries = []
+        summary = nil
+        gradebookAverage = nil
     }
 
     private func applyPortalGradeBookLessons(_ lessons: [PortalGradeBookLesson]) {
@@ -361,7 +371,7 @@ extension RatingViewModel {
                 code: "gradebook_\(subject)",
                 name: subject,
                 controlForm: lessonTypes.isEmpty ? "Занятия" : lessonTypes.joined(separator: " · "),
-                teacher: nil,
+                teacher: lecturerSurnames[LecturerSurnames.key(subject)],
                 hours: omissionHours,
                 attempts: payload.attempts,
                 lessonOmissions: payload.omissions.isEmpty ? nil : payload.omissions

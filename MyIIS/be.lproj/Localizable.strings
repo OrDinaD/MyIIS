@@ -1,4 +1,12 @@
 /* BE */
+"attendance_period_section_title" = "Гісторыя пропускаў";
+"attendance_semester_expanded" = "Разгорнута";
+"attendance_semester_collapsed" = "Згорнута";
+"attendance_period_label" = "Перыяд";
+"attendance_all_period_title" = "За ўвесь перыяд";
+"attendance_all_period_subtitle" = "Без уважлівай прычыны";
+"attendance_all_period_empty" = "Няўважлівых пропускаў няма";
+"attendance_documents_format" = "Даведак: %d";
 "%@ — endpoint вернул ошибку" = "%@ — канцавы пункт вярнуў памылку";
 "%@ — ошибка сервера" = "%@ — памылка сервера";
 "%@ — сервер не поддерживает HEAD" = "%@ — сервер не падтрымлівае HEAD";
@@ -66,8 +74,8 @@
 "attendance_section_applications_subtitle" = "Гісторыя пададзеных заяў і прынятых рашэнняў";
 "attendance_section_certificates" = "Звесткі пра даведкі";
 "attendance_section_certificates_subtitle" = "Дакументы, што пацвярджаюць уважлівыя прычыны";
-"attendance_section_summary" = "Пропускі без уважлівай прычыны";
-"attendance_section_summary_subtitle" = "Бягучы семестр";
+"attendance_section_summary" = "Па месяцах";
+"attendance_section_summary_subtitle" = "Пропускі без уважлівай прычыны за бягучы семестр";
 "attendance_term_format" = "%lld семестр";
 "attendance_title" = "Пропускі";
 "attendance_to" = "Да";

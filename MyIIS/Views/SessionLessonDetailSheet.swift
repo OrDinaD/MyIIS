@@ -28,44 +28,54 @@ struct ScheduleLessonDetailSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    if lessonTrackingEnabled, !lesson.isAnnouncement {
-                        trackingSection
-                    }
-                    teachersSection
-                    if !displayedStudentGroups.isEmpty {
-                        groupsSection
-                    }
-                    detailsSection
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                header
+                if lessonTrackingEnabled, !lesson.isAnnouncement {
+                    trackingSection
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
-            }
-            .background(Color(uiColor: .systemGroupedBackground))
-            .navigationTitle(shortTitle)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityLabel(NSLocalizedString("common_close", comment: ""))
+                teachersSection
+                if !displayedStudentGroups.isEmpty {
+                    groupsSection
                 }
+                detailsSection
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 24)
         }
+        .background(Color(uiColor: .systemGroupedBackground))
         .sheet(item: $photoTeacher) { teacher in
-            TeacherPhotoSheet(teacher: teacher)
+            TeacherPhotoPreview(teacher: teacher)
         }
         .onAppear {
             isTracked = LessonTrackingStore.isTracked(lesson)
         }
+    }
+
+    private var header: some View {
+        ZStack {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 42, height: 42)
+                    .background(Color(uiColor: .tertiarySystemGroupedBackground), in: Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityLabel(NSLocalizedString("common_close", comment: ""))
+
+            Text(shortTitle)
+                .font(.title2.bold())
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+        }
+        .padding(.top, 4)
+        .padding(.bottom, 4)
     }
 
     private var trackingSection: some View {
@@ -125,7 +135,7 @@ struct ScheduleLessonDetailSheet: View {
         .padding(16)
         .background(
             Color(uiColor: .secondarySystemGroupedBackground),
-            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+            in: RoundedRectangle(cornerRadius: 18, style: .continuous)
         )
     }
 
@@ -137,54 +147,24 @@ struct ScheduleLessonDetailSheet: View {
 
             if !lesson.employees.isEmpty {
                 ForEach(lesson.employees) { teacher in
-                    let hasPhoto = hasPhotoAvailable(teacher)
                     HStack(spacing: 14) {
-                        if hasPhoto {
-                            Button {
-                                photoTeacher = teacher
-                            } label: {
-                                ZStack(alignment: .bottomTrailing) {
-                                    TeacherAvatarView(teacher: teacher, size: 56)
-                                    Image(systemName: "magnifyingglass")
-                                        .font(.system(size: 11, weight: .bold))
-                                        .foregroundStyle(.white)
-                                        .frame(width: 20, height: 20)
-                                        .background(Color.black.opacity(0.6), in: Circle())
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(
-                                String(
-                                    format: String(localized: "Открыть фотографию %@"),
-                                    teacher.fullName
-                                )
-                            )
-                        } else {
-                            TeacherAvatarView(teacher: teacher, size: 56)
+                        TeacherAvatarView(teacher: teacher, size: 72) {
+                            photoTeacher = teacher
                         }
 
                         Button {
                             onTeacherScheduleTap(teacher)
                         } label: {
                             HStack(spacing: 8) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(teacher.fullName)
-                                        .font(.headline)
-                                        .foregroundStyle(.primary)
-                                        .lineLimit(2)
-
-                                    if let extra = teacher.degree?.nilIfBlank ?? teacher.rank?.nilIfBlank {
-                                        Text(extra)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(teacher.fullName)
+                                    .font(.headline)
+                                    .foregroundStyle(.primary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
 
                                 Image(systemName: "chevron.right")
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                         .buttonStyle(.plain)
@@ -195,6 +175,10 @@ struct ScheduleLessonDetailSheet: View {
                         Color(uiColor: .secondarySystemGroupedBackground),
                         in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                     )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(Color(uiColor: .separator).opacity(0.3), lineWidth: 0.5)
+                    }
                 }
             } else {
                 Text("Не указан")
@@ -204,20 +188,10 @@ struct ScheduleLessonDetailSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(
                         Color(uiColor: .secondarySystemGroupedBackground),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                     )
             }
         }
-    }
-
-    private func hasPhotoAvailable(_ teacher: DisciplineEmployee) -> Bool {
-        guard let link = teacher.photoLink?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !link.isEmpty,
-              !link.hasSuffix("null"),
-              !link.contains("placeholder") else {
-            return false
-        }
-        return true
     }
 
     private var groupsSection: some View {
@@ -251,7 +225,7 @@ struct ScheduleLessonDetailSheet: View {
                             .padding(14)
                             .background(
                                 Color(uiColor: .secondarySystemGroupedBackground),
-                                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
                             )
                         }
                         .buttonStyle(.plain)
@@ -292,7 +266,7 @@ struct ScheduleLessonDetailSheet: View {
                     Divider()
                 }
 
-                detailRow("Время", value: lesson.timeRange.nilIfBlank ?? "--")
+                detailRow("Время", value: formattedTimeRange)
                 detailRow("День", value: lessonDateText)
                 detailRow("Тип", value: lesson.lessonTypeAbbrev.nilIfBlank ?? "--")
                 detailRow("Подгруппа", value: lesson.subgroup > 0 ? String(lesson.subgroup) : "--")
@@ -302,9 +276,16 @@ struct ScheduleLessonDetailSheet: View {
             .padding(16)
             .background(
                 Color(uiColor: .secondarySystemGroupedBackground),
-                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                in: RoundedRectangle(cornerRadius: 18, style: .continuous)
             )
         }
+    }
+
+    private var formattedTimeRange: String {
+        guard !lesson.startLessonTime.isEmpty, !lesson.endLessonTime.isEmpty else {
+            return lesson.timeRange.nilIfBlank ?? "--"
+        }
+        return "\(lesson.startLessonTime)—\(lesson.endLessonTime)"
     }
 
     private var weeksRow: some View {
@@ -421,47 +402,145 @@ enum LessonTrackingStore {
     }
 }
 
-// MARK: - Teacher Photo Sheet
+// MARK: - Teacher Photo Preview
 
-private struct TeacherPhotoSheet: View {
+private struct TeacherPhotoPreview: View {
     @Environment(\.dismiss) private var dismiss
     let teacher: DisciplineEmployee
 
+    @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
+    @State private var lastOffset: CGSize = .zero
+    @State private var rotation: Angle = .zero
+    @State private var lastRotation: Angle = .zero
+
     var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(uiColor: .systemGroupedBackground)
-                    .ignoresSafeArea()
+        ZStack {
+            Color.black
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismiss()
+                }
+
+            VStack(spacing: 20) {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(NSLocalizedString("common_close", comment: ""))
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+
+                Spacer()
 
                 if let url = photoURL {
-                    CachedAsyncImage(url: url) { image in
+                    CachedAsyncImage(url: url, maxPixelSize: 2_048, rejectBlankImages: true) { image in
                         image
                             .resizable()
                             .scaledToFit()
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .padding(20)
                     } placeholder: {
                         ProgressView()
-                            .tint(.secondary)
+                            .tint(.white)
                     } failure: {
                         fallbackView
+                    }
+                    .padding(.horizontal, 20)
+                    .scaleEffect(scale)
+                    .rotationEffect(rotation)
+                    .offset(offset)
+                    .gesture(
+                        SimultaneousGesture(
+                            MagnificationGesture()
+                                .onChanged { value in
+                                    scale = max(0.8, lastScale * value)
+                                }
+                                .onEnded { _ in
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        if scale < 1.0 {
+                                            scale = 1.0
+                                            offset = .zero
+                                        } else if scale > 4.0 {
+                                            scale = 4.0
+                                        }
+                                        lastScale = scale
+                                    }
+                                },
+                            RotationGesture()
+                                .onChanged { angle in
+                                    rotation = lastRotation + angle
+                                }
+                                .onEnded { _ in
+                                    lastRotation = rotation
+                                }
+                        )
+                    )
+                    .simultaneousGesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if scale > 1.05 {
+                                    offset = CGSize(
+                                        width: lastOffset.width + value.translation.width,
+                                        height: lastOffset.height + value.translation.height
+                                    )
+                                } else {
+                                    offset = CGSize(
+                                        width: value.translation.width * 0.4,
+                                        height: max(0, value.translation.height)
+                                    )
+                                }
+                            }
+                            .onEnded { value in
+                                if scale <= 1.05 && value.translation.height > 90 {
+                                    dismiss()
+                                } else {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        if scale <= 1.05 {
+                                            offset = .zero
+                                            lastOffset = .zero
+                                        } else {
+                                            lastOffset = offset
+                                        }
+                                    }
+                                }
+                            }
+                    )
+                    .onTapGesture(count: 2) {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            if scale > 1.2 {
+                                scale = 1.0
+                                lastScale = 1.0
+                                offset = .zero
+                                lastOffset = .zero
+                                rotation = .zero
+                                lastRotation = .zero
+                            } else {
+                                scale = 2.5
+                                lastScale = 2.5
+                            }
+                        }
                     }
                 } else {
                     fallbackView
                 }
-            }
-            .navigationTitle(teacher.fullName)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(NSLocalizedString("common_close", comment: "")) {
-                        dismiss()
-                    }
-                }
+
+                Text(teacher.fullName)
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
+                Spacer()
             }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
     }
 
     private var fallbackView: some View {
@@ -469,6 +548,7 @@ private struct TeacherPhotoSheet: View {
             TeacherAvatarView(teacher: teacher, size: 88)
             Text(teacher.fullName)
                 .font(.headline)
+                .foregroundStyle(.white)
             Text("Фотография отсутствует")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -477,57 +557,10 @@ private struct TeacherPhotoSheet: View {
     }
 
     private var photoURL: URL? {
-        guard let link = teacher.photoLink?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !link.isEmpty,
-              !link.hasSuffix("null"),
-              !link.contains("placeholder") else {
-            return nil
-        }
-        return ScheduleEmployeePhotoURL.make(photoLink: link, employeeID: teacher.id)
-    }
-}
-
-// MARK: - Teacher Avatar View
-
-private struct TeacherAvatarView: View {
-    let teacher: DisciplineEmployee
-    let size: CGFloat
-
-    var body: some View {
-        if let url = photoURL {
-            CachedAsyncImage(url: url) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                avatarPlaceholder
-            }
-            .frame(width: size, height: size)
-            .clipShape(Circle())
-        } else {
-            avatarPlaceholder
-                .frame(width: size, height: size)
-        }
-    }
-
-    private var photoURL: URL? {
-        guard let link = teacher.photoLink?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !link.isEmpty,
-              !link.hasSuffix("null"),
-              !link.contains("placeholder") else {
-            return nil
-        }
-        return ScheduleEmployeePhotoURL.make(
-            photoLink: link,
+        ScheduleEmployeePhotoURL.make(
+            photoLink: teacher.photoLink,
             employeeID: teacher.id
         )
-    }
-
-    private var avatarPlaceholder: some View {
-        ZStack {
-            Circle().fill(Color(uiColor: .tertiarySystemGroupedBackground))
-            Image(systemName: "person.fill")
-                .font(.system(size: size * 0.45))
-                .foregroundStyle(.secondary)
-        }
     }
 }
 
@@ -545,7 +578,13 @@ private struct TeacherAvatarView: View {
             subject: "БД",
             subjectFullName: "Базы данных",
             weekNumbers: [1, 2, 3, 4],
-            employees: [],
+            employees: [
+                DisciplineEmployee(
+                    id: 0, firstName: "Диана", middleName: "Владимировна", lastName: "Концева",
+                    photoLink: nil, degree: nil, degreeAbbrev: nil, rank: nil, email: nil,
+                    urlId: nil, calendarId: nil, jobPositions: nil, isChief: nil
+                )
+            ],
             lessonDate: Date(),
             startLessonDate: nil,
             endLessonDate: nil,

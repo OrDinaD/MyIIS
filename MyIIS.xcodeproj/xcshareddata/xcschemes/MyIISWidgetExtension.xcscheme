@@ -31,6 +31,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "F59436CE2E9CF9DA00A3E835"
                BuildableName = "MyIIS.app"
+               BlueprintName = "MyIIS"
                ReferencedContainer = "container:MyIIS.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -62,6 +63,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F59436CE2E9CF9DA00A3E835"
             BuildableName = "MyIIS.app"
+            BlueprintName = "MyIIS"
             ReferencedContainer = "container:MyIIS.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -97,6 +99,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "F59436CE2E9CF9DA00A3E835"
             BuildableName = "MyIIS.app"
+            BlueprintName = "MyIIS"
             ReferencedContainer = "container:MyIIS.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>

@@ -1,5 +1,10 @@
 import SwiftUI
 import WidgetKit
+#if canImport(RelevanceKit)
+import RelevanceKit
+#endif
+
+// MARK: - Snapshot & Event Models
 
 struct WatchWidgetSnapshot: Codable, Sendable {
     let groupName: String
@@ -18,14 +23,44 @@ struct WatchWidgetSnapshot: Codable, Sendable {
         let location: String?
         let lessonType: String?
         let kind: Kind
+        var subgroup: Int?
+        var teacherName: String?
+        var teacherPhotoLink: String?
 
-        // The nested enum is part of the existing wire DTO.
         // swiftlint:disable:next nesting
         enum Kind: String, Codable, Sendable {
             case announcement
             case exam
             case consultation
             case other
+        }
+
+        init(
+            id: String,
+            date: Date?,
+            startTime: String,
+            endTime: String,
+            title: String,
+            subtitle: String?,
+            location: String?,
+            lessonType: String?,
+            kind: Kind,
+            subgroup: Int? = nil,
+            teacherName: String? = nil,
+            teacherPhotoLink: String? = nil
+        ) {
+            self.id = id
+            self.date = date
+            self.startTime = startTime
+            self.endTime = endTime
+            self.title = title
+            self.subtitle = subtitle
+            self.location = location
+            self.lessonType = lessonType
+            self.kind = kind
+            self.subgroup = subgroup
+            self.teacherName = teacherName
+            self.teacherPhotoLink = teacherPhotoLink
         }
 
         func interval(calendar: Calendar = .current) -> DateInterval? {
@@ -44,7 +79,6 @@ struct WatchWidgetSnapshot: Codable, Sendable {
             endComponents.minute = endParts[1]
             guard var end = calendar.date(from: endComponents) else { return nil }
 
-            // Handle lessons crossing midnight gracefully
             if end <= start {
                 guard let nextDayEnd = calendar.date(byAdding: .day, value: 1, to: end) else { return nil }
                 end = nextDayEnd
@@ -75,8 +109,42 @@ struct WatchWidgetSnapshot: Codable, Sendable {
                 text = String(text.dropLast(" к".count)).trimmingCharacters(in: .whitespacesAndNewlines)
             } else if text.hasSuffix(" корп.") {
                 text = String(text.dropLast(" корп.".count)).trimmingCharacters(in: .whitespacesAndNewlines)
+            } else if text.hasSuffix(" корпус") {
+                text = String(text.dropLast(" корпус".count)).trimmingCharacters(in: .whitespacesAndNewlines)
             }
             return text.isEmpty ? nil : text
+        }
+
+        var accentColor: Color {
+            let raw = (lessonType ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if raw.contains("лк") || raw.contains("лек") {
+                return Color(red: 52/255, green: 199/255, blue: 89/255)
+            } else if raw.contains("пз") || raw.contains("прак") {
+                return Color(red: 255/255, green: 59/255, blue: 48/255)
+            } else if raw.contains("лр") || raw.contains("лаб") {
+                return Color(red: 255/255, green: 204/255, blue: 0/255)
+            } else if raw.contains("конс") {
+                return Color(red: 175/255, green: 82/255, blue: 222/255)
+            } else if raw.contains("экз") || raw.contains("зач") {
+                return Color(red: 255/255, green: 45/255, blue: 85/255)
+            }
+            return Color(red: 90/255, green: 200/255, blue: 250/255)
+        }
+
+        var lessonIcon: String {
+            let raw = (lessonType ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            if raw.contains("лк") || raw.contains("лек") {
+                return "book.pages.fill"
+            } else if raw.contains("пз") || raw.contains("прак") {
+                return "pencil.and.ruler.fill"
+            } else if raw.contains("лр") || raw.contains("лаб") {
+                return "flask.fill"
+            } else if raw.contains("конс") {
+                return "person.2.wave.2.fill"
+            } else if raw.contains("экз") || raw.contains("зач") {
+                return "graduationcap.fill"
+            }
+            return "calendar"
         }
     }
 
@@ -85,6 +153,23 @@ struct WatchWidgetSnapshot: Codable, Sendable {
         if let active { return active }
 
         return events
+            .compactMap { event -> (Event, Date)? in
+                guard let start = event.interval(calendar: calendar)?.start, start > date else {
+                    return nil
+                }
+                return (event, start)
+            }
+            .sorted { $0.1 < $1.1 }
+            .first?
+            .0
+    }
+
+    func activeEvent(at date: Date, calendar: Calendar = .current) -> Event? {
+        events.first { $0.isCurrent(at: date, calendar: calendar) }
+    }
+
+    func nextUpcomingEvent(after date: Date, calendar: Calendar = .current) -> Event? {
+        events
             .compactMap { event -> (Event, Date)? in
                 guard let start = event.interval(calendar: calendar)?.start, start > date else {
                     return nil
@@ -161,7 +246,9 @@ struct WatchWidgetSnapshot: Codable, Sendable {
     }
 }
 
-private enum WatchWidgetStore {
+// MARK: - Store
+
+enum WatchWidgetStore {
     static let appGroupIdentifier = "group.com.OrDinaD.MyIIS"
     static let snapshotKey = "watch_class_schedule_snapshot_v1"
 
@@ -177,7 +264,9 @@ private enum WatchWidgetStore {
     }
 }
 
-private struct ScheduleWidgetEntry: TimelineEntry {
+// MARK: - Entry & Timeline Provider
+
+struct ScheduleWidgetEntry: TimelineEntry {
     let date: Date
     let snapshot: WatchWidgetSnapshot?
 
@@ -188,12 +277,12 @@ private struct ScheduleWidgetEntry: TimelineEntry {
         }
 
         if interval.contains(date) {
-            return TimelineEntryRelevance(score: 100, duration: interval.end.timeIntervalSince(date))
+            return TimelineEntryRelevance(score: 100, duration: max(interval.end.timeIntervalSince(date), 60))
         }
 
         let leadTime = interval.start.timeIntervalSince(date)
-        guard leadTime <= 45 * 60 else { return nil }
-        return TimelineEntryRelevance(score: 80, duration: max(leadTime, 0) + interval.duration)
+        guard leadTime <= 45 * 60, leadTime >= 0 else { return nil }
+        return TimelineEntryRelevance(score: 80, duration: leadTime + interval.duration)
     }
 
     var currentEvent: WatchWidgetSnapshot.Event? {
@@ -201,7 +290,7 @@ private struct ScheduleWidgetEntry: TimelineEntry {
     }
 }
 
-private struct ScheduleWidgetProvider: TimelineProvider {
+struct ScheduleWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> ScheduleWidgetEntry {
         ScheduleWidgetEntry(date: .now, snapshot: .placeholder())
     }
@@ -230,10 +319,10 @@ private struct ScheduleWidgetProvider: TimelineProvider {
             guard let interval = event.interval() else { continue }
             if interval.start >= now {
                 dates.insert(interval.start)
-                let leadTime = interval.start.addingTimeInterval(-30 * 60)
-                if leadTime >= now {
-                    dates.insert(leadTime)
-                }
+                let lead45 = interval.start.addingTimeInterval(-45 * 60)
+                if lead45 >= now { dates.insert(lead45) }
+                let lead15 = interval.start.addingTimeInterval(-15 * 60)
+                if lead15 >= now { dates.insert(lead15) }
             }
             if interval.end >= now {
                 dates.insert(interval.end)
@@ -251,9 +340,29 @@ private struct ScheduleWidgetProvider: TimelineProvider {
             ?? now.addingTimeInterval(6 * 60 * 60)
         completion(Timeline(entries: Array(entries), policy: .after(nextBoundary ?? fallback)))
     }
+
+#if os(watchOS)
+    @available(watchOS 11.0, iOS 18.0, *)
+    func relevance() async -> WidgetRelevance<Void> {
+        let now = Date()
+        let snapshot = WatchWidgetStore.load()
+        let relevances = (snapshot?.events ?? []).compactMap { event -> WidgetRelevanceAttribute<Void>? in
+            guard let interval = event.interval() else { return nil }
+            guard interval.end > now else { return nil }
+            let leadStart = interval.start.addingTimeInterval(-20 * 60)
+            let contextInterval = DateInterval(start: leadStart, end: interval.end)
+            return WidgetRelevanceAttribute(
+                context: .date(interval.start)
+            )
+        }
+        return WidgetRelevance(relevances)
+    }
+#endif
 }
 
-private struct ScheduleWidgetView: View {
+// MARK: - 1. Main Adaptive Schedule Widget View
+
+struct ScheduleWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: ScheduleWidgetEntry
 
@@ -276,17 +385,16 @@ private struct ScheduleWidgetView: View {
         .containerBackground(.fill.tertiary, for: .widget)
     }
 
-    // MARK: - Rectangular (Max 3 lines, high-contrast, clean hierarchy)
+    // MARK: - Rectangular
 
     private var rectangularContent: some View {
         Group {
             if let event = entry.currentEvent {
                 VStack(alignment: .leading, spacing: 2) {
-                    // Line 1: Status icon, time interval, and state pill
                     HStack(alignment: .center, spacing: 4) {
                         Image(systemName: event.isCurrent(at: entry.date) ? "clock.fill" : "calendar")
                             .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(event.isCurrent(at: entry.date) ? Color.green : Color.orange)
+                            .foregroundStyle(event.isCurrent(at: entry.date) ? event.accentColor : Color.orange)
                             .widgetAccentable()
 
                         statusTimeText(event)
@@ -299,13 +407,11 @@ private struct ScheduleWidgetView: View {
                         statusBadge(event)
                     }
 
-                    // Line 2: Subject Title (prominent semibold)
                     Text(event.title)
                         .font(.headline.weight(.semibold))
                         .lineLimit(1)
                         .minimumScaleFactor(0.72)
 
-                    // Line 3: Location and Lesson Type
                     let details = detailsString(for: event)
                     if !details.isEmpty {
                         Text(details)
@@ -332,7 +438,7 @@ private struct ScheduleWidgetView: View {
         }
     }
 
-    // MARK: - Circular (Concentric progress ring or gauge + crisp central icon/time)
+    // MARK: - Circular
 
     private var circularContent: some View {
         Group {
@@ -341,20 +447,20 @@ private struct ScheduleWidgetView: View {
                     ZStack {
                         ProgressView(timerInterval: interval.start ... interval.end, countsDown: false)
                             .progressViewStyle(.circular)
-                            .tint(.green)
+                            .tint(event.accentColor)
                             .widgetAccentable()
                             .labelsHidden()
 
-                        Image(systemName: "clock.fill")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.primary)
+                        Image(systemName: event.lessonIcon)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(event.accentColor)
                             .widgetAccentable()
                     }
                     .accessibilityLabel(event.title)
                     .accessibilityValue(Text(timerInterval: interval.start ... interval.end, countsDown: true))
                 } else {
                     Gauge(value: 0) {
-                        Image(systemName: "calendar")
+                        Image(systemName: event.lessonIcon)
                             .widgetAccentable()
                     } currentValueLabel: {
                         Text(event.startTime)
@@ -363,6 +469,7 @@ private struct ScheduleWidgetView: View {
                             .minimumScaleFactor(0.55)
                     }
                     .gaugeStyle(.accessoryCircular)
+                    .tint(event.accentColor)
                     .widgetAccentable()
                     .accessibilityLabel(event.title)
                     .accessibilityValue(event.startTime)
@@ -435,8 +542,8 @@ private struct ScheduleWidgetView: View {
                 .font(.system(size: 9, weight: .bold))
                 .padding(.horizontal, 4)
                 .padding(.vertical, 1.5)
-                .background(Capsule().fill(Color.green.opacity(0.2)))
-                .foregroundStyle(Color.green)
+                .background(Capsule().fill(event.accentColor.opacity(0.2)))
+                .foregroundStyle(event.accentColor)
                 .widgetAccentable()
         } else if let interval = event.interval(), interval.start.timeIntervalSince(entry.date) <= 45 * 60 {
             Text(String(localized: "watch_widget_soon"))
@@ -447,7 +554,7 @@ private struct ScheduleWidgetView: View {
                 .foregroundStyle(Color.orange)
                 .widgetAccentable()
         } else {
-            Text("\(event.startTime)-\(event.endTime)")
+            Text("\(event.startTime)–\(event.endTime)")
                 .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -461,7 +568,310 @@ private struct ScheduleWidgetView: View {
     }
 }
 
-// Target-generated widget type keeps the product name used by Xcode.
+// MARK: - 2. Dedicated Next Class Widget View
+
+struct NextClassWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: ScheduleWidgetEntry
+
+    private var nextEvent: WatchWidgetSnapshot.Event? {
+        entry.snapshot?.nextUpcomingEvent(after: entry.date)
+    }
+
+    var body: some View {
+        Group {
+            switch family {
+            case .accessoryCircular:
+                circularBody
+            case .accessoryInline:
+                inlineBody
+#if os(watchOS)
+            case .accessoryCorner:
+                cornerBody
+#endif
+            default:
+                circularBody
+            }
+        }
+        .privacySensitive()
+        .containerBackground(.fill.tertiary, for: .widget)
+    }
+
+    private var circularBody: some View {
+        Group {
+            if let event = nextEvent {
+                ZStack {
+                    AccessoryWidgetBackground()
+                    VStack(spacing: 1) {
+                        Image(systemName: event.lessonIcon)
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(event.accentColor)
+                            .widgetAccentable()
+
+                        Text(event.startTime)
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+
+                        if let room = event.shortLocation() {
+                            Text(room)
+                                .font(.system(size: 9, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                        }
+                    }
+                    .padding(2)
+                }
+            } else {
+                Image(systemName: "checkmark.circle")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .widgetAccentable()
+            }
+        }
+    }
+
+    private var inlineBody: some View {
+        Group {
+            if let event = nextEvent {
+                Text("→ \(event.startTime) \(event.title)")
+                    .lineLimit(1)
+            } else {
+                Text("watch_widget_no_events_short")
+                    .lineLimit(1)
+            }
+        }
+    }
+
+#if os(watchOS)
+    private var cornerBody: some View {
+        Group {
+            if let event = nextEvent {
+                Text(event.startTime)
+                    .font(.headline.monospacedDigit())
+                    .widgetLabel {
+                        if let loc = event.shortLocation() {
+                            Text("→ \(event.title) · \(loc)")
+                        } else {
+                            Text("→ \(event.title)")
+                        }
+                    }
+            } else {
+                Image(systemName: "checkmark.circle")
+                    .widgetLabel {
+                        Text("watch_widget_no_events_short")
+                    }
+            }
+        }
+        .widgetAccentable()
+    }
+#endif
+}
+
+// MARK: - 3. Dedicated Classroom Widget View
+
+struct ClassRoomWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: ScheduleWidgetEntry
+
+    private var relevantEvent: WatchWidgetSnapshot.Event? {
+        entry.currentEvent
+    }
+
+    var body: some View {
+        Group {
+            switch family {
+            case .accessoryCircular:
+                circularBody
+            case .accessoryInline:
+                inlineBody
+#if os(watchOS)
+            case .accessoryCorner:
+                cornerBody
+#endif
+            default:
+                circularBody
+            }
+        }
+        .privacySensitive()
+        .containerBackground(.fill.tertiary, for: .widget)
+    }
+
+    private var circularBody: some View {
+        Group {
+            if let event = relevantEvent, let room = event.shortLocation() {
+                ZStack {
+                    AccessoryWidgetBackground()
+                    VStack(spacing: 0) {
+                        Text(event.isCurrent(at: entry.date) ? String(localized: "watch_widget_current_class") : event.startTime)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(event.accentColor)
+                            .widgetAccentable()
+
+                        Text(room)
+                            .font(.system(size: 13, weight: .black, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+
+                        Text(event.lessonType?.uppercased() ?? event.title)
+                            .font(.system(size: 8, weight: .medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    .padding(2)
+                }
+            } else {
+                Image(systemName: "door.left.hand.open")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .widgetAccentable()
+            }
+        }
+    }
+
+    private var inlineBody: some View {
+        Group {
+            if let event = relevantEvent, let room = event.shortLocation() {
+                Text("\(room) · \(event.title)")
+                    .lineLimit(1)
+            } else {
+                Text("watch_widget_no_events_short")
+                    .lineLimit(1)
+            }
+        }
+    }
+
+#if os(watchOS)
+    private var cornerBody: some View {
+        Group {
+            if let event = relevantEvent, let room = event.shortLocation() {
+                Text(room)
+                    .font(.headline.weight(.heavy))
+                    .widgetLabel {
+                        Text("\(event.title) · \(event.startTime)")
+                    }
+            } else {
+                Image(systemName: "door.left.hand.open")
+                    .widgetLabel {
+                        Text("watch_widget_no_events_short")
+                    }
+            }
+        }
+        .widgetAccentable()
+    }
+#endif
+}
+
+// MARK: - 4. Dedicated Class Progress Widget View
+
+struct ClassProgressWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: ScheduleWidgetEntry
+
+    var body: some View {
+        Group {
+            switch family {
+            case .accessoryCircular:
+                circularBody
+            case .accessoryInline:
+                inlineBody
+#if os(watchOS)
+            case .accessoryCorner:
+                cornerBody
+#endif
+            default:
+                circularBody
+            }
+        }
+        .privacySensitive()
+        .containerBackground(.fill.tertiary, for: .widget)
+    }
+
+    private var circularBody: some View {
+        Group {
+            if let event = entry.currentEvent, event.isCurrent(at: entry.date), let interval = event.interval() {
+                let progress = event.progress(at: entry.date)
+                let remainingMinutes = max(0, Int(ceil(interval.end.timeIntervalSince(entry.date) / 60.0)))
+                Gauge(value: progress, in: 0...1) {
+                    Image(systemName: event.lessonIcon)
+                        .foregroundStyle(event.accentColor)
+                } currentValueLabel: {
+                    Text("\(remainingMinutes)m")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .minimumScaleFactor(0.7)
+                }
+                .gaugeStyle(.accessoryCircular)
+                .tint(event.accentColor)
+                .widgetAccentable()
+            } else if let next = entry.snapshot?.nextUpcomingEvent(after: entry.date), let interval = next.interval() {
+                let minutesUntil = max(0, Int(ceil(interval.start.timeIntervalSince(entry.date) / 60.0)))
+                Gauge(value: 0, in: 0...1) {
+                    Image(systemName: "hourglass")
+                } currentValueLabel: {
+                    Text("+\(minutesUntil)m")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .minimumScaleFactor(0.7)
+                }
+                .gaugeStyle(.accessoryCircular)
+                .widgetAccentable()
+            } else {
+                Image(systemName: "checkmark.circle")
+                    .font(.title2)
+                    .foregroundStyle(.secondary)
+                    .widgetAccentable()
+            }
+        }
+    }
+
+    private var inlineBody: some View {
+        Group {
+            if let event = entry.currentEvent, event.isCurrent(at: entry.date), let interval = event.interval() {
+                let remainingMinutes = max(0, Int(ceil(interval.end.timeIntervalSince(entry.date) / 60.0)))
+                Text("\(event.title): \(remainingMinutes)m")
+                    .lineLimit(1)
+            } else if let next = entry.snapshot?.nextUpcomingEvent(after: entry.date), let interval = next.interval() {
+                let minutesUntil = max(0, Int(ceil(interval.start.timeIntervalSince(entry.date) / 60.0)))
+                Text("+\(minutesUntil)m: \(next.title)")
+                    .lineLimit(1)
+            } else {
+                Text("watch_widget_no_events_short")
+                    .lineLimit(1)
+            }
+        }
+    }
+
+#if os(watchOS)
+    private var cornerBody: some View {
+        Group {
+            if let event = entry.currentEvent, event.isCurrent(at: entry.date), let interval = event.interval() {
+                let remainingMinutes = max(0, Int(ceil(interval.end.timeIntervalSince(entry.date) / 60.0)))
+                Text("\(remainingMinutes)m")
+                    .font(.headline.monospacedDigit())
+                    .widgetLabel {
+                        Text("\(event.title) · \(event.endTime)")
+                    }
+            } else if let next = entry.snapshot?.nextUpcomingEvent(after: entry.date) {
+                Text(next.startTime)
+                    .font(.headline.monospacedDigit())
+                    .widgetLabel {
+                        Text("→ \(next.title)")
+                    }
+            } else {
+                Image(systemName: "checkmark.circle")
+                    .widgetLabel {
+                        Text("watch_widget_no_events_short")
+                    }
+            }
+        }
+        .widgetAccentable()
+    }
+#endif
+}
+
+// MARK: - Widget Configurations
+
+// 1. Adaptive Schedule Widget
 // swiftlint:disable:next type_name
 struct MyIIS_Watch_Widget: Widget {
     let kind = "com.OrDinaD.MyIIS.watch.schedule"
@@ -484,40 +894,68 @@ struct MyIIS_Watch_Widget: Widget {
     }
 }
 
-// MARK: - Previews
+// 2. Next Class Widget
+struct NextClassWatchWidget: Widget {
+    let kind = "com.OrDinaD.MyIIS.watch.nextClass"
 
-#Preview("Rectangular (Идёт пара)", as: .accessoryRectangular) {
-    MyIIS_Watch_Widget()
-} timeline: {
-    ScheduleWidgetEntry(date: .now, snapshot: .placeholder())
+    private var supportedFamilies: [WidgetFamily] {
+#if os(watchOS)
+        [.accessoryCircular, .accessoryCorner, .accessoryInline]
+#else
+        [.accessoryCircular, .accessoryInline]
+#endif
+    }
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ScheduleWidgetProvider()) { entry in
+            NextClassWidgetView(entry: entry)
+        }
+        .configurationDisplayName("watch_widget_next_class_name")
+        .description("watch_widget_next_class_description")
+        .supportedFamilies(supportedFamilies)
+    }
 }
 
-#Preview("Rectangular (Следующая)", as: .accessoryRectangular) {
-    MyIIS_Watch_Widget()
-} timeline: {
-    ScheduleWidgetEntry(date: .now, snapshot: .upcomingPlaceholder())
+// 3. Classroom Widget
+struct ClassRoomWatchWidget: Widget {
+    let kind = "com.OrDinaD.MyIIS.watch.classroom"
+
+    private var supportedFamilies: [WidgetFamily] {
+#if os(watchOS)
+        [.accessoryCircular, .accessoryCorner, .accessoryInline]
+#else
+        [.accessoryCircular, .accessoryInline]
+#endif
+    }
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ScheduleWidgetProvider()) { entry in
+            ClassRoomWidgetView(entry: entry)
+        }
+        .configurationDisplayName("watch_widget_room_name")
+        .description("watch_widget_room_description")
+        .supportedFamilies(supportedFamilies)
+    }
 }
 
-#Preview("Rectangular (Пусто)", as: .accessoryRectangular) {
-    MyIIS_Watch_Widget()
-} timeline: {
-    ScheduleWidgetEntry(date: .now, snapshot: nil)
-}
+// 4. Class Progress Widget
+struct ClassProgressWatchWidget: Widget {
+    let kind = "com.OrDinaD.MyIIS.watch.progress"
 
-#Preview("Circular (Идёт пара)", as: .accessoryCircular) {
-    MyIIS_Watch_Widget()
-} timeline: {
-    ScheduleWidgetEntry(date: .now, snapshot: .placeholder())
-}
+    private var supportedFamilies: [WidgetFamily] {
+#if os(watchOS)
+        [.accessoryCircular, .accessoryCorner, .accessoryInline]
+#else
+        [.accessoryCircular, .accessoryInline]
+#endif
+    }
 
-#Preview("Circular (Следующая)", as: .accessoryCircular) {
-    MyIIS_Watch_Widget()
-} timeline: {
-    ScheduleWidgetEntry(date: .now, snapshot: .upcomingPlaceholder())
-}
-
-#Preview("Circular (Пусто)", as: .accessoryCircular) {
-    MyIIS_Watch_Widget()
-} timeline: {
-    ScheduleWidgetEntry(date: .now, snapshot: nil)
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: ScheduleWidgetProvider()) { entry in
+            ClassProgressWidgetView(entry: entry)
+        }
+        .configurationDisplayName("watch_widget_progress_name")
+        .description("watch_widget_progress_description")
+        .supportedFamilies(supportedFamilies)
+    }
 }

@@ -1,4 +1,12 @@
 /* RU */
+"attendance_period_section_title" = "История пропусков";
+"attendance_semester_expanded" = "Развёрнуто";
+"attendance_semester_collapsed" = "Свёрнуто";
+"attendance_period_label" = "Период";
+"attendance_all_period_title" = "За весь период";
+"attendance_all_period_subtitle" = "Без уважительной причины";
+"attendance_all_period_empty" = "Неуважительных пропусков нет";
+"attendance_documents_format" = "Справок: %d";
 "%@ — endpoint вернул ошибку" = "%@ — endpoint вернул ошибку";
 "%@ — ошибка сервера" = "%@ — ошибка сервера";
 "%@ — сервер не поддерживает HEAD" = "%@ — сервер не поддерживает HEAD";
@@ -66,8 +74,8 @@
 "attendance_section_applications_subtitle" = "История подач и решений";
 "attendance_section_certificates" = "Информация о справках";
 "attendance_section_certificates_subtitle" = "Документы по уважительным причинам";
-"attendance_section_summary" = "Пропуски по неуважительной причине";
-"attendance_section_summary_subtitle" = "Текущий семестр";
+"attendance_section_summary" = "По месяцам";
+"attendance_section_summary_subtitle" = "Неуважительные пропуски текущего семестра";
 "attendance_term_format" = "%lld семестр";
 "attendance_title" = "Пропуски";
 "attendance_to" = "По";

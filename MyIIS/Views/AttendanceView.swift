@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct AttendanceView: View {
+    @EnvironmentObject private var authService: AuthenticationService
     @State private var viewModel = AttendanceViewModel()
 
     var body: some View {
@@ -14,7 +15,10 @@ struct AttendanceView: View {
             .navigationTitle(NSLocalizedString("attendance_title", comment: ""))
             .navigationBarTitleDisplayMode(.large)
             .hiddenNavigationBarBackground()
-            .task { await viewModel.loadDataIfNeeded() }
+            .task {
+                viewModel.configurePeriod(course: authService.currentUser?.education.course)
+                await viewModel.loadDataIfNeeded()
+            }
             .refreshable { await viewModel.reload() }
         }
         .appBackground()
@@ -33,10 +37,12 @@ struct AttendanceView: View {
                 }
             }
 
-            ApplicationsSection(
-                applications: viewModel.applications,
+            CertificatesSection(
+                certificates: viewModel.certificates,
+                groupedCertificates: viewModel.groupedCertificates,
+                faculty: viewModel.faculty,
                 isLoading: viewModel.isLoading,
-                errorMessage: viewModel.sectionErrors[.applications],
+                errorMessage: viewModel.sectionErrors[.certificates],
                 onRetry: reloadIfNeeded
             )
 
@@ -47,12 +53,20 @@ struct AttendanceView: View {
                 onRetry: reloadIfNeeded
             )
 
-            CertificatesSection(
-                certificates: viewModel.certificates,
-                groupedCertificates: viewModel.groupedCertificates,
-                faculty: viewModel.faculty,
+            AllPeriodOmissionsSection(
+                semesters: viewModel.selectedSemesters,
+                periodTerms: viewModel.periodTerms,
+                selection: Binding(get: { viewModel.selectedTerm }, set: { viewModel.selectPeriod($0) }),
+                hours: viewModel.selectedHours,
                 isLoading: viewModel.isLoading,
-                errorMessage: viewModel.sectionErrors[.certificates],
+                errorMessage: viewModel.sectionErrors[.allPeriod],
+                onRetry: reloadIfNeeded
+            )
+
+            ApplicationsSection(
+                applications: viewModel.applications,
+                isLoading: viewModel.isLoading,
+                errorMessage: viewModel.sectionErrors[.applications],
                 onRetry: reloadIfNeeded
             )
         }
@@ -177,13 +191,11 @@ private struct MonthlySummarySection: View {
 }
 
 private struct MonthlyBarRow: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     let month: String
     let value: Int
     let maxValue: Int
-    @State private var isShowing = false
 
     var body: some View {
         Group {
@@ -207,9 +219,6 @@ private struct MonthlyBarRow: View {
             label: MonthParser.localizedTitle(from: month),
             value: "\(value) \(NSLocalizedString("attendance_hours_unit", comment: ""))"
         )
-        .onAppear {
-            isShowing = true
-        }
     }
 
     private var rowHeader: some View {
@@ -229,17 +238,221 @@ private struct MonthlyBarRow: View {
 
     private var bar: some View {
         GeometryReader { proxy in
-            let width = proxy.size.width * CGFloat(value) / CGFloat(maxValue)
+            let ratio = CGFloat(min(max(0, value), maxValue)) / CGFloat(max(1, maxValue))
+            let width = proxy.size.width * ratio
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(Color(uiColor: .tertiarySystemFill))
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(Color.accentColor)
-                    .frame(width: isShowing || reduceMotion ? max(8, width) : 0)
-                    .animation(reduceMotion ? nil : .spring(response: 0.8, dampingFraction: 0.7).delay(0.2), value: isShowing)
+                    .frame(width: value > 0 ? max(4, width) : 0)
             }
         }
         .frame(height: 12)
+    }
+}
+
+private struct AllPeriodOmissionsSection: View {
+    let semesters: [AttendanceSemester]
+    let periodTerms: [Int]
+    @Binding var selection: Int
+    let hours: Int
+    let isLoading: Bool
+    let errorMessage: String?
+    let onRetry: () -> Void
+
+    var body: some View {
+        AttendanceCard(
+            title: NSLocalizedString("attendance_period_section_title", comment: ""),
+            subtitle: NSLocalizedString("attendance_all_period_subtitle", comment: ""),
+            icon: "calendar"
+        ) {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    periodMenu
+                    Spacer(minLength: 0)
+                    totalHours
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    periodMenu
+                    totalHours
+                }
+            }
+
+            if isLoading && semesters.isEmpty {
+                LoadingBlockView()
+            } else if let errorMessage {
+                SectionErrorView(message: errorMessage, action: onRetry)
+            } else {
+                if semesters.isEmpty {
+                    Text(NSLocalizedString("attendance_all_period_empty", comment: ""))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 4)
+                } else {
+                    VStack(spacing: 16) {
+                        ForEach(semesters) { semester in
+                            VStack(alignment: .leading, spacing: 8) {
+                                if selection == 0 {
+                                    Text(String(format: NSLocalizedString("attendance_term_format", comment: ""), semester.id))
+                                        .font(.footnote.weight(.semibold))
+                                        .foregroundStyle(.secondary)
+                                        .padding(.horizontal, 4)
+                                }
+                                LazyVStack(spacing: 0) {
+                                    ForEach(semester.records) { record in
+                                        if record.id != semester.records.first?.id {
+                                            Divider().padding(.leading, 12)
+                                        }
+                                        omissionRow(record.omission)
+                                    }
+                                }
+                                .background(
+                                    Color(uiColor: .secondarySystemGroupedBackground),
+                                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var periodTitle: String {
+        selection == 0
+            ? NSLocalizedString("attendance_all_period_title", comment: "")
+            : String(format: NSLocalizedString("attendance_term_format", comment: ""), selection)
+    }
+
+    private var periodMenu: some View {
+        Menu {
+            Picker(NSLocalizedString("attendance_period_label", comment: ""), selection: $selection) {
+                ForEach(periodTerms, id: \.self) { term in
+                    Text(String(format: NSLocalizedString("attendance_term_format", comment: ""), term))
+                        .tag(term)
+                }
+                Text(NSLocalizedString("attendance_all_period_title", comment: "")).tag(0)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            HStack(spacing: 8) {
+                Text(periodTitle)
+                    .font(.subheadline.weight(.medium))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.caption2.weight(.semibold))
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 12)
+            .frame(minHeight: 44)
+            .background(
+                Color(uiColor: .secondarySystemGroupedBackground),
+                in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+            )
+        }
+        .menuOrder(.fixed)
+        .accessibilityLabel(NSLocalizedString("attendance_period_label", comment: ""))
+        .accessibilityValue(periodTitle)
+        .accessibilityIdentifier("attendancePeriodPicker")
+    }
+
+    @ViewBuilder
+    private var totalHours: some View {
+        if errorMessage == nil && !(isLoading && semesters.isEmpty) {
+            Text("\(hours) \(NSLocalizedString("attendance_hours_unit", comment: ""))")
+                .font(.subheadline.weight(.semibold))
+                .monospacedDigit()
+                .fixedSize(horizontal: true, vertical: false)
+        }
+    }
+
+    private func omissionRow(_ omission: DisrespectfulOmission) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(omission.subject.name)
+                    .font(.subheadline.weight(.medium))
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("\(omission.date) · \(omission.lessonTypeAbbrev)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("\(omission.hours) \(NSLocalizedString("attendance_hours_unit", comment: ""))")
+                .font(.footnote.weight(.semibold))
+                .monospacedDigit()
+                .fixedSize(horizontal: true, vertical: false)
+        }
+        .padding(12)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct AttendanceSemesterCard<Content: View>: View {
+    @State private var isExpanded: Bool
+    let title: String
+    let content: Content
+
+    init(title: String, initiallyExpanded: Bool, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+        _isExpanded = State(initialValue: initiallyExpanded)
+    }
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $isExpanded) {
+            VStack(spacing: 10) {
+                content
+            }
+        } label: {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+        }
+        .disclosureGroupStyle(AttendanceSemesterDisclosureStyle())
+    }
+}
+
+private struct AttendanceSemesterDisclosureStyle: DisclosureGroupStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(spacing: 10) {
+            Button {
+                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
+                    configuration.isExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 12) {
+                    configuration.label
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
+                .padding(.horizontal, 12)
+                .frame(minHeight: 44)
+                .background(
+                    Color(uiColor: .secondarySystemGroupedBackground),
+                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(NSLocalizedString(
+                configuration.isExpanded ? "attendance_semester_expanded" : "attendance_semester_collapsed",
+                comment: ""
+            ))
+            if configuration.isExpanded {
+                configuration.content
+                    .transition(.identity)
+            }
+        }
+        .clipped()
     }
 }
 
@@ -268,13 +481,12 @@ private struct CertificatesSection: View {
             } else if certificates.isEmpty {
                 EmptyStateView(message: NSLocalizedString("attendance_no_certificates", comment: ""), action: onRetry)
             } else {
-                LazyVStack(spacing: 12) {
+                VStack(spacing: 12) {
                     ForEach(groupedCertificates, id: \.0) { term, items in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(String(format: NSLocalizedString("attendance_term_format", comment: ""), Int(term) ?? 0))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
-
+                        AttendanceSemesterCard(
+                            title: String(format: NSLocalizedString("attendance_term_format", comment: ""), Int(term) ?? 0),
+                            initiallyExpanded: term == groupedCertificates.first?.0
+                        ) {
                             ForEach(items) { certificate in
                                 CertificateRow(certificate: certificate)
                             }
@@ -328,14 +540,10 @@ private struct LabeledValue: View {
 }
 
 private struct AttendanceCard<Content: View>: View {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     let title: String
     let subtitle: String
     let icon: String
     @ViewBuilder let content: Content
-
-    @State private var isAppeared = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -367,20 +575,6 @@ private struct AttendanceCard<Content: View>: View {
                 .fill(Color(uiColor: .systemBackground))
                 .shadow(color: Color.black.opacity(0.05), radius: 12, x: 0, y: 6)
         )
-        .opacity(isAppeared ? 1 : (reduceMotion ? 1 : 0.01))
-        .offset(y: isAppeared || reduceMotion ? 0 : 20)
-        .scaleEffect(isAppeared || reduceMotion ? 1 : 0.98)
-        .onAppear {
-            AccessibilitySupport.update(
-                reduceMotion: reduceMotion,
-                animation: .spring(response: 0.6, dampingFraction: 0.75)
-            ) {
-                isAppeared = true
-            }
-        }
-        .onDisappear {
-            isAppeared = false
-        }
     }
 }
 
@@ -550,6 +744,24 @@ private extension DateFormatter {
     }()
 }
 
-#Preview {
-    AttendanceView()
+#Preview("Период и справки") {
+    let payload = """
+    [{"id":1,"dateFrom":1788220800000,"dateTo":1788566400000,"name":"Справка","term":5}]
+    """
+    let certificates = (try? JSONDecoder().decode([OmissionCertificate].self, from: Data(payload.utf8))) ?? []
+    ScrollView {
+        VStack(spacing: 20) {
+            AllPeriodOmissionsSection(
+                semesters: [], periodTerms: [5, 4, 3, 2, 1],
+                selection: .constant(5), hours: 0, isLoading: false,
+                errorMessage: nil, onRetry: {}
+            )
+            CertificatesSection(
+                certificates: certificates, groupedCertificates: [("5", certificates), ("4", certificates)],
+                faculty: nil, isLoading: false, errorMessage: nil, onRetry: {}
+            )
+        }
+        .padding(16)
+    }
+    .background(Color(uiColor: .systemGroupedBackground))
 }

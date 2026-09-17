@@ -207,7 +207,9 @@ struct ScheduleServiceView: View {
                 }
             )
             .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
+            .presentationDragIndicator(.hidden)
+            .presentationBackground(Color(uiColor: .systemGroupedBackground))
+            .presentationCornerRadius(28)
         }
         .sheet(isPresented: $isDatePickerPresented) {
             jumpDatePickerSheet
@@ -893,7 +895,7 @@ private struct ScheduleTeacherHeader: View {
                 isPhotoPresented = true
             } label: {
                 avatar
-                    .frame(width: 56, height: 56)
+                    .frame(width: 72, height: 72)
                     .clipShape(Circle())
             }
             .buttonStyle(.plain)
@@ -918,24 +920,22 @@ private struct ScheduleTeacherHeader: View {
         .padding(12)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .sheet(isPresented: $isPhotoPresented) {
-            avatar
-                .scaledToFit()
-                .padding()
-                .presentationDetents([.medium, .large])
+            CachedAsyncImage(url: photoURL, maxPixelSize: 2_048, rejectBlankImages: true) { image in
+                image.resizable().scaledToFit()
+            } placeholder: {
+                avatar
+            }
+            .padding()
+            .presentationDetents([.medium, .large])
         }
     }
 
-    @ViewBuilder
     private var avatar: some View {
-        if let url = photoURL {
-            CachedAsyncImage(url: url, maxPixelSize: 360) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                placeholder
-            }
-        } else {
-            placeholder
-        }
+        TeacherAvatarView(
+            photoLink: employee.photoLink, employeeID: employee.id,
+            firstName: employee.firstName, middleName: employee.middleName,
+            lastName: employee.lastName, size: 72
+        )
     }
 
     private var photoURL: URL? {
@@ -945,13 +945,6 @@ private struct ScheduleTeacherHeader: View {
         )
     }
 
-    private var placeholder: some View {
-        ZStack {
-            Circle().fill(Color(uiColor: .tertiarySystemGroupedBackground))
-            Image(systemName: "person.fill")
-                .foregroundStyle(.secondary)
-        }
-    }
 }
 
 // MARK: - Lesson Card
@@ -1113,7 +1106,7 @@ private struct ScheduleLessonCard: View {
                     .lineLimit(1)
             }
         } else if !displayedTeachers.isEmpty {
-            teacherAvatarStack(size: cardDensity == .compact ? 36 : 40)
+            teacherAvatarStack(size: cardDensity == .compact ? 48 : 56)
         }
     }
 
@@ -1231,47 +1224,9 @@ private struct ScheduleLessonCard: View {
     }
 
     private func teacherAvatar(_ teacher: DisciplineEmployee, size: CGFloat) -> some View {
-        Group {
-            if let url = teacherPhotoURL(for: teacher) {
-                CachedAsyncImage(url: url) { image in
-                    image.resizable().scaledToFill()
-                } placeholder: {
-                    teacherPlaceholderAvatar(size: size)
-                }
-            } else {
-                teacherPlaceholderAvatar(size: size)
-            }
-        }
-        .frame(width: size, height: size)
-        .clipShape(Circle())
-        .saturation(isPast ? 0 : 1)
-        .opacity(isPast ? 0.7 : 1)
-    }
-
-    private func teacherPlaceholderAvatar(size: CGFloat) -> some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color(uiColor: .secondarySystemFill),
-                    Color(uiColor: .tertiarySystemFill)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            Image(systemName: "person.crop.circle.fill")
-                .resizable()
-                .scaledToFit()
-                .padding(size * 0.18)
-                .foregroundStyle(cardSecondaryForeground.opacity(0.75))
-        }
-    }
-
-    private func teacherPhotoURL(for teacher: DisciplineEmployee?) -> URL? {
-        guard let teacher else { return nil }
-        return ScheduleEmployeePhotoURL.make(
-            photoLink: teacher.photoLink,
-            employeeID: teacher.id
-        )
+        TeacherAvatarView(teacher: teacher, size: size)
+            .saturation(isPast ? 0 : 1)
+            .opacity(isPast ? 0.7 : 1)
     }
 
     private var displayedTeachers: [DisciplineEmployee] {

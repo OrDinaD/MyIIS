@@ -1321,6 +1321,10 @@ final class ScheduleServiceViewModel {
             .compactMap { $0 }
             .joined(separator: ", ")
             .nilIfBlank
+        let primaryEmployee = lesson.employees.first(where: { !$0.fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
+        let teacherPhotoURL = primaryEmployee.flatMap {
+            ScheduleEmployeePhotoURL.make(photoLink: $0.photoLink, employeeID: $0.id)
+        }
         return SessionScheduleWidgetSnapshot.Event(
             id: "\(lesson.id)|\(date?.timeIntervalSince1970 ?? 0)",
             date: date,
@@ -1331,7 +1335,9 @@ final class ScheduleServiceViewModel {
             location: lesson.location.nilIfBlank,
             lessonType: lesson.lessonTypeAbbrev.nilIfBlank,
             kind: widgetEventKind(for: lesson),
-            subgroup: lesson.subgroup > 0 ? lesson.subgroup : nil
+            subgroup: lesson.subgroup > 0 ? lesson.subgroup : nil,
+            teacherName: primaryEmployee?.fullName.nilIfBlank,
+            teacherPhotoLink: teacherPhotoURL?.absoluteString
         )
     }
 

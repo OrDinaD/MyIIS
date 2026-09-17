@@ -42,7 +42,7 @@ private actor AsyncImagePipeline {
 
     private var inFlightTasks: [String: Task<UIImage?, Never>] = [:]
 
-    func loadImage(for url: URL, cacheIdentity: String, maxPixelSize: CGFloat) async -> UIImage? {
+    func loadImage(for url: URL, cacheIdentity: String, maxPixelSize: CGFloat, rejectBlankImages: Bool) async -> UIImage? {
         let cacheKey = cacheIdentity as NSString
 
         if let cachedImage = CachedAsyncImageMemoryCache.image(forKey: cacheKey) {
@@ -62,7 +62,7 @@ private actor AsyncImagePipeline {
             request.timeoutInterval = 8
 
             if let cached = URLCache.shared.cachedResponse(for: request),
-               let image = downsampleImage(from: cached.data, maxPixelSize: maxPixelSize) {
+               let image = downsampleImage(from: cached.data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages) {
                 CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
                 return image
             }
@@ -83,7 +83,7 @@ private actor AsyncImagePipeline {
                     }
                 }
 
-                guard let image = downsampleImage(from: data, maxPixelSize: maxPixelSize) else {
+                guard let image = downsampleImage(from: data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages) else {
                     CachedAsyncImageMemoryCache.markMissing(cacheIdentity)
                     return nil
                 }
@@ -103,8 +103,9 @@ private actor AsyncImagePipeline {
         return result
     }
 
-    private func downsampleImage(from data: Data, maxPixelSize: CGFloat) -> UIImage? {
-        ImageDownsampler.image(from: data, maxPixelSize: maxPixelSize)
+    private func downsampleImage(from data: Data, maxPixelSize: CGFloat, rejectBlankImages: Bool) -> UIImage? {
+        guard let image = ImageDownsampler.image(from: data, maxPixelSize: maxPixelSize) else { return nil }
+        return rejectBlankImages && TeacherPhotoValidation.isBlank(image.cgImage) ? nil : image
     }
 }
 
@@ -133,6 +134,7 @@ enum ImageDownsampler {
 struct CachedAsyncImage<Content: View, Placeholder: View, Failure: View>: View {
     let url: URL?
     var maxPixelSize: CGFloat = 1_024
+    var rejectBlankImages: Bool = false
     var transaction: Transaction = Transaction(animation: .easeInOut(duration: 0.18))
     @ViewBuilder let content: (Image) -> Content
     @ViewBuilder let placeholder: () -> Placeholder
@@ -145,6 +147,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View, Failure: View>: View {
     init(
         url: URL?,
         maxPixelSize: CGFloat = 1_024,
+        rejectBlankImages: Bool = false,
         transaction: Transaction = Transaction(animation: .easeInOut(duration: 0.18)),
         @ViewBuilder content: @escaping (Image) -> Content,
         @ViewBuilder placeholder: @escaping () -> Placeholder,
@@ -152,6 +155,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View, Failure: View>: View {
     ) {
         self.url = url
         self.maxPixelSize = maxPixelSize
+        self.rejectBlankImages = rejectBlankImages
         self.transaction = transaction
         self.content = content
         self.placeholder = placeholder
@@ -175,7 +179,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View, Failure: View>: View {
 
     private var cacheIdentity: String? {
         guard let url else { return nil }
-        return "\(url.absoluteString)#\(Int(maxPixelSize.rounded(.up)))"
+        return "\(url.absoluteString)#\(Int(maxPixelSize.rounded(.up)))#\(rejectBlankImages)"
     }
 
     private func loadImageIfNeeded() async {
@@ -187,6 +191,11 @@ struct CachedAsyncImage<Content: View, Placeholder: View, Failure: View>: View {
         }
         guard loadedCacheKey != cacheIdentity else { return }
         loadedCacheKey = cacheIdentity
+        defer {
+            if Task.isCancelled, loadedCacheKey == cacheIdentity {
+                loadedCacheKey = nil
+            }
+        }
 
         let cacheKey = cacheIdentity as NSString
         if let cachedImage = CachedAsyncImageMemoryCache.image(forKey: cacheKey) {
@@ -207,7 +216,8 @@ struct CachedAsyncImage<Content: View, Placeholder: View, Failure: View>: View {
         if let image = await AsyncImagePipeline.shared.loadImage(
             for: url,
             cacheIdentity: cacheIdentity,
-            maxPixelSize: maxPixelSize
+            maxPixelSize: maxPixelSize,
+            rejectBlankImages: rejectBlankImages
         ) {
             guard !Task.isCancelled, loadedCacheKey == cacheIdentity else { return }
             withTransaction(transaction) {
@@ -226,6 +236,7 @@ extension CachedAsyncImage where Failure == Placeholder {
     init(
         url: URL?,
         maxPixelSize: CGFloat = 1_024,
+        rejectBlankImages: Bool = false,
         transaction: Transaction = Transaction(animation: .easeInOut(duration: 0.18)),
         @ViewBuilder content: @escaping (Image) -> Content,
         @ViewBuilder placeholder: @escaping () -> Placeholder
@@ -233,6 +244,7 @@ extension CachedAsyncImage where Failure == Placeholder {
         self.init(
             url: url,
             maxPixelSize: maxPixelSize,
+            rejectBlankImages: rejectBlankImages,
             transaction: transaction,
             content: content,
             placeholder: placeholder,

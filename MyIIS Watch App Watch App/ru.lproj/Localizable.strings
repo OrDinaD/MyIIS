@@ -8,8 +8,10 @@
 "watch_schedule_starts_in" = "До начала";
 "watch_schedule_no_data" = "Расписание ещё не передано";
 "watch_schedule_open_iphone" = "Откройте MyIIS на iPhone и обновите расписание.";
-"watch_widget_name" = "Следующая пара";
-"watch_widget_description" = "Показывает текущую или следующую пару, время и аудиторию.";
+"watch_section_today" = "СЕГОДНЯ";
+"watch_section_tomorrow" = "ЗАВТРА";
+"watch_widget_name" = "Расписание";
+"watch_widget_description" = "Показывает текущую пару во время занятий или ближайшую на перерыве.";
 "watch_widget_no_events" = "Пар больше нет";
 "watch_widget_until" = "до";
 "watch_widget_in" = "через";

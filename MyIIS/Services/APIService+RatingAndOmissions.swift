@@ -40,6 +40,13 @@ extension APIService {
         }
     }
 
+    /// Неуважительные пропуски за весь период обучения.
+    func getDisrespectfulOmissions() async throws -> [DisrespectfulOmission] {
+        let request = URLRequest(url: baseURL.appendingPathComponent("disrespectful-omissions-by-student"))
+        logRequestDetails(request)
+        return try await performRequest(request)
+    }
+
     /// Количество пропусков студента по месяцам семестра
     func getMonthlyOmissionCounts() async throws -> [MonthlyOmissionCount] {
         if APIService.isDemoMode { return DemoMockData.monthlyOmissionCounts }

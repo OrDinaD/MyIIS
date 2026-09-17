@@ -134,6 +134,43 @@ struct OmissionsByStudentResponse: Codable {
     }
 }
 
+struct DisrespectfulOmission: Codable, Hashable, Sendable {
+    struct Subject: Codable, Hashable, Sendable {
+        let id: Int
+        let name: String
+        let abbrev: String
+    }
+
+    let date: String
+    let subject: Subject
+    let lessonTypeAbbrev: String
+    let hours: Int
+    let term: Int
+}
+
+struct AttendanceSemester: Identifiable {
+    struct Record: Identifiable {
+        let id: Int
+        let omission: DisrespectfulOmission
+    }
+
+    let id: Int
+    let records: [Record]
+    let hours: Int
+
+    static func group(_ omissions: [DisrespectfulOmission]) -> [AttendanceSemester] {
+        let grouped = Dictionary(grouping: omissions, by: \.term)
+        return grouped.keys.sorted(by: >).map { term in
+            let items = grouped[term, default: []].sorted { $0.date > $1.date }
+            return AttendanceSemester(
+                id: term,
+                records: items.enumerated().map { Record(id: $0.offset, omission: $0.element) },
+                hours: items.reduce(0) { $0 + max(0, $1.hours) }
+            )
+        }
+    }
+}
+
 struct MonthlyOmissionCount: Codable, Identifiable {
     let month: String
     let omissionCount: Int

@@ -10,6 +10,7 @@ struct AttendanceCacheModel: Codable {
     let monthlyCounts: [MonthlyOmissionCount]
     let faculty: String?
     let lastUpdateTime: Date
+    var disrespectfulOmissions: [DisrespectfulOmission]?
 }
 
 @Observable
@@ -19,6 +20,7 @@ final class AttendanceViewModel {
         case applications
         case summary
         case certificates
+        case allPeriod
     }
 
     var applications: [OmissionApplication] = []
@@ -28,6 +30,52 @@ final class AttendanceViewModel {
         }
     }
     private(set) var groupedCertificates: [(String, [OmissionCertificate])] = []
+    var disrespectfulOmissions: [DisrespectfulOmission] = [] {
+        didSet {
+            semesters = AttendanceSemester.group(disrespectfulOmissions)
+            updatePeriodOptions()
+        }
+    }
+    private(set) var semesters: [AttendanceSemester] = []
+    private(set) var periodTerms: [Int] = []
+    private(set) var selectedTerm = 0
+    private(set) var selectedSemesters: [AttendanceSemester] = []
+    private(set) var selectedHours = 0
+    private var currentTerm: Int?
+    private var hasSelectedPeriod = false
+
+    func configurePeriod(course: Int?, referenceDate: Date = Date()) {
+        if let course, (1...6).contains(course) {
+            let month = Calendar.current.component(.month, from: referenceDate)
+            // The portal supplies the current course, but no current semester field.
+            currentTerm = course * 2 - (month >= 9 || month == 1 ? 1 : 0)
+        }
+        updatePeriodOptions()
+    }
+
+    func selectPeriod(_ term: Int) {
+        selectedTerm = term
+        hasSelectedPeriod = true
+        updateSelectedPeriod()
+    }
+
+    private func updatePeriodOptions() {
+        var terms = Set(semesters.map(\.id))
+        terms.formUnion(certificates.compactMap { Int($0.term) })
+        if let currentTerm {
+            terms.formUnion(1...currentTerm)
+        }
+        periodTerms = terms.filter { $0 > 0 }.sorted(by: >)
+        if !hasSelectedPeriod {
+            selectedTerm = currentTerm ?? periodTerms.first ?? 0
+        }
+        updateSelectedPeriod()
+    }
+
+    private func updateSelectedPeriod() {
+        selectedSemesters = selectedTerm == 0 ? semesters : semesters.filter { $0.id == selectedTerm }
+        selectedHours = selectedSemesters.reduce(0) { $0 + $1.hours }
+    }
     var monthlyCounts: [MonthlyOmissionCount] = []
     var faculty: String?
     var isLoading: Bool = false
@@ -58,6 +106,7 @@ final class AttendanceViewModel {
         }
         self.applications = cache.applications
         self.certificates = cache.certificates
+        self.disrespectfulOmissions = cache.disrespectfulOmissions ?? []
         self.monthlyCounts = cache.monthlyCounts
         self.faculty = cache.faculty
         self.lastUpdateTime = cache.lastUpdateTime
@@ -72,6 +121,7 @@ final class AttendanceViewModel {
         self.groupedCertificates = sortedTerms.map { term in
             (term, grouped[term, default: []].sorted { $0.dateFrom > $1.dateFrom })
         }
+        updatePeriodOptions()
     }
 
     private func saveCache() {
@@ -81,7 +131,8 @@ final class AttendanceViewModel {
             certificates: certificates,
             monthlyCounts: monthlyCounts,
             faculty: faculty,
-            lastUpdateTime: lastUpdate
+            lastUpdateTime: lastUpdate,
+            disrespectfulOmissions: disrespectfulOmissions
         )
         if let data = try? JSONEncoder().encode(cache) {
             _ = UserDefaultsPayloadStore.save(data, forKey: Self.cacheKey, in: .standard)
@@ -92,6 +143,7 @@ final class AttendanceViewModel {
         case applications(Result<[OmissionApplication], Error>)
         case counts(Result<[MonthlyOmissionCount], Error>)
         case certificates(Result<OmissionsByStudentResponse, Error>)
+        case allPeriod(Result<[DisrespectfulOmission], Error>)
     }
 
     func loadDataIfNeeded() async { await loadData(force: false) }
@@ -99,7 +151,7 @@ final class AttendanceViewModel {
 
     private func loadData(force: Bool) async {
         if isLoading { return }
-        if !force && hasLoadedOnce && hasVisibleData {
+        if !force && hasLoadedOnce && sectionErrors.isEmpty {
             if let last = lastUpdateTime, Date().timeIntervalSince(last) < 300 {
                 return
             }
@@ -127,6 +179,11 @@ final class AttendanceViewModel {
                 return .certificates(res)
             }
 
+            group.addTask {
+                let result = await self.resultOf { try await self.apiService.getDisrespectfulOmissions() }
+                return .allPeriod(result)
+            }
+
             for await sectionResult in group {
                 guard !Task.isCancelled else { continue }
                 switch sectionResult {
@@ -143,6 +200,11 @@ final class AttendanceViewModel {
                         errors: &errors,
                         sectionErrors: &nextSectionErrors,
                         loadedSections: &loadedSections
+                    )
+                case .allPeriod(let result):
+                    self.applyAllPeriodResult(
+                        result, errors: &errors,
+                        sectionErrors: &nextSectionErrors, loadedSections: &loadedSections
                     )
                 case .certificates(let result):
                     self.applyCertificatesResult(
@@ -164,13 +226,30 @@ final class AttendanceViewModel {
         isLoading = false
     }
 
+    private func applyAllPeriodResult(
+        _ result: Result<[DisrespectfulOmission], Error>,
+        errors: inout [String],
+        sectionErrors: inout [Section: String],
+        loadedSections: inout Int
+    ) {
+        switch result {
+        case .success(let omissions):
+            disrespectfulOmissions = omissions
+            loadedSections += 1
+        case .failure(let error):
+            let message = resolveErrorMessage(error)
+            errors.append(message)
+            sectionErrors[.allPeriod] = message
+        }
+    }
+
     private func finalizeLoad(loadedSections: Int, errors: [String], nextSectionErrors: [Section: String]) {
         if loadedSections > 0 {
             hasLoadedOnce = true
         }
         sectionErrors = nextSectionErrors
 
-        if loadedSections == 3 {
+        if loadedSections == 4 {
             lastUpdateTime = Date()
             isShowingStaleDataWarning = false
             errorMessage = nil
@@ -264,7 +343,7 @@ final class AttendanceViewModel {
     }
 
     private var hasVisibleData: Bool {
-        !applications.isEmpty || !monthlyCounts.isEmpty || !certificates.isEmpty
+        !applications.isEmpty || !monthlyCounts.isEmpty || !certificates.isEmpty || !disrespectfulOmissions.isEmpty
     }
 
     private func resultOf<T>(_ operation: () async throws -> T) async -> Result<T, Error> {

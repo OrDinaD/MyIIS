@@ -1,4 +1,12 @@
 /* UK */
+"attendance_period_section_title" = "Історія пропусків";
+"attendance_semester_expanded" = "Розгорнуто";
+"attendance_semester_collapsed" = "Згорнуто";
+"attendance_period_label" = "Період";
+"attendance_all_period_title" = "За весь період";
+"attendance_all_period_subtitle" = "Без поважної причини";
+"attendance_all_period_empty" = "Пропусків без поважної причини немає";
+"attendance_documents_format" = "Довідок: %d";
 "%@ — endpoint вернул ошибку" = "%@ — endpoint повернув помилку";
 "%@ — ошибка сервера" = "%@ — помилка сервера";
 "%@ — сервер не поддерживает HEAD" = "%@ — сервер не підтримує HEAD";
@@ -66,8 +74,8 @@
 "attendance_section_applications_subtitle" = "Історія подач та рішень";
 "attendance_section_certificates" = "Інформація про довідки";
 "attendance_section_certificates_subtitle" = "Документи з поважних причин";
-"attendance_section_summary" = "Пропуски з неповажної причини";
-"attendance_section_summary_subtitle" = "Поточний семестр";
+"attendance_section_summary" = "За місяцями";
+"attendance_section_summary_subtitle" = "Пропуски без поважної причини поточного семестру";
 "attendance_term_format" = "%lld семестр";
 "attendance_title" = "Пропуски";
 "attendance_to" = "По";
@@ -703,7 +711,7 @@
 "Заявление сформировано." = "Заяву сформовано.";
 "Заявок пока нет" = "Заяв поки немає";
 "ИИС API" = "ІІС API";
-"ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD-запросом с timeout 8 секунд." = "ІІС перевіряється через робочий API endpoint, інші сервери — швидким HEAD-запитом із тайм-аутом 8 секунд.";
+"ИИС проверяется через рабочий API endpoint, остальные серверы — лёгким HEAD—запросом с timeout 8 секунд." = "ІІС перевіряється через робочий API endpoint, інші сервери — швидким HEAD-запитом із тайм-аутом 8 секунд.";
 "Изменения отправляются сразу через endpoints назначения и снятия отмечающего." = "Зміни надсилаються відразу через endpoints призначення та зняття чергового.";
 "Изображение" = "Зображення";
 "Или введите свою тему" = "Або введіть свою тему";

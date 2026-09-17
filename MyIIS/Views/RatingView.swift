@@ -342,10 +342,18 @@ struct RatingView: View {
     @ViewBuilder
     private func disciplineLabelContent(for discipline: GradebookDiscipline) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            Text(discipline.name)
-                .font(.body.weight(.semibold))
-                .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(discipline.name)
+                    .font(.body.weight(.semibold))
+                    .lineLimit(2)
+                if let teacher = discipline.teacher, !teacher.isEmpty {
+                    Text("(\(teacher))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if let average = discipline.averageGradeValue {
                 Text(formattedGrade(average))

@@ -12,5 +12,8 @@ import WidgetKit
 struct MyIISWatchWidgetBundle: WidgetBundle {
     var body: some Widget {
         MyIIS_Watch_Widget()
+        NextClassWatchWidget()
+        ClassRoomWatchWidget()
+        ClassProgressWatchWidget()
     }
 }

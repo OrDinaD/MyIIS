@@ -8,8 +8,10 @@
 "watch_schedule_starts_in" = "Starts in";
 "watch_schedule_no_data" = "Schedule hasn't arrived yet";
 "watch_schedule_open_iphone" = "Open MyIIS on iPhone and refresh the schedule.";
-"watch_widget_name" = "Next Class";
-"watch_widget_description" = "Shows the current or next class, time, and room.";
+"watch_section_today" = "TODAY";
+"watch_section_tomorrow" = "TOMORROW";
+"watch_widget_name" = "Schedule";
+"watch_widget_description" = "Shows current class while in session or upcoming class during breaks.";
 "watch_widget_no_events" = "No more classes";
 "watch_widget_until" = "until";
 "watch_widget_in" = "in";

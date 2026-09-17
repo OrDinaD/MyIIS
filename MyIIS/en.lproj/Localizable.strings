@@ -1,4 +1,12 @@
 /* EN */
+"attendance_period_section_title" = "Absence history";
+"attendance_semester_expanded" = "Expanded";
+"attendance_semester_collapsed" = "Collapsed";
+"attendance_period_label" = "Period";
+"attendance_all_period_title" = "All semesters";
+"attendance_all_period_subtitle" = "Unexcused absences";
+"attendance_all_period_empty" = "No unexcused absences";
+"attendance_documents_format" = "Certificates: %d";
 "%@ — endpoint вернул ошибку" = "%@ — endpoint returned an error";
 "%@ — ошибка сервера" = "%@ — server error";
 "%@ — сервер не поддерживает HEAD" = "%@ — server does not support HEAD";
@@ -66,8 +74,8 @@
 "attendance_section_applications_subtitle" = "History of submissions and decisions";
 "attendance_section_certificates" = "Certificate Information";
 "attendance_section_certificates_subtitle" = "Documents for excused reasons";
-"attendance_section_summary" = "Unexcused Absences";
-"attendance_section_summary_subtitle" = "Current semester";
+"attendance_section_summary" = "By month";
+"attendance_section_summary_subtitle" = "Unexcused absences this semester";
 "attendance_term_format" = "%lld semester";
 "attendance_title" = "Attendance";
 "attendance_to" = "To";

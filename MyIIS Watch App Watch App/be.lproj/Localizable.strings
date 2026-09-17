@@ -8,8 +8,10 @@
 "watch_schedule_starts_in" = "Да пачатку";
 "watch_schedule_no_data" = "Расклад яшчэ не перададзены";
 "watch_schedule_open_iphone" = "Адкрыйце MyIIS на iPhone і абнавіце расклад.";
-"watch_widget_name" = "Наступны занятак";
-"watch_widget_description" = "Паказвае бягучы або наступны занятак, час і аўдыторыю.";
+"watch_section_today" = "СЁННЯ";
+"watch_section_tomorrow" = "ЗАЎТРА";
+"watch_widget_name" = "Расклад";
+"watch_widget_description" = "Паказвае бягучы занятак падчас пар або бліжэйшы на перапынку.";
 "watch_widget_no_events" = "Заняткаў больш няма";
 "watch_widget_until" = "да";
 "watch_widget_in" = "праз";
