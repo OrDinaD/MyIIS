@@ -101,7 +101,7 @@ class APIService {
 
     /// Получение профиля пользователя через endpoint из веб-версии IIS.
     /// Требует SESSION cookie (автоматически отправляется после логина).
-    func getPersonalProfile() async throws -> PersonalProfile {
+    func getPersonalProfile(allowSessionRecovery: Bool = true) async throws -> PersonalProfile {
         if APIService.isDemoMode { return DemoMockData.personalProfile }
         let endpoint = baseURL
             .appendingPathComponent("profiles")
@@ -112,7 +112,7 @@ class APIService {
 
         logRequestDetails(request)
 
-        return try await performRequest(request)
+        return try await performRequest(request, allowSessionRecovery: allowSessionRecovery)
     }
 
     /// Получение информации о факультете и специальности из расписания группы
@@ -309,7 +309,11 @@ class APIService {
         try await performRequest(request)
     }
 
-    func performRequest<T: Decodable>(_ request: URLRequest, retryPolicy: NetworkRetryPolicy = .default) async throws -> T {
+    func performRequest<T: Decodable>(
+        _ request: URLRequest,
+        retryPolicy: NetworkRetryPolicy = .default,
+        allowSessionRecovery: Bool = true
+    ) async throws -> T {
         var attempt = 0
         var didAttemptSessionRecovery = false
         while true {
@@ -318,7 +322,9 @@ class APIService {
             } catch {
                 if let apiError = error as? APIError,
                    case .unauthorized = apiError {
-                    if request.url?.path.hasSuffix("/auth/login") != true && !didAttemptSessionRecovery {
+                    if allowSessionRecovery,
+                       request.url?.path.hasSuffix("/auth/login") != true,
+                       !didAttemptSessionRecovery {
                         didAttemptSessionRecovery = true
                         let recovered = await AuthenticationService.shared.waitForSessionRecovery()
                         if recovered {
@@ -359,10 +365,8 @@ class APIService {
             persistCache(data: data, for: request)
             return try decode(data)
         } catch let apiError as APIError {
-            if case .unauthorized = apiError,
-               request.url?.path.hasSuffix("/auth/login") != true {
-                AuthenticationSessionEvents.reportUnauthorized()
-            }
+            // Recovery belongs to performRequest; a second notification can
+            // restart recovery or make the login profile request await itself.
             throw apiError
         } catch {
             if isCancellationError(error) {
@@ -389,7 +393,6 @@ class APIService {
             } catch let apiError as APIError {
                 if case .unauthorized = apiError {
                     if request.url?.path.hasSuffix("/auth/login") != true {
-                        AuthenticationSessionEvents.reportUnauthorized()
                         if !didAttemptSessionRecovery {
                             didAttemptSessionRecovery = true
                             let recovered = await AuthenticationService.shared.waitForSessionRecovery()

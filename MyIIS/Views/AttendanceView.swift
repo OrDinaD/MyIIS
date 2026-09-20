@@ -3,6 +3,7 @@ import SwiftUI
 struct AttendanceView: View {
     @EnvironmentObject private var authService: AuthenticationService
     @State private var viewModel = AttendanceViewModel()
+    @State private var showLoginSheet = false
 
     var body: some View {
         NavigationStack {
@@ -20,22 +21,33 @@ struct AttendanceView: View {
                 await viewModel.loadDataIfNeeded()
             }
             .refreshable { await viewModel.reload() }
+            .sheet(isPresented: $showLoginSheet) {
+                LoginView()
+            }
         }
         .appBackground()
     }
 
     @ViewBuilder
     private var attendanceContent: some View {
-        VStack(spacing: 20) {
-            if viewModel.isShowingStaleDataWarning {
-                StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                    await viewModel.reload()
+        if viewModel.isUnauthorized && !viewModel.hasVisibleData {
+            unauthorizedView
+                .padding(.top, 40)
+        } else {
+            VStack(spacing: 20) {
+                if viewModel.isUnauthorized {
+                    InlineErrorBanner(message: NSLocalizedString("api_error_session_expired", comment: "")) {
+                        showLoginSheet = true
+                    }
+                } else if viewModel.isShowingStaleDataWarning {
+                    StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
+                        await viewModel.reload()
+                    }
+                } else if let message = viewModel.errorMessage {
+                    InlineErrorBanner(message: message) {
+                        Task { await viewModel.reload() }
+                    }
                 }
-            } else if let message = viewModel.errorMessage {
-                InlineErrorBanner(message: message) {
-                    Task { await viewModel.reload() }
-                }
-            }
 
             CertificatesSection(
                 certificates: viewModel.certificates,
@@ -69,6 +81,21 @@ struct AttendanceView: View {
                 errorMessage: viewModel.sectionErrors[.applications],
                 onRetry: reloadIfNeeded
             )
+        }
+    }
+}
+
+    @ViewBuilder
+    private var unauthorizedView: some View {
+        ContentUnavailableView {
+            Label(NSLocalizedString("api_error_session_expired", comment: ""), systemImage: "person.crop.circle.badge.exclamationmark")
+        } description: {
+            Text(NSLocalizedString("rating_auth_description", comment: ""))
+        } actions: {
+            Button(NSLocalizedString("login_button", comment: "")) {
+                showLoginSheet = true
+            }
+            .buttonStyle(.borderedProminent)
         }
     }
 

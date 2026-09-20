@@ -113,5 +113,16 @@ enum UserDefaultsPayloadStore {
                 try? FileManager.default.removeItem(at: file)
             }
         }
+        for key in defaults.dictionaryRepresentation().keys {
+            if key.hasPrefix("RatingViewModel.snapshot.") ||
+               key.hasPrefix("attendance_offline_cache") ||
+               key.hasPrefix("gradebook_offline_cache") ||
+               key.hasPrefix("group_offline_cache_") ||
+               key.hasPrefix("dormitory_offline_cache_") ||
+               key.hasPrefix("announcements_cache_") ||
+               key.hasPrefix("study_offline_cache_") {
+                defaults.removeObject(forKey: key)
+            }
+        }
     }
 }

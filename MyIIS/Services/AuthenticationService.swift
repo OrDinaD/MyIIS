@@ -107,18 +107,20 @@ class AuthenticationService: ObservableObject {
         }
     }
 
+    @discardableResult
     func login(
         username: String,
         password: String,
         persistCredentials: Bool = true,
         isSilent: Bool = false
-    ) async {
+    ) async -> Bool {
         logService.log("Attempting to log in user: \(username)")
         isLoading = true
         let hasCachedSession = isSilent && currentUser != nil
         isSessionReady = hasCachedSession
         errorMessage = nil
         var didAuthenticateWithServer = false
+        var didCompleteLogin = false
 
         do {
             logService.log("Sending login request to API...")
@@ -132,7 +134,7 @@ class AuthenticationService: ObservableObject {
             }
 
             logService.log("Fetching profile data...")
-            let personalProfile = try await apiService.getPersonalProfile()
+            let personalProfile = try await apiService.getPersonalProfile(allowSessionRecovery: false)
             logService.log("✅ Profile data received")
             completeLogin(
                 loginResponse: loginResponse,
@@ -141,6 +143,7 @@ class AuthenticationService: ObservableObject {
                 persistCredentials: persistCredentials,
                 isSilent: isSilent
             )
+            didCompleteLogin = true
         } catch let error as APIError {
             handleLoginAPIError(
                 error,
@@ -154,6 +157,7 @@ class AuthenticationService: ObservableObject {
 
         isLoading = false
         isRestoringSession = false
+        return didCompleteLogin
     }
 
     func restoreSessionIfPossible() async {
@@ -360,13 +364,6 @@ class AuthenticationService: ObservableObject {
         isRestoringSession = true
         let task = Task<Bool, Never> { [weak self] () -> Bool in
             guard let self else { return false }
-            defer {
-                Task { @MainActor in
-                    self.sessionRecoveryTask = nil
-                    self.isRestoringSession = false
-                }
-            }
-
             do {
                 guard let credentials = try self.credentialStore.retrieve() else {
                     self.requireInteractiveLoginAfterSessionExpiry()
@@ -374,13 +371,12 @@ class AuthenticationService: ObservableObject {
                 }
 
                 self.logService.log("🔁 Attempting silent login with stored credentials for session recovery.")
-                await self.login(
+                return await self.login(
                     username: credentials.username,
                     password: credentials.password,
                     persistCredentials: false,
                     isSilent: true
                 )
-                return self.isSessionReady
             } catch {
                 self.logService.log("⚠️ Failed to access credentials for session recovery: \(error.localizedDescription)")
                 self.requireInteractiveLoginAfterSessionExpiry()
@@ -389,7 +385,13 @@ class AuthenticationService: ObservableObject {
         }
 
         sessionRecoveryTask = task
-        return await task.value
+        let recovered = await task.value
+        sessionRecoveryTask = nil
+        isRestoringSession = false
+        if !recovered {
+            self.requireInteractiveLoginAfterSessionExpiry()
+        }
+        return recovered
     }
 
     private func recoverExpiredSessionIfNeeded() {

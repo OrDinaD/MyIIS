@@ -80,6 +80,7 @@ final class AttendanceViewModel {
     var faculty: String?
     var isLoading: Bool = false
     var errorMessage: String?
+    private(set) var isUnauthorized: Bool = false
     private(set) var sectionErrors: [Section: String] = [:]
 
     var lastUpdateTime: Date?
@@ -159,6 +160,7 @@ final class AttendanceViewModel {
 
         isLoading = true
         errorMessage = nil
+        isUnauthorized = false
         sectionErrors = [:]
 
         var errors: [String] = []
@@ -239,6 +241,9 @@ final class AttendanceViewModel {
         case .failure(let error):
             let message = resolveErrorMessage(error)
             errors.append(message)
+            if isUnauthorizedError(error) {
+                isUnauthorized = true
+            }
             sectionErrors[.allPeriod] = message
         }
     }
@@ -279,12 +284,15 @@ final class AttendanceViewModel {
             self.applications = applications.sorted { $0.createdDate > $1.createdDate }
             loadedSections += 1
         case .failure(let error):
-            if isNotFoundOrForbiddenError(error) {
+            if isNotFoundError(error) {
                 self.applications = []
                 loadedSections += 1
             } else {
                 let message = resolveErrorMessage(error)
                 errors.append(message)
+                if isUnauthorizedError(error) {
+                    isUnauthorized = true
+                }
                 if self.applications.isEmpty {
                     sectionErrors[.applications] = message
                 }
@@ -310,6 +318,9 @@ final class AttendanceViewModel {
             } else {
                 let message = resolveErrorMessage(error)
                 errors.append(message)
+                if isUnauthorizedError(error) {
+                    isUnauthorized = true
+                }
                 if monthlyCounts.isEmpty {
                     sectionErrors[.summary] = message
                 }
@@ -335,6 +346,9 @@ final class AttendanceViewModel {
             } else {
                 let message = resolveErrorMessage(error)
                 errors.append(message)
+                if isUnauthorizedError(error) {
+                    isUnauthorized = true
+                }
                 if certificates.isEmpty {
                     sectionErrors[.certificates] = message
                 }
@@ -342,7 +356,7 @@ final class AttendanceViewModel {
         }
     }
 
-    private var hasVisibleData: Bool {
+    var hasVisibleData: Bool {
         !applications.isEmpty || !monthlyCounts.isEmpty || !certificates.isEmpty || !disrespectfulOmissions.isEmpty
     }
 
@@ -366,13 +380,13 @@ final class AttendanceViewModel {
         return false
     }
 
-    private func isNotFoundOrForbiddenError(_ error: Error) -> Bool {
+    private func isUnauthorizedError(_ error: Error) -> Bool {
         if let apiError = error as? APIError {
             switch apiError {
-            case .serverError(let statusCode, _):
-                return statusCode == 404 || statusCode == 403
             case .unauthorized:
                 return true
+            case .serverError(let statusCode, _):
+                return statusCode == 401 || statusCode == 403
             default:
                 return false
             }

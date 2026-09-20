@@ -30,9 +30,7 @@ extension APIService {
             return try await performRequest(request)
         } catch let apiError as APIError {
             switch apiError {
-            case .serverError(let statusCode, _) where statusCode == 404 || statusCode == 403:
-                return []
-            case .unauthorized:
+            case .serverError(let statusCode, _) where statusCode == 404:
                 return []
             default:
                 throw apiError

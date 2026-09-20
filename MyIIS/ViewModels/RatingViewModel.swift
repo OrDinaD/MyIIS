@@ -7,6 +7,7 @@ final class RatingViewModel {
 
     private(set) var isLoading: Bool = false
     private(set) var errorMessage: String?
+    private(set) var isUnauthorized: Bool = false
     private(set) var isLoadingSubjects: Bool = false
     private(set) var isGradebookUnavailable: Bool = false
     private(set) var isRatingPendingForNewSemester: Bool = false
@@ -177,6 +178,7 @@ extension RatingViewModel {
         isLoading = true
         isLoadingSubjects = true
         errorMessage = nil
+        isUnauthorized = false
         isGradebookUnavailable = false
         isRatingPendingForNewSemester = false
         isUsingScheduleFallback = false
@@ -198,7 +200,7 @@ extension RatingViewModel {
         if let staleMessage = errorMessage,
            applyCachedSnapshotIfAvailable(group: group, studentId: cacheStudentId) {
             errorMessage = staleMessage
-            isShowingStaleDataWarning = true
+            isShowingStaleDataWarning = !isUnauthorized
         } else if errorMessage == nil {
             lastUpdateTime = Date()
             saveCurrentStateToCache(group: group, studentId: cacheStudentId)
@@ -267,43 +269,63 @@ extension RatingViewModel {
 
     private func loadFromPortalGradeBook(group: String, targetRecordBookNumber: String?) async {
         do {
-            async let schedule = try? scheduleAPI.fetchGroupSchedule(groupNumber: group)
+            async let scheduleTask = scheduleAPI.fetchGroupSchedule(groupNumber: group)
             lecturerSurnames = [:]
             let student = try await apiService.getPortalGradeBookStudent()
             let lessons = student?.lessons ?? []
             percentageMarks = student?.percentageMarks ?? []
 
-            guard !lessons.isEmpty else {
-                disciplines = []
-                subjectOmissions = [:]
-                students = []
-                userCheckpoints = []
-                checkpointNumbers = []
-                deadlineItems = []
-                checkpointSummaries = []
-                summary = nil
-                gradebookAverage = nil
+            if let student, !lessons.isEmpty {
+                isRatingPendingForNewSemester = false
+                isGradebookUnavailable = false
+                isUsingScheduleFallback = false
+                applyPortalGradeBookLessons(lessons)
+                let schedule = try? await scheduleTask
+                await applyLecturers(from: schedule, lessons: lessons)
+                guard !Task.isCancelled else { return }
+                buildPersonalRating(from: lessons, targetRecordBookNumber: targetRecordBookNumber)
+                let (deadlines, summaries) = await Task.detached(priority: .userInitiated) {
+                    (Self.buildDeadlineItems(from: lessons), Self.buildCheckpointSummaries(from: lessons))
+                }.value
+                guard !Task.isCancelled else { return }
+                self.deadlineItems = deadlines
+                self.checkpointSummaries = summaries
+                errorMessage = nil
+                logService.log("✅ Rating loaded from grade-book. Lessons: \(lessons.count), disciplines: \(disciplines.count), deadlines: \(deadlineItems.count)")
+                return
+            }
+
+            if student != nil {
+                clearGradebookData()
                 isGradebookUnavailable = false
                 isRatingPendingForNewSemester = true
+                isUsingScheduleFallback = false
                 errorMessage = nil
                 logService.log("ℹ️ grade-book returned an empty lessons list; rating is pending for the new semester.")
                 return
             }
 
+            let schedule = try? await scheduleTask
+            if let scheduleDays = schedule?.orderedDays, !scheduleDays.isEmpty {
+                let fallbackLessons = scheduleDays.flatMap(\.lessons)
+                if !fallbackLessons.isEmpty {
+                    clearGradebookData()
+                    applyScheduleFallback(from: scheduleDays)
+                    isGradebookUnavailable = false
+                    isRatingPendingForNewSemester = false
+                    isUsingScheduleFallback = true
+                    errorMessage = nil
+                    logService.log("ℹ️ Applied schedule fallback for rating: \(disciplines.count) disciplines.")
+                    return
+                }
+            }
+
+            clearGradebookData()
+            isGradebookUnavailable = true
             isRatingPendingForNewSemester = false
-            applyPortalGradeBookLessons(lessons)
-            await applyLecturers(from: schedule, lessons: lessons)
-            guard !Task.isCancelled else { return }
-            buildPersonalRating(from: lessons, targetRecordBookNumber: targetRecordBookNumber)
-            let (deadlines, summaries) = await Task.detached(priority: .userInitiated) {
-                (Self.buildDeadlineItems(from: lessons), Self.buildCheckpointSummaries(from: lessons))
-            }.value
-            guard !Task.isCancelled else { return }
-            self.deadlineItems = deadlines
-            self.checkpointSummaries = summaries
-            isGradebookUnavailable = disciplines.isEmpty
+            isUsingScheduleFallback = false
             errorMessage = nil
-            logService.log("✅ Rating loaded from grade-book. Lessons: \(lessons.count), disciplines: \(disciplines.count), deadlines: \(deadlineItems.count)")
+            logService.log("⚠️ grade-book student is nil and schedule fallback unavailable.")
         } catch is CancellationError {
             return
         } catch let error as APIError {
@@ -311,13 +333,39 @@ extension RatingViewModel {
             clearGradebookData()
 
             switch error {
-            case .serverError(let statusCode, _) where statusCode == 403 || statusCode == 404:
+            case .unauthorized:
+                isUnauthorized = true
                 isGradebookUnavailable = false
-                isRatingPendingForNewSemester = true
-                errorMessage = nil
+                isRatingPendingForNewSemester = false
+                isUsingScheduleFallback = false
+                errorMessage = error.localizedDescription
+            case .serverError(let statusCode, _) where statusCode == 401 || statusCode == 403:
+                isUnauthorized = true
+                isGradebookUnavailable = false
+                isRatingPendingForNewSemester = false
+                isUsingScheduleFallback = false
+                errorMessage = error.localizedDescription
+            case .serverError(let statusCode, _) where statusCode == 404:
+                if let schedule = try? await scheduleAPI.fetchGroupSchedule(groupNumber: group),
+                   !schedule.orderedDays.isEmpty {
+                    let fallbackLessons = schedule.orderedDays.flatMap(\.lessons)
+                    if !fallbackLessons.isEmpty {
+                        applyScheduleFallback(from: schedule.orderedDays)
+                        isGradebookUnavailable = false
+                        isRatingPendingForNewSemester = false
+                        isUsingScheduleFallback = true
+                        errorMessage = nil
+                        return
+                    }
+                }
+                isGradebookUnavailable = true
+                isRatingPendingForNewSemester = false
+                isUsingScheduleFallback = false
+                errorMessage = error.localizedDescription
             default:
                 isGradebookUnavailable = true
                 isRatingPendingForNewSemester = false
+                isUsingScheduleFallback = false
                 errorMessage = error.localizedDescription
             }
         } catch {
@@ -325,8 +373,44 @@ extension RatingViewModel {
             clearGradebookData()
             isGradebookUnavailable = true
             isRatingPendingForNewSemester = false
+            isUsingScheduleFallback = false
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func applyScheduleFallback(from scheduleDays: [StudyDaySchedule]) {
+        let scheduleLessons = scheduleDays.flatMap(\.lessons)
+        let grouped = Dictionary(grouping: scheduleLessons) { $0.subject }
+        let surnames = LecturerSurnames.group(scheduleLessons)
+
+        disciplines = grouped.map { subject, subjectLessons in
+            let lessonTypes = Set(subjectLessons.map(\.lessonTypeAbbrev))
+                .filter { !$0.isEmpty }
+                .sorted()
+            let teacher = surnames[LecturerSurnames.key(subject)]
+                ?? subjectLessons.flatMap(\.employees).compactMap(\.lastName).first
+
+            return GradebookDiscipline(
+                code: "schedule_\(subject)",
+                name: subject,
+                controlForm: lessonTypes.isEmpty ? "Занятия" : lessonTypes.joined(separator: " · "),
+                teacher: teacher,
+                hours: nil,
+                attempts: [],
+                lessonOmissions: nil
+            )
+        }
+        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+        subjectOmissions = [:]
+        students = []
+        userCheckpoints = []
+        checkpointNumbers = []
+        deadlineItems = []
+        checkpointSummaries = []
+        summary = nil
+        gradebookAverage = nil
+        isUsingScheduleFallback = true
     }
 
     private func clearGradebookData() {

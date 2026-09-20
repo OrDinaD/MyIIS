@@ -9,6 +9,7 @@ struct RatingView: View {
     @State var viewModel: RatingViewModel
     @State private var expandedDisciplineIDs: Set<String> = []
     @State private var hasRevealedContent = false
+    @State private var showLoginSheet = false
     @AppStorage("rating_view_open_count") private var ratingViewOpenCount = 0
 
     @MainActor
@@ -32,6 +33,9 @@ struct RatingView: View {
                 .navigationBarTitleDisplayMode(.large)
                 .hiddenNavigationBarBackground()
         }
+        .sheet(isPresented: $showLoginSheet) {
+            LoginView()
+        }
     }
 
     @ViewBuilder
@@ -42,7 +46,37 @@ struct RatingView: View {
                     header(for: user)
                 }
 
-                if viewModel.isShowingStaleDataWarning {
+                if viewModel.isUnauthorized {
+                    Section {
+                        Button {
+                            showLoginSheet = true
+                        } label: {
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: "person.crop.circle.badge.exclamationmark")
+                                    .foregroundStyle(.orange)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(NSLocalizedString("api_error_session_expired", comment: ""))
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundStyle(.primary)
+                                    Text(NSLocalizedString("rating_auth_description", comment: ""))
+                                        .font(.footnote)
+                                        .foregroundStyle(.secondary)
+                                        .multilineTextAlignment(.leading)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 4)
+                            }
+                            .padding(12)
+                            .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                } else if viewModel.isShowingStaleDataWarning {
                     Section {
                         StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
                             await viewModel.refresh(for: user)
@@ -150,6 +184,8 @@ struct RatingView: View {
     private func ratingStateView(user: User) -> some View {
         if viewModel.isLoading && viewModel.disciplines.isEmpty {
             loadingRatingView
+        } else if viewModel.isUnauthorized && viewModel.disciplines.isEmpty && viewModel.students.isEmpty {
+            unauthorizedRatingView
         } else if let error = viewModel.errorMessage,
                   viewModel.disciplines.isEmpty,
                   viewModel.students.isEmpty {
@@ -158,6 +194,24 @@ struct RatingView: View {
             emptyDisciplinesRatingView
         } else {
             disciplinesRatingList
+        }
+    }
+
+    @ViewBuilder
+    private var unauthorizedRatingView: some View {
+        Section {
+            ContentUnavailableView {
+                Label(NSLocalizedString("api_error_session_expired", comment: ""), systemImage: "person.crop.circle.badge.exclamationmark")
+            } description: {
+                Text(NSLocalizedString("rating_auth_description", comment: ""))
+            } actions: {
+                Button(NSLocalizedString("login_button", comment: "")) {
+                    showLoginSheet = true
+                }
+                .buttonStyle(.borderedProminent)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.vertical, 8)
         }
     }
 
