@@ -104,6 +104,32 @@ struct AttendanceView: View {
     }
 }
 
+private struct AttendanceSectionContainer<Content: View, EmptyView: View>: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let isLoading: Bool
+    let errorMessage: String?
+    let isEmpty: Bool
+    let onRetry: () -> Void
+    @ViewBuilder let emptyView: () -> EmptyView
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        AttendanceCard(title: title, subtitle: subtitle, icon: icon) {
+            if isLoading && isEmpty {
+                LoadingBlockView()
+            } else if let errorMessage, isEmpty {
+                SectionErrorView(message: errorMessage, action: onRetry)
+            } else if isEmpty {
+                emptyView()
+            } else {
+                content()
+            }
+        }
+    }
+}
+
 private struct ApplicationsSection: View {
     let applications: [OmissionApplication]
     let isLoading: Bool
@@ -111,31 +137,29 @@ private struct ApplicationsSection: View {
     let onRetry: () -> Void
 
     var body: some View {
-        AttendanceCard(
+        AttendanceSectionContainer(
             title: NSLocalizedString("attendance_section_applications", comment: ""),
             subtitle: NSLocalizedString("attendance_section_applications_subtitle", comment: ""),
-            icon: "doc.text.fill"
+            icon: "doc.text.fill",
+            isLoading: isLoading,
+            errorMessage: errorMessage,
+            isEmpty: applications.isEmpty,
+            onRetry: onRetry
         ) {
-            if isLoading && applications.isEmpty {
-                LoadingBlockView()
-            } else if let errorMessage, applications.isEmpty {
-                SectionErrorView(message: errorMessage, action: onRetry)
-            } else if applications.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "doc.text.magnifyingglass")
-                        .font(.largeTitle)
-                        .foregroundStyle(.tertiary)
-                    Text(NSLocalizedString("attendance_no_applications", comment: ""))
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 20)
-            } else {
-                LazyVStack(spacing: 12) {
-                    ForEach(applications) { application in
-                        ApplicationRow(application: application)
-                    }
+            VStack(spacing: 8) {
+                Image(systemName: "doc.text.magnifyingglass")
+                    .font(.largeTitle)
+                    .foregroundStyle(.tertiary)
+                Text(NSLocalizedString("attendance_no_applications", comment: ""))
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+        } content: {
+            LazyVStack(spacing: 12) {
+                ForEach(applications) { application in
+                    ApplicationRow(application: application)
                 }
             }
         }
@@ -184,32 +208,30 @@ private struct MonthlySummarySection: View {
     }
 
     var body: some View {
-        AttendanceCard(
+        AttendanceSectionContainer(
             title: NSLocalizedString("attendance_section_summary", comment: ""),
             subtitle: NSLocalizedString("attendance_section_summary_subtitle", comment: ""),
-            icon: "calendar.badge.clock"
+            icon: "calendar.badge.clock",
+            isLoading: isLoading,
+            errorMessage: errorMessage,
+            isEmpty: counts.isEmpty,
+            onRetry: onRetry
         ) {
-            if isLoading && counts.isEmpty {
-                LoadingBlockView()
-            } else if let errorMessage, counts.isEmpty {
-                SectionErrorView(message: errorMessage, action: onRetry)
-            } else if counts.isEmpty {
-                EmptyStateView(message: NSLocalizedString("attendance_no_summary", comment: ""), action: onRetry)
-            } else {
-                VStack(spacing: 14) {
-                    HStack {
-                        Text(NSLocalizedString("attendance_total", comment: ""))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Text("\(totalCount) \(NSLocalizedString("attendance_hours_unit", comment: ""))")
-                            .font(.title3.weight(.semibold))
-                    }
+            EmptyStateView(message: NSLocalizedString("attendance_no_summary", comment: ""), action: onRetry)
+        } content: {
+            VStack(spacing: 14) {
+                HStack {
+                    Text(NSLocalizedString("attendance_total", comment: ""))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text("\(totalCount) \(NSLocalizedString("attendance_hours_unit", comment: ""))")
+                        .font(.title3.weight(.semibold))
+                }
 
-                    VStack(spacing: 10) {
-                        ForEach(counts) { item in
-                            MonthlyBarRow(month: item.month, value: item.omissionCount, maxValue: max(1, counts.map(\.omissionCount).max() ?? 1))
-                        }
+                VStack(spacing: 10) {
+                    ForEach(counts) { item in
+                        MonthlyBarRow(month: item.month, value: item.omissionCount, maxValue: max(1, counts.map(\.omissionCount).max() ?? 1))
                     }
                 }
             }
@@ -492,31 +514,29 @@ private struct CertificatesSection: View {
     let onRetry: () -> Void
 
     var body: some View {
-        AttendanceCard(
+        AttendanceSectionContainer(
             title: NSLocalizedString("attendance_section_certificates", comment: ""),
             subtitle: NSLocalizedString("attendance_section_certificates_subtitle", comment: ""),
-            icon: "cross.case.fill"
+            icon: "cross.case.fill",
+            isLoading: isLoading,
+            errorMessage: errorMessage,
+            isEmpty: certificates.isEmpty,
+            onRetry: onRetry
         ) {
-            if let faculty, faculty != "ФИТУ" {
-                InfoBanner(text: NSLocalizedString("attendance_info_banner", comment: ""))
-            }
+            EmptyStateView(message: NSLocalizedString("attendance_no_certificates", comment: ""), action: onRetry)
+        } content: {
+            VStack(spacing: 12) {
+                if let faculty, faculty != "ФИТУ" {
+                    InfoBanner(text: NSLocalizedString("attendance_info_banner", comment: ""))
+                }
 
-            if isLoading && certificates.isEmpty {
-                LoadingBlockView()
-            } else if let errorMessage, certificates.isEmpty {
-                SectionErrorView(message: errorMessage, action: onRetry)
-            } else if certificates.isEmpty {
-                EmptyStateView(message: NSLocalizedString("attendance_no_certificates", comment: ""), action: onRetry)
-            } else {
-                VStack(spacing: 12) {
-                    ForEach(groupedCertificates, id: \.0) { term, items in
-                        AttendanceSemesterCard(
-                            title: String(format: NSLocalizedString("attendance_term_format", comment: ""), Int(term) ?? 0),
-                            initiallyExpanded: term == groupedCertificates.first?.0
-                        ) {
-                            ForEach(items) { certificate in
-                                CertificateRow(certificate: certificate)
-                            }
+                ForEach(groupedCertificates, id: \.0) { term, items in
+                    AttendanceSemesterCard(
+                        title: String(format: NSLocalizedString("attendance_term_format", comment: ""), Int(term) ?? 0),
+                        initiallyExpanded: term == groupedCertificates.first?.0
+                    ) {
+                        ForEach(items) { certificate in
+                            CertificateRow(certificate: certificate)
                         }
                     }
                 }

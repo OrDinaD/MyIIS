@@ -73,16 +73,7 @@ struct DormitoryView: View {
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
         }
-        .alert(NSLocalizedString("common_error", comment: ""), isPresented: Binding(
-            get: { viewModel.actionErrorMessage != nil },
-            set: { if !$0 { viewModel.actionErrorMessage = nil } }
-        )) {
-            Button(NSLocalizedString("common_ok", comment: ""), role: .cancel) {
-                viewModel.actionErrorMessage = nil
-            }
-        } message: {
-            Text(viewModel.actionErrorMessage ?? "")
-        }
+        .errorAlert($viewModel.actionErrorMessage)
     }
 
     @ViewBuilder

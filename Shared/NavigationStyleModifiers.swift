@@ -111,4 +111,25 @@ extension View {
             toolbarBackground(.hidden, for: .navigationBar)
         }
     }
+
+    func errorAlert(
+        _ errorMessage: Binding<String?>,
+        title: String = NSLocalizedString("common_error", comment: "")
+    ) -> some View {
+        alert(
+            title,
+            isPresented: Binding(
+                get: { errorMessage.wrappedValue != nil },
+                set: { if !$0 { errorMessage.wrappedValue = nil } }
+            ),
+            actions: {
+                Button(NSLocalizedString("common_ok", comment: "")) {
+                    errorMessage.wrappedValue = nil
+                }
+            },
+            message: {
+                Text(errorMessage.wrappedValue ?? "")
+            }
+        )
+    }
 }

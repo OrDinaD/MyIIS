@@ -74,18 +74,7 @@ struct DiplomaServiceView: View {
         .sheet(isPresented: $isRequestFormPresented) {
             DiplomaRequestFormView(viewModel: viewModel)
         }
-        .alert("Ошибка", isPresented: Binding(
-            get: { viewModel.errorMessage != nil },
-            set: { shouldShow in
-                if !shouldShow {
-                    viewModel.errorMessage = nil
-                }
-            }
-        ), actions: {
-            Button("ОК") { viewModel.errorMessage = nil }
-        }, message: {
-            Text(viewModel.errorMessage ?? "")
-        })
+        .errorAlert($viewModel.errorMessage, title: "Ошибка")
         .alert("Готово", isPresented: Binding(
             get: { viewModel.successMessage != nil },
             set: { shouldShow in

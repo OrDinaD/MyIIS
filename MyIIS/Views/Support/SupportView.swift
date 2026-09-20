@@ -105,16 +105,6 @@ struct SupportView: View {
             }
         }
         .quickLookPreview($downloader.downloadedFileURL)
-        .alert("Ошибка",
-               isPresented: Binding(
-                get: { downloader.errorMessage != nil },
-                set: { if !$0 { downloader.errorMessage = nil } }
-               ),
-               presenting: downloader.errorMessage
-        ) { _ in
-            Button("OK", role: .cancel) {}
-        } message: { msg in
-            Text(msg)
-        }
+        .errorAlert($downloader.errorMessage, title: "Ошибка")
     }
 }

@@ -188,14 +188,7 @@ struct LMSCourseDetailView: View {
                     }
             }
         }
-        .alert("Ошибка", isPresented: Binding(
-            get: { resourceErrorMessage != nil },
-            set: { if !$0 { resourceErrorMessage = nil } }
-        )) {
-            Button("ОК", role: .cancel) {}
-        } message: {
-            Text(resourceErrorMessage ?? "")
-        }
+        .errorAlert($resourceErrorMessage, title: "Ошибка")
     }
 
     private func open(_ module: LMSModule) {

@@ -45,9 +45,24 @@ struct ServiceEndpointSection<Content: View>: View {
 }
 
 struct ServiceJSONItemCard: View {
+    enum Style {
+        case standard
+        case penalty
+    }
+
     let item: ServiceJSONObject
+    var style: Style = .standard
 
     var body: some View {
+        switch style {
+        case .standard:
+            standardCard
+        case .penalty:
+            penaltyCard
+        }
+    }
+
+    private var standardCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(item.primaryText)
                 .font(.subheadline.weight(.semibold))
@@ -78,12 +93,8 @@ struct ServiceJSONItemCard: View {
         .padding(12)
         .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
-}
 
-struct PenaltyItemCard: View {
-    let item: ServiceJSONObject
-
-    var body: some View {
+    private var penaltyCard: some View {
         let reason = item.fields["reason"]?.scalarText ?? item.primaryText
         let information = item.fields["information"]?.scalarText ?? item.secondaryText ?? ""
         let status = item.fields["status"]?.scalarText ?? ""
@@ -99,7 +110,7 @@ struct PenaltyItemCard: View {
         let lowerStatus = status.lowercased()
         let isStatusActive = lowerStatus.contains("активен")
 
-        VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: iconName)
                     .foregroundStyle(iconColor)
@@ -156,6 +167,14 @@ struct PenaltyItemCard: View {
         }
         .padding(14)
         .background(backgroundColor, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+struct PenaltyItemCard: View {
+    let item: ServiceJSONObject
+
+    var body: some View {
+        ServiceJSONItemCard(item: item, style: .penalty)
     }
 }
 

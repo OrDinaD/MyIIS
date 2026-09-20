@@ -174,17 +174,7 @@ struct LMSQuizView: View {
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
         }
-        .alert("Ошибка", isPresented: Binding(get: {
-            viewModel.errorMessage != nil
-        }, set: { newValue in
-            if !newValue {
-                viewModel.errorMessage = nil
-            }
-        })) {
-            Button("ОК", role: .cancel) {}
-        } message: {
-            Text(viewModel.errorMessage ?? "")
-        }
+        .errorAlert($viewModel.errorMessage, title: "Ошибка")
         .confirmationDialog("Закончить попытку?", isPresented: $confirmFinishAttempt, titleVisibility: .visible) {
             Button("Закончить попытку", role: .destructive) {
                 Task { await viewModel.finishCurrentAttempt() }

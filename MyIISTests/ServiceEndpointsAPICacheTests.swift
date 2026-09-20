@@ -116,6 +116,75 @@ final class ServiceEndpointsAPICacheTests: XCTestCase {
         XCTAssertEqual(cachedWeek, 4)
     }
 
+    func testCachedEndpointViewModelRestoresCachedSnapshotAndUpdates() async throws {
+        let cacheKey = "TestEndpointVM.\(UUID().uuidString)"
+        defer { UserDefaults.standard.removeObject(forKey: cacheKey) }
+
+        var fetchCount = 0
+        let vm = CachedEndpointViewModel<[String]>(
+            initialValue: ["initial"],
+            cacheKey: cacheKey
+        ) {
+            fetchCount += 1
+            return ["fetched_\(fetchCount)"]
+        }
+
+        XCTAssertEqual(vm.value, ["initial"])
+        XCTAssertFalse(vm.hasContent)
+
+        await vm.loadIfNeeded()
+        XCTAssertEqual(vm.value, ["fetched_1"])
+        XCTAssertTrue(vm.hasContent)
+        XCTAssertNil(vm.errorMessage)
+        XCTAssertFalse(vm.isShowingStaleDataWarning)
+
+        // Second loadIfNeeded shouldn't refetch
+        await vm.loadIfNeeded()
+        XCTAssertEqual(fetchCount, 1)
+
+        // Explicit reload should refetch
+        await vm.reload()
+        XCTAssertEqual(fetchCount, 2)
+        XCTAssertEqual(vm.value, ["fetched_2"])
+
+        // New instance with same cacheKey should restore cached value immediately
+        let restoredVM = CachedEndpointViewModel<[String]>(
+            initialValue: [],
+            cacheKey: cacheKey
+        ) {
+            ["fresh"]
+        }
+        XCTAssertEqual(restoredVM.value, ["fetched_2"])
+        XCTAssertTrue(restoredVM.hasContent)
+    }
+
+    func testCachedEndpointViewModelErrorHandlingAndStaleState() async throws {
+        let cacheKey = "TestEndpointStaleVM.\(UUID().uuidString)"
+        defer { UserDefaults.standard.removeObject(forKey: cacheKey) }
+
+        var shouldFail = false
+        let vm = CachedEndpointViewModel<[String]>(
+            initialValue: [],
+            cacheKey: cacheKey
+        ) {
+            if shouldFail {
+                throw URLError(.notConnectedToInternet)
+            }
+            return ["valid_data"]
+        }
+
+        await vm.loadIfNeeded()
+        XCTAssertEqual(vm.value, ["valid_data"])
+        XCTAssertFalse(vm.isShowingStaleDataWarning)
+
+        shouldFail = true
+        await vm.reload()
+        // Should keep old data and show stale warning
+        XCTAssertEqual(vm.value, ["valid_data"])
+        XCTAssertTrue(vm.isShowingStaleDataWarning)
+        XCTAssertNotNil(vm.staleErrorMessage)
+    }
+
     private func makeAPI(now: Date) -> ServiceEndpointsAPI {
         ServiceEndpointsAPI(
             baseURL: baseURL,

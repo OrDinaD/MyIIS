@@ -214,14 +214,7 @@ struct ScheduleServiceView: View {
         .sheet(isPresented: $isDatePickerPresented) {
             jumpDatePickerSheet
         }
-        .alert(NSLocalizedString("services_schedule_title", comment: ""), isPresented: Binding(
-            get: { viewModel.noticeMessage != nil },
-            set: { _ in }
-        ), actions: {
-            Button(NSLocalizedString("common_ok", comment: "")) { viewModel.noticeMessage = nil }
-        }, message: {
-            Text(viewModel.noticeMessage ?? "")
-        })
+        .errorAlert($viewModel.noticeMessage, title: NSLocalizedString("services_schedule_title", comment: ""))
         .sheet(isPresented: $isSearchSheetPresented) {
             searchSheetContent
         }

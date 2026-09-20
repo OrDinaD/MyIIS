@@ -62,32 +62,8 @@ struct LocalScheduleView: View {
             }
             Button(NSLocalizedString("common_cancel", comment: ""), role: .cancel) {}
         }
-        .alert(
-            NSLocalizedString("common_error", comment: ""),
-            isPresented: Binding(
-                get: { viewModel.errorMessage != nil },
-                set: { _ in }
-            )
-        ) {
-            Button(NSLocalizedString("common_ok", comment: "")) {
-                viewModel.errorMessage = nil
-            }
-        } message: {
-            Text(viewModel.errorMessage ?? "")
-        }
-        .alert(
-            NSLocalizedString("local_schedule_ready", comment: ""),
-            isPresented: Binding(
-                get: { viewModel.noticeMessage != nil },
-                set: { _ in }
-            )
-        ) {
-            Button(NSLocalizedString("common_ok", comment: "")) {
-                viewModel.noticeMessage = nil
-            }
-        } message: {
-            Text(viewModel.noticeMessage ?? "")
-        }
+        .errorAlert($viewModel.errorMessage)
+        .errorAlert($viewModel.noticeMessage, title: NSLocalizedString("local_schedule_ready", comment: ""))
     }
 
     private var emptyContent: some View {
