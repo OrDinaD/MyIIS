@@ -415,7 +415,7 @@
 "rating_place_in_course" = "Course Rank";
 "rating_section_missed" = "Unexcused Absences";
 "rating_section_subjects" = "Subjects and Grades";
-"rating_semester_completed_desc" = "During vacation and at the semester start, current grades have not been posted yet. Grades will appear after control points are evaluated. Final grades for completed terms can be viewed in Gradebook.";
+"rating_semester_completed_desc" = "At the semester start, current grades have not been posted yet. Grades will appear after control points are evaluated. Final grades for completed terms can be viewed in Gradebook.";
 "rating_semester_completed_title" = "Gradebook is Empty";
 "rating_title" = "Performance";
 "rating_total_semester" = "Total for the semester";

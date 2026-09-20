@@ -146,11 +146,22 @@ periphery_report.txt
 # Local agent and AI artifacts
 .agents/
 AGENTS.md
+.antigravity*
+.antigravity/
 .antigravity.md
+*antigravity*
+*Antigravity*
 GEMINI.md
-task.md
+.gemini/
+task*.md
+goal*.md
 CRASH_AUDIT.md
 archive_fail_log*.txt
+buildServer.json
+scratch/
+*.cookie
+*.cookies
+cookies*.txt
 
 # Python
 venv/

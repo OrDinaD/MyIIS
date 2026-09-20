@@ -1,9 +1,6 @@
 name: TestFlight
 
 on:
-  push:
-    branches:
-      - release
   workflow_dispatch:
     inputs:
       release_version:

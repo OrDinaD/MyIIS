@@ -1,6 +1,11 @@
-name: PR Quality & Test Checks
+name: CI Quality & Test Checks
 
 on:
+  push:
+    branches:
+      - main
+      - master
+      - release
   pull_request:
     branches:
       - main

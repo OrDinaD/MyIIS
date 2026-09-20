@@ -295,16 +295,6 @@ extension RatingViewModel {
                 return
             }
 
-            if student != nil {
-                clearGradebookData()
-                isGradebookUnavailable = false
-                isRatingPendingForNewSemester = true
-                isUsingScheduleFallback = false
-                errorMessage = nil
-                logService.log("ℹ️ grade-book returned an empty lessons list; rating is pending for the new semester.")
-                return
-            }
-
             let schedule = try? await scheduleTask
             if let scheduleDays = schedule?.orderedDays, !scheduleDays.isEmpty {
                 let fallbackLessons = scheduleDays.flatMap(\.lessons)
@@ -321,11 +311,11 @@ extension RatingViewModel {
             }
 
             clearGradebookData()
-            isGradebookUnavailable = true
-            isRatingPendingForNewSemester = false
+            isGradebookUnavailable = false
+            isRatingPendingForNewSemester = true
             isUsingScheduleFallback = false
             errorMessage = nil
-            logService.log("⚠️ grade-book student is nil and schedule fallback unavailable.")
+            logService.log("ℹ️ grade-book empty and schedule fallback unavailable; rating is pending for the new semester.")
         } catch is CancellationError {
             return
         } catch let error as APIError {
