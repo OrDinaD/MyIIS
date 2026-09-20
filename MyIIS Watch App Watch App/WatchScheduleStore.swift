@@ -281,8 +281,8 @@ final class WatchScheduleReceiver: NSObject, ObservableObject {
         accept(session.receivedApplicationContext)
     }
 
-    private func accept(_ applicationContext: [String: Any]) {
-        if applicationContext[WatchScheduleStore.clearTransferKey] as? Bool == true {
+    private func applyPayload(isClear: Bool, data: Data?) {
+        if isClear {
             WatchScheduleStore.clear()
             snapshot = nil
             connectionError = nil
@@ -290,7 +290,7 @@ final class WatchScheduleReceiver: NSObject, ObservableObject {
             return
         }
 
-        guard let data = applicationContext[WatchScheduleStore.transferKey] as? Data else { return }
+        guard let data else { return }
         do {
             try WatchScheduleStore.save(data)
             snapshot = WatchScheduleStore.load()
@@ -300,6 +300,12 @@ final class WatchScheduleReceiver: NSObject, ObservableObject {
             connectionError = error.localizedDescription
         }
     }
+
+    private func accept(_ applicationContext: [String: Any]) {
+        let isClear = applicationContext[WatchScheduleStore.clearTransferKey] as? Bool == true
+        let data = applicationContext[WatchScheduleStore.transferKey] as? Data
+        applyPayload(isClear: isClear, data: data)
+    }
 }
 
 extension WatchScheduleReceiver: WCSessionDelegate {
@@ -308,12 +314,17 @@ extension WatchScheduleReceiver: WCSessionDelegate {
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: Error?
     ) {
+        let errorDescription = error?.localizedDescription
+        let context = session.receivedApplicationContext
+        let isClear = context[WatchScheduleStore.clearTransferKey] as? Bool == true
+        let data = context[WatchScheduleStore.transferKey] as? Data
+
         Task { @MainActor in
-            if let error {
-                connectionError = error.localizedDescription
+            if let errorDescription {
+                connectionError = errorDescription
                 return
             }
-            accept(session.receivedApplicationContext)
+            applyPayload(isClear: isClear, data: data)
         }
     }
 
@@ -329,8 +340,11 @@ extension WatchScheduleReceiver: WCSessionDelegate {
         _ session: WCSession,
         didReceiveApplicationContext applicationContext: [String: Any]
     ) {
+        let isClear = applicationContext[WatchScheduleStore.clearTransferKey] as? Bool == true
+        let data = applicationContext[WatchScheduleStore.transferKey] as? Data
+
         Task { @MainActor in
-            accept(applicationContext)
+            applyPayload(isClear: isClear, data: data)
         }
     }
 }
