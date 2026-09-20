@@ -3,11 +3,6 @@ import Foundation
 import WatchConnectivity
 #endif
 
-enum WatchScheduleTransfer {
-    nonisolated static let snapshotKey = "classScheduleSnapshot"
-    nonisolated static let clearKey = "clearClassScheduleSnapshot"
-}
-
 final class WatchScheduleConnectivityService: NSObject, @unchecked Sendable {
     static let shared = WatchScheduleConnectivityService()
 

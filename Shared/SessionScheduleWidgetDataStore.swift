@@ -125,6 +125,46 @@ enum ScheduleWidgetTimelinePolicy {
             .prefix(maximumEntries)
             .map { $0 }
     }
+
+    static func nextRefreshDate(
+        snapshot: SessionScheduleWidgetSnapshot?,
+        from now: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Date {
+        let fallbackMinutes = snapshot == nil ? 30 : 120
+        let fallback = calendar.date(byAdding: .minute, value: fallbackMinutes, to: now)
+            ?? now.addingTimeInterval(TimeInterval(fallbackMinutes * 60))
+
+        guard let snapshot else { return fallback }
+        let nextBoundary = snapshot.events
+            .flatMap { event -> [Date] in
+                guard let interval = event.interval(calendar: calendar) else { return [] }
+                return [interval.start, interval.end]
+            }
+            .filter { $0 > now }
+            .sorted()
+            .first
+
+        guard let nextBoundary else { return fallback }
+        return min(nextBoundary, fallback)
+    }
+
+    static func makeTimelineEntries<Entry>(
+        snapshot: SessionScheduleWidgetSnapshot?,
+        from now: Date = Date(),
+        calendar: Calendar = .current,
+        entryBuilder: (Date, SessionScheduleWidgetSnapshot?) -> Entry
+    ) -> (entries: [Entry], nextRefresh: Date) {
+        let dates = makeDates(snapshot: snapshot, from: now, calendar: calendar)
+        let entries = dates.map { entryBuilder($0, snapshot) }
+        let nextRefresh = nextRefreshDate(snapshot: snapshot, from: now, calendar: calendar)
+        return (entries, nextRefresh)
+    }
+}
+
+public enum WatchScheduleTransfer {
+    public nonisolated static let snapshotKey = "classScheduleSnapshot"
+    public nonisolated static let clearKey = "clearClassScheduleSnapshot"
 }
 
 enum SessionScheduleWidgetConstants {
@@ -330,59 +370,40 @@ enum SessionScheduleWidgetPresentation {
     }
 }
 
-enum SessionScheduleWidgetDataStore {
-    private enum Key {
-        static let snapshot = "session_schedule_widget_snapshot_v1"
+enum ScheduleWidgetDataStore {
+    enum ScheduleType: Sendable {
+        case session
+        case `class`
+
+        var key: String {
+            switch self {
+            case .session: return "session_schedule_widget_snapshot_v1"
+            case .class: return "class_schedule_widget_snapshot_v2"
+            }
+        }
+
+        var widgetKind: String {
+            switch self {
+            case .session: return SessionScheduleWidgetConstants.kind
+            case .class: return ClassScheduleWidgetConstants.kind
+            }
+        }
     }
 
-    static func save(_ snapshot: SessionScheduleWidgetSnapshot) {
-        ScheduleWidgetSnapshotStore.save(
-            snapshot,
-            key: Key.snapshot,
-            widgetKind: SessionScheduleWidgetConstants.kind
-        )
-    }
-
-    static func loadSnapshot() -> SessionScheduleWidgetSnapshot? {
-        ScheduleWidgetSnapshotStore.load(key: Key.snapshot)
-    }
-
-    static func clear() {
-        ScheduleWidgetSnapshotStore.clear(
-            key: Key.snapshot,
-            widgetKind: SessionScheduleWidgetConstants.kind
-        )
-    }
-}
-
-enum ClassScheduleWidgetDataStore {
-    private enum Key {
-        static let snapshot = "class_schedule_widget_snapshot_v2"
-    }
-
-    static func save(_ snapshot: SessionScheduleWidgetSnapshot) {
-        ScheduleWidgetSnapshotStore.save(
-            snapshot,
-            key: Key.snapshot,
-            widgetKind: ClassScheduleWidgetConstants.kind
-        )
-    }
-
-    static func loadSnapshot() -> SessionScheduleWidgetSnapshot? {
-        ScheduleWidgetSnapshotStore.load(key: Key.snapshot)
-    }
-
-    static func clear() {
-        ScheduleWidgetSnapshotStore.clear(
-            key: Key.snapshot,
-            widgetKind: ClassScheduleWidgetConstants.kind
-        )
-    }
-}
-
-private enum ScheduleWidgetSnapshotStore {
     private static var defaults: UserDefaults? {
         UserDefaults(suiteName: AppGroup.identifier) ?? .standard
+    }
+
+    static func save(_ snapshot: SessionScheduleWidgetSnapshot, for type: ScheduleType) {
+        save(snapshot, key: type.key, widgetKind: type.widgetKind)
+    }
+
+    static func loadSnapshot(for type: ScheduleType) -> SessionScheduleWidgetSnapshot? {
+        load(key: type.key)
+    }
+
+    static func clear(for type: ScheduleType) {
+        clear(key: type.key, widgetKind: type.widgetKind)
     }
 
     static func save(_ snapshot: SessionScheduleWidgetSnapshot, key: String, widgetKind: String) {
@@ -417,6 +438,34 @@ private enum ScheduleWidgetSnapshotStore {
 #if canImport(WidgetKit)
         WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
 #endif
+    }
+}
+
+enum SessionScheduleWidgetDataStore {
+    static func save(_ snapshot: SessionScheduleWidgetSnapshot) {
+        ScheduleWidgetDataStore.save(snapshot, for: .session)
+    }
+
+    static func loadSnapshot() -> SessionScheduleWidgetSnapshot? {
+        ScheduleWidgetDataStore.loadSnapshot(for: .session)
+    }
+
+    static func clear() {
+        ScheduleWidgetDataStore.clear(for: .session)
+    }
+}
+
+enum ClassScheduleWidgetDataStore {
+    static func save(_ snapshot: SessionScheduleWidgetSnapshot) {
+        ScheduleWidgetDataStore.save(snapshot, for: .class)
+    }
+
+    static func loadSnapshot() -> SessionScheduleWidgetSnapshot? {
+        ScheduleWidgetDataStore.loadSnapshot(for: .class)
+    }
+
+    static func clear() {
+        ScheduleWidgetDataStore.clear(for: .class)
     }
 }
 
@@ -466,6 +515,37 @@ extension SessionScheduleWidgetSnapshot.Event {
         let eventDay = calendar.startOfDay(for: date)
         let referenceDay = calendar.startOfDay(for: referenceDate)
         return eventDay >= referenceDay
+    }
+}
+
+extension SessionScheduleWidgetSnapshot {
+    nonisolated func upcomingEvents(
+        at date: Date = Date(),
+        calendar: Calendar = .current
+    ) -> [Event] {
+        events.filter { event in
+            event.isUpcoming(at: date, calendar: calendar)
+        }
+    }
+
+    nonisolated func activeEvent(
+        at date: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Event? {
+        events.first { $0.isActive(at: date, calendar: calendar) }
+    }
+
+    nonisolated func nextUpcomingEvent(
+        after date: Date = Date(),
+        calendar: Calendar = .current
+    ) -> Event? {
+        events
+            .filter { ($0.interval(calendar: calendar)?.start ?? $0.date ?? .distantPast) > date }
+            .sorted {
+                ($0.interval(calendar: calendar)?.start ?? .distantFuture) <
+                ($1.interval(calendar: calendar)?.start ?? .distantFuture)
+            }
+            .first
     }
 }
 

@@ -322,6 +322,91 @@ final class SessionScheduleWidgetTests: XCTestCase {
         XCTAssertNil(ClassScheduleWidgetDataStore.loadSnapshot())
     }
 
+    func testUnifiedScheduleWidgetDataStore() {
+        let event = SessionScheduleWidgetSnapshot.Event(
+            id: "unified-test-event",
+            date: Date(),
+            startTime: "10:00",
+            endTime: "11:30",
+            title: "Физика",
+            subtitle: "ЛК",
+            location: "101-1",
+            lessonType: "Лекция",
+            kind: .other
+        )
+        let snapshot = SessionScheduleWidgetSnapshot(
+            groupName: "unified-group",
+            startDate: Date(),
+            endDate: Date().addingTimeInterval(86400 * 7),
+            events: [event],
+            updatedAt: Date()
+        )
+
+        ScheduleWidgetDataStore.save(snapshot, for: .session)
+        XCTAssertEqual(ScheduleWidgetDataStore.loadSnapshot(for: .session)?.groupName, "unified-group")
+        ScheduleWidgetDataStore.clear(for: .session)
+        XCTAssertNil(ScheduleWidgetDataStore.loadSnapshot(for: .session))
+
+        ScheduleWidgetDataStore.save(snapshot, for: .class)
+        XCTAssertEqual(ScheduleWidgetDataStore.loadSnapshot(for: .class)?.groupName, "unified-group")
+        ScheduleWidgetDataStore.clear(for: .class)
+        XCTAssertNil(ScheduleWidgetDataStore.loadSnapshot(for: .class))
+    }
+
+    func testSessionScheduleWidgetSnapshotDomainHelpers() {
+        let day = calendar.date(from: DateComponents(year: 2026, month: 9, day: 20))!
+        let event1 = SessionScheduleWidgetSnapshot.Event(
+            id: "e1",
+            date: day,
+            startTime: "09:00",
+            endTime: "10:20",
+            title: "Пара 1",
+            subtitle: nil,
+            location: nil,
+            lessonType: nil,
+            kind: .other
+        )
+        let event2 = SessionScheduleWidgetSnapshot.Event(
+            id: "e2",
+            date: day,
+            startTime: "10:35",
+            endTime: "11:55",
+            title: "Пара 2",
+            subtitle: nil,
+            location: nil,
+            lessonType: nil,
+            kind: .other
+        )
+        let snapshot = SessionScheduleWidgetSnapshot(
+            groupName: "420603",
+            startDate: day,
+            endDate: day,
+            events: [event1, event2],
+            updatedAt: day
+        )
+
+        let duringEvent1 = calendar.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 9, minute: 30))!
+        XCTAssertEqual(snapshot.activeEvent(at: duringEvent1, calendar: calendar)?.id, "e1")
+        XCTAssertEqual(snapshot.nextUpcomingEvent(after: duringEvent1, calendar: calendar)?.id, "e2")
+
+        let upcomingList = snapshot.upcomingEvents(at: duringEvent1, calendar: calendar)
+        XCTAssertEqual(upcomingList.count, 2)
+
+        let afterAll = calendar.date(from: DateComponents(year: 2026, month: 9, day: 20, hour: 13, minute: 0))!
+        XCTAssertNil(snapshot.activeEvent(at: afterAll, calendar: calendar))
+        XCTAssertNil(snapshot.nextUpcomingEvent(after: afterAll, calendar: calendar))
+
+        let timelineResult = ScheduleWidgetTimelinePolicy.makeTimelineEntries(
+            snapshot: snapshot,
+            from: duringEvent1,
+            calendar: calendar
+        ) { date, _ in
+            date
+        }
+        XCTAssertFalse(timelineResult.entries.isEmpty)
+        XCTAssertTrue(timelineResult.nextRefresh > duringEvent1)
+    }
+
     func testSessionScheduleWidgetPresentationLocationAndSubtitles() {
         XCTAssertEqual(SessionScheduleWidgetPresentation.normalizedLocation("409-1 к."), "409-1")
         XCTAssertEqual(SessionScheduleWidgetPresentation.normalizedLocation(" 205-4 к "), "205-4")

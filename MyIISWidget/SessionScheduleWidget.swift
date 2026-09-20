@@ -30,10 +30,7 @@ struct SessionScheduleWidgetEntry: TimelineEntry {
         from referenceDate: Date,
         calendar: Calendar = .current
     ) -> [SessionScheduleWidgetSnapshot.Event] {
-        guard let snapshot else { return [] }
-        return snapshot.events.filter { event in
-            event.isUpcoming(at: referenceDate, calendar: calendar)
-        }
+        snapshot?.upcomingEvents(at: referenceDate, calendar: calendar) ?? []
     }
 
     static var placeholderSnapshot: SessionScheduleWidgetSnapshot {
@@ -122,39 +119,10 @@ struct SessionScheduleWidgetProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
         let snapshot = SessionScheduleWidgetDataStore.loadSnapshot()
-        let now = Date()
-
-        let dates = ScheduleWidgetTimelinePolicy.makeDates(snapshot: snapshot, from: now)
-        let entries = dates.map {
-            SessionScheduleWidgetEntry(date: $0, snapshot: snapshot)
+        let result = ScheduleWidgetTimelinePolicy.makeTimelineEntries(snapshot: snapshot) { date, snap in
+            SessionScheduleWidgetEntry(date: date, snapshot: snap)
         }
-
-        let nextRefresh = Self.nextRefreshDate(snapshot: snapshot, from: now)
-
-        completion(Timeline(entries: entries, policy: .after(nextRefresh)))
-    }
-
-    static func nextRefreshDate(
-        snapshot: SessionScheduleWidgetSnapshot?,
-        from now: Date,
-        calendar: Calendar = .current
-    ) -> Date {
-        let fallbackMinutes = snapshot == nil ? 30 : 120
-        let fallback = calendar.date(byAdding: .minute, value: fallbackMinutes, to: now)
-            ?? now.addingTimeInterval(TimeInterval(fallbackMinutes * 60))
-
-        guard let snapshot else { return fallback }
-        let nextBoundary = snapshot.events
-            .flatMap { event -> [Date] in
-                guard let interval = event.interval(calendar: calendar) else { return [] }
-                return [interval.start, interval.end]
-            }
-            .filter { $0 > now }
-            .sorted()
-            .first
-
-        guard let nextBoundary else { return fallback }
-        return min(nextBoundary, fallback)
+        completion(Timeline(entries: result.entries, policy: .after(result.nextRefresh)))
     }
 }
 
@@ -178,11 +146,10 @@ struct ClassScheduleWidgetProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
         let snapshot = ClassScheduleWidgetDataStore.loadSnapshot()
-        let now = Date()
-        let dates = ScheduleWidgetTimelinePolicy.makeDates(snapshot: snapshot, from: now)
-        let entries = dates.map { SessionScheduleWidgetEntry(date: $0, snapshot: snapshot) }
-        let nextRefresh = SessionScheduleWidgetProvider.nextRefreshDate(snapshot: snapshot, from: now)
-        completion(Timeline(entries: entries, policy: .after(nextRefresh)))
+        let result = ScheduleWidgetTimelinePolicy.makeTimelineEntries(snapshot: snapshot) { date, snap in
+            SessionScheduleWidgetEntry(date: date, snapshot: snap)
+        }
+        completion(Timeline(entries: result.entries, policy: .after(result.nextRefresh)))
     }
 }
 
