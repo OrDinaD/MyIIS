@@ -102,7 +102,7 @@ private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
 }
 
 struct OthersTabView: View {
-    @ObservedObject private var router = AppRouter.shared
+    @Bindable private var router = AppRouter.shared
     @EnvironmentObject private var authService: AuthenticationService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @AppStorage("enable_beta_sections") private var enableBetaSections = false

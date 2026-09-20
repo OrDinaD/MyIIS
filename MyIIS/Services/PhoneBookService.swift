@@ -1,13 +1,14 @@
-import Combine
 import Foundation
+import Observation
 import SwiftUI
 
+@Observable
 @MainActor
-final class PhoneBookService: ObservableObject {
+final class PhoneBookService {
     static let shared = PhoneBookService()
 
-    @Published var entries: [PhoneBookEntry] = []
-    @Published var isLoading = false
+    var entries: [PhoneBookEntry] = []
+    var isLoading = false
 
     private let url = URL(string: "https://iis.bsuir.by/api/v1/phone-book")!
 

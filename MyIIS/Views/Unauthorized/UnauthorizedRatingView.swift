@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct UnauthorizedRatingView: View {
-    @StateObject private var service = GlobalRatingService.shared
+    @State private var service = GlobalRatingService.shared
 
     @State private var selectedFacultyId: Int?
     @State private var selectedSpecialityId: Int?

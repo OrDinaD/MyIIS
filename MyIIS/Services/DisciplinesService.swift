@@ -1,13 +1,14 @@
-import Combine
 import Foundation
+import Observation
 
+@Observable
 @MainActor
-final class DisciplinesService: ObservableObject {
+final class DisciplinesService {
     static let shared = DisciplinesService()
 
-    @Published var disciplines: [DisciplineListEntry] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
+    var disciplines: [DisciplineListEntry] = []
+    var isLoading = false
+    var errorMessage: String?
 
     private let baseURL = URLFactory.require("https://iis.bsuir.by/api/v1")
     private let session: URLSession

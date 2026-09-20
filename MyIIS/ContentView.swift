@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     /// Получаем доступ к сервису аутентификации из окружения
     @EnvironmentObject var authService: AuthenticationService
-    @ObservedObject private var router = AppRouter.shared
+    private var router = AppRouter.shared
     @AppStorage(FirstLaunchView.completionKey) private var hasCompletedFirstLaunch = false
 
     var body: some View {

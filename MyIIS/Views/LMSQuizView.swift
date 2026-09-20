@@ -1,13 +1,14 @@
-import Combine
+import Observation
 import SwiftUI
 import UIKit
 
+@Observable
 @MainActor
-final class LMSQuizViewModel: ObservableObject {
-    @Published var state: LMSQuizScreenState?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published var selectedAnswers: [String: String] = [:]
+final class LMSQuizViewModel {
+    var state: LMSQuizScreenState?
+    var isLoading = false
+    var errorMessage: String?
+    var selectedAnswers: [String: String] = [:]
 
     private let quizURL: URL
     private let service = LMSQuizService.shared
@@ -130,7 +131,7 @@ struct LMSQuizView: View {
     let quizURL: URL
 
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel: LMSQuizViewModel
+    @State private var viewModel: LMSQuizViewModel
     @State private var confirmFinishAttempt = false
     @State private var confirmFinishAll = false
     @State private var confirmExit = false
@@ -138,7 +139,7 @@ struct LMSQuizView: View {
 
     init(quizURL: URL) {
         self.quizURL = quizURL
-        self._viewModel = StateObject(wrappedValue: LMSQuizViewModel(quizURL: quizURL))
+        self._viewModel = State(initialValue: LMSQuizViewModel(quizURL: quizURL))
     }
 
     var body: some View {

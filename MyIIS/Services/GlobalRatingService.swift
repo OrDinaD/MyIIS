@@ -1,24 +1,25 @@
-import Combine
 import Foundation
+import Observation
 
+@Observable
 @MainActor
-final class GlobalRatingService: ObservableObject {
+final class GlobalRatingService {
     static let shared = GlobalRatingService()
 
-    @Published var faculties: [FacultyDto] = []
-    @Published var specialities: [SpecialityDto] = []
-    @Published var courses: [RatingCourseDto] = []
-    @Published var ratingEntries: [GlobalRatingEntry] = []
-    @Published var studentDetails: [String: StudentGlobalRatingDetail] = [:]
+    var faculties: [FacultyDto] = []
+    var specialities: [SpecialityDto] = []
+    var courses: [RatingCourseDto] = []
+    var ratingEntries: [GlobalRatingEntry] = []
+    var studentDetails: [String: StudentGlobalRatingDetail] = [:]
 
-    @Published var isLoadingFaculties = false
-    @Published var isLoadingSpecialities = false
-    @Published var isLoadingCourses = false
-    @Published var isLoadingRating = false
-    @Published var loadingStudentCardNumbers: Set<String> = []
+    var isLoadingFaculties = false
+    var isLoadingSpecialities = false
+    var isLoadingCourses = false
+    var isLoadingRating = false
+    var loadingStudentCardNumbers: Set<String> = []
 
-    @Published var errorMessage: String?
-    @Published var studentDetailErrorMessage: String?
+    var errorMessage: String?
+    var studentDetailErrorMessage: String?
 
     private let baseURL = URLFactory.require("https://iis.bsuir.by/api/v1")
     private let session: URLSession

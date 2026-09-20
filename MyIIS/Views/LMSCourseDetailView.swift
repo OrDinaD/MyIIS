@@ -1,15 +1,16 @@
-import Combine
+import Observation
 import QuickLook
 import SwiftUI
 import UniformTypeIdentifiers
 import WebKit
 
+@Observable
 @MainActor
-class LMSCourseDetailViewModel: ObservableObject {
+final class LMSCourseDetailViewModel {
     let courseId: Int
-    @Published var detail: LMSCourseDetail?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
+    var detail: LMSCourseDetail?
+    var isLoading = false
+    var errorMessage: String?
 
     init(courseId: Int) {
         self.courseId = courseId
@@ -30,7 +31,7 @@ class LMSCourseDetailViewModel: ObservableObject {
 
 struct LMSCourseDetailView: View {
     let course: LMSCourse
-    @StateObject private var viewModel: LMSCourseDetailViewModel
+    @State private var viewModel: LMSCourseDetailViewModel
     @State private var presentedLink: LMSPresentedLink?
     @State private var presentedQuiz: LMSPresentedQuiz?
     @State private var presentedPage: LMSPresentedActivity?
@@ -41,7 +42,7 @@ struct LMSCourseDetailView: View {
 
     init(course: LMSCourse) {
         self.course = course
-        self._viewModel = StateObject(wrappedValue: LMSCourseDetailViewModel(courseId: course.id))
+        self._viewModel = State(initialValue: LMSCourseDetailViewModel(courseId: course.id))
     }
 
     var body: some View {

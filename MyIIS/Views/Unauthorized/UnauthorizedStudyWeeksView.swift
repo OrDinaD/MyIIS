@@ -1,12 +1,14 @@
-import Combine
+import Foundation
+import Observation
 import SwiftUI
 
+@Observable
 @MainActor
-final class StudyWeeksService: ObservableObject {
+final class StudyWeeksService {
     static let shared = StudyWeeksService()
 
-    @Published var currentWeek: Int?
-    @Published var isLoading = false
+    var currentWeek: Int?
+    var isLoading = false
 
     func fetchCurrentWeek() async {
         if currentWeek == nil {
@@ -45,7 +47,7 @@ final class StudyWeeksService: ObservableObject {
 }
 
 struct UnauthorizedStudyWeeksView: View {
-    @StateObject private var service = StudyWeeksService.shared
+    @State private var service = StudyWeeksService.shared
 
     var body: some View {
         VStack(spacing: 32) {

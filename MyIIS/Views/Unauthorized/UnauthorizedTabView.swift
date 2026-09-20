@@ -25,17 +25,19 @@ enum UnauthorizedAppTab: String, CaseIterable, Identifiable {
 }
 
 struct UnauthorizedTabView: View {
-    @ObservedObject private var router = AppRouter.shared
+    private var router = AppRouter.shared
     @State private var selectedTab: UnauthorizedAppTab = .schedule
 
     var body: some View {
         if #available(iOS 18.0, *) {
             baseTabView
                 .tabViewStyle(.sidebarAdaptable)
-                .onReceive(router.$selectedTab) { syncWithAppTab($0) }
+                .onChange(of: router.selectedTab) { _, newValue in syncWithAppTab(newValue) }
+                .onAppear { syncWithAppTab(router.selectedTab) }
         } else {
             baseTabView
-                .onReceive(router.$selectedTab) { syncWithAppTab($0) }
+                .onChange(of: router.selectedTab) { _, newValue in syncWithAppTab(newValue) }
+                .onAppear { syncWithAppTab(router.selectedTab) }
         }
     }
 

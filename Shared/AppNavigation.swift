@@ -2,7 +2,7 @@
 //  AppNavigation.swift
 //  MyIIS
 //
-import Combine
+import Observation
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Hashable {
@@ -52,10 +52,11 @@ enum AppIntentNavigationStore {
     }
 }
 
+@Observable
 @MainActor
-class AppRouter: ObservableObject {
-    @Published var selectedTab: AppTab
-    @Published var servicesPath: NavigationPath
+class AppRouter {
+    var selectedTab: AppTab
+    var servicesPath: NavigationPath
 
     static let shared = AppRouter()
     private static let startupTabKey = "initial_startup_tab"

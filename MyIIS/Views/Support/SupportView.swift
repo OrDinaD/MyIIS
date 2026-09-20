@@ -1,30 +1,32 @@
-import Combine
+import Observation
 import QuickLook
 import SwiftUI
 
-class SupportDocumentDownloader: ObservableObject {
-    @Published var isDownloading = false
-    @Published var downloadedFileURL: URL?
-    @Published var errorMessage: String?
+@Observable
+@MainActor
+final class SupportDocumentDownloader {
+    var isDownloading = false
+    var downloadedFileURL: URL?
+    var errorMessage: String?
 
     func downloadFile(from url: URL, filename: String) async {
-        DispatchQueue.main.async {
-            self.isDownloading = true
-            self.errorMessage = nil
-            self.downloadedFileURL = nil
-        }
+        isDownloading = true
+        errorMessage = nil
+        downloadedFileURL = nil
 
         do {
             let (tempURL, response) = try await URLSession.shared.download(from: url)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                DispatchQueue.main.async {
-                    self.errorMessage = String(localized: "Ошибка при загрузке документа")
-                    self.isDownloading = false
-                }
+                errorMessage = String(localized: "Ошибка при загрузке документа")
+                isDownloading = false
                 return
             }
 
-            let documentsDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+            guard let documentsDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first else {
+                errorMessage = String(localized: "Ошибка при сохранении документа")
+                isDownloading = false
+                return
+            }
             let destinationURL = documentsDirectory.appendingPathComponent(filename)
 
             if FileManager.default.fileExists(atPath: destinationURL.path) {
@@ -33,24 +35,20 @@ class SupportDocumentDownloader: ObservableObject {
 
             try FileManager.default.moveItem(at: tempURL, to: destinationURL)
 
-            DispatchQueue.main.async {
-                self.downloadedFileURL = destinationURL
-                self.isDownloading = false
-            }
+            downloadedFileURL = destinationURL
+            isDownloading = false
         } catch {
-            DispatchQueue.main.async {
-                self.errorMessage = String(
-                    format: String(localized: "Не удалось загрузить файл: %@"),
-                    error.localizedDescription
-                )
-                self.isDownloading = false
-            }
+            errorMessage = String(
+                format: String(localized: "Не удалось загрузить файл: %@"),
+                error.localizedDescription
+            )
+            isDownloading = false
         }
     }
 }
 
 struct SupportView: View {
-    @StateObject private var downloader = SupportDocumentDownloader()
+    @State private var downloader = SupportDocumentDownloader()
 
     var body: some View {
         List {

@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct UnauthorizedDisciplinesView: View {
-    @StateObject private var service = DisciplinesService.shared
-    @StateObject private var formService = GlobalRatingService.shared
+    @State private var service = DisciplinesService.shared
+    @State private var formService = GlobalRatingService.shared
 
     @State private var selectedFacultyId: Int?
     @State private var selectedSpecialityId: Int?

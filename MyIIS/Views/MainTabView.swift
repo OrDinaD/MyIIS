@@ -5,7 +5,7 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @ObservedObject private var router = AppRouter.shared
+    private var router = AppRouter.shared
     @AppStorage("show_tab_profile") private var showProfile = false
     @AppStorage("show_tab_attendance") private var showAttendance = true
     @AppStorage("show_tab_rating") private var showRating = true
@@ -51,7 +51,7 @@ struct MainTabView: View {
 
 @available(iOS 18.0, *)
 private struct ModernMainTabView: View {
-    @ObservedObject var router: AppRouter
+    var router: AppRouter
     let showProfile: Bool
     let showAttendance: Bool
     let showRating: Bool
@@ -116,7 +116,7 @@ private struct ModernMainTabView: View {
 }
 
 private struct LegacyMainTabView: View {
-    @ObservedObject var router: AppRouter
+    var router: AppRouter
     let showProfile: Bool
     let showAttendance: Bool
     let showRating: Bool

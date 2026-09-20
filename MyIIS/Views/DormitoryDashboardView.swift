@@ -288,7 +288,7 @@ private struct DormitoryPlaceTile: View {
 private struct DormitoryStatusCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var motion = DormitoryCardMotion()
+    @State private var motion = DormitoryCardMotion()
 
     let application: DormitoryQueueApplication
     let isDownloadingFile: Bool
@@ -556,10 +556,11 @@ private struct DormitoryMotionShimmer: View {
     }
 }
 
+@Observable
 @MainActor
-private final class DormitoryCardMotion: ObservableObject {
-    @Published private(set) var horizontal = 0.0
-    @Published private(set) var vertical = 0.0
+private final class DormitoryCardMotion {
+    private(set) var horizontal = 0.0
+    private(set) var vertical = 0.0
 
     private let motionManager = CMMotionManager()
     private let motionQueue: OperationQueue = {

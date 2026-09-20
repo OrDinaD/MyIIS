@@ -1,13 +1,14 @@
-import Combine
 import Foundation
+import Observation
 import SwiftUI
 
+@Observable
 @MainActor
-final class DepartmentsService: ObservableObject {
+final class DepartmentsService {
     static let shared = DepartmentsService()
 
-    @Published var departments: [DepartmentNode] = []
-    @Published var isLoading = false
+    var departments: [DepartmentNode] = []
+    var isLoading = false
 
     private static let apiBaseURL = NetworkSecurityPolicy.iisBaseURL
         .appendingPathComponent("api")

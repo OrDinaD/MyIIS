@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct AppSceneCommands: Commands {
-    @ObservedObject private var router = AppRouter.shared
+    private var router = AppRouter.shared
 
     var body: some Commands {
         SidebarCommands()

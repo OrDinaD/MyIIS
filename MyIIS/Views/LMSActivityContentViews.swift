@@ -1,11 +1,12 @@
-import Combine
+import Observation
 import SwiftUI
 
+@Observable
 @MainActor
-final class LMSPageContentViewModel: ObservableObject {
-    @Published var page: LMSPageContent?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
+final class LMSPageContentViewModel {
+    var page: LMSPageContent?
+    var isLoading = false
+    var errorMessage: String?
 
     private let url: URL
     private let service = LMSActivityContentService.shared
@@ -33,12 +34,12 @@ struct LMSPageContentView: View {
     let fallbackTitle: String
 
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel: LMSPageContentViewModel
+    @State private var viewModel: LMSPageContentViewModel
 
     init(url: URL, fallbackTitle: String) {
         self.url = url
         self.fallbackTitle = fallbackTitle
-        self._viewModel = StateObject(wrappedValue: LMSPageContentViewModel(url: url))
+        self._viewModel = State(initialValue: LMSPageContentViewModel(url: url))
     }
 
     var body: some View {
@@ -86,13 +87,14 @@ struct LMSPageContentView: View {
     }
 }
 
+@Observable
 @MainActor
-final class LMSFeedbackViewModel: ObservableObject {
-    @Published var page: LMSFeedbackPage?
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published var values: [String: String] = [:]
-    @Published var checkedOptionIDs: Set<String> = []
+final class LMSFeedbackViewModel {
+    var page: LMSFeedbackPage?
+    var isLoading = false
+    var errorMessage: String?
+    var values: [String: String] = [:]
+    var checkedOptionIDs: Set<String> = []
 
     private let url: URL
     private let service = LMSActivityContentService.shared
@@ -156,13 +158,13 @@ struct LMSFeedbackView: View {
     let fallbackTitle: String
 
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel: LMSFeedbackViewModel
+    @State private var viewModel: LMSFeedbackViewModel
     @State private var confirmExit = false
 
     init(url: URL, fallbackTitle: String) {
         self.url = url
         self.fallbackTitle = fallbackTitle
-        self._viewModel = StateObject(wrappedValue: LMSFeedbackViewModel(url: url))
+        self._viewModel = State(initialValue: LMSFeedbackViewModel(url: url))
     }
 
     var body: some View {
