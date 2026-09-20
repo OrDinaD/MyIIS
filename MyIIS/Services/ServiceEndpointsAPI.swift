@@ -387,11 +387,6 @@ final class ServiceEndpointsAPI {
     private static let responseCacheLifetime: TimeInterval = 24 * 60 * 60
     private static let currentWeekCacheLifetime: TimeInterval = 60 * 60
 
-    private struct CachedEnvelope: Codable {
-        let data: Data
-        let cachedAt: Date
-    }
-
     init(
         baseURL: URL = URLFactory.require("https://iis.bsuir.by/api/v1"),
         session: URLSession = .shared,
@@ -719,25 +714,17 @@ final class ServiceEndpointsAPI {
     }
 
     private func persistCache(data: Data, for request: URLRequest) {
-        guard let key = cacheKey(for: request) else { return }
-        let envelope = CachedEnvelope(data: data, cachedAt: now())
-        guard let payload = try? JSONEncoder().encode(envelope) else { return }
-        _ = UserDefaultsPayloadStore.save(payload, forKey: key, in: userDefaults)
+        OfflineResponseCache.persist(data: data, for: request, prefix: Self.cachePrefix, userDefaults: userDefaults, cachedAt: now())
     }
 
     private func cachedData(for request: URLRequest) -> Data? {
-        guard let key = cacheKey(for: request),
-              let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults),
-              let envelope = try? JSONDecoder().decode(CachedEnvelope.self, from: payload) else {
-            return nil
-        }
-
-        let age = now().timeIntervalSince(envelope.cachedAt)
-        guard age >= 0, age <= cacheLifetime(for: request) else {
-            UserDefaultsPayloadStore.clear(forKey: key, from: userDefaults)
-            return nil
-        }
-        return envelope.data
+        OfflineResponseCache.loadData(
+            for: request,
+            prefix: Self.cachePrefix,
+            userDefaults: userDefaults,
+            maxAge: cacheLifetime(for: request),
+            now: now()
+        )
     }
 
     private func cacheLifetime(for request: URLRequest) -> TimeInterval {
@@ -745,12 +732,6 @@ final class ServiceEndpointsAPI {
             return Self.currentWeekCacheLifetime
         }
         return Self.responseCacheLifetime
-    }
-
-    private func cacheKey(for request: URLRequest) -> String? {
-        guard let url = request.url?.absoluteString else { return nil }
-        let method = request.httpMethod?.uppercased() ?? "GET"
-        return Self.cachePrefix + Data("\(method)|\(url)".utf8).base64EncodedString()
     }
 
     private func isCancellationError(_ error: Error) -> Bool {

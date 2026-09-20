@@ -40,11 +40,6 @@ class LMSService: ObservableObject {
         NetworkSecurityPolicy.lmsBaseURL.appendingPathComponent("my", isDirectory: true)
     ]
 
-    private struct CachedEnvelope: Codable {
-        let data: Data
-        let cachedAt: Date
-    }
-
     private struct CourseLoadResult {
         let courses: [LMSCourse]
         let updatedAt: Date
@@ -310,22 +305,15 @@ extension LMSService {
     }
 
     private func persistCache(data: Data, for request: URLRequest) {
-        guard let key = cacheKey(for: request) else { return }
-        let envelope = CachedEnvelope(data: data, cachedAt: Date())
-        guard let payload = try? JSONEncoder().encode(envelope) else { return }
-        _ = UserDefaultsPayloadStore.save(payload, forKey: key, in: userDefaults)
+        OfflineResponseCache.persist(data: data, for: request, prefix: Self.cachePrefix, userDefaults: userDefaults)
     }
 
     private func cachedData(for request: URLRequest) -> Data? {
-        cachedEnvelope(for: request)?.data
+        OfflineResponseCache.loadData(for: request, prefix: Self.cachePrefix, userDefaults: userDefaults)
     }
 
-    private func cachedEnvelope(for request: URLRequest) -> CachedEnvelope? {
-        guard let key = cacheKey(for: request),
-              let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults) else {
-            return nil
-        }
-        return try? JSONDecoder().decode(CachedEnvelope.self, from: payload)
+    private func cachedEnvelope(for request: URLRequest) -> CachedResponseEnvelope? {
+        OfflineResponseCache.loadEnvelope(for: request, prefix: Self.cachePrefix, userDefaults: userDefaults)
     }
 
     private func cachedCourseResult() -> CourseLoadResult? {
@@ -354,13 +342,6 @@ extension LMSService {
         return cookies.contains { cookie in
             cookie.name == "MoodleSession" && (cookie.expiresDate == nil || cookie.expiresDate! > Date())
         }
-    }
-
-    private func cacheKey(for request: URLRequest) -> String? {
-        guard let url = request.url?.absoluteString else { return nil }
-        let method = request.httpMethod?.uppercased() ?? "GET"
-        let composite = "\(method)|\(url)"
-        return Self.cachePrefix + Data(composite.utf8).base64EncodedString()
     }
 
     private func prepareLoginPage() async throws -> (url: URL, token: String?) {

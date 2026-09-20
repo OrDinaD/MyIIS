@@ -13,11 +13,6 @@ final class DiplomaService: DiplomaServicing {
 
     private static let cachePrefix = "DiplomaService.cache."
 
-    private struct CachedEnvelope: Codable {
-        let data: Data
-        let cachedAt: Date
-    }
-
     init(session: URLSession = .shared) {
         self.session = session
     }
@@ -68,30 +63,18 @@ final class DiplomaService: DiplomaServicing {
     }
 
     private func persistCache(data: Data, for request: URLRequest) {
-        guard let key = cacheKey(for: request) else { return }
-        let envelope = CachedEnvelope(data: data, cachedAt: Date())
-        guard let payload = try? JSONEncoder().encode(envelope) else { return }
-        _ = UserDefaultsPayloadStore.save(payload, forKey: key, in: userDefaults)
+        OfflineResponseCache.persist(data: data, for: request, prefix: Self.cachePrefix, userDefaults: userDefaults)
     }
 
     private func tryDecodeCachedProgress(for request: URLRequest, originalError: String) -> DiplomaProgress? {
-        guard let key = cacheKey(for: request),
-              let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults),
-              let envelope = try? JSONDecoder().decode(CachedEnvelope.self, from: payload),
-              let decoded = try? decodeProgress(from: envelope.data) else {
+        guard let data = OfflineResponseCache.loadData(for: request, prefix: Self.cachePrefix, userDefaults: userDefaults),
+              let decoded = try? decodeProgress(from: data) else {
             return nil
         }
 
         let url = request.url?.absoluteString ?? "—"
         logService.log("⚠️ Diploma offline cache used for \(url). Original error: \(originalError)")
         return decoded
-    }
-
-    private func cacheKey(for request: URLRequest) -> String? {
-        guard let url = request.url?.absoluteString else { return nil }
-        let method = request.httpMethod?.uppercased() ?? "GET"
-        let composite = "\(method)|\(url)"
-        return Self.cachePrefix + Data(composite.utf8).base64EncodedString()
     }
 
     private func resolveProgress(data: Data, response: HTTPURLResponse, request: URLRequest) throws -> DiplomaProgress {

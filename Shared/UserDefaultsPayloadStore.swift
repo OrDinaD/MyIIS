@@ -126,3 +126,63 @@ enum UserDefaultsPayloadStore {
         }
     }
 }
+
+struct CachedResponseEnvelope: Codable, Sendable {
+    let data: Data
+    let cachedAt: Date
+}
+
+enum OfflineResponseCache {
+    static func cacheKey(prefix: String, request: URLRequest) -> String? {
+        guard let url = request.url?.absoluteString else { return nil }
+        let method = request.httpMethod?.uppercased() ?? "GET"
+        return prefix + Data("\(method)|\(url)".utf8).base64EncodedString()
+    }
+
+    static func persist(
+        data: Data,
+        for request: URLRequest,
+        prefix: String,
+        userDefaults: UserDefaults,
+        cachedAt: Date = Date()
+    ) {
+        guard let key = cacheKey(prefix: prefix, request: request) else { return }
+        let envelope = CachedResponseEnvelope(data: data, cachedAt: cachedAt)
+        guard let payload = try? JSONEncoder().encode(envelope) else { return }
+        _ = UserDefaultsPayloadStore.save(payload, forKey: key, in: userDefaults)
+    }
+
+    static func loadEnvelope(
+        for request: URLRequest,
+        prefix: String,
+        userDefaults: UserDefaults
+    ) -> CachedResponseEnvelope? {
+        guard let key = cacheKey(prefix: prefix, request: request),
+              let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults) else {
+            return nil
+        }
+        return try? JSONDecoder().decode(CachedResponseEnvelope.self, from: payload)
+    }
+
+    static func loadData(
+        for request: URLRequest,
+        prefix: String,
+        userDefaults: UserDefaults,
+        maxAge: TimeInterval? = nil,
+        now: Date = Date()
+    ) -> Data? {
+        guard let envelope = loadEnvelope(for: request, prefix: prefix, userDefaults: userDefaults) else {
+            return nil
+        }
+        if let maxAge {
+            let age = now.timeIntervalSince(envelope.cachedAt)
+            guard age >= 0, age <= maxAge else {
+                if let key = cacheKey(prefix: prefix, request: request) {
+                    UserDefaultsPayloadStore.clear(forKey: key, from: userDefaults)
+                }
+                return nil
+            }
+        }
+        return envelope.data
+    }
+}

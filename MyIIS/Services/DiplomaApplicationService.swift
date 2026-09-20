@@ -17,11 +17,6 @@ final class DiplomaApplicationService: DiplomaApplicationServicing {
 
     private static let cachePrefix = "DiplomaApplicationService.cache."
 
-    private struct CachedEnvelope: Codable {
-        let data: Data
-        let cachedAt: Date
-    }
-
     init(
         baseURL: URL = URLFactory.require("https://iis.bsuir.by/api/v1"),
         session: URLSession = .shared,
@@ -227,35 +222,24 @@ final class DiplomaApplicationService: DiplomaApplicationServicing {
     }
 
     private func persistCache(data: Data, for request: URLRequest) {
-        guard shouldCache(request), let key = cacheKey(for: request) else { return }
-        let envelope = CachedEnvelope(data: data, cachedAt: Date())
-        guard let payload = try? JSONEncoder().encode(envelope) else { return }
-        _ = UserDefaultsPayloadStore.save(payload, forKey: key, in: userDefaults)
+        guard shouldCache(request) else { return }
+        OfflineResponseCache.persist(data: data, for: request, prefix: Self.cachePrefix, userDefaults: userDefaults)
     }
 
     private func tryDecodeCachedData(for request: URLRequest, originalError: String) -> Data? {
         guard shouldCache(request),
-              let key = cacheKey(for: request),
-              let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults),
-              let envelope = try? JSONDecoder().decode(CachedEnvelope.self, from: payload) else {
+              let data = OfflineResponseCache.loadData(for: request, prefix: Self.cachePrefix, userDefaults: userDefaults) else {
             return nil
         }
 
         let url = request.url?.absoluteString ?? "—"
         logService.log("⚠️ Diploma endpoints offline cache used for \(url). Original error: \(originalError)")
-        return envelope.data
+        return data
     }
 
     private func shouldCache(_ request: URLRequest) -> Bool {
         let method = request.httpMethod?.uppercased() ?? "GET"
         return method == "GET"
-    }
-
-    private func cacheKey(for request: URLRequest) -> String? {
-        guard let url = request.url?.absoluteString else { return nil }
-        let method = request.httpMethod?.uppercased() ?? "GET"
-        let composite = "\(method)|\(url)"
-        return Self.cachePrefix + Data(composite.utf8).base64EncodedString()
     }
 
     private func logRequest(_ request: URLRequest) {
