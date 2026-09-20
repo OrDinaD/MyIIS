@@ -7,6 +7,7 @@ import SwiftUI
 final class StudyWeeksService {
     static let shared = StudyWeeksService()
 
+    private let api = ServiceEndpointsAPI()
     var currentWeek: Int?
     var isLoading = false
 
@@ -15,17 +16,14 @@ final class StudyWeeksService {
             currentWeek = fallbackWeekNumber(reference: Date())
         }
 
-        guard let url = URL(string: "https://iis.bsuir.by/api/v1/schedule/current-week") else { return }
         guard !isLoading else { return }
 
         isLoading = true
         defer { isLoading = false }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let string = String(data: data, encoding: .utf8), let week = Int(string) {
-                currentWeek = week
-            }
+            let week = try await api.fetchCurrentWeek(preferCachedResponse: true)
+            currentWeek = week
         } catch {
             print("Failed to fetch current week", error)
         }

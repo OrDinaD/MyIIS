@@ -19,9 +19,6 @@ struct MyIISApp: App {
     init() {
         AppTheme.configureAppearances()
         WatchScheduleConnectivityService.shared.activate()
-        if let snapshot = ClassScheduleWidgetDataStore.loadSnapshot() {
-            WatchScheduleConnectivityService.shared.send(snapshot)
-        }
     }
 
     var body: some Scene {
@@ -31,6 +28,11 @@ struct MyIISApp: App {
                 ScreenshotBrandOverlay()
             }
             .environmentObject(authService) // Внедряем его в окружение
+            .task(priority: .utility) {
+                if let snapshot = ClassScheduleWidgetDataStore.loadSnapshot() {
+                    WatchScheduleConnectivityService.shared.send(snapshot)
+                }
+            }
             .onAppear {
                 handlePendingAppIntentNavigation()
             }

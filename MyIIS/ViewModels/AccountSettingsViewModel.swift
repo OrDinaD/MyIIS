@@ -158,13 +158,15 @@ final class AccountSettingsViewModel {
         }
 
         isChangingPassword = true
-        defer { isChangingPassword = false }
-
-        do {
-            try await service.changePassword(oldPassword: oldPassword, newPassword: newPassword)
+        defer {
+            isChangingPassword = false
             oldPassword = ""
             newPassword = ""
             confirmPassword = ""
+        }
+
+        do {
+            try await service.changePassword(oldPassword: oldPassword, newPassword: newPassword)
 
             let attempts = try await service.fetchPasswordAttempts()
             passwordAttemptsLeft = attempts.passwordAttempts
