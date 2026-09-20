@@ -87,11 +87,15 @@ final class NetworkSecurityPolicyTests: XCTestCase {
             try? lmsStore.clear()
         }
 
-        try iisStore.save(StoredCredentials(username: "iis-user", password: "iis-password"))
-        try lmsStore.save(StoredCredentials(username: "lms-user", password: "lms-password"))
+        do {
+            try iisStore.save(StoredCredentials(username: "iis-user", password: "iis-password"))
+            try lmsStore.save(StoredCredentials(username: "lms-user", password: "lms-password"))
 
-        XCTAssertEqual(try iisStore.retrieve()?.username, "iis-user")
-        XCTAssertEqual(try lmsStore.retrieve()?.username, "lms-user")
-        XCTAssertNotEqual(try iisStore.retrieve()?.password, try lmsStore.retrieve()?.password)
+            XCTAssertEqual(try iisStore.retrieve()?.username, "iis-user")
+            XCTAssertEqual(try lmsStore.retrieve()?.username, "lms-user")
+            XCTAssertNotEqual(try iisStore.retrieve()?.password, try lmsStore.retrieve()?.password)
+        } catch CredentialStoreError.unexpectedStatus(let status) where status == errSecMissingEntitlement {
+            throw XCTSkip("Keychain entitlement not available in this test environment.")
+        }
     }
 }

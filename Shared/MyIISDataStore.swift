@@ -51,10 +51,11 @@ enum MyIISDataStore {
     }
 
     private static var defaults: UserDefaults? {
-        guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier) != nil else {
-            return nil
+        if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppGroup.identifier) != nil,
+           let groupDefaults = UserDefaults(suiteName: AppGroup.identifier) {
+            return groupDefaults
         }
-        return UserDefaults(suiteName: AppGroup.identifier)
+        return UserDefaults.standard
     }
 
     static func update(

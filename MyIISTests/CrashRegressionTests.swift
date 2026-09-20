@@ -174,13 +174,17 @@ final class CrashRegressionTests: XCTestCase {
         let store = CredentialStore.shared
         let testCreds = StoredCredentials(username: "test_user_\(UUID().uuidString)", password: "secure_password")
 
-        try store.save(testCreds)
-        let retrieved = try store.retrieve()
-        XCTAssertEqual(retrieved?.username, testCreds.username)
-        XCTAssertEqual(retrieved?.password, testCreds.password)
+        do {
+            try store.save(testCreds)
+            let retrieved = try store.retrieve()
+            XCTAssertEqual(retrieved?.username, testCreds.username)
+            XCTAssertEqual(retrieved?.password, testCreds.password)
 
-        try store.clear()
-        let cleared = try store.retrieve()
-        XCTAssertNil(cleared)
+            try store.clear()
+            let cleared = try store.retrieve()
+            XCTAssertNil(cleared)
+        } catch CredentialStoreError.unexpectedStatus(let status) where status == errSecMissingEntitlement {
+            throw XCTSkip("Keychain entitlement not available in this test environment.")
+        }
     }
 }

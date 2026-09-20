@@ -58,10 +58,10 @@ final class HeadmanViewModelTests: XCTestCase {
     // MARK: - Mode Titles
 
     func testModeTitles() {
-        XCTAssertEqual(HeadmanViewModel.Mode.byDate.title, "Пропуски")
-        XCTAssertEqual(HeadmanViewModel.Mode.summary.title, "Сводная")
-        XCTAssertEqual(HeadmanViewModel.Mode.weekly.title, "Неделя")
-        XCTAssertEqual(HeadmanViewModel.Mode.responsibles.title, "Отмечающие")
+        XCTAssertEqual(HeadmanViewModel.Mode.byDate.title, String(localized: "Пропуски"))
+        XCTAssertEqual(HeadmanViewModel.Mode.summary.title, String(localized: "Сводная"))
+        XCTAssertEqual(HeadmanViewModel.Mode.weekly.title, String(localized: "Неделя"))
+        XCTAssertEqual(HeadmanViewModel.Mode.responsibles.title, String(localized: "Отмечающие"))
     }
 
     // MARK: - Date formatting logic
@@ -300,7 +300,7 @@ final class HeadmanViewModelTests: XCTestCase {
 
         await viewModel.saveOmissions(for: lesson)
         XCTAssertNil(viewModel.errorMessage)
-        XCTAssertEqual(viewModel.successMessage, "Пропуски сохранены.")
+        XCTAssertEqual(viewModel.successMessage, String(localized: "Пропуски сохранены."))
         XCTAssertNil(viewModel.pendingHours(lessonId: 1, studentId: 1)) // Cleared
     }
 
