@@ -2,163 +2,10 @@
 //  SessionScheduleWidget.swift
 //  MyIISWidgetExtension
 //
-// swiftlint:disable file_length
+
 import SwiftUI
 import WidgetKit
 
-private struct ClassPreviewValue {
-    let startTime: String
-    let endTime: String
-    let title: String
-    let location: String
-    let lessonType: String
-}
-
-struct SessionScheduleWidgetEntry: TimelineEntry {
-    let date: Date
-    let snapshot: SessionScheduleWidgetSnapshot?
-
-    var groupName: String {
-        snapshot?.groupName ?? String(localized: "Расписание")
-    }
-
-    var upcomingEvents: [SessionScheduleWidgetSnapshot.Event] {
-        upcomingEvents(from: date)
-    }
-
-    func upcomingEvents(
-        from referenceDate: Date,
-        calendar: Calendar = .current
-    ) -> [SessionScheduleWidgetSnapshot.Event] {
-        snapshot?.upcomingEvents(at: referenceDate, calendar: calendar) ?? []
-    }
-
-    static var placeholderSnapshot: SessionScheduleWidgetSnapshot {
-        let calendar = Calendar.current
-        let now = Date()
-        let start = calendar.date(byAdding: .day, value: -1, to: now)
-        let end = calendar.date(byAdding: .day, value: 14, to: now)
-        return SessionScheduleWidgetSnapshot(
-            groupName: String(localized: "Расписание"),
-            startDate: start,
-            endDate: end,
-            events: [
-                .init(
-                    id: "announcement-1",
-                    date: now,
-                    startTime: "14:00",
-                    endTime: "16:00",
-                    title: String(localized: "Объявление"),
-                    subtitle: String(localized: "Консультация, рецензирование"),
-                    location: nil,
-                    lessonType: String(localized: "Объявление"),
-                    kind: .announcement
-                ),
-                .init(
-                    id: "tppo-exam",
-                    date: calendar.date(byAdding: .day, value: 3, to: now),
-                    startTime: "08:30",
-                    endTime: "14:00",
-                    title: "ТППО",
-                    subtitle: "604-5 к",
-                    location: "604-5 к",
-                    lessonType: String(localized: "Экзамен"),
-                    kind: .exam
-                )
-            ],
-            updatedAt: now
-        )
-    }
-
-    static var classPreviewSnapshot: SessionScheduleWidgetSnapshot {
-        let calendar = Calendar.current
-        let now = Date()
-        let day = calendar.startOfDay(for: now)
-        let values = [
-            ClassPreviewValue(startTime: "10:05", endTime: "11:30", title: "АМД", location: "605-5 к.", lessonType: "ЛР"),
-            ClassPreviewValue(startTime: "12:00", endTime: "13:25", title: "ОМО", location: "224-5 к.", lessonType: "ЛР"),
-            ClassPreviewValue(startTime: "13:35", endTime: "15:00", title: "ФизК", location: "ПЗ", lessonType: "ПЗ"),
-            ClassPreviewValue(startTime: "15:30", endTime: "16:55", title: "САиИО", location: "414-5 к.", lessonType: "ЛК"),
-            ClassPreviewValue(startTime: "17:05", endTime: "18:30", title: "СУБД", location: "604-5 к.", lessonType: "ПЗ")
-        ]
-        let events = values.enumerated().map { index, value in
-            SessionScheduleWidgetSnapshot.Event(
-                id: "class-preview-\(index)",
-                date: day,
-                startTime: value.startTime,
-                endTime: value.endTime,
-                title: value.title,
-                subtitle: value.lessonType,
-                location: value.location,
-                lessonType: value.lessonType,
-                kind: .other
-            )
-        }
-        return SessionScheduleWidgetSnapshot(
-            groupName: String(localized: "Расписание"),
-            startDate: day,
-            endDate: day,
-            events: events,
-            updatedAt: now
-        )
-    }
-}
-
-struct SessionScheduleWidgetProvider: TimelineProvider {
-    func placeholder(in context: Context) -> SessionScheduleWidgetEntry {
-        SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.placeholderSnapshot)
-    }
-
-    func getSnapshot(in context: Context, completion: @escaping (SessionScheduleWidgetEntry) -> Void) {
-        if context.isPreview {
-            completion(placeholder(in: context))
-            return
-        }
-        completion(SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetDataStore.loadSnapshot()))
-    }
-
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
-        let snapshot = SessionScheduleWidgetDataStore.loadSnapshot()
-        let result = ScheduleWidgetTimelinePolicy.makeTimelineEntries(snapshot: snapshot) { date, snap in
-            SessionScheduleWidgetEntry(date: date, snapshot: snap)
-        }
-        completion(Timeline(entries: result.entries, policy: .after(result.nextRefresh)))
-    }
-}
-
-struct ClassScheduleWidgetProvider: TimelineProvider {
-    func placeholder(in context: Context) -> SessionScheduleWidgetEntry {
-        SessionScheduleWidgetEntry(date: .now, snapshot: SessionScheduleWidgetEntry.classPreviewSnapshot)
-    }
-
-    func getSnapshot(in context: Context, completion: @escaping (SessionScheduleWidgetEntry) -> Void) {
-        if context.isPreview {
-            completion(placeholder(in: context))
-            return
-        }
-        completion(
-            SessionScheduleWidgetEntry(
-                date: .now,
-                snapshot: ClassScheduleWidgetDataStore.loadSnapshot()
-            )
-        )
-    }
-
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SessionScheduleWidgetEntry>) -> Void) {
-        let snapshot = ClassScheduleWidgetDataStore.loadSnapshot()
-        let result = ScheduleWidgetTimelinePolicy.makeTimelineEntries(snapshot: snapshot) { date, snap in
-            SessionScheduleWidgetEntry(date: date, snapshot: snap)
-        }
-        completion(Timeline(entries: result.entries, policy: .after(result.nextRefresh)))
-    }
-}
-
-enum ScheduleWidgetStyle {
-    case classes
-    case session
-}
-
-// swiftlint:disable:next type_body_length
 struct SessionScheduleWidgetView: View {
     @Environment(\.widgetFamily) private var family
     @Environment(\.widgetContentMargins) private var widgetContentMargins
@@ -179,13 +26,7 @@ struct SessionScheduleWidgetView: View {
         case .systemSmall:
             return 1
         case .systemMedium:
-            if style == .classes {
-                let allEvents = entry.upcomingEvents
-                let firstDate = allEvents.first?.date
-                let spansDays = allEvents.prefix(3).contains { $0.date != firstDate }
-                return spansDays ? 2 : 3
-            }
-            return 2
+            return style == .classes ? 3 : 2
         case .systemLarge:
             return style == .classes ? 5 : 4
         default:
@@ -215,7 +56,7 @@ struct SessionScheduleWidgetView: View {
             } else if visibleEvents.isEmpty {
                 noUpcomingContent
             } else if style == .classes {
-                classContent
+                ClassScheduleWidgetView(entry: entry)
             } else {
                 content
             }
@@ -248,153 +89,6 @@ struct SessionScheduleWidgetView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-    }
-
-    private var classContent: some View {
-        Group {
-            if family == .systemSmall {
-                classSmallContent
-            } else {
-                VStack(spacing: 0) {
-                    header
-                        .layoutPriority(10)
-
-                    VStack(spacing: family == .systemLarge ? 5 : 4) {
-                        ForEach(groupedVisibleEvents) { day in
-                            if day.id != groupedVisibleEvents.first?.id {
-                                classDaySeparator(for: day.date)
-                            }
-
-                            ForEach(day.events, id: \.presentationIdentity) { event in
-                                classEventTile(for: event)
-                            }
-                        }
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, family == .systemLarge ? 12 : 10)
-                    .padding(.top, family == .systemLarge ? 4 : 3)
-                    .padding(.bottom, family == .systemLarge ? 6 : 4)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                }
-            }
-        }
-    }
-
-    private func classDaySeparator(for date: Date?) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Image(systemName: "calendar")
-                    .font(.system(size: family == .systemLarge ? 9 : 8, weight: .semibold))
-                Text(daySeparatorText(for: date))
-                    .font(.system(size: family == .systemLarge ? 11 : 10, weight: .bold, design: .monospaced))
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-            }
-            .foregroundStyle(secondaryTextColor)
-
-            Rectangle()
-                .fill(separatorColor)
-                .frame(height: 1)
-        }
-        .padding(.horizontal, 2)
-        .padding(.top, family == .systemLarge ? 10 : 4)
-        .padding(.bottom, family == .systemLarge ? 3 : 2)
-    }
-
-    private func daySeparatorText(for date: Date?) -> String {
-        guard let date else { return "" }
-        let formatter = DateFormatter()
-        formatter.locale = .autoupdatingCurrent
-        formatter.dateFormat = "dd.MM.yy"
-        let dateString = formatter.string(from: date)
-        formatter.dateFormat = "EE"
-        let weekdayString = formatter.string(from: date).lowercased().replacingOccurrences(of: ".", with: "")
-        return "\(dateString) (\(weekdayString))"
-    }
-
-    private var classSmallContent: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text(entry.groupName)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundStyle(primaryTextColor)
-                    .lineLimit(1)
-
-                Spacer(minLength: 2)
-
-                if let event = visibleEvents.first {
-                    if event.isActive(at: entry.date) {
-                        Text("СЕЙЧАС")
-                            .font(.system(size: 8, weight: .bold))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 2)
-                            .background(classAccentColor(for: event).opacity(0.35), in: Capsule())
-                            .foregroundStyle(classAccentColor(for: event))
-                    } else {
-                        Text(event.startTime)
-                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(secondaryTextColor)
-                    }
-                }
-            }
-            .padding(.bottom, 6)
-
-            if let event = visibleEvents.first {
-                let accent = classAccentColor(for: event)
-                let isActive = event.isActive(at: entry.date)
-
-                HStack(spacing: 8) {
-                    classProgressBar(for: event, accent: accent, isActive: isActive)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 4) {
-                            Text(event.title)
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundStyle(primaryTextColor)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
-
-                            if let subgroup = event.subgroup, subgroup > 0 {
-                                Text("[\(subgroup)]")
-                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(secondaryTextColor)
-                            }
-                        }
-
-                        Text("\(event.startTime)–\(event.endTime)")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundStyle(secondaryTextColor)
-
-                        Text(classLocationText(for: event))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(secondaryTextColor)
-                            .lineLimit(1)
-                    }
-                }
-
-                if let nextEvent = visibleEvents.dropFirst().first {
-                    Spacer(minLength: 2)
-                    HStack(spacing: 4) {
-                        Text("Далее:")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(tertiaryTextColor)
-                        Text("\(nextEvent.startTime) \(nextEvent.title)")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(primaryTextColor)
-                            .lineLimit(1)
-                    }
-                    .padding(.top, 2)
-                }
-            } else {
-                Spacer()
-                Text("Занятий нет")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(secondaryTextColor)
-                Spacer()
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
     private var accessoryInlineContent: some View {
@@ -474,147 +168,8 @@ struct SessionScheduleWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
     }
 
-    private func classEventTile(for event: SessionScheduleWidgetSnapshot.Event) -> some View {
-        let accent = classAccentColor(for: event)
-        let isActive = event.isActive(at: entry.date)
-
-        return HStack(spacing: family == .systemLarge ? 9 : 7) {
-            classTimeColumn(for: event)
-            classProgressBar(for: event, accent: accent, isActive: isActive)
-            classDetails(for: event, accent: accent)
-        }
-        .padding(.horizontal, family == .systemLarge ? 8 : 7)
-        .padding(.vertical, family == .systemLarge ? 5 : 3.5)
-        .background(
-            isActive
-                ? Color.white.opacity(0.14)
-                : Color.white.opacity(0.08),
-            in: RoundedRectangle(cornerRadius: family == .systemLarge ? 10 : 8, style: .continuous)
-        )
-    }
-
-    private func classTimeColumn(for event: SessionScheduleWidgetSnapshot.Event) -> some View {
-        VStack(spacing: 1) {
-            Text(event.startTime)
-                .fontWeight(.semibold)
-                .foregroundStyle(primaryTextColor)
-            Text(event.endTime)
-                .foregroundStyle(secondaryTextColor)
-        }
-        .font(.system(
-            size: family == .systemLarge ? 13 : 11.5,
-            weight: .regular,
-            design: .monospaced
-        ))
-        .lineLimit(1)
-        .minimumScaleFactor(0.8)
-        .frame(width: family == .systemLarge ? 50 : 44)
-    }
-
-    private func classProgressBar(
-        for event: SessionScheduleWidgetSnapshot.Event,
-        accent: Color,
-        isActive: Bool
-    ) -> some View {
-        GeometryReader { proxy in
-            Group {
-                if isActive, let interval = event.interval() {
-                    ProgressView(timerInterval: interval.start ... interval.end, countsDown: true)
-                        .labelsHidden()
-                        .tint(accent)
-                        .rotationEffect(.degrees(-90))
-                        .frame(width: proxy.size.height, height: 6)
-                        .position(x: 3, y: proxy.size.height / 2)
-                } else {
-                    Capsule()
-                        .fill(accent)
-                }
-            }
-            .mask {
-                if classBreak(for: event) != nil {
-                    VStack(spacing: 3) {
-                        Capsule()
-                        Capsule()
-                    }
-                } else {
-                    Capsule()
-                }
-            }
-        }
-        .frame(width: 6)
-        .widgetAccentable()
-        .accessibilityHidden(true)
-    }
-
-    private func classDetails(
-        for event: SessionScheduleWidgetSnapshot.Event,
-        accent: Color
-    ) -> some View {
-        let midPairBreak = classBreak(for: event)
-
-        return VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 4) {
-                Text(event.title)
-                    .font(.system(
-                        size: family == .systemLarge ? 16 : 14.5,
-                        weight: .bold,
-                        design: .rounded
-                    ))
-                    .foregroundStyle(primaryTextColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.66)
-                    .privacySensitive()
-
-                if let subgroup = event.subgroup, subgroup > 0 {
-                    Text("[\(subgroup)]")
-                        .font(.system(size: family == .systemLarge ? 9 : 8.5, weight: .bold, design: .monospaced))
-                        .foregroundStyle(secondaryTextColor)
-                }
-            }
-
-            HStack(spacing: 7) {
-                Text(classLocationText(for: event))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
-                    .privacySensitive()
-
-                if let midPairBreak, family == .systemLarge {
-                    Text(midPairBreak.compactText)
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundStyle(accent.opacity(0.9))
-                        .lineLimit(1)
-                        .widgetAccentable()
-                }
-            }
-            .font(.system(size: family == .systemLarge ? 11 : 10.5, weight: .medium))
-            .foregroundStyle(secondaryTextColor)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func classLocationText(for event: SessionScheduleWidgetSnapshot.Event) -> String {
-        SessionScheduleWidgetPresentation.normalizedLocation(event.location)
-            ?? nonEmpty(event.lessonType)
-            ?? String(localized: "Аудитория не указана")
-    }
-
-    private func classBreak(for event: SessionScheduleWidgetSnapshot.Event) -> ScheduleMidPairBreak? {
-        guard ScheduleDisplayPreferences.showsMidPairBreaks else { return nil }
-        return ScheduleMidPairBreakCalculator.resolve(
-            startTime: event.startTime,
-            endTime: event.endTime
-        )
-    }
-
     private func classAccentColor(for event: SessionScheduleWidgetSnapshot.Event) -> Color {
         ScheduleColorPreferences.color(for: event.lessonType ?? event.subtitle)
-    }
-
-    private func nonEmpty(_ value: String?) -> String? {
-        guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
-            return nil
-        }
-        return trimmed
     }
 
     private var widgetBackgroundColor: Color {
@@ -657,22 +212,15 @@ struct SessionScheduleWidgetView: View {
     }
 
     private var headerHeight: CGFloat {
-        if style == .classes {
-            return family == .systemLarge ? 38 : 34
-        }
-        return family == .systemLarge ? 42 : 40
+        family == .systemLarge ? 42 : 40
     }
 
     private var headerDateFont: Font {
-        .system(size: style == .classes ? (family == .systemLarge ? 15 : 14) : (family == .systemLarge ? 16 : 15),
-                weight: .bold,
-                design: .rounded)
+        .system(size: family == .systemLarge ? 16 : 15, weight: .bold, design: .rounded)
     }
 
     private var headerGroupFont: Font {
-        .system(size: style == .classes ? (family == .systemLarge ? 16 : 15) : (family == .systemLarge ? 17 : 16),
-                weight: .semibold,
-                design: .rounded)
+        .system(size: family == .systemLarge ? 17 : 16, weight: .semibold, design: .rounded)
     }
 
     @ViewBuilder
@@ -761,65 +309,63 @@ struct SessionScheduleWidgetView: View {
     }
 
     private func daySection(_ day: SessionWidgetDay) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if day.id != groupedVisibleEvents.first?.id {
-                Text(dateText(for: day.date))
-                    .font(.system(size: family == .systemLarge ? 13 : 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(primaryTextColor)
-                    .widgetAccentable()
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .allowsTightening(true)
+        VStack(alignment: .leading, spacing: 3) {
+            if groupedVisibleEvents.count > 1 || family == .systemLarge {
+                HStack(spacing: 5) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 9, weight: .semibold))
+                    Text(dateText(for: day.date))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .textCase(.uppercase)
+                    Spacer(minLength: 4)
+                }
+                .foregroundStyle(secondaryTextColor)
+                .widgetAccentable()
             }
 
             ForEach(day.events, id: \.presentationIdentity) { event in
-                SessionWidgetEventRow(event: event, compact: family != .systemLarge, now: entry.date)
+                SessionWidgetEventRow(
+                    event: event,
+                    compact: family != .systemLarge,
+                    now: entry.date
+                )
             }
         }
     }
 
     private var footer: some View {
-        HStack(spacing: 7) {
-            Text(dateText(for: hiddenEvents.first?.date))
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(tertiaryTextColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
-            Circle()
-                .fill(tertiaryTextColor)
-                .frame(width: 6, height: 6)
+        HStack(spacing: 5) {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 10, weight: .bold))
             Text(hiddenSummary)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundStyle(secondaryTextColor)
+                .font(.system(size: 11, weight: .medium, design: .rounded))
                 .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .allowsTightening(true)
         }
-        .padding(.top, 1)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(tertiaryTextColor)
+        .widgetAccentable()
+        .padding(.horizontal, 2)
     }
 
     private var emptyContent: some View {
         widgetMessageContent(
             icon: "calendar.badge.exclamationmark",
             title: String(localized: "Расписание не загружено"),
-            subtitle: String(localized: "Откройте расписание в приложении, чтобы загрузить данные.")
+            subtitle: String(localized: "Откройте MyIIS, чтобы обновить расписание")
         )
     }
 
     private var noUpcomingContent: some View {
         widgetMessageContent(
-            icon: "calendar.badge.clock",
-            title: String(localized: "Ближайших событий нет"),
-            subtitle: String(localized: "Последний кэш расписания сохранен для офлайн-доступа.")
+            icon: "sparkles",
+            title: String(localized: "Нет событий"),
+            subtitle: String(localized: "На ближайшие дни событий не найдено")
         )
     }
 
     private var messagePrimaryColor: Color {
         switch widgetRenderingMode {
         case .fullColor:
-            return style == .session ? .white : .primary
+            return .white
         default:
             return .primary
         }
@@ -828,36 +374,34 @@ struct SessionScheduleWidgetView: View {
     private var messageSecondaryColor: Color {
         switch widgetRenderingMode {
         case .fullColor:
-            return style == .session ? .white.opacity(0.68) : .secondary
+            return Color.white.opacity(0.70)
         default:
             return .secondary
         }
     }
 
     private func widgetMessageContent(icon: String, title: String, subtitle: String) -> some View {
-        VStack(spacing: 0) {
-            header
-                .layoutPriority(10)
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(messagePrimaryColor)
+                .widgetAccentable()
 
-            VStack(alignment: .leading, spacing: 10) {
-                Spacer(minLength: 0)
-                Image(systemName: icon)
-                    .font(.system(size: 28, weight: .semibold))
-                    .foregroundStyle(messageSecondaryColor)
-                Text(title)
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(messagePrimaryColor)
-                    .lineLimit(2)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(messageSecondaryColor)
-                    .lineLimit(2)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, contentHorizontalPadding)
-            .padding(.bottom, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(messagePrimaryColor)
+                .multilineTextAlignment(.center)
+                .widgetAccentable()
+
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(messageSecondaryColor)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 8)
+                .widgetAccentable()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(16)
     }
 
     private var groupedVisibleEvents: [SessionWidgetDay] {
@@ -885,15 +429,6 @@ struct SessionScheduleWidgetView: View {
 
     private var headerDateText: String {
         let date = visibleEvents.first?.date ?? Date()
-        if style == .classes {
-            let formatter = DateFormatter()
-            formatter.locale = .autoupdatingCurrent
-            formatter.dateFormat = "dd.MM"
-            let dateString = formatter.string(from: date)
-            formatter.dateFormat = "EE"
-            let weekdayString = formatter.string(from: date).capitalized.replacingOccurrences(of: ".", with: "")
-            return "\(dateString) (\(weekdayString))"
-        }
         return SessionScheduleWidgetDateFormatting.numericDateText(from: date)
     }
 
@@ -911,15 +446,6 @@ struct SessionScheduleWidgetView: View {
     private func dateText(for date: Date?) -> String {
         guard let date, date != Date.distantFuture else { return String(localized: "Дата") }
         return SessionScheduleWidgetDateFormatting.numericDateText(from: date)
-    }
-}
-
-private struct SessionWidgetDay: Identifiable {
-    let date: Date
-    let events: [SessionScheduleWidgetSnapshot.Event]
-
-    var id: String {
-        String(Int(date.timeIntervalSince1970))
     }
 }
 
@@ -1110,17 +636,4 @@ struct SessionScheduleWidget: Widget {
         date: SessionScheduleWidgetEntry.placeholderSnapshot.startDate ?? .now,
         snapshot: SessionScheduleWidgetEntry.placeholderSnapshot
     )
-}
-
-private extension View {
-    @ViewBuilder
-    func applySessionWidgetBackground(color: Color) -> some View {
-        if #available(iOSApplicationExtension 17.0, *) {
-            containerBackground(for: .widget) {
-                color
-            }
-        } else {
-            background(color)
-        }
-    }
 }

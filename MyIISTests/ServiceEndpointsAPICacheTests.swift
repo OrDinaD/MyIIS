@@ -121,7 +121,7 @@ final class ServiceEndpointsAPICacheTests: XCTestCase {
         defer { UserDefaults.standard.removeObject(forKey: cacheKey) }
 
         var fetchCount = 0
-        let vm = CachedEndpointViewModel<[String]>(
+        let viewModel = CachedEndpointViewModel<[String]>(
             initialValue: ["initial"],
             cacheKey: cacheKey
         ) {
@@ -129,23 +129,23 @@ final class ServiceEndpointsAPICacheTests: XCTestCase {
             return ["fetched_\(fetchCount)"]
         }
 
-        XCTAssertEqual(vm.value, ["initial"])
-        XCTAssertFalse(vm.hasContent)
+        XCTAssertEqual(viewModel.value, ["initial"])
+        XCTAssertFalse(viewModel.hasContent)
 
-        await vm.loadIfNeeded()
-        XCTAssertEqual(vm.value, ["fetched_1"])
-        XCTAssertTrue(vm.hasContent)
-        XCTAssertNil(vm.errorMessage)
-        XCTAssertFalse(vm.isShowingStaleDataWarning)
+        await viewModel.loadIfNeeded()
+        XCTAssertEqual(viewModel.value, ["fetched_1"])
+        XCTAssertTrue(viewModel.hasContent)
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertFalse(viewModel.isShowingStaleDataWarning)
 
         // Second loadIfNeeded shouldn't refetch
-        await vm.loadIfNeeded()
+        await viewModel.loadIfNeeded()
         XCTAssertEqual(fetchCount, 1)
 
         // Explicit reload should refetch
-        await vm.reload()
+        await viewModel.reload()
         XCTAssertEqual(fetchCount, 2)
-        XCTAssertEqual(vm.value, ["fetched_2"])
+        XCTAssertEqual(viewModel.value, ["fetched_2"])
 
         // New instance with same cacheKey should restore cached value immediately
         let restoredVM = CachedEndpointViewModel<[String]>(
@@ -163,7 +163,7 @@ final class ServiceEndpointsAPICacheTests: XCTestCase {
         defer { UserDefaults.standard.removeObject(forKey: cacheKey) }
 
         var shouldFail = false
-        let vm = CachedEndpointViewModel<[String]>(
+        let viewModel = CachedEndpointViewModel<[String]>(
             initialValue: [],
             cacheKey: cacheKey
         ) {
@@ -173,16 +173,16 @@ final class ServiceEndpointsAPICacheTests: XCTestCase {
             return ["valid_data"]
         }
 
-        await vm.loadIfNeeded()
-        XCTAssertEqual(vm.value, ["valid_data"])
-        XCTAssertFalse(vm.isShowingStaleDataWarning)
+        await viewModel.loadIfNeeded()
+        XCTAssertEqual(viewModel.value, ["valid_data"])
+        XCTAssertFalse(viewModel.isShowingStaleDataWarning)
 
         shouldFail = true
-        await vm.reload()
+        await viewModel.reload()
         // Should keep old data and show stale warning
-        XCTAssertEqual(vm.value, ["valid_data"])
-        XCTAssertTrue(vm.isShowingStaleDataWarning)
-        XCTAssertNotNil(vm.staleErrorMessage)
+        XCTAssertEqual(viewModel.value, ["valid_data"])
+        XCTAssertTrue(viewModel.isShowingStaleDataWarning)
+        XCTAssertNotNil(viewModel.staleErrorMessage)
     }
 
     private func makeAPI(now: Date) -> ServiceEndpointsAPI {

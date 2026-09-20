@@ -56,7 +56,7 @@ file_length:
   error: 1200
 
 type_body_length:
-  warning: 450
+  warning: 550
   error: 650
 
 included:

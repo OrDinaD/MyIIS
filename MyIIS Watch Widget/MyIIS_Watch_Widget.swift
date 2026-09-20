@@ -1,3 +1,5 @@
+// swiftlint:disable file_length
+import AppIntents
 import SwiftUI
 import WidgetKit
 #if canImport(RelevanceKit)
@@ -349,8 +351,6 @@ struct ScheduleWidgetProvider: TimelineProvider {
         let relevances = (snapshot?.events ?? []).compactMap { event -> WidgetRelevanceAttribute<Void>? in
             guard let interval = event.interval() else { return nil }
             guard interval.end > now else { return nil }
-            let leadStart = interval.start.addingTimeInterval(-20 * 60)
-            let contextInterval = DateInterval(start: leadStart, end: interval.end)
             return WidgetRelevanceAttribute(
                 context: .date(interval.start)
             )

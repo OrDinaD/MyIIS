@@ -76,6 +76,7 @@ struct ContentView: View {
 
     // MARK: - Active Hero Card (iPhone-styled with Accent Bar & Live Progress)
 
+    // swiftlint:disable:next function_body_length
     private func activeEventHeroCard(_ event: WatchScheduleEvent, now: Date) -> some View {
         let progress = event.progress(at: now)
         let interval = event.interval()

@@ -267,6 +267,7 @@ extension RatingViewModel {
         applyPortalGradeBookLessons(lessons)
     }
 
+    // swiftlint:disable:next function_body_length
     private func loadFromPortalGradeBook(group: String, targetRecordBookNumber: String?) async {
         do {
             async let scheduleTask = scheduleAPI.fetchGroupSchedule(groupNumber: group)

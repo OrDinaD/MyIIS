@@ -365,6 +365,12 @@
         }
       }
     },
+    "common_error" : {
+
+    },
+    "common_ok" : {
+
+    },
     "error_stale_data" : {
       "localizations" : {
         "be" : {
@@ -1682,6 +1688,7 @@
       }
     },
     "Ближайших событий нет" : {
+      "extractionState" : "stale",
       "localizations" : {
         "be" : {
           "stringUnit" : {
@@ -2095,6 +2102,9 @@
         }
       }
     },
+    "На ближайшие дни событий не найдено" : {
+
+    },
     "Навигация" : {
       "localizations" : {
         "be" : {
@@ -2349,6 +2359,9 @@
         }
       }
     },
+    "Нет событий" : {
+
+    },
     "Обновить" : {
       "localizations" : {
         "be" : {
@@ -2490,7 +2503,11 @@
         }
       }
     },
+    "Откройте MyIIS, чтобы обновить расписание" : {
+
+    },
     "Откройте расписание в приложении, чтобы загрузить данные." : {
+      "extractionState" : "stale",
       "localizations" : {
         "be" : {
           "stringUnit" : {
@@ -2857,6 +2874,7 @@
       }
     },
     "Последний кэш расписания сохранен для офлайн-доступа." : {
+      "extractionState" : "stale",
       "localizations" : {
         "be" : {
           "stringUnit" : {
