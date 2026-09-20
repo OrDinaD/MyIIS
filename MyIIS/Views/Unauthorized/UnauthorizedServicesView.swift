@@ -13,7 +13,7 @@ struct UnauthorizedServicesView: View {
                         HStack(spacing: 16) {
                             Image(systemName: "person.crop.circle.fill.badge.plus")
                                 .resizable()
-                                .aspectRatio(contentMode: .fit)
+                                .scaledToFit()
                                 .frame(width: 40, height: 40)
                                 .foregroundStyle(.blue)
 

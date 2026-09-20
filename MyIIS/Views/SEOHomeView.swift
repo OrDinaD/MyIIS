@@ -166,7 +166,7 @@ struct SEOHomeView: View {
                                 ) { image in
                                     image
                                         .resizable()
-                                        .aspectRatio(contentMode: .fill)
+                                        .scaledToFill()
                                 } placeholder: {
                                     Color.accentColor.opacity(0.2)
                                         .overlay(Image(systemName: "book.fill").foregroundStyle(Color.accentColor))

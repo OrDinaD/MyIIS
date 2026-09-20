@@ -173,7 +173,7 @@ private extension ProfileView {
             interactiveAvatarThumbnail {
                 image
                     .resizable()
-                    .aspectRatio(contentMode: .fill)
+                    .scaledToFill()
             }
         } placeholder: {
             interactiveAvatarThumbnail {
@@ -473,7 +473,7 @@ private extension ProfileView {
                 fullScreenAvatarContent {
                     image
                         .resizable()
-                        .aspectRatio(contentMode: .fit)
+                        .scaledToFit()
                 }
             } placeholder: {
                 fullScreenAvatarContent {

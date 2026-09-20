@@ -94,7 +94,7 @@ struct GradebookShareImageView: View {
         HStack(alignment: .top, spacing: 26) {
             Image("GradebookShareAppIcon")
                 .resizable()
-                .aspectRatio(contentMode: .fit)
+                .scaledToFit()
                 .frame(width: 118, height: 118)
                 .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
                 .shadow(color: .black.opacity(0.20), radius: 18, x: 0, y: 10)

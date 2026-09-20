@@ -223,7 +223,7 @@ private extension OthersTabView {
         CachedAsyncImage(url: user?.photoURL, maxPixelSize: 120) { image in
             image
                 .resizable()
-                .aspectRatio(contentMode: .fill)
+                .scaledToFill()
                 .frame(width: 44, height: 44)
                 .clipShape(Circle())
         } placeholder: {
