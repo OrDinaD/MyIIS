@@ -1,3 +1,4 @@
+import os
 @testable import MyIIS
 import SwiftUI
 import XCTest
@@ -217,20 +218,14 @@ final class DormitorySupportViewsTests: XCTestCase {
 }
 
 private final class DormitoryServiceMock: DormitoryServicing, @unchecked Sendable {
-    private let lock = NSLock()
-    private var _fetchApplicationsCallCount = 0
-    private var _fetchPrivilegeRecordsCallCount = 0
+    private let counts = OSAllocatedUnfairLock(initialState: (applications: 0, privilegeRecords: 0))
 
     var fetchApplicationsCallCount: Int {
-        lock.lock()
-        defer { lock.unlock() }
-        return _fetchApplicationsCallCount
+        counts.withLock { $0.applications }
     }
 
     var fetchPrivilegeRecordsCallCount: Int {
-        lock.lock()
-        defer { lock.unlock() }
-        return _fetchPrivilegeRecordsCallCount
+        counts.withLock { $0.privilegeRecords }
     }
 
     private let applications: [DormitoryQueueApplication]
@@ -251,9 +246,7 @@ private final class DormitoryServiceMock: DormitoryServicing, @unchecked Sendabl
     }
 
     func fetchApplications() async throws -> [DormitoryQueueApplication] {
-        lock.lock()
-        _fetchApplicationsCallCount += 1
-        lock.unlock()
+        counts.withLock { $0.applications += 1 }
         if delayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: delayNanoseconds)
         }
@@ -264,9 +257,7 @@ private final class DormitoryServiceMock: DormitoryServicing, @unchecked Sendabl
     }
 
     func fetchPrivilegeRecords() async throws -> [DormitoryPrivilegeRecord] {
-        lock.lock()
-        _fetchPrivilegeRecordsCallCount += 1
-        lock.unlock()
+        counts.withLock { $0.privilegeRecords += 1 }
         return privilegeRecords
     }
 
