@@ -2438,18 +2438,15 @@ private extension StudyWeekday {
     }
 }
 
-extension Optional where Wrapped == String {
-    var nilIfBlank: String? {
-        guard let value = self?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
-            return nil
-        }
-        return value
-    }
-}
-
 extension String {
     var nilIfBlank: String? {
         let value = trimmingCharacters(in: .whitespacesAndNewlines)
         return value.isEmpty ? nil : value
+    }
+}
+
+extension Optional where Wrapped == String {
+    var nilIfBlank: String? {
+        self?.nilIfBlank
     }
 }

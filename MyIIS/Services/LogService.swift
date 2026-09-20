@@ -1,7 +1,6 @@
-import Combine
 import Foundation
 
-final class LogService: ObservableObject, @unchecked Sendable {
+final class LogService: @unchecked Sendable {
 
     struct NetworkErrorRecord: Sendable, Codable {
         let endpoint: String
@@ -10,8 +9,8 @@ final class LogService: ObservableObject, @unchecked Sendable {
         let timestamp: Date
     }
 
-    @Published private(set) var messages: [String] = []
-    @Published private(set) var lastNetworkError: NetworkErrorRecord?
+    private(set) var messages: [String] = []
+    private(set) var lastNetworkError: NetworkErrorRecord?
 
     private let maxCapacity = 200
 

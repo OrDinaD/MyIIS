@@ -46,12 +46,6 @@ extension Color {
               dark: Color(red: 0.7, green: 0.3, blue: 0.9))
     }
 
-    /// Более мягкий фиолетовый для вторичных элементов
-    static var accentPurpleSoft: Color {
-        Color(light: Color.purple.opacity(0.7),
-              dark: Color.purple.opacity(0.6))
-    }
-
     // MARK: - Helper for Light/Dark Colors
 
     init(light: Color, dark: Color) {
@@ -75,14 +69,6 @@ extension Color {
         ]
     }
 
-    /// Адаптивный градиент для кнопок
-    static var buttonGradient: [Color] {
-        [
-            Color.accentPurple,
-            Color.accentPurple.opacity(0.8)
-        ]
-    }
-
     /// Адаптивный градиент для иконок
     nonisolated static func iconGradient(baseColor: Color) -> [Color] {
         [
@@ -98,32 +84,15 @@ extension Color {
         Color(light: .green, dark: Color(red: 0.2, green: 0.8, blue: 0.4))
     }
 
-    /// Адаптивный оранжевый для предупреждений
-    static var statusWarning: Color {
-        Color(light: .orange, dark: Color(red: 1.0, green: 0.7, blue: 0.2))
-    }
-
     /// Адаптивный красный для ошибок
     static var statusError: Color {
         Color(light: .red, dark: Color(red: 1.0, green: 0.3, blue: 0.3))
-    }
-
-    /// Адаптивный желтый для рейтинга
-    static var ratingYellow: Color {
-        Color(light: .yellow, dark: Color(red: 1.0, green: 0.8, blue: 0.0))
     }
 }
 
 // MARK: - Shadow Modifier Extension
 
 extension View {
-    /// Применяет адаптивную тень для Liquid Glass эффекта
-    func liquidGlassShadow(color: Color = .accentPurple, radius: CGFloat = 20) -> some View {
-        self
-            .shadow(color: color.opacity(0.15), radius: radius * 0.6, x: 0, y: radius * 0.5)
-            .shadow(color: color.opacity(0.08), radius: radius * 0.75, x: 0, y: radius * 0.75)
-    }
-
     /// Применяет адаптивную тень для карточек
     func cardShadow() -> some View {
         self

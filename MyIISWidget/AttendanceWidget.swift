@@ -42,10 +42,7 @@ struct AttendanceWidgetProvider: TimelineProvider {
     }
 
     private static var placeholderMonth: String {
-        let formatter = DateFormatter()
-        formatter.locale = .autoupdatingCurrent
-        formatter.setLocalizedDateFormatFromTemplate("LLLL")
-        return formatter.string(from: Date()).capitalized
+        Date.now.formatted(.dateTime.month(.wide)).capitalized
     }
 }
 
@@ -63,14 +60,7 @@ struct AttendanceWidgetView: View {
         entry.hours >= 5 ? numberColor : .secondary
     }
 
-    private var titleFont: Font {
-        switch family {
-        case .systemSmall:
-            return .caption
-        default:
-            return .caption
-        }
-    }
+    private let titleFont: Font = .caption
 
     private var monthFont: Font {
         switch family {

@@ -72,22 +72,32 @@ extension String {
     }
 
     nonisolated func decodingHTMLEntities() -> String {
-        var decoded = self
-        let replacements: [(String, String)] = [
-            ("&quot;", "\""),
-            ("&amp;", "&"),
-            ("&lt;", "<"),
-            ("&gt;", ">"),
-            ("&apos;", "'"),
-            ("&#039;", "'"),
-            ("&nbsp;", " ")
-        ]
-
-        for (entity, value) in replacements where decoded.contains(entity) {
-            decoded = decoded.replacingOccurrences(of: entity, with: value)
+        guard contains("&") else { return self }
+        var result = ""
+        result.reserveCapacity(count)
+        var index = startIndex
+        while index < endIndex {
+            if self[index] == "&" {
+                let searchEnd = self.index(index, offsetBy: 10, limitedBy: endIndex) ?? endIndex
+                if let semicolon = self[index..<searchEnd].firstIndex(of: ";") {
+                    let entity = self[index...semicolon]
+                    switch entity {
+                    case "&quot;": result.append("\"")
+                    case "&amp;": result.append("&")
+                    case "&lt;": result.append("<")
+                    case "&gt;": result.append(">")
+                    case "&apos;", "&#039;", "&#39;": result.append("'")
+                    case "&nbsp;": result.append(" ")
+                    default: result.append(contentsOf: entity)
+                    }
+                    index = self.index(after: semicolon)
+                    continue
+                }
+            }
+            result.append(self[index])
+            index = self.index(after: index)
         }
-
-        return decoded
+        return result
     }
 }
 

@@ -62,14 +62,6 @@ struct MessageShareItem: Identifiable {
         symbolName = "checkmark.seal.fill"
         accent = Color(red: 0.72, green: 0.41, blue: 0.09)
     }
-
-    static func summaryItems(from snapshot: MessageGradebookSnapshot) -> [MessageShareItem] {
-        var items = [MessageShareItem(overall: snapshot)]
-        if let latestSemester = snapshot.latestSemester {
-            items.append(MessageShareItem(semester: latestSemester))
-        }
-        return items
-    }
 }
 struct MessageGradebookSnapshot: Codable, Equatable {
     let number: String
