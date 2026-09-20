@@ -216,9 +216,22 @@ final class DormitorySupportViewsTests: XCTestCase {
     }
 }
 
-private final class DormitoryServiceMock: DormitoryServicing {
-    private(set) var fetchApplicationsCallCount = 0
-    private(set) var fetchPrivilegeRecordsCallCount = 0
+private final class DormitoryServiceMock: DormitoryServicing, @unchecked Sendable {
+    private let lock = NSLock()
+    private var _fetchApplicationsCallCount = 0
+    private var _fetchPrivilegeRecordsCallCount = 0
+
+    var fetchApplicationsCallCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return _fetchApplicationsCallCount
+    }
+
+    var fetchPrivilegeRecordsCallCount: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return _fetchPrivilegeRecordsCallCount
+    }
 
     private let applications: [DormitoryQueueApplication]
     private let privilegeRecords: [DormitoryPrivilegeRecord]
@@ -238,7 +251,9 @@ private final class DormitoryServiceMock: DormitoryServicing {
     }
 
     func fetchApplications() async throws -> [DormitoryQueueApplication] {
-        fetchApplicationsCallCount += 1
+        lock.lock()
+        _fetchApplicationsCallCount += 1
+        lock.unlock()
         if delayNanoseconds > 0 {
             try await Task.sleep(nanoseconds: delayNanoseconds)
         }
@@ -249,7 +264,9 @@ private final class DormitoryServiceMock: DormitoryServicing {
     }
 
     func fetchPrivilegeRecords() async throws -> [DormitoryPrivilegeRecord] {
-        fetchPrivilegeRecordsCallCount += 1
+        lock.lock()
+        _fetchPrivilegeRecordsCallCount += 1
+        lock.unlock()
         return privilegeRecords
     }
 
