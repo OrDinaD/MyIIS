@@ -32,7 +32,7 @@ env:
 jobs:
   static-analysis:
     name: Lint & Code Style
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 10
     steps:
       - name: Checkout repository
@@ -63,7 +63,7 @@ jobs:
 
   unit-tests:
     name: Build & Run Unit Tests
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 25
     steps:
       - name: Checkout repository
@@ -94,8 +94,7 @@ jobs:
             -resultBundlePath "$RUNNER_TEMP/TestResults.xcresult" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            SWIFT_VERSION=5.0
+            CODE_SIGN_IDENTITY=""
 
       - name: Upload Test Results
         if: always()
