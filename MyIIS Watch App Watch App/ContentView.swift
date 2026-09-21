@@ -4,8 +4,8 @@ struct ContentView: View {
     @ObservedObject var receiver: WatchScheduleReceiver
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 30)) { context in
-            NavigationStack {
+        NavigationStack {
+            TimelineView(.periodic(from: .now, by: 30)) { context in
                 Group {
                     if let snapshot = receiver.snapshot {
                         scheduleFeed(snapshot, now: context.date)
@@ -49,10 +49,10 @@ struct ContentView: View {
 
             // Timeline Feed grouped by days
             ForEach(daySections) { section in
-                Section(header: Text(section.title).font(.footnote.weight(.semibold))) {
-                    ForEach(section.events) { event in
-                        // If it's the active event, skip here since it's displayed in the Hero Card
-                        if active?.id != event.id {
+                let nonActiveEvents = section.events.filter { active?.id != $0.id }
+                if !nonActiveEvents.isEmpty {
+                    Section(header: Text(section.title).font(.footnote.weight(.semibold))) {
+                        ForEach(nonActiveEvents) { event in
                             lessonRowCard(event, now: now)
                                 .listRowInsets(EdgeInsets(top: 2, leading: 2, bottom: 2, trailing: 2))
                         }
@@ -78,21 +78,14 @@ struct ContentView: View {
 
     // swiftlint:disable:next function_body_length
     private func activeEventHeroCard(_ event: WatchScheduleEvent, now: Date) -> some View {
-        let progress = event.progress(at: now)
         let interval = event.interval()
 
         return HStack(alignment: .top, spacing: 8) {
-            // Vertical Accent Bar with Live Progress Fill
-            GeometryReader { geo in
-                ZStack(alignment: .top) {
-                    Capsule()
-                        .fill(event.accentColor.opacity(0.25))
-                    Capsule()
-                        .fill(event.accentColor)
-                        .frame(height: max(geo.size.height * CGFloat(progress), 6))
-                }
-            }
-            .frame(width: 4)
+            // Vertical Accent Bar
+            Capsule()
+                .fill(event.accentColor)
+                .frame(width: 4)
+                .padding(.vertical, 2)
 
             // Content Body
             VStack(alignment: .leading, spacing: 4) {
@@ -249,26 +242,11 @@ struct ContentView: View {
         )
     }
 
-    // MARK: - Teacher Avatar View (AsyncImage with Fallback Initials)
+    // MARK: - Teacher Avatar View (Initials Badge for watchOS stability)
 
     @ViewBuilder
     private func teacherAvatarView(for event: WatchScheduleEvent, size: CGFloat) -> some View {
-        if let url = event.teacherPhotoURL {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: size, height: size)
-                        .clipShape(Circle())
-                default:
-                    avatarPlaceholder(for: event, size: size)
-                }
-            }
-        } else if !event.teacherInitials.isEmpty {
-            avatarPlaceholder(for: event, size: size)
-        }
+        avatarPlaceholder(for: event, size: size)
     }
 
     private func avatarPlaceholder(for event: WatchScheduleEvent, size: CGFloat) -> some View {
