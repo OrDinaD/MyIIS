@@ -27,86 +27,6 @@ enum ServiceEndpointCache {
     }
 }
 
-@MainActor
-@Observable
-final class CachedEndpointViewModel<Value: Codable> {
-    var value: Value
-    var isLoading = false
-    var errorMessage: String?
-    private(set) var isShowingStaleDataWarning = false
-    private(set) var lastUpdateTime: Date?
-    private(set) var staleErrorMessage: String?
-
-    private let cacheKey: String
-    private let fetcher: @MainActor () async throws -> Value
-    private var hasLoadedOnce = false
-
-    init(
-        initialValue: Value,
-        cacheKey: String,
-        fetcher: @escaping @MainActor () async throws -> Value
-    ) {
-        self.value = initialValue
-        self.cacheKey = cacheKey
-        self.fetcher = fetcher
-        _ = restoreSnapshot(markStale: false, message: nil)
-    }
-
-    var hasContent: Bool {
-        lastUpdateTime != nil
-    }
-
-    func loadIfNeeded() async {
-        guard !hasLoadedOnce else { return }
-        await reload()
-    }
-
-    func reload() async {
-        if isLoading { return }
-        if lastUpdateTime == nil {
-            _ = restoreSnapshot(markStale: false, message: nil)
-        }
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            let fetched = try await fetcher()
-            apply(value: fetched, updatedAt: ServiceEndpointCache.save(fetched, for: cacheKey))
-            hasLoadedOnce = true
-            isShowingStaleDataWarning = false
-            staleErrorMessage = nil
-            errorMessage = nil
-        } catch is CancellationError {
-            return
-        } catch {
-            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-            if restoreSnapshot(markStale: true, message: message) {
-                errorMessage = nil
-            } else {
-                errorMessage = message
-            }
-        }
-    }
-
-    private func restoreSnapshot(markStale: Bool, message: String?) -> Bool {
-        guard let cached = ServiceEndpointCache.restore(for: cacheKey, as: Value.self) else {
-            return false
-        }
-        apply(value: cached.value, updatedAt: cached.updatedAt)
-        if markStale {
-            hasLoadedOnce = true
-        }
-        isShowingStaleDataWarning = markStale
-        staleErrorMessage = markStale ? message : nil
-        return true
-    }
-
-    private func apply(value: Value, updatedAt: Date) {
-        self.value = value
-        self.lastUpdateTime = updatedAt
-    }
-}
-
 // MARK: - Library
 
 @MainActor
@@ -327,19 +247,82 @@ private final class LibraryServiceViewModel {
 // MARK: - Announcements
 
 @MainActor
-struct AnnouncementsServiceView: View {
-    @State private var viewModel: CachedEndpointViewModel<[ServiceJSONObject]>
+@Observable
+final class AnnouncementsServiceViewModel {
+    var value: [ServiceJSONObject] = []
+    var isLoading = false
+    var errorMessage: String?
+    private(set) var isShowingStaleDataWarning = false
+    private(set) var lastUpdateTime: Date?
+    private(set) var staleErrorMessage: String?
+
+    private static let cacheKey = "AnnouncementsServiceViewModel.snapshot"
+    private var hasLoadedOnce = false
 
     init() {
-        _viewModel = State(initialValue: CachedEndpointViewModel(
-            initialValue: [],
-            cacheKey: "AnnouncementsServiceViewModel.snapshot"
-        ) {
+        _ = restoreSnapshot(markStale: false, message: nil)
+    }
+
+    var hasContent: Bool {
+        lastUpdateTime != nil
+    }
+
+    func loadIfNeeded() async {
+        guard !hasLoadedOnce else { return }
+        await reload()
+    }
+
+    func reload() async {
+        if isLoading { return }
+        if lastUpdateTime == nil {
+            _ = restoreSnapshot(markStale: false, message: nil)
+        }
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
             let groupNumber = AuthenticationService.shared.currentUser?.education.group.nilIfBlank
                 ?? MyIISDataStore.loadData()?.userGroup?.nilIfBlank
-            return try await ServiceEndpointsAPI().fetchAnnouncements(groupNumber: groupNumber)
-        })
+            let fetched = try await ServiceEndpointsAPI().fetchAnnouncements(groupNumber: groupNumber)
+            apply(value: fetched, updatedAt: ServiceEndpointCache.save(fetched, for: Self.cacheKey))
+            hasLoadedOnce = true
+            isShowingStaleDataWarning = false
+            staleErrorMessage = nil
+            errorMessage = nil
+        } catch is CancellationError {
+            return
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if restoreSnapshot(markStale: true, message: message) {
+                errorMessage = nil
+            } else {
+                errorMessage = message
+            }
+        }
     }
+
+    private func restoreSnapshot(markStale: Bool, message: String?) -> Bool {
+        guard let cached = ServiceEndpointCache.restore(for: Self.cacheKey, as: [ServiceJSONObject].self) else {
+            return false
+        }
+        apply(value: cached.value, updatedAt: cached.updatedAt)
+        if markStale {
+            hasLoadedOnce = true
+        }
+        isShowingStaleDataWarning = markStale
+        staleErrorMessage = markStale ? message : nil
+        return true
+    }
+
+    private func apply(value: [ServiceJSONObject], updatedAt: Date) {
+        self.value = value
+        self.lastUpdateTime = updatedAt
+    }
+}
+
+@MainActor
+struct AnnouncementsServiceView: View {
+    @State private var viewModel = AnnouncementsServiceViewModel()
 
     var body: some View {
         ScrollView {
@@ -387,17 +370,80 @@ struct AnnouncementsServiceView: View {
 // MARK: - Penalties
 
 @MainActor
-struct PenaltiesServiceView: View {
-    @State private var viewModel: CachedEndpointViewModel<[ServiceJSONObject]>
+@Observable
+final class PenaltiesServiceViewModel {
+    var value: [ServiceJSONObject] = []
+    var isLoading = false
+    var errorMessage: String?
+    private(set) var isShowingStaleDataWarning = false
+    private(set) var lastUpdateTime: Date?
+    private(set) var staleErrorMessage: String?
+
+    private static let cacheKey = "PenaltiesServiceViewModel.snapshot"
+    private var hasLoadedOnce = false
 
     init() {
-        _viewModel = State(initialValue: CachedEndpointViewModel(
-            initialValue: [],
-            cacheKey: "PenaltiesServiceViewModel.snapshot"
-        ) {
-            try await ServiceEndpointsAPI().fetchPenalties()
-        })
+        _ = restoreSnapshot(markStale: false, message: nil)
     }
+
+    var hasContent: Bool {
+        lastUpdateTime != nil
+    }
+
+    func loadIfNeeded() async {
+        guard !hasLoadedOnce else { return }
+        await reload()
+    }
+
+    func reload() async {
+        if isLoading { return }
+        if lastUpdateTime == nil {
+            _ = restoreSnapshot(markStale: false, message: nil)
+        }
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let fetched = try await ServiceEndpointsAPI().fetchPenalties()
+            apply(value: fetched, updatedAt: ServiceEndpointCache.save(fetched, for: Self.cacheKey))
+            hasLoadedOnce = true
+            isShowingStaleDataWarning = false
+            staleErrorMessage = nil
+            errorMessage = nil
+        } catch is CancellationError {
+            return
+        } catch {
+            let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            if restoreSnapshot(markStale: true, message: message) {
+                errorMessage = nil
+            } else {
+                errorMessage = message
+            }
+        }
+    }
+
+    private func restoreSnapshot(markStale: Bool, message: String?) -> Bool {
+        guard let cached = ServiceEndpointCache.restore(for: Self.cacheKey, as: [ServiceJSONObject].self) else {
+            return false
+        }
+        apply(value: cached.value, updatedAt: cached.updatedAt)
+        if markStale {
+            hasLoadedOnce = true
+        }
+        isShowingStaleDataWarning = markStale
+        staleErrorMessage = markStale ? message : nil
+        return true
+    }
+
+    private func apply(value: [ServiceJSONObject], updatedAt: Date) {
+        self.value = value
+        self.lastUpdateTime = updatedAt
+    }
+}
+
+@MainActor
+struct PenaltiesServiceView: View {
+    @State private var viewModel = PenaltiesServiceViewModel()
 
     var body: some View {
         ScrollView {
