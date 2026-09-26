@@ -45,17 +45,60 @@ final class MyIISUITests: XCTestCase {
     }
 
     @MainActor
+    func testPinnedGroupCanBeRenamedFromToolbar() throws {
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-ui_testing", "-has_completed_first_launch", "YES",
+            "-services.schedule.pinnedGroups", "(420601)",
+            "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
+        ]
+        app.launch()
+        let picker = app.buttons["schedulePinnedPicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 20))
+        picker.tap()
+        XCTAssertTrue(app.staticTexts["Pinned groups"].waitForExistence(timeout: 5))
+        let group = app.buttons["pinnedGroup_420601"]
+        XCTAssertTrue(group.waitForExistence(timeout: 5))
+        group.press(forDuration: 1)
+        let rename = app.buttons["Rename"]
+        XCTAssertTrue(rename.waitForExistence(timeout: 5))
+        rename.tap()
+        let field = app.alerts.textFields.firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5))
+        if let value = field.value as? String, !value.isEmpty, value != field.placeholderValue {
+            field.tap()
+            field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: value.count))
+        }
+        field.typeText("Ilya-3")
+        app.alerts.buttons["Save"].tap()
+        XCTAssertTrue(group.waitForExistence(timeout: 5))
+        XCTAssertTrue(group.label.contains("420601 (Ilya-3)"))
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "Pinned group renamed"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        group.press(forDuration: 1)
+        app.buttons["Rename"].tap()
+        let remove = app.alerts.buttons["Remove name"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 5))
+        remove.tap()
+    }
+
+    @MainActor
     func testGenerateAppStoreScreenshots() throws {
         let app = makeScreenshotApp()
         app.launch()
 
         loginWithDemoAccount(app)
 
-        selectTab(app, title: "Профиль")
+        XCTAssertFalse(app.tabBars.buttons["Профиль"].exists)
+        selectTab(app, title: "Сервисы")
+        openService(app, identifier: "serviceLink_profile")
         capture(app, name: "01_Profile")
 
         revealProfileContacts(app)
         capture(app, name: "02_ProfileContacts")
+        goBackToServices(app)
 
         selectTab(app, title: "Пропуски")
         capture(app, name: "03_Attendance")
@@ -95,9 +138,10 @@ final class MyIISUITests: XCTestCase {
             "-ui_testing",
             "-has_completed_first_launch", "YES",
             "-enable_beta_sections", "NO",
-            "-show_tab_profile", "YES",
+            "-show_tab_profile", "NO",
             "-show_tab_attendance", "YES",
             "-show_tab_rating", "YES",
+            "-rating_view_open_count", "0",
             "-AppleLanguages", "(ru-RU)",
             "-AppleLocale", "ru_RU"
         ]
@@ -108,8 +152,8 @@ final class MyIISUITests: XCTestCase {
     @MainActor
     private func loginWithDemoAccount(_ app: XCUIApplication) {
         XCTContext.runActivity(named: "Login with demo account") { _ in
-            let profileTab = app.tabBars.buttons["Профиль"]
-            if profileTab.waitForExistence(timeout: 10) {
+            let authenticatedTab = app.tabBars.buttons["Пропуски"]
+            if authenticatedTab.waitForExistence(timeout: 10) {
                 return
             }
 
@@ -134,7 +178,7 @@ final class MyIISUITests: XCTestCase {
             loginButton.tap()
 
             XCTAssertTrue(
-                profileTab.waitForExistence(timeout: 20),
+                authenticatedTab.waitForExistence(timeout: 20),
                 "Authenticated tabs did not appear after demo login"
             )
             dismissSystemAlertsIfNeeded()

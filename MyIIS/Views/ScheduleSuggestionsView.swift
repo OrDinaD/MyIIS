@@ -3,12 +3,14 @@ import SwiftUI
 struct ScheduleSuggestionsView: View {
     let groups: [StudyGroup]
     let pinnedGroupNames: [String]
+    let pinnedGroupAliases: [String: String]
     let recentGroupNames: [String]
     let accountGroupName: String?
     var isSearching: Bool = false
     let showsAllGroups: Bool
     let onSelect: (StudyGroup) -> Void
     let onTogglePin: (StudyGroup) -> Void
+    let onRenamePinnedGroup: (StudyGroup) -> Void
     let onShowAllGroups: () -> Void
 
     var body: some View {
@@ -91,7 +93,12 @@ struct ScheduleSuggestionsView: View {
     // Selection, pinning, context-menu, and accessibility belong to one atomic row.
     // swiftlint:disable:next function_body_length
     private func groupRowButton(_ group: StudyGroup, isPinned: Bool) -> some View {
-        HStack(spacing: 2) {
+        let alias = isPinned ? pinnedGroupAliases[group.name]?.nilIfBlank : nil
+        let details = group.detailsText
+        let subtitle = alias == nil
+            ? details
+            : [group.name, details.nilIfBlank].compactMap { $0 }.joined(separator: " · ")
+        return HStack(spacing: 2) {
             Button {
                 onSelect(group)
             } label: {
@@ -103,9 +110,10 @@ struct ScheduleSuggestionsView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
-                            Text(group.name)
+                            Text(alias ?? group.name)
                                 .font(.headline.weight(.semibold))
                                 .foregroundStyle(.primary)
+                                .lineLimit(1)
                                 .monospacedDigit()
 
                             if group.name == accountGroupName {
@@ -115,10 +123,11 @@ struct ScheduleSuggestionsView: View {
                             }
                         }
 
-                        Text(group.detailsText)
+                        Text(subtitle)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                            .monospacedDigit()
                     }
 
                     Spacer(minLength: 0)
@@ -150,6 +159,10 @@ struct ScheduleSuggestionsView: View {
         .padding(.vertical, 7)
         .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .contextMenu {
+            if isPinned {
+                RenameButton()
+            }
+
             Button {
                 onTogglePin(group)
             } label: {
@@ -160,6 +173,10 @@ struct ScheduleSuggestionsView: View {
                     systemImage: isPinned ? "pin.slash" : "pin"
                 )
             }
+        }
+        .renameAction {
+            guard isPinned else { return }
+            onRenamePinnedGroup(group)
         }
     }
 }

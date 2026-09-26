@@ -142,7 +142,7 @@ final class AcademicChangeNotificationService: NSObject {
         let personalProfile = try await ensureAuthenticatedIfPossible()
 
         async let markbookResponse = apiService.getMarkbook()
-        async let ratingLessonsResponse = apiService.getPortalGradeBookLessons()
+        async let ratingLessonsResponse = apiService.getPersonalRating().lessons
         async let dormitoryApplicationsResponse = fetchDormitoryApplicationsForMonitoring()
         async let penaltiesResponse = fetchPenaltiesForMonitoring()
         async let certificatesResponse = fetchCertificatesForMonitoring()

@@ -8,9 +8,14 @@ protocol PortalNotificationsServicing: AnyObject {
 
 final class PortalNotificationsService: PortalNotificationsServicing {
     private let apiService: APIService
+    private let userID: () -> Int?
 
-    init(apiService: APIService = APIService()) {
+    init(
+        apiService: APIService = APIService(),
+        userID: @escaping () -> Int? = { AuthenticationService.shared.currentUser?.id }
+    ) {
         self.apiService = apiService
+        self.userID = userID
     }
 
     func fetchUnreadCount() async throws -> Int {
@@ -27,7 +32,7 @@ final class PortalNotificationsService: PortalNotificationsServicing {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         apiService.logRequestDetails(request)
-        return try await apiService.execute(request)
+        return try await loadPreservingOfflineResponse(request)
     }
 
     func fetchNotifications(page: Int, pageSize: Int) async throws -> PortalNotificationsPage {
@@ -52,7 +57,33 @@ final class PortalNotificationsService: PortalNotificationsServicing {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         apiService.logRequestDetails(request)
-        return try await apiService.execute(request)
+        return try await loadPreservingOfflineResponse(request)
+    }
+
+    private func loadPreservingOfflineResponse<T: Codable>(_ request: URLRequest) async throws -> T {
+        let prefix = userID().map { "portal_notifications.\($0)." }
+        do {
+            let response: T = try await apiService.execute(request)
+            if let prefix, let data = try? JSONEncoder().encode(response) {
+                OfflineResponseCache.persist(
+                    data: data, for: request, prefix: prefix, userDefaults: .standard
+                )
+            }
+            OfflineDataStatus.shared.refreshed(request.url)
+            return response
+        } catch {
+            // Offline reading must not turn authorization failures into success.
+            guard let apiError = error as? APIError, case .networkError = apiError,
+                  let prefix,
+                  let data = OfflineResponseCache.loadData(
+                    for: request, prefix: prefix, userDefaults: .standard
+                  ),
+                  let cached = try? JSONDecoder().decode(T.self, from: data) else {
+                throw error
+            }
+            OfflineDataStatus.shared.usedCache(for: request.url)
+            return cached
+        }
     }
 
     func markViewed(ids: [Int]) async throws {

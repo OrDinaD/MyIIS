@@ -101,7 +101,7 @@ extension RatingView {
 
     @ViewBuilder
     var checkpointsRatingSection: some View {
-        Section(NSLocalizedString("rating_section_missed", comment: "")) {
+        Section {
             HStack {
                 Text(NSLocalizedString("rating_total_semester", comment: ""))
                 Spacer()
@@ -140,6 +140,10 @@ extension RatingView {
                     }
                 }
             }
+        } header: {
+            Text("rating_journal_omissions")
+        } footer: {
+            Text("rating_journal_omissions_notice")
         }
     }
 

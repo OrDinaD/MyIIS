@@ -1,25 +1,6 @@
 import Foundation
 
 extension APIService {
-    func getRatingByQueryItems(_ queryItems: [URLQueryItem]) async throws -> [StudentRating] {
-        var urlComponents = URLComponents(
-            url: baseURL.appendingPathComponent("rating"),
-            resolvingAgainstBaseURL: false
-        )
-        urlComponents?.queryItems = queryItems
-
-        guard let url = urlComponents?.url else {
-            throw APIError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        logRequestDetails(request)
-
-        let remoteRatings: [RemoteStudentRating] = try await performRequest(request)
-        return remoteRatings.map { $0.toStudentRating() }
-    }
-
     /// Заявки на пропуски по ОРВИ (ОРН)
     func getOmissionApplications() async throws -> [OmissionApplication] {
         if APIService.isDemoMode { return DemoMockData.omissionApplications }
@@ -40,6 +21,7 @@ extension APIService {
 
     /// Неуважительные пропуски за весь период обучения.
     func getDisrespectfulOmissions() async throws -> [DisrespectfulOmission] {
+        if APIService.isDemoMode { return [] }
         let request = URLRequest(url: baseURL.appendingPathComponent("disrespectful-omissions-by-student"))
         logRequestDetails(request)
         return try await performRequest(request)

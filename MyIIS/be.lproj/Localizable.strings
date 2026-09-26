@@ -453,6 +453,10 @@
 "schedule_other_subgroup_title" = "Іншая падгрупа";
 "schedule_pin" = "Замацаваць";
 "schedule_pinned_header" = "Замацаваныя";
+"schedule_group_alias_title" = "Назва групы";
+"schedule_group_alias_placeholder" = "Напрыклад, група Іллі";
+"schedule_group_alias_group_format" = "Група %@";
+"schedule_group_alias_remove" = "Выдаліць назву";
 "schedule_recents_header" = "Нядаўнія";
 "schedule_settings_display_header" = "Адлюстраванне";
 "schedule_settings_reset_all" = "Скінуць усе налады раскладу";
@@ -860,3 +864,13 @@
 "api_error_offline" = "Няма падключэння да інтэрнэту. Праверце сетку.";
 "api_error_timeout" = "Час чакання адказу сервера скончыўся. Паспрабуйце зноў.";
 "api_error_network_generic" = "Сеткавая памылка. Праверце падключэнне да інтэрнэту.";
+
+"schedule_pinned_groups" = "Замацаваныя групы";
+
+"schedule_pinned_teachers" = "Замацаваныя выкладчыкі";
+
+"rating_unexcused_current_month" = "Без уважлівай прычыны · гэты месяц";
+
+"offline_saved_data_warning" = "Даныя могуць быць неактуальнымі. Захаваныя даныя даступныя без інтэрнэту.";
+"rating_journal_omissions" = "Пропускі ў журнале";
+"rating_journal_omissions_notice" = "Запісы журнала могуць уключаць уважлівыя прычыны. Неўважлівыя пропускі паказаны ва ўкладцы «Пропускі».";

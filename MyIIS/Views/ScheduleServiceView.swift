@@ -31,7 +31,10 @@ struct ScheduleServiceView: View {
     @State private var selectedDateForJump = Date()
     @State private var dateJumpTarget: Date?
     @State private var showsAllGroups = false
+    @State private var renamingPinnedGroupName: String?
+    @State private var pinnedGroupAliasDraft = ""
     @State private var hasAutoScrolled = false
+    @State private var isPinnedPickerPresented = false
 
     private var cardDensity: ScheduleCardDensity {
         ScheduleCardDensity(rawValue: cardDensityRaw) ?? .compact
@@ -98,39 +101,6 @@ struct ScheduleServiceView: View {
             .hiddenNavigationBarBackground()
             .toolbar {
                 toolbarContent
-            }
-            .toolbarTitleMenu {
-                if let accountGroup = viewModel.accountGroupName, !accountGroup.isEmpty {
-                    Button {
-                        Task { await viewModel.openGroupSchedule(accountGroup) }
-                    } label: {
-                        Label(accountGroup, systemImage: "person.crop.circle")
-                    }
-                }
-
-                if !viewModel.pinnedGroupNames.isEmpty {
-                    Section(NSLocalizedString("schedule_pinned_groups", value: "Закрепленные группы", comment: "")) {
-                        ForEach(viewModel.pinnedGroupNames, id: \.self) { group in
-                            Button {
-                                Task { await viewModel.openGroupSchedule(group) }
-                            } label: {
-                                Label(group, systemImage: "pin.fill")
-                            }
-                        }
-                    }
-                }
-
-                if !viewModel.pinnedTeachers.isEmpty {
-                    Section(NSLocalizedString("schedule_pinned_teachers", value: "Закрепленные преподаватели", comment: "")) {
-                        ForEach(viewModel.pinnedTeachers) { teacher in
-                            Button {
-                                Task { await viewModel.openPinnedTeacher(teacher) }
-                            } label: {
-                                Label(teacher.name, systemImage: "person.fill")
-                            }
-                        }
-                    }
-                }
             }
             .overlay {
                 if viewModel.isDownloadingReport {
@@ -499,6 +469,24 @@ struct ScheduleServiceView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Button {
+                isPinnedPickerPresented = true
+            } label: {
+                HStack(spacing: 4) {
+                    Text(viewModel.scheduleHeaderTitle).lineLimit(1)
+                    Image(systemName: "chevron.down").font(.caption2)
+                }
+                .font(.headline)
+            }
+            .accessibilityIdentifier("schedulePinnedPicker")
+            .popover(isPresented: $isPinnedPickerPresented) {
+                PinnedSchedulePicker(viewModel: viewModel) {
+                    isPinnedPickerPresented = false
+                }
+                .presentationCompactAdaptation(.popover)
+            }
+        }
         ToolbarItem(placement: .topBarLeading) {
             if viewModel.schedule != nil, !isCurrentScheduleUserAccountGroup {
                 pinButton
@@ -629,6 +617,22 @@ struct ScheduleServiceView: View {
 
     // MARK: - Search Sheet
 
+    private var isGroupAliasEditorPresented: Binding<Bool> {
+        Binding(
+            get: { renamingPinnedGroupName != nil },
+            set: { isPresented in
+                if !isPresented {
+                    renamingPinnedGroupName = nil
+                }
+            }
+        )
+    }
+
+    private func beginRenamingPinnedGroup(_ groupName: String) {
+        pinnedGroupAliasDraft = viewModel.pinnedGroupAlias(for: groupName) ?? ""
+        renamingPinnedGroupName = groupName
+    }
+
     private var searchSheetContent: some View {
         NavigationStack {
             ScrollView {
@@ -652,6 +656,41 @@ struct ScheduleServiceView: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .alert(
+            NSLocalizedString("schedule_group_alias_title", value: "Название группы", comment: ""),
+            isPresented: isGroupAliasEditorPresented
+        ) {
+            TextField(
+                NSLocalizedString("schedule_group_alias_placeholder", value: "Например, Илюха-3", comment: ""),
+                text: $pinnedGroupAliasDraft
+            )
+            Button(NSLocalizedString("common_cancel", comment: ""), role: .cancel) {
+                renamingPinnedGroupName = nil
+            }
+            if let group = renamingPinnedGroupName, viewModel.pinnedGroupAlias(for: group) != nil {
+                Button(
+                    NSLocalizedString("schedule_group_alias_remove", value: "Удалить название", comment: ""),
+                    role: .destructive
+                ) {
+                    viewModel.setPinnedGroupAlias(nil, for: group)
+                    renamingPinnedGroupName = nil
+                }
+            }
+            Button(NSLocalizedString("common_save", comment: "")) {
+                guard let group = renamingPinnedGroupName else { return }
+                viewModel.setPinnedGroupAlias(pinnedGroupAliasDraft, for: group)
+                renamingPinnedGroupName = nil
+            }
+        } message: {
+            if let group = renamingPinnedGroupName {
+                Text(
+                    String(
+                        format: NSLocalizedString("schedule_group_alias_group_format", value: "Группа %@", comment: ""),
+                        group
+                    )
+                )
+            }
+        }
     }
 
     private var searchControls: some View {
@@ -669,6 +708,7 @@ struct ScheduleServiceView: View {
                 ScheduleSuggestionsView(
                     groups: viewModel.filteredGroups,
                     pinnedGroupNames: viewModel.pinnedGroupNames,
+                    pinnedGroupAliases: viewModel.pinnedGroupAliases,
                     recentGroupNames: viewModel.recentGroupNames,
                     accountGroupName: viewModel.accountGroupName,
                     isSearching: !viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
@@ -679,6 +719,9 @@ struct ScheduleServiceView: View {
                     },
                     onTogglePin: { group in
                         viewModel.togglePinnedGroup(group)
+                    },
+                    onRenamePinnedGroup: { group in
+                        beginRenamingPinnedGroup(group.name)
                     },
                     onShowAllGroups: {
                         showsAllGroups = true

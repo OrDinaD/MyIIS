@@ -1,6 +1,6 @@
 import Foundation
 
-enum PortalNotificationKind: String, Decodable, Sendable {
+enum PortalNotificationKind: String, Codable, Sendable {
     case info = "INFO"
     case success = "SUCCESS"
     case failure = "FAILURE"
@@ -12,7 +12,7 @@ enum PortalNotificationKind: String, Decodable, Sendable {
     }
 }
 
-struct PortalNotification: Decodable, Identifiable, Equatable, Sendable {
+struct PortalNotification: Codable, Identifiable, Equatable, Sendable {
     let id: Int
     let message: String
     var isViewed: Bool
@@ -20,7 +20,7 @@ struct PortalNotification: Decodable, Identifiable, Equatable, Sendable {
     let type: PortalNotificationKind
 }
 
-struct PortalNotificationsPage: Decodable, Equatable, Sendable {
+struct PortalNotificationsPage: Codable, Equatable, Sendable {
     let notifications: [PortalNotification]
     let totalElements: Int
     let hasNext: Bool

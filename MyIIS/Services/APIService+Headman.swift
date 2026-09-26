@@ -136,50 +136,6 @@ extension APIService {
         try await performEmptyRequest(request)
     }
 
-    /// Получение рейтинга студентов по номеру группы
-    /// - Parameter group: Номер учебной группы
-    /// - Returns: Список студентов с показателями рейтинга
-    func getRating(group: String) async throws -> [StudentRating] {
-        let trimmedGroup = group.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedGroup.isEmpty else {
-            throw APIError.serverError(statusCode: 400, message: "Не указан номер группы")
-        }
-
-        guard let scheduleInfo = try await getScheduleInfo(group: trimmedGroup),
-              let specialityId = scheduleInfo.specialityDepartmentEducationFormId else {
-            throw APIError.serverError(
-                statusCode: 400,
-                message: "Не удалось определить данные специальности для группы \(trimmedGroup)"
-            )
-        }
-
-        return try await getRatingDirect(specialityId: specialityId, course: scheduleInfo.course)
-    }
-
-    /// Оптимизированное получение рейтинга напрямую с параметрами
-    /// Используется когда specialityId и course уже известны (например, из кэша User)
-    /// - Parameters:
-    ///   - specialityId: ID формы обучения специальности
-    ///   - course: Номер курса
-    /// - Returns: Список студентов с показателями рейтинга
-    func getRatingDirect(specialityId: Int, course: Int) async throws -> [StudentRating] {
-        if APIService.isDemoMode { return DemoMockData.rating }
-
-        do {
-            return try await getRatingByQueryItems([
-                URLQueryItem(name: "specialityId", value: "\(specialityId)"),
-                URLQueryItem(name: "year", value: "\(course)")
-            ])
-        } catch {
-            LogService.shared.log("⚠️ rating(specialityId/year) failed, fallback to sdef/course")
-        }
-
-        return try await getRatingByQueryItems([
-            URLQueryItem(name: "sdef", value: "\(specialityId)"),
-            URLQueryItem(name: "course", value: "\(course)")
-        ])
-    }
-
     private static let headmanDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)

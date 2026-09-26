@@ -95,6 +95,27 @@ final class AuthenticationServiceTests: XCTestCase {
         XCTAssertNil(authService.errorMessage)
     }
 
+    func testRecoveryKeepsCachedSessionWhenNetworkDisappears() async throws {
+        let store = CredentialStore.shared
+        let previousCredentials = try store.retrieve()
+        defer {
+            if let previousCredentials {
+                try? store.save(previousCredentials)
+            } else {
+                try? store.clear()
+            }
+        }
+        try store.save(StoredCredentials(username: "offline-regression", password: "test-only"))
+        let authService = makeAuthenticationService(allowSessionRestore: true) { _ in
+            throw URLError(.notConnectedToInternet)
+        }
+        authService.currentUser = .mock
+        let recovered = await authService.recoverExpiredSession()
+        XCTAssertFalse(recovered)
+        XCTAssertEqual(authService.currentUser, .mock)
+        XCTAssertTrue(authService.isSessionReady)
+    }
+
     func testSilentLoginClearsCachedSessionWhenCredentialsAreRejected() async {
         let authService = makeAuthenticationService { request in
             (
@@ -163,13 +184,14 @@ final class AuthenticationServiceTests: XCTestCase {
     }
 
     private func makeAuthenticationService(
+        allowSessionRestore: Bool = false,
         handler: @escaping (URLRequest) throws -> (HTTPURLResponse, Data)
     ) -> AuthenticationService {
         AuthenticationMockURLProtocol.requestHandler = handler
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [AuthenticationMockURLProtocol.self]
         let apiService = APIService(session: URLSession(configuration: configuration))
-        return AuthenticationService(apiService: apiService, allowSessionRestore: false)
+        return AuthenticationService(apiService: apiService, allowSessionRestore: allowSessionRestore)
     }
 }
 

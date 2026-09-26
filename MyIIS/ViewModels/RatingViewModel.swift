@@ -11,7 +11,6 @@ final class RatingViewModel {
     private(set) var isLoadingSubjects: Bool = false
     private(set) var isGradebookUnavailable: Bool = false
     private(set) var isRatingPendingForNewSemester: Bool = false
-    private(set) var isUsingScheduleFallback: Bool = false
     private(set) var isShowingStaleDataWarning: Bool = false
     private(set) var lastUpdateTime: Date?
     private(set) var students: [StudentRating] = []
@@ -23,7 +22,7 @@ final class RatingViewModel {
     private(set) var gradebookAverage: Double?
     private(set) var deadlineItems: [DisciplineDeadlineItem] = []
     private(set) var checkpointSummaries: [CheckpointSummaryItem] = []
-    private(set) var percentageMarks: [PortalPercentageMark] = []
+    private(set) var percentageMarks: [RatingPercentageMark] = []
 
     private let apiService: APIService
     private let scheduleAPI: ServiceEndpointsAPI
@@ -48,10 +47,10 @@ final class RatingViewModel {
         let updatedAt: Date
         var deadlineItems: [DisciplineDeadlineItem]? = []
         var checkpointSummaries: [CheckpointSummaryItem]? = []
-        var percentageMarks: [PortalPercentageMark]? = []
+        var percentageMarks: [RatingPercentageMark]? = []
     }
 
-    private static let ratingCachePrefix = "RatingViewModel.snapshot."
+    private static let ratingCachePrefix = "RatingViewModel.snapshot.personal-rating.v1."
 
     init(
         apiService: APIService? = nil,
@@ -98,7 +97,6 @@ final class RatingViewModel {
                 )
             ]
             isGradebookUnavailable = false
-            isUsingScheduleFallback = false
             isLoadingSubjects = false
         }
     }
@@ -146,14 +144,7 @@ extension RatingViewModel {
             return
         }
 
-        if !force {
-            _ = applyCachedSnapshotIfAvailable(group: group, studentId: studentId)
-        }
-
         await loadByGroup(group, targetRecordBookNumber: studentId, force: force)
-
-        currentStudentId = studentId
-        saveCurrentStateToCache(group: group, studentId: studentId)
     }
 
     private func loadByGroup(_ group: String?, targetRecordBookNumber: String?, force: Bool) async {
@@ -168,11 +159,12 @@ extension RatingViewModel {
         let resolvedStudentId = normalizeRecordBookNumber(targetRecordBookNumber)
         let cacheStudentId = resolvedStudentId.isEmpty ? "_portal" : resolvedStudentId
 
-        if !force,
-           currentGroup == group,
-           currentStudentId == cacheStudentId,
-           !students.isEmpty || !disciplines.isEmpty {
-            return
+        if currentGroup != group || currentStudentId != cacheStudentId {
+            clearGradebookData()
+            lastUpdateTime = nil
+        }
+        if !force {
+            _ = applyCachedSnapshotIfAvailable(group: group, studentId: cacheStudentId)
         }
 
         isLoading = true
@@ -181,10 +173,9 @@ extension RatingViewModel {
         isUnauthorized = false
         isGradebookUnavailable = false
         isRatingPendingForNewSemester = false
-        isUsingScheduleFallback = false
         isShowingStaleDataWarning = false
 
-        await loadFromPortalGradeBook(group: group, targetRecordBookNumber: targetRecordBookNumber)
+        await loadPersonalRating(group: group, targetRecordBookNumber: targetRecordBookNumber)
 
         guard !Task.isCancelled else {
             isLoadingSubjects = false
@@ -197,7 +188,7 @@ extension RatingViewModel {
         currentGroup = group
         currentStudentId = cacheStudentId
 
-        if let staleMessage = errorMessage,
+        if !isUnauthorized, let staleMessage = errorMessage,
            applyCachedSnapshotIfAvailable(group: group, studentId: cacheStudentId) {
             errorMessage = staleMessage
             isShowingStaleDataWarning = !isUnauthorized
@@ -214,7 +205,10 @@ extension RatingViewModel {
     private func applyCachedSnapshotIfAvailable(group: String, studentId: String) -> Bool {
         let key = cacheKey(group: group, studentId: studentId)
         guard let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults),
-              let cached = try? JSONDecoder().decode(RatingCacheSnapshot.self, from: payload) else {
+              let cached = try? JSONDecoder().decode(RatingCacheSnapshot.self, from: payload),
+              cached.currentGroup == group, cached.currentStudentId == studentId,
+              !cached.isGradebookUnavailable,
+              !cached.disciplines.contains(where: { $0.code.hasPrefix("schedule_") }) else {
             return false
         }
 
@@ -230,7 +224,6 @@ extension RatingViewModel {
         percentageMarks = cached.percentageMarks ?? []
         isGradebookUnavailable = cached.isGradebookUnavailable
         isRatingPendingForNewSemester = false
-        isUsingScheduleFallback = false
         resolvedRecordBookNumber = cached.resolvedRecordBookNumber
         currentGroup = cached.currentGroup
         currentStudentId = cached.currentStudentId
@@ -240,7 +233,11 @@ extension RatingViewModel {
     }
 
     private func saveCurrentStateToCache(group: String, studentId: String) {
-        guard !students.isEmpty || !disciplines.isEmpty else { return }
+        guard !Task.isCancelled, errorMessage == nil, !isUnauthorized else { return }
+        guard !students.isEmpty || !disciplines.isEmpty else {
+            UserDefaultsPayloadStore.clear(forKey: cacheKey(group: group, studentId: studentId), from: userDefaults)
+            return
+        }
         let snapshot = RatingCacheSnapshot(
             students: students,
             checkpointNumbers: checkpointNumbers,
@@ -261,66 +258,50 @@ extension RatingViewModel {
         _ = UserDefaultsPayloadStore.save(payload, forKey: cacheKey(group: group, studentId: studentId), in: userDefaults)
     }
 
-    private func applyLecturers(from schedule: PublicScheduleResponse?, lessons: [PortalGradeBookLesson]) async {
+    private func applyLecturers(from schedule: PublicScheduleResponse?, lessons: [RatingLesson]) async {
         guard !Task.isCancelled else { return }
         lecturerSurnames = LecturerSurnames.group(schedule?.orderedDays.flatMap(\.lessons) ?? [])
-        applyPortalGradeBookLessons(lessons)
+        applyRatingLessons(lessons)
     }
 
     // swiftlint:disable:next function_body_length
-    private func loadFromPortalGradeBook(group: String, targetRecordBookNumber: String?) async {
+    private func loadPersonalRating(group: String, targetRecordBookNumber: String?) async {
         do {
             async let scheduleTask = scheduleAPI.fetchGroupSchedule(groupNumber: group)
             lecturerSurnames = [:]
-            let student = try await apiService.getPortalGradeBookStudent()
-            let lessons = student?.lessons ?? []
-            percentageMarks = student?.percentageMarks ?? []
+            let student = try await apiService.getPersonalRating()
+            let lessons = student.lessons
+            percentageMarks = student.percentageMarks
 
-            if let student, !lessons.isEmpty {
+            if !lessons.isEmpty {
                 isRatingPendingForNewSemester = false
                 isGradebookUnavailable = false
-                isUsingScheduleFallback = false
-                applyPortalGradeBookLessons(lessons)
+                applyRatingLessons(lessons)
                 let schedule = try? await scheduleTask
                 await applyLecturers(from: schedule, lessons: lessons)
                 guard !Task.isCancelled else { return }
                 buildPersonalRating(from: lessons, targetRecordBookNumber: targetRecordBookNumber)
                 let (deadlines, summaries) = await Task.detached(priority: .userInitiated) {
-                    (Self.buildDeadlineItems(from: lessons), Self.buildCheckpointSummaries(from: lessons))
+                    (Self.buildDeadlineItems(from: student), Self.buildCheckpointSummaries(from: lessons))
                 }.value
                 guard !Task.isCancelled else { return }
                 self.deadlineItems = deadlines
                 self.checkpointSummaries = summaries
                 errorMessage = nil
-                logService.log("✅ Rating loaded from grade-book. Lessons: \(lessons.count), disciplines: \(disciplines.count), deadlines: \(deadlineItems.count)")
+                logService.log("✅ Rating loaded from personal-rating. Lessons: \(lessons.count), disciplines: \(disciplines.count), deadlines: \(deadlineItems.count)")
                 return
             }
 
-            let schedule = try? await scheduleTask
-            if let scheduleDays = schedule?.orderedDays, !scheduleDays.isEmpty {
-                let fallbackLessons = scheduleDays.flatMap(\.lessons)
-                if !fallbackLessons.isEmpty {
-                    clearGradebookData()
-                    applyScheduleFallback(from: scheduleDays)
-                    isGradebookUnavailable = false
-                    isRatingPendingForNewSemester = false
-                    isUsingScheduleFallback = true
-                    errorMessage = nil
-                    logService.log("ℹ️ Applied schedule fallback for rating: \(disciplines.count) disciplines.")
-                    return
-                }
-            }
-
             clearGradebookData()
+            percentageMarks = student.percentageMarks
             isGradebookUnavailable = false
-            isRatingPendingForNewSemester = true
-            isUsingScheduleFallback = false
+            isRatingPendingForNewSemester = false
             errorMessage = nil
-            logService.log("ℹ️ grade-book empty and schedule fallback unavailable; rating is pending for the new semester.")
+            logService.log("ℹ️ personal-rating returned no lessons.")
         } catch is CancellationError {
             return
         } catch let error as APIError {
-            logService.log("❌ grade-book API error: \(error.localizedDescription)")
+            logService.log("❌ personal-rating API error: \(error.localizedDescription)")
             clearGradebookData()
 
             switch error {
@@ -328,83 +309,29 @@ extension RatingViewModel {
                 isUnauthorized = true
                 isGradebookUnavailable = false
                 isRatingPendingForNewSemester = false
-                isUsingScheduleFallback = false
                 errorMessage = error.localizedDescription
             case .serverError(let statusCode, _) where statusCode == 401 || statusCode == 403:
                 isUnauthorized = true
                 isGradebookUnavailable = false
                 isRatingPendingForNewSemester = false
-                isUsingScheduleFallback = false
-                errorMessage = error.localizedDescription
-            case .serverError(let statusCode, _) where statusCode == 404:
-                if let schedule = try? await scheduleAPI.fetchGroupSchedule(groupNumber: group),
-                   !schedule.orderedDays.isEmpty {
-                    let fallbackLessons = schedule.orderedDays.flatMap(\.lessons)
-                    if !fallbackLessons.isEmpty {
-                        applyScheduleFallback(from: schedule.orderedDays)
-                        isGradebookUnavailable = false
-                        isRatingPendingForNewSemester = false
-                        isUsingScheduleFallback = true
-                        errorMessage = nil
-                        return
-                    }
-                }
-                isGradebookUnavailable = true
-                isRatingPendingForNewSemester = false
-                isUsingScheduleFallback = false
                 errorMessage = error.localizedDescription
             default:
                 isGradebookUnavailable = true
                 isRatingPendingForNewSemester = false
-                isUsingScheduleFallback = false
                 errorMessage = error.localizedDescription
             }
         } catch {
-            logService.log("❌ Unexpected grade-book error: \(error.localizedDescription)")
+            logService.log("❌ Unexpected personal-rating error: \(error.localizedDescription)")
             clearGradebookData()
             isGradebookUnavailable = true
             isRatingPendingForNewSemester = false
-            isUsingScheduleFallback = false
             errorMessage = error.localizedDescription
         }
     }
 
-    private func applyScheduleFallback(from scheduleDays: [StudyDaySchedule]) {
-        let scheduleLessons = scheduleDays.flatMap(\.lessons)
-        let grouped = Dictionary(grouping: scheduleLessons) { $0.subject }
-        let surnames = LecturerSurnames.group(scheduleLessons)
-
-        disciplines = grouped.map { subject, subjectLessons in
-            let lessonTypes = Set(subjectLessons.map(\.lessonTypeAbbrev))
-                .filter { !$0.isEmpty }
-                .sorted()
-            let teacher = surnames[LecturerSurnames.key(subject)]
-                ?? subjectLessons.flatMap(\.employees).compactMap(\.lastName).first
-
-            return GradebookDiscipline(
-                code: "schedule_\(subject)",
-                name: subject,
-                controlForm: lessonTypes.isEmpty ? "Занятия" : lessonTypes.joined(separator: " · "),
-                teacher: teacher,
-                hours: nil,
-                attempts: [],
-                lessonOmissions: nil
-            )
-        }
-        .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-
-        subjectOmissions = [:]
-        students = []
-        userCheckpoints = []
-        checkpointNumbers = []
-        deadlineItems = []
-        checkpointSummaries = []
-        summary = nil
-        gradebookAverage = nil
-        isUsingScheduleFallback = true
-    }
-
     private func clearGradebookData() {
+        percentageMarks = []
+        resolvedRecordBookNumber = nil
         disciplines = []
         subjectOmissions = [:]
         students = []
@@ -416,7 +343,7 @@ extension RatingViewModel {
         gradebookAverage = nil
     }
 
-    private func applyPortalGradeBookLessons(_ lessons: [PortalGradeBookLesson]) {
+    private func applyRatingLessons(_ lessons: [RatingLesson]) {
         let grouped = Dictionary(grouping: lessons) { $0.lessonNameAbbrev }
         var omissions: [String: Int] = [:]
 
@@ -428,12 +355,11 @@ extension RatingViewModel {
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
 
         subjectOmissions = omissions
-        isUsingScheduleFallback = false
     }
 
     private func makeDiscipline(
         for subject: String,
-        lessons: [PortalGradeBookLesson]
+        lessons: [RatingLesson]
     ) -> (discipline: GradebookDiscipline, omissionHours: Int) {
         let lessonTypes = Set(lessons.map(\.lessonTypeAbbrev))
             .filter { !$0.isEmpty }
@@ -456,7 +382,7 @@ extension RatingViewModel {
     }
 
     private func makeGradebookPayload(
-        from lessons: [PortalGradeBookLesson]
+        from lessons: [RatingLesson]
     ) -> (attempts: [GradeAttempt], omissions: [GradeOmission]) {
         var attempts: [GradeAttempt] = []
         var omissions: [GradeOmission] = []
@@ -469,7 +395,7 @@ extension RatingViewModel {
         return (attempts, omissions)
     }
 
-    private func appendMarks(from lesson: PortalGradeBookLesson, to attempts: inout [GradeAttempt]) {
+    private func appendMarks(from lesson: RatingLesson, to attempts: inout [GradeAttempt]) {
         for detail in lesson.markDetails {
             let taskSuffix = detail.taskNumber.map { " (№ \($0))" } ?? ""
             let typeTitle = "\(lesson.lessonTypeAbbrev)\(taskSuffix)"
@@ -485,7 +411,7 @@ extension RatingViewModel {
         }
     }
 
-    private func appendOmission(from lesson: PortalGradeBookLesson, to omissions: inout [GradeOmission]) {
+    private func appendOmission(from lesson: RatingLesson, to omissions: inout [GradeOmission]) {
         guard !lesson.isRespectfulOmission, lesson.gradeBookOmissions > 0 else { return }
         omissions.append(
             GradeOmission(
@@ -496,10 +422,10 @@ extension RatingViewModel {
         )
     }
 
-    private func buildPersonalRating(from lessons: [PortalGradeBookLesson], targetRecordBookNumber: String?) {
+    private func buildPersonalRating(from lessons: [RatingLesson], targetRecordBookNumber: String?) {
         let checkpoints = makePortalCheckpoints(from: lessons)
         let resolvedId = normalizeRecordBookNumber(targetRecordBookNumber)
-        let recordBookNumber = resolvedId.isEmpty ? "portal-grade-book" : resolvedId
+        let recordBookNumber = resolvedId.isEmpty ? "portal-personal-rating" : resolvedId
         let personalRating = StudentRating(
             recordBookNumber: recordBookNumber,
             studentName: nil,
@@ -517,7 +443,7 @@ extension RatingViewModel {
         resolvedRecordBookNumber = personalRating.recordBookNumber
     }
 
-    private func makePortalCheckpoints(from lessons: [PortalGradeBookLesson]) -> [RatingCheckpoint] {
+    private func makePortalCheckpoints(from lessons: [RatingLesson]) -> [RatingCheckpoint] {
         let groups = Dictionary(grouping: lessons.compactMap(Self.portalCheckpointPair)) { $0.0 }
         return sortedCheckpointKeys(in: groups).enumerated().map { index, key in
             let scopedLessons = groups[key]?.map { $0.1 } ?? []
@@ -531,7 +457,7 @@ extension RatingViewModel {
     }
 
     private func sortedCheckpointKeys(
-        in groups: [String: [(String, PortalGradeBookLesson)]]
+        in groups: [String: [(String, RatingLesson)]]
     ) -> [String] {
         var minDateByKey: [String: Date] = [:]
         for (key, list) in groups {
@@ -542,20 +468,20 @@ extension RatingViewModel {
         }
     }
 
-    private static func portalLessonSort(_ lhs: PortalGradeBookLesson, _ rhs: PortalGradeBookLesson) -> Bool {
+    private static func portalLessonSort(_ lhs: RatingLesson, _ rhs: RatingLesson) -> Bool {
         if lhs.controlPoint != rhs.controlPoint {
             return lhs.controlPoint < rhs.controlPoint
         }
         return lhs.dateString < rhs.dateString
     }
 
-    private static func portalCheckpointPair(_ lesson: PortalGradeBookLesson) -> (String, PortalGradeBookLesson)? {
+    private static func portalCheckpointPair(_ lesson: RatingLesson) -> (String, RatingLesson)? {
         let controlPoint = lesson.controlPoint.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !controlPoint.isEmpty else { return nil }
         return (controlPoint, lesson)
     }
 
-    private static func unexcusedOmissionHours(in lessons: [PortalGradeBookLesson]) -> Int {
+    private static func unexcusedOmissionHours(in lessons: [RatingLesson]) -> Int {
         lessons
             .filter { !$0.isRespectfulOmission }
             .reduce(0) { $0 + max($1.gradeBookOmissions, 0) }
@@ -586,89 +512,53 @@ extension RatingViewModel {
         return numbers.filter { $0 > 0 }.sorted()
     }
 
-    nonisolated static func buildDeadlineItems(from lessons: [PortalGradeBookLesson]) -> [DisciplineDeadlineItem] {
-        var disciplinesOrder: [String] = []
-        var fullNames: [String: String] = [:]
-        for lesson in lessons {
-            let abbrev = lesson.lessonNameAbbrev.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !abbrev.isEmpty else { continue }
-            if !disciplinesOrder.contains(abbrev) {
-                disciplinesOrder.append(abbrev)
+    nonisolated static func buildDeadlineItems(
+        from response: PersonalRatingResponse, now: Date = Date()
+    ) -> [DisciplineDeadlineItem] {
+        let today = parsingCalendar.startOfDay(for: now)
+        return response.subjects.flatMap { subject in
+            subject.lessonTypes.compactMap { type -> DisciplineDeadlineItem? in
+                guard !type.lessons.isEmpty,
+                      let group = response.deadlines.first(where: { $0.termHoursId == type.termHoursId }),
+                      group.taskCount != 0 else { return nil }
+                return makeDeadlineItem(subject: subject, type: type, group: group, today: today)
             }
-            if let fullName = lesson.lessonName?.trimmingCharacters(in: .whitespacesAndNewlines), !fullName.isEmpty {
-                fullNames[abbrev] = fullName
-            }
-        }
-
-        var items: [DisciplineDeadlineItem] = []
-        for disciplineCode in disciplinesOrder {
-            let discLessons = lessons.filter {
-                $0.lessonNameAbbrev.trimmingCharacters(in: .whitespacesAndNewlines) == disciplineCode
-            }
-            let labLessons = discLessons.filter { $0.lessonTypeId == 4 }
-                .sorted { $0.dateString < $1.dateString }
-            guard !labLessons.isEmpty else { continue }
-
-            if let item = buildDisciplineDeadlineItem(
-                discipline: disciplineCode,
-                fullName: fullNames[disciplineCode],
-                labLessons: labLessons
-            ) {
-                items.append(item)
-            }
-        }
-
-        return items.sorted(by: deadlineItemSort)
+        }.sorted(by: deadlineItemSort)
     }
 
-    nonisolated private static func buildDisciplineDeadlineItem(
-        discipline: String,
-        fullName: String?,
-        labLessons: [PortalGradeBookLesson]
-    ) -> DisciplineDeadlineItem? {
-        let total = labLessons.first?.labCount
-        let submitted = labLessons.filter { !$0.marks.isEmpty }.count
-
-        let deadlines = labLessons.filter {
-            $0.marks.isEmpty && $0.deadline != nil && $0.deadlineOverdue != true
-        }.sorted { (lhs, rhs) -> Bool in
-            let lDate = parseDate(lhs.deadline) ?? .distantFuture
-            let rDate = parseDate(rhs.deadline) ?? .distantFuture
-            return lDate < rDate
-        }
-
-        let nearest = deadlines.first
-        let nearestDeadline = nearest?.deadline
-        let nearestTaskNumber = nearest?.deadlineTaskNumber
-
-        var seenOverdue = Set<String>()
-        var overdueItems: [OverdueDeadlineItem] = []
-        for lesson in labLessons where lesson.marks.isEmpty && lesson.deadline != nil && lesson.deadlineOverdue == true {
-            if let deadlineDate = lesson.deadline {
-                let key = "\(deadlineDate)|\(lesson.deadlineTaskNumber ?? 0)"
-                if !seenOverdue.contains(key) {
-                    seenOverdue.insert(key)
-                    overdueItems.append(OverdueDeadlineItem(date: deadlineDate, taskNumber: lesson.deadlineTaskNumber))
-                }
+    nonisolated private static func makeDeadlineItem(
+        subject: PersonalRatingSubject, type: PersonalRatingLessonType,
+        group: PersonalRatingDeadlineGroup, today: Date
+    ) -> DisciplineDeadlineItem {
+        let submitted = Set(type.lessons.flatMap { lesson in
+            lesson.marks.compactMap { mark -> String? in
+                guard mark.mark != nil, let number = mark.taskNumber else { return nil }
+                return "\(lesson.id)|\(number)"
             }
+        }).count
+        struct ResolvedDeadline {
+            let date: Date
+            let dateString: String
+            let taskNumber: Int?
         }
-
-        let deadlinesMissing = labLessons.allSatisfy { $0.deadline == nil }
-        if total == 0 && deadlinesMissing && overdueItems.isEmpty {
-            return nil
+        let dates = group.deadlines.compactMap { deadline -> ResolvedDeadline? in
+            guard let lesson = type.lessons.first(where: { $0.id == deadline.lessonId }),
+                  let date = parseDate(lesson.dateString) else { return nil }
+            return ResolvedDeadline(date: date, dateString: lesson.dateString, taskNumber: deadline.taskNumber)
+        }.sorted { $0.date < $1.date }
+        let nearest = dates.first { $0.date >= today }
+        var seen = Set<String>()
+        let overdue = dates.filter { $0.date < today }.compactMap { entry -> OverdueDeadlineItem? in
+            let key = "\(entry.dateString)|\(entry.taskNumber ?? 0)"
+            guard seen.insert(key).inserted else { return nil }
+            return OverdueDeadlineItem(date: entry.dateString, taskNumber: entry.taskNumber)
         }
-
         return DisciplineDeadlineItem(
-            id: discipline,
-            discipline: discipline,
-            fullDisciplineName: fullName,
-            submitted: submitted,
-            total: total,
-            nearestDeadline: nearestDeadline,
-            nearestDeadlineTaskNumber: nearestTaskNumber,
-            nearestDeadlineOverdue: false,
-            overdueDeadlines: overdueItems,
-            deadlinesMissing: deadlinesMissing
+            id: "\(subject.id)-\(type.id)",
+            discipline: subject.abbrev, fullDisciplineName: subject.name,
+            submitted: submitted, total: group.taskCount,
+            nearestDeadline: nearest?.dateString, nearestDeadlineTaskNumber: nearest?.taskNumber,
+            nearestDeadlineOverdue: false, overdueDeadlines: overdue, deadlinesMissing: dates.isEmpty
         )
     }
 
@@ -692,7 +582,7 @@ extension RatingViewModel {
         return lhs.discipline.localizedCaseInsensitiveCompare(rhs.discipline) == .orderedAscending
     }
 
-    nonisolated static func buildCheckpointSummaries(from lessons: [PortalGradeBookLesson]) -> [CheckpointSummaryItem] {
+    nonisolated static func buildCheckpointSummaries(from lessons: [RatingLesson]) -> [CheckpointSummaryItem] {
         var cpDates: [String] = []
         for lesson in lessons {
             let controlPointName = lesson.controlPoint.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -777,12 +667,15 @@ extension RatingViewModel {
         guard parts.count == 3,
               let day = Int(parts[0]),
               let month = Int(parts[1]),
-              let year = Int(parts[2]) else { return nil }
+              let year = Int(parts[2]),
+              (1...9999).contains(year), (1...12).contains(month), (1...31).contains(day) else { return nil }
         var comps = DateComponents()
         comps.year = year
         comps.month = month
         comps.day = day
-        return parsingCalendar.date(from: comps)
+        guard let date = parsingCalendar.date(from: comps),
+              parsingCalendar.dateComponents([.year, .month, .day], from: date) == comps else { return nil }
+        return date
     }
 }
 

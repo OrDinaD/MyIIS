@@ -49,82 +49,9 @@ final class AcademicPerformanceTests: XCTestCase {
         XCTAssertEqual(overdueWithoutTask.displayTitle, "12.09")
     }
 
-    func testBuildDeadlineItemsFromLessons() {
-        let lessons: [PortalGradeBookLesson] = [
-            PortalGradeBookLesson(
-                id: 1,
-                dateString: "10.09.2026",
-                gradeBookOmissions: 0,
-                isRespectfulOmission: false,
-                lessonTypeId: 4,
-                lessonTypeAbbrev: "ЛР",
-                lessonNameAbbrev: "ОМО",
-                lessonName: "Основы машинного обучения",
-                subGroup: 0,
-                marks: [8],
-                markDetails: [PortalLessonMark(mark: 8, taskNumber: 1)],
-                controlPoint: "10.09.2026",
-                labCount: 4,
-                deadline: "10.09.2026",
-                deadlineOverdue: false,
-                deadlineTaskNumber: 1
-            ),
-            PortalGradeBookLesson(
-                id: 2,
-                dateString: "24.09.2026",
-                gradeBookOmissions: 0,
-                isRespectfulOmission: false,
-                lessonTypeId: 4,
-                lessonTypeAbbrev: "ЛР",
-                lessonNameAbbrev: "ОМО",
-                lessonName: "Основы машинного обучения",
-                subGroup: 0,
-                marks: [],
-                markDetails: [],
-                controlPoint: "24.09.2026",
-                labCount: 4,
-                deadline: "24.09.2026",
-                deadlineOverdue: true,
-                deadlineTaskNumber: 2
-            ),
-            PortalGradeBookLesson(
-                id: 3,
-                dateString: "08.10.2026",
-                gradeBookOmissions: 0,
-                isRespectfulOmission: false,
-                lessonTypeId: 4,
-                lessonTypeAbbrev: "ЛР",
-                lessonNameAbbrev: "ОМО",
-                lessonName: "Основы машинного обучения",
-                subGroup: 0,
-                marks: [],
-                markDetails: [],
-                controlPoint: "08.10.2026",
-                labCount: 4,
-                deadline: "08.10.2026",
-                deadlineOverdue: false,
-                deadlineTaskNumber: 3
-            )
-        ]
-
-        let items = RatingViewModel.buildDeadlineItems(from: lessons)
-        XCTAssertEqual(items.count, 1)
-
-        let omo = items[0]
-        XCTAssertEqual(omo.discipline, "ОМО")
-        XCTAssertEqual(omo.submitted, 1)
-        XCTAssertEqual(omo.total, 4)
-        XCTAssertEqual(omo.percent, 25)
-        XCTAssertEqual(omo.nearestDeadline, "08.10.2026")
-        XCTAssertEqual(omo.nearestDeadlineTaskNumber, 3)
-        XCTAssertEqual(omo.overdueDeadlines.count, 1)
-        XCTAssertEqual(omo.overdueDeadlines.first?.date, "24.09.2026")
-        XCTAssertEqual(omo.overdueDeadlines.first?.taskNumber, 2)
-    }
-
     func testBuildCheckpointSummaries() {
-        let lessons: [PortalGradeBookLesson] = [
-            PortalGradeBookLesson(
+        let lessons: [RatingLesson] = [
+            RatingLesson(
                 id: 1,
                 dateString: "15.10.2026",
                 gradeBookOmissions: 2,
@@ -136,13 +63,9 @@ final class AcademicPerformanceTests: XCTestCase {
                 subGroup: 0,
                 marks: [7, 8],
                 markDetails: [],
-                controlPoint: "15.10.2026",
-                labCount: nil,
-                deadline: nil,
-                deadlineOverdue: nil,
-                deadlineTaskNumber: nil
+                controlPoint: "15.10.2026"
             ),
-            PortalGradeBookLesson(
+            RatingLesson(
                 id: 2,
                 dateString: "15.11.2026",
                 gradeBookOmissions: 0,
@@ -154,11 +77,7 @@ final class AcademicPerformanceTests: XCTestCase {
                 subGroup: 0,
                 marks: [9],
                 markDetails: [],
-                controlPoint: "15.11.2026",
-                labCount: nil,
-                deadline: nil,
-                deadlineOverdue: nil,
-                deadlineTaskNumber: nil
+                controlPoint: "15.11.2026"
             )
         ]
 
@@ -186,7 +105,7 @@ final class AcademicPerformanceTests: XCTestCase {
         XCTAssertEqual(total.averageGrade, 8.0)
     }
 
-    func testPortalGradeBookLessonMixedMarksDecoding() throws {
+    func testRatingLessonMixedMarksDecoding() throws {
         let jsonObjectMarks = Data("""
         {
             "id": 100,
@@ -210,13 +129,11 @@ final class AcademicPerformanceTests: XCTestCase {
         }
         """.utf8)
 
-        let lesson1 = try JSONDecoder().decode(PortalGradeBookLesson.self, from: jsonObjectMarks)
+        let lesson1 = try JSONDecoder().decode(RatingLesson.self, from: jsonObjectMarks)
         XCTAssertEqual(lesson1.marks, [8, 9])
         XCTAssertEqual(lesson1.markDetails.count, 2)
         XCTAssertEqual(lesson1.markDetails[0].mark, 8)
         XCTAssertEqual(lesson1.markDetails[0].taskNumber, 1)
-        XCTAssertEqual(lesson1.deadline, "15.09.2026")
-        XCTAssertEqual(lesson1.labCount, 8)
 
         let jsonNumericMarks = Data("""
         {
@@ -236,11 +153,224 @@ final class AcademicPerformanceTests: XCTestCase {
         }
         """.utf8)
 
-        let lesson2 = try JSONDecoder().decode(PortalGradeBookLesson.self, from: jsonNumericMarks)
+        let lesson2 = try JSONDecoder().decode(RatingLesson.self, from: jsonNumericMarks)
         XCTAssertEqual(lesson2.marks, [7, 6])
         XCTAssertEqual(lesson2.markDetails.count, 2)
         XCTAssertEqual(lesson2.markDetails[0].mark, 7)
         XCTAssertNil(lesson2.markDetails[0].taskNumber)
-        XCTAssertNil(lesson2.deadline)
+    }
+}
+
+@MainActor
+final class RatingLoadingTests: XCTestCase {
+    private var defaults: UserDefaults!
+    private var suiteName = ""
+    private var group = ""
+    private var session: URLSession!
+    private var api: RatingAPIStub!
+    private var user: User!
+    private var cacheKey: String { "RatingViewModel.snapshot.personal-rating.v1.\(group)|\(user.id)" }
+
+    override func setUp() async throws {
+        try await super.setUp()
+        suiteName = "RatingLoadingTests.\(UUID().uuidString)"
+        group = suiteName
+        defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        var payload = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: JSONEncoder().encode(User.mock)) as? [String: Any]
+        )
+        var education = try XCTUnwrap(payload["education"] as? [String: Any])
+        education["group"] = group
+        payload["education"] = education
+        user = try JSONDecoder().decode(User.self, from: JSONSerialization.data(withJSONObject: payload))
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        configuration.urlCache = nil
+        session = URLSession(configuration: configuration)
+        api = RatingAPIStub(session: session)
+        MockURLProtocol.requestHandler = { request in
+            let response = try XCTUnwrap(HTTPURLResponse(
+                url: try XCTUnwrap(request.url), statusCode: 200, httpVersion: nil, headerFields: nil
+            ))
+            return (response, Data("""
+            {"schedules":{"Понедельник":[{"subject":"Расписание","lessonTypeAbbrev":"ЛК"}]}}
+            """.utf8))
+        }
+    }
+
+    override func tearDown() async throws {
+        UserDefaultsPayloadStore.clear(forKey: cacheKey, from: defaults)
+        ServiceEndpointsAPI.clearResponseCache(in: defaults)
+        defaults.removePersistentDomain(forName: suiteName)
+        session.invalidateAndCancel()
+        MockURLProtocol.requestHandler = nil
+        api = nil
+        session = nil
+        defaults = nil
+        user = nil
+        try await super.tearDown()
+    }
+
+    func testEmptyGradebookDoesNotInventSubjectsOrServerFailure() async {
+        api.student = PersonalRatingResponse(lessons: [])
+        let viewModel = makeViewModel()
+
+        await viewModel.loadRating(for: user)
+
+        XCTAssertTrue(viewModel.disciplines.isEmpty)
+        XCTAssertTrue(viewModel.students.isEmpty)
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertFalse(viewModel.isGradebookUnavailable)
+        XCTAssertFalse(viewModel.isRatingPendingForNewSemester)
+        XCTAssertNil(UserDefaultsPayloadStore.load(forKey: cacheKey, from: defaults))
+    }
+
+    func testNotFoundRemainsAnErrorAndNextLoadRecovers() async {
+        api.failure = .serverError(statusCode: 404, message: "Not found")
+        let viewModel = makeViewModel()
+        await viewModel.loadRating(for: user)
+
+        XCTAssertNotNil(viewModel.errorMessage)
+        XCTAssertTrue(viewModel.isGradebookUnavailable)
+        XCTAssertTrue(viewModel.disciplines.isEmpty)
+        XCTAssertNil(UserDefaultsPayloadStore.load(forKey: cacheKey, from: defaults))
+
+        api.failure = nil
+        api.student = makeStudent(mark: 8)
+        await viewModel.loadRating(for: user)
+
+        XCTAssertEqual(api.requests, 2)
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertEqual(viewModel.gradebookAverage, 8)
+        XCTAssertEqual(viewModel.disciplines.first?.name, "Математика")
+    }
+
+    func testCachedGradebookStillFetchesFreshMarks() async {
+        api.student = makeStudent(mark: 7)
+        await makeViewModel().loadRating(for: user)
+
+        api.student = makeStudent(mark: 9)
+        let relaunchedViewModel = makeViewModel()
+        await relaunchedViewModel.loadRating(for: user)
+
+        XCTAssertEqual(api.requests, 2)
+        XCTAssertEqual(relaunchedViewModel.gradebookAverage, 9)
+    }
+
+    func testFailedRefreshPreservesLastSuccessfulSnapshotAndTimestamp() async throws {
+        api.student = makeStudent(mark: 7)
+        let viewModel = makeViewModel()
+        await viewModel.loadRating(for: user)
+        let saved = try XCTUnwrap(UserDefaultsPayloadStore.load(forKey: cacheKey, from: defaults))
+        let updatedAt = viewModel.lastUpdateTime
+
+        api.failure = .serverError(statusCode: 404, message: "Not found")
+        await viewModel.loadRating(for: user)
+
+        XCTAssertEqual(viewModel.gradebookAverage, 7)
+        XCTAssertTrue(viewModel.isShowingStaleDataWarning)
+        XCTAssertNotNil(viewModel.errorMessage)
+        XCTAssertEqual(viewModel.lastUpdateTime, updatedAt)
+        XCTAssertEqual(UserDefaultsPayloadStore.load(forKey: cacheKey, from: defaults), saved)
+    }
+
+    func testEmptySuccessClearsPreviousMarksAndCache() async {
+        api.student = makeStudent(mark: 8)
+        let viewModel = makeViewModel()
+        await viewModel.loadRating(for: user)
+
+        api.student = PersonalRatingResponse(lessons: [])
+        await viewModel.refresh(for: user)
+
+        XCTAssertTrue(viewModel.disciplines.isEmpty)
+        XCTAssertNil(viewModel.gradebookAverage)
+        XCTAssertNil(viewModel.errorMessage)
+        XCTAssertNil(UserDefaultsPayloadStore.load(forKey: cacheKey, from: defaults))
+    }
+
+    func testUnauthorizedDoesNotRestoreCachedMarks() async {
+        api.student = makeStudent(mark: 8)
+        let viewModel = makeViewModel()
+        await viewModel.loadRating(for: user)
+
+        api.failure = .unauthorized(message: "Expired")
+        await viewModel.refresh(for: user)
+
+        XCTAssertTrue(viewModel.isUnauthorized)
+        XCTAssertTrue(viewModel.disciplines.isEmpty)
+        XCTAssertNil(viewModel.gradebookAverage)
+        XCTAssertFalse(viewModel.isShowingStaleDataWarning)
+    }
+
+    func testLegacyScheduleSnapshotCannotMaskNetworkError() async throws {
+        api.student = makeStudent(mark: 8)
+        await makeViewModel().loadRating(for: user)
+        let saved = try XCTUnwrap(UserDefaultsPayloadStore.load(forKey: cacheKey, from: defaults))
+        var snapshot = try XCTUnwrap(JSONSerialization.jsonObject(with: saved) as? [String: Any])
+        var disciplines = try XCTUnwrap(snapshot["disciplines"] as? [[String: Any]])
+        disciplines[0]["code"] = "schedule_Математика"
+        snapshot["disciplines"] = disciplines
+        snapshot["students"] = []
+        snapshot.removeValue(forKey: "gradebookAverage")
+        UserDefaultsPayloadStore.save(
+            try JSONSerialization.data(withJSONObject: snapshot), forKey: cacheKey, in: defaults
+        )
+
+        api.failure = .serverError(statusCode: 404, message: "Not found")
+        let viewModel = makeViewModel()
+        await viewModel.loadRating(for: user)
+
+        XCTAssertEqual(api.requests, 2)
+        XCTAssertTrue(viewModel.disciplines.isEmpty)
+        XCTAssertNotNil(viewModel.errorMessage)
+        XCTAssertFalse(viewModel.isShowingStaleDataWarning)
+    }
+
+    func testMalformedResponseIsNotDecodedAsEmptySuccess() throws {
+        for json in [
+            #"{"subjects":{},"deadlines":[],"percentageMarks":[]}"#,
+            #"{"subjects":[null],"deadlines":[],"percentageMarks":[]}"#,
+            #"{"subjects":null,"deadlines":[],"percentageMarks":[]}"#,
+            #"{}"#
+        ] {
+            XCTAssertThrowsError(try JSONDecoder().decode(PersonalRatingResponse.self, from: Data(json.utf8)))
+        }
+        let empty = try JSONDecoder().decode(
+            PersonalRatingResponse.self,
+            from: Data(#"{"subjects":[],"deadlines":[],"percentageMarks":[]}"#.utf8)
+        )
+        XCTAssertTrue(empty.lessons.isEmpty)
+    }
+
+    private func makeViewModel() -> RatingViewModel {
+        RatingViewModel(
+            apiService: api,
+            userDefaults: defaults,
+            scheduleAPI: ServiceEndpointsAPI(session: session, userDefaults: defaults)
+        )
+    }
+
+    private func makeStudent(mark: Int) -> PersonalRatingResponse {
+        PersonalRatingResponse(lessons: [
+            RatingLesson(
+                id: 1, dateString: "25.09.2026", gradeBookOmissions: 2,
+                isRespectfulOmission: false, lessonTypeId: 2, lessonTypeAbbrev: "ПЗ",
+                lessonNameAbbrev: "Математика", subGroup: 0, marks: [mark],
+                controlPoint: "25.09.2026"
+            )
+        ])
+    }
+}
+
+@MainActor
+private final class RatingAPIStub: APIService {
+    var student = PersonalRatingResponse(lessons: [])
+    var failure: APIError?
+    private(set) var requests = 0
+
+    override func getPersonalRating() async throws -> PersonalRatingResponse {
+        requests += 1
+        if let failure { throw failure }
+        return student
     }
 }

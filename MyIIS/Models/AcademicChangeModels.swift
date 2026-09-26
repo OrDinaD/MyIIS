@@ -47,7 +47,7 @@ struct AcademicChangeSnapshot: Codable, Equatable {
 
     init(
         markbook: MarkbookResponse,
-        ratingLessons: [PortalGradeBookLesson],
+        ratingLessons: [RatingLesson],
         dormitoryApplications: [DormitoryQueueApplication]?,
         penalties: [ServiceJSONObject]?,
         certificates: [CertificateRequest]?,
@@ -269,7 +269,7 @@ extension AcademicChangeSnapshot {
         }
     }
 
-    private static func makeRatingItems(from lessons: [PortalGradeBookLesson]) -> [AcademicChangeItem] {
+    private static func makeRatingItems(from lessons: [RatingLesson]) -> [AcademicChangeItem] {
         lessons.flatMap { lesson in
             lesson.marks.enumerated().map { offset, mark in
                 AcademicChangeItem(
@@ -293,7 +293,7 @@ extension AcademicChangeSnapshot {
         }
     }
 
-    private static func makeOmissionItems(from lessons: [PortalGradeBookLesson]) -> [AcademicOmissionItem] {
+    private static func makeOmissionItems(from lessons: [RatingLesson]) -> [AcademicOmissionItem] {
         let lessonsBySubject = Dictionary(grouping: lessons) { $0.lessonNameAbbrev }
 
         return lessonsBySubject.compactMap { subject, subjectLessons in

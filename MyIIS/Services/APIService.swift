@@ -266,43 +266,13 @@ class APIService {
         return try await performRequest(request)
     }
 
-    /// Получение зачётной книжки студента по legacy endpoint.
-    func getGradebook(for studentId: String) async throws -> Gradebook {
-        if APIService.isDemoMode { return DemoMockData.gradebook }
-        let endpoint = baseURL
-            .appendingPathComponent("gradebook")
-            .appendingPathComponent(studentId)
-
-        var request = URLRequest(url: endpoint)
+    /// Personal performance: subjects, lesson types, lessons and deadlines.
+    func getPersonalRating() async throws -> PersonalRatingResponse {
+        if APIService.isDemoMode { return PersonalRatingResponse(lessons: DemoMockData.ratingLessons) }
+        var request = URLRequest(url: baseURL.appendingPathComponent("personal-rating"))
         request.httpMethod = "GET"
-
         logRequestDetails(request)
-
-        let gradebook: Gradebook = try await performRequest(request)
-        return gradebook.normalized()
-    }
-
-    /// Получение данных успеваемости (включая занятия, дедлайны и percentageMarks) из /grade-book.
-    func getPortalGradeBookStudent() async throws -> PortalGradeBookStudent? {
-        if APIService.isDemoMode { return PortalGradeBookStudent(lessons: DemoMockData.portalGradeBookLessons) }
-        let endpoint = baseURL.appendingPathComponent("grade-book")
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "GET"
-
-        logRequestDetails(request)
-
-        let response: [PortalGradeBookEntry] = try await performRequest(request)
-        return response.compactMap(\.student).first
-    }
-
-    /// Данные рейтинга по предметам из веб-вкладки "Успеваемость".
-    /// Используется как основной источник предметов/оценок вместо /gradebook/{id},
-    /// потому что для части аккаунтов этот endpoint стабильно возвращает 404.
-    func getPortalGradeBookLessons() async throws -> [PortalGradeBookLesson] {
-        if let student = try await getPortalGradeBookStudent() {
-            return student.lessons
-        }
-        return []
+        return try await performRequest(request)
     }
 
     func execute<T: Decodable>(_ request: URLRequest) async throws -> T {
@@ -362,8 +332,10 @@ class APIService {
             }
 
             try handleStatusCode(httpResponse.statusCode, data: data)
+            let decoded: T = try decode(data)
             persistCache(data: data, for: request)
-            return try decode(data)
+            OfflineDataStatus.shared.refreshed(request.url)
+            return decoded
         } catch let apiError as APIError {
             // Recovery belongs to performRequest; a second notification can
             // restart recovery or make the login profile request await itself.
@@ -523,13 +495,9 @@ class APIService {
         guard let payload = UserDefaultsPayloadStore.load(forKey: key, from: userDefaults) else { return nil }
         guard let envelope = try? JSONDecoder().decode(CachedResponseEnvelope.self, from: payload) else { return nil }
 
-        guard Date().timeIntervalSince(envelope.cachedAt) <= Self.responseCacheLifetime else {
-            userDefaults.removeObject(forKey: key)
-            return nil
-        }
-
         do {
             let decoded: T = try decode(envelope.data)
+            OfflineDataStatus.shared.usedCache(for: request.url)
             let method = request.httpMethod ?? "GET"
             let url = request.url?.absoluteString ?? "—"
             logService.log("⚠️ Using offline cache for \(method) \(url). Original error: \(originalErrorDescription)")

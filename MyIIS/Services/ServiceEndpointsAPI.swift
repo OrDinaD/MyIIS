@@ -635,7 +635,12 @@ final class ServiceEndpointsAPI {
                 }
             }
 
-            if let cached = cachedData(for: request) {
+            if let cached = OfflineResponseCache.loadData(
+                for: request, prefix: Self.cachePrefix, userDefaults: userDefaults,
+                maxAge: request.url?.path.hasSuffix("/schedule/current-week") == true ? Self.currentWeekCacheLifetime : nil,
+                now: now()
+            ) {
+                OfflineDataStatus.shared.usedCache(for: request.url)
                 logService.log("⚠️ Service endpoints: using offline cache for \(endpoint.absoluteString). Original error: \(error.localizedDescription)")
                 return cached
             }
@@ -684,6 +689,7 @@ final class ServiceEndpointsAPI {
     ) throws -> Data {
         switch httpResponse.statusCode {
         case 200 ... 299:
+            OfflineDataStatus.shared.refreshed(request.url)
             persistCache(data: data, for: request)
             return data
         case 401, 403:

@@ -453,6 +453,10 @@
 "schedule_other_subgroup_title" = "Other subgroup";
 "schedule_pin" = "Pin";
 "schedule_pinned_header" = "Pinned";
+"schedule_group_alias_title" = "Group name";
+"schedule_group_alias_placeholder" = "For example, Alex's group";
+"schedule_group_alias_group_format" = "Group %@";
+"schedule_group_alias_remove" = "Remove name";
 "schedule_recents_header" = "Recent";
 "schedule_settings_display_header" = "Display";
 "schedule_settings_reset_all" = "Reset all schedule settings";
@@ -860,3 +864,13 @@
 "api_error_offline" = "No internet connection. Please check your network.";
 "api_error_timeout" = "Server response timed out. Please try again.";
 "api_error_network_generic" = "Network error. Please check your internet connection.";
+
+"schedule_pinned_groups" = "Pinned groups";
+
+"schedule_pinned_teachers" = "Pinned teachers";
+
+"rating_unexcused_current_month" = "Unexcused hours · this month";
+
+"offline_saved_data_warning" = "Data may be out of date. Saved data is available offline.";
+"rating_journal_omissions" = "Journal absences";
+"rating_journal_omissions_notice" = "Journal entries may include excused absences. See Attendance for unexcused hours.";

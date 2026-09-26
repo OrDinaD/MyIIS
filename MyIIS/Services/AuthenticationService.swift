@@ -388,7 +388,7 @@ class AuthenticationService: ObservableObject {
         let recovered = await task.value
         sessionRecoveryTask = nil
         isRestoringSession = false
-        if !recovered {
+        if !recovered && !isSessionReady {
             self.requireInteractiveLoginAfterSessionExpiry()
         }
         return recovered
@@ -425,6 +425,7 @@ class AuthenticationService: ObservableObject {
         self.isSessionReady = false
         self.isRestoringSession = false
         APIService.resetDemoMode()
+        OfflineDataStatus.shared.reset()
         APIService.clearResponseCache()
         NetworkSecurityPolicy.removeCookies(forHost: NetworkSecurityPolicy.iisHost)
         LMSService.shared.logout()

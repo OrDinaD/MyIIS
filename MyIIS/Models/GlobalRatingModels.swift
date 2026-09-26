@@ -46,7 +46,7 @@ struct StudentGlobalRatingDetail: Decodable, Identifiable {
     let fio: String?
     let subGroup: Int
     let subGroupStudent: Int?
-    let lessons: [PortalGradeBookLesson]
+    let lessons: [RatingLesson]
 
     var displayName: String? {
         let trimmed = fio?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

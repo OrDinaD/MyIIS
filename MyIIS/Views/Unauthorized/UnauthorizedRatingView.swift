@@ -522,7 +522,7 @@ private struct CheckpointRatingSummary: Identifiable {
     var id: String { title }
 }
 
-private func makeSubjectSummaries(from lessons: [PortalGradeBookLesson]) -> [SubjectRatingSummary] {
+private func makeSubjectSummaries(from lessons: [RatingLesson]) -> [SubjectRatingSummary] {
     Dictionary(grouping: lessons) { $0.lessonNameAbbrev }
         .map { subject, subjectLessons in
             let marks = subjectLessons.flatMap(\.marks)
@@ -546,7 +546,7 @@ private func makeSubjectSummaries(from lessons: [PortalGradeBookLesson]) -> [Sub
         }
 }
 
-private func makeCheckpointSummaries(from lessons: [PortalGradeBookLesson]) -> [CheckpointRatingSummary] {
+private func makeCheckpointSummaries(from lessons: [RatingLesson]) -> [CheckpointRatingSummary] {
     Dictionary(grouping: lessons) { $0.controlPoint.isEmpty ? "Вне КТ" : $0.controlPoint }
         .map { title, checkpointLessons in
             let marks = checkpointLessons.flatMap(\.marks)

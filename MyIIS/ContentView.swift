@@ -25,6 +25,17 @@ struct ContentView: View {
                 }
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if OfflineDataStatus.shared.shouldWarn {
+                Label("offline_saved_data_warning", systemImage: "wifi.exclamationmark")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(8)
+                    .background(.regularMaterial)
+                    .accessibilityIdentifier("offlineDataBanner")
+            }
+        }
         .reduceMotionSensitive()
         .onAppear {
             if authService.currentUser != nil {

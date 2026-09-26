@@ -627,31 +627,12 @@ struct GetFacultiesEndpoint {
     }
 }
 
-// MARK: - Rating Endpoints
+// MARK: - Personal Performance
 
-/// GET /rating
-/// Get students rating by group
-/// Requires: JWT token
-/// Query Parameter: group (required) - group number
-/// Response 200: Array of student rating objects
-struct GetRatingEndpoint {
-    static let path = "/rating"
-    static let method = "GET"
-
-    struct Response: Codable {
-        let recordBookNumber: String
-        let averageGrade: Double
-        let missedHours: Int
-        let averageShift: Double
-        let checkPoint: [CheckPoint]
-
-        struct CheckPoint: Codable {
-            let number: Int
-            let averageGrade: Double
-            let missedHours: Int
-        }
-    }
-}
+// GET /api/v1/personal-rating, authenticated SESSION cookie, no query parameters.
+// Verified browser response: Успеваемость.har, 2026-09-26, HTTP 200.
+// Response DTO: MyIIS/Models/PersonalRatingModels.swift.
+// The public rating directory is a separate feature (GlobalRatingService).
 
 // MARK: - Push Notifications Endpoints
 

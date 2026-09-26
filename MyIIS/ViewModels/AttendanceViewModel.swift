@@ -260,8 +260,8 @@ final class AttendanceViewModel {
             errorMessage = nil
             saveCache()
         } else if loadedSections > 0 {
-            lastUpdateTime = Date()
-            isShowingStaleDataWarning = false
+            // Keep the time of the last complete snapshot: some sections are still old.
+            isShowingStaleDataWarning = true
             errorMessage = errors.first
             saveCache()
         } else if hasVisibleData {

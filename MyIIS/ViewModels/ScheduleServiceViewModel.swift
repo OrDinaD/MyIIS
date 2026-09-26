@@ -180,6 +180,7 @@ final class ScheduleServiceViewModel {
     private(set) var pastContinuousDays: [ScheduleContinuousDay] = []
     private(set) var upcomingContinuousDays: [ScheduleContinuousDay] = []
     private(set) var pinnedGroupNames: [String] = []
+    private(set) var pinnedGroupAliases: [String: String] = [:]
     private(set) var pinnedTeachers: [PinnedTeacher] = []
     private(set) var recentGroupNames: [String] = []
     private(set) var recentTeachers: [PinnedTeacher] = []
@@ -189,6 +190,7 @@ final class ScheduleServiceViewModel {
     private let defaults: UserDefaults
     private let usesSharedSnapshotCache: Bool
     private var hasLoadedInitialData = false
+    private var activeGroupNumber: String?
     private var shouldResetQueryOnModeChange = true
     private var isDirectoryLoading = false
     private var activeScheduleRequestID: UUID?
@@ -202,11 +204,13 @@ final class ScheduleServiceViewModel {
     private static let displayModeDefaultsKey = "services.schedule.displayMode"
     private static let dataSourceDefaultsKey = "services.schedule.dataSource"
     private static let subgroupFilterDefaultsKey = "services.schedule.subgroupFilter"
+    private static let subgroupFilterByGroupDefaultsKey = "services.schedule.subgroupFilter.group"
     private static let selectedModeDefaultsKey = "services.schedule.selectedMode"
     private static let lastGroupDefaultsKey = "services.schedule.lastGroup"
     private static let lastTeacherURLIDDefaultsKey = "services.schedule.lastTeacherURLID"
     private static let lastTeacherNameDefaultsKey = "services.schedule.lastTeacherName"
     private static let pinnedGroupsDefaultsKey = "services.schedule.pinnedGroups"
+    private static let pinnedGroupAliasesDefaultsKey = "services.schedule.pinnedGroupAliases"
     private static let pinnedTeachersDefaultsKey = "services.schedule.pinnedTeachers"
     private static let recentGroupsDefaultsKey = "services.schedule.recentGroups"
     private static let recentTeachersDefaultsKey = "services.schedule.recentTeachers"
@@ -280,11 +284,14 @@ final class ScheduleServiceViewModel {
             mode = selectedMode
         }
 
-        if let savedValue = self.defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
-            subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
+        if mode == .group,
+           let lastGroup = self.defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank {
+            activeGroupNumber = lastGroup
+            subgroupFilter = restoredSubgroupFilter(for: lastGroup)
         }
 
         pinnedGroupNames = self.defaults.stringArray(forKey: Self.pinnedGroupsDefaultsKey) ?? []
+        pinnedGroupAliases = self.defaults.dictionary(forKey: Self.pinnedGroupAliasesDefaultsKey) as? [String: String] ?? [:]
         recentGroupNames = self.defaults.stringArray(forKey: Self.recentGroupsDefaultsKey) ?? []
         pinnedTeachers = Self.loadStoredTeachers(forKey: Self.pinnedTeachersDefaultsKey, from: self.defaults)
         recentTeachers = Self.loadStoredTeachers(forKey: Self.recentTeachersDefaultsKey, from: self.defaults)
@@ -336,16 +343,18 @@ final class ScheduleServiceViewModel {
             displayMode = snapshot.displayMode
         }
 
-        if mode == .group,
-           let savedValue = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
-            subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
-        } else if mode == .teacher {
-            subgroupFilter = .all
+        if mode == .group {
+            activeGroupNumber = snapshot.query
+            subgroupFilter = restoredSubgroupFilter(for: snapshot.query)
         } else {
-            subgroupFilter = snapshot.subgroupFilter
+            activeGroupNumber = nil
+            subgroupFilter = .all
         }
 
         continuousTimelineDays = snapshot.continuousTimelineDays
+        if snapshot.subgroupFilter != subgroupFilter {
+            rebuildContinuousTimeline(reset: true)
+        }
         hasLoadedInitialData = false
         return true
     }
@@ -407,12 +416,11 @@ final class ScheduleServiceViewModel {
         )
         preferExamDisplayIfNeeded(for: scheduleResponse)
         applyDefaultWeekFilter()
-        if let savedValue = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
-            subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
-        }
+        activeGroupNumber = groupNumber
+        setMode(.group, preservingQuery: groupNumber)
+        subgroupFilter = restoredSubgroupFilter(for: groupNumber)
         sanitizeSubgroupFilter()
         rebuildContinuousTimeline(reset: true)
-        setMode(.group, preservingQuery: groupNumber)
         saveSnapshot()
         errorMessage = nil
         updateClassScheduleWidgetSnapshot(from: scheduleResponse)
@@ -780,7 +788,34 @@ final class ScheduleServiceViewModel {
             pinnedGroupNames.insert(trimmed, at: 0)
         }
 
-        defaults.set(Array(pinnedGroupNames.prefix(12)), forKey: Self.pinnedGroupsDefaultsKey)
+        pinnedGroupNames = Array(pinnedGroupNames.prefix(12))
+        defaults.set(pinnedGroupNames, forKey: Self.pinnedGroupsDefaultsKey)
+    }
+
+    func pinnedGroupAlias(for groupName: String) -> String? {
+        let group = groupName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return pinnedGroupAliases[group]?.nilIfBlank
+    }
+
+    func pinnedGroupDisplayName(for groupName: String) -> String {
+        pinnedGroupAlias(for: groupName) ?? groupName
+    }
+
+    func pinnedGroupMenuTitle(for groupName: String) -> String {
+        guard let alias = pinnedGroupAlias(for: groupName) else { return groupName }
+        return "\(groupName) (\(alias))"
+    }
+
+    func setPinnedGroupAlias(_ alias: String?, for groupName: String) {
+        let group = groupName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !group.isEmpty, isGroupPinned(group) else { return }
+
+        if let alias = alias?.trimmingCharacters(in: .whitespacesAndNewlines), !alias.isEmpty {
+            pinnedGroupAliases[group] = alias
+        } else {
+            pinnedGroupAliases.removeValue(forKey: group)
+        }
+        defaults.set(pinnedGroupAliases, forKey: Self.pinnedGroupAliasesDefaultsKey)
     }
 
     func isTeacherPinned(_ urlId: String) -> Bool {
@@ -830,10 +865,9 @@ final class ScheduleServiceViewModel {
         )
         preferExamDisplayIfNeeded(for: scheduleResponse)
         applyDefaultWeekFilter()
+        activeGroupNumber = groupNumber
         setMode(.group, preservingQuery: groupNumber)
-        if let savedValue = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
-            subgroupFilter = savedValue > 0 ? .subgroup(savedValue) : .all
-        }
+        subgroupFilter = restoredSubgroupFilter(for: groupNumber)
         sanitizeSubgroupFilter()
         rebuildContinuousTimeline(reset: true)
         persistGroupSelection(groupNumber)
@@ -1324,13 +1358,30 @@ final class ScheduleServiceViewModel {
         defaults.set(displayMode.rawValue, forKey: Self.displayModeDefaultsKey)
     }
 
+    private func restoredSubgroupFilter(for groupNumber: String) -> ScheduleSubgroupFilter {
+        let key = Self.subgroupFilterByGroupDefaultsKey + "." + groupNumber
+        if let value = defaults.object(forKey: key) as? Int {
+            return value > 0 ? .subgroup(value) : .all
+        }
+
+        // Transfer the previous global choice only to the group last opened before this update.
+        if defaults.string(forKey: Self.lastGroupDefaultsKey) == groupNumber,
+           let value = defaults.object(forKey: Self.subgroupFilterDefaultsKey) as? Int {
+            defaults.set(value, forKey: key)
+            defaults.removeObject(forKey: Self.subgroupFilterDefaultsKey)
+            return value > 0 ? .subgroup(value) : .all
+        }
+        return .all
+    }
+
     private func persistSubgroupFilter() {
-        guard mode == .group else { return }
+        guard mode == .group, let activeGroupNumber else { return }
+        let key = Self.subgroupFilterByGroupDefaultsKey + "." + activeGroupNumber
         switch subgroupFilter {
         case .all:
-            defaults.set(0, forKey: Self.subgroupFilterDefaultsKey)
+            defaults.set(0, forKey: key)
         case .subgroup(let value):
-            defaults.set(value, forKey: Self.subgroupFilterDefaultsKey)
+            defaults.set(value, forKey: key)
         }
     }
 

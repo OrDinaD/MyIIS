@@ -7,6 +7,7 @@ struct RatingView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.requestReview) private var requestReview
     @State var viewModel: RatingViewModel
+    @State private var omissions = RatingOmissionsViewModel()
     @State private var expandedDisciplineIDs: Set<String> = []
     @State private var hasRevealedContent = false
     @State private var showLoginSheet = false
@@ -76,10 +77,15 @@ struct RatingView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
-                } else if viewModel.isShowingStaleDataWarning {
+                } else if viewModel.isShowingStaleDataWarning || omissions.isStale {
                     Section {
-                        StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                            await viewModel.refresh(for: user)
+                        StaleDataBanner(
+                            lastUpdateTime: omissions.isStale ? omissions.updatedAt : viewModel.lastUpdateTime,
+                            errorMessage: viewModel.errorMessage
+                        ) {
+                            async let rating: () = viewModel.refresh(for: user)
+                            async let attendance: () = omissions.load(userID: user.id)
+                            _ = await (rating, attendance)
                         }
                     }
                     .listRowInsets(EdgeInsets())
@@ -92,7 +98,9 @@ struct RatingView: View {
             .listStyle(.insetGrouped)
             .task(id: user.id) {
                 revealContentIfNeeded()
-                await viewModel.loadRating(for: user)
+                async let rating: () = viewModel.loadRating(for: user)
+                async let attendance: () = omissions.load(userID: user.id)
+                _ = await (rating, attendance)
 
                 ratingViewOpenCount += 1
                 if ratingViewOpenCount == 5 || (ratingViewOpenCount > 5 && ratingViewOpenCount % 20 == 0) {
@@ -101,7 +109,9 @@ struct RatingView: View {
                 }
             }
             .refreshable {
-                await viewModel.refresh(for: user)
+                async let rating: () = viewModel.refresh(for: user)
+                async let attendance: () = omissions.load(userID: user.id)
+                _ = await (rating, attendance)
             }
         } else {
             ContentUnavailableView {
@@ -173,8 +183,8 @@ struct RatingView: View {
             tint: gradeTint(viewModel.gradebookAverage ?? viewModel.students.first?.averageGrade)
         )
         RatingHeaderMetric(
-            title: NSLocalizedString("rating_missed_hours", comment: ""),
-            value: formattedMissed(viewModel.students.first?.missedHours),
+            title: NSLocalizedString("rating_unexcused_current_month", comment: ""),
+            value: formattedMissed(omissions.hours),
             systemImage: "clock.badge.exclamationmark",
             tint: .orange
         )
@@ -239,7 +249,9 @@ struct RatingView: View {
 
                 Button(NSLocalizedString("common_retry", comment: "")) {
                     Task {
-                        await viewModel.refresh(for: user)
+                        async let rating: () = viewModel.refresh(for: user)
+                        async let attendance: () = omissions.load(userID: user.id)
+                        _ = await (rating, attendance)
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -285,15 +297,6 @@ struct RatingView: View {
         }
 
         Section(NSLocalizedString("rating_section_subjects", comment: "")) {
-            if viewModel.isUsingScheduleFallback {
-                RatingInfoBanner(
-                    title: NSLocalizedString("rating_fallback_banner_title", comment: ""),
-                    message: NSLocalizedString("rating_fallback_banner_message", comment: ""),
-                    icon: "exclamationmark.triangle.fill"
-                )
-                .listRowInsets(EdgeInsets(top: 8, leading: 0, bottom: 8, trailing: 0))
-            }
-
             ForEach(viewModel.disciplines) { discipline in
                 disciplineRatingRow(discipline: discipline)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))

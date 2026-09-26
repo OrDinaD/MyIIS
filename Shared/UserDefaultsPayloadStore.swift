@@ -116,6 +116,8 @@ enum UserDefaultsPayloadStore {
         for key in defaults.dictionaryRepresentation().keys {
             if key.hasPrefix("RatingViewModel.snapshot.") ||
                key.hasPrefix("attendance_offline_cache") ||
+               key.hasPrefix("rating_monthly_omissions.") ||
+               key.hasPrefix("portal_notifications.") ||
                key.hasPrefix("gradebook_offline_cache") ||
                key.hasPrefix("group_offline_cache_") ||
                key.hasPrefix("dormitory_offline_cache_") ||
@@ -177,9 +179,7 @@ enum OfflineResponseCache {
         if let maxAge {
             let age = now.timeIntervalSince(envelope.cachedAt)
             guard age >= 0, age <= maxAge else {
-                if let key = cacheKey(prefix: prefix, request: request) {
-                    UserDefaultsPayloadStore.clear(forKey: key, from: userDefaults)
-                }
+                // Expired for an online lookup, but still useful without a connection.
                 return nil
             }
         }

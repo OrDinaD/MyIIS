@@ -453,6 +453,10 @@
 "schedule_other_subgroup_title" = "Другая подгруппа";
 "schedule_pin" = "Закрепить";
 "schedule_pinned_header" = "Закреплённые";
+"schedule_group_alias_title" = "Название группы";
+"schedule_group_alias_placeholder" = "Например, Илюха-3";
+"schedule_group_alias_group_format" = "Группа %@";
+"schedule_group_alias_remove" = "Удалить название";
 "schedule_recents_header" = "Недавние";
 "schedule_settings_display_header" = "Отображение";
 "schedule_settings_reset_all" = "Сбросить все настройки расписания";
@@ -860,3 +864,13 @@
 "api_error_offline" = "Нет подключения к интернету. Проверьте сеть.";
 "api_error_timeout" = "Время ожидания ответа сервера истекло. Попробуйте снова.";
 "api_error_network_generic" = "Сетевая ошибка. Проверьте подключение к интернету.";
+
+"schedule_pinned_groups" = "Закреплённые группы";
+
+"schedule_pinned_teachers" = "Закреплённые преподаватели";
+
+"rating_unexcused_current_month" = "Без уважительной причины · этот месяц";
+
+"offline_saved_data_warning" = "Данные могут быть неактуальны. Сохранённые данные доступны без интернета.";
+"rating_journal_omissions" = "Пропуски в журнале";
+"rating_journal_omissions_notice" = "Записи журнала могут включать уважительные причины. Неуважительные пропуски показаны во вкладке «Пропуски».";

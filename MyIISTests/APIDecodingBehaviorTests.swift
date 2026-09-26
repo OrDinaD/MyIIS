@@ -334,26 +334,10 @@ final class APIDecodingBehaviorTests: XCTestCase {
         XCTAssertEqual(decoded.averageMark, 9)
     }
 
-    func testPortalGradeBookDecodesCompletedSemesterWithoutLessons() throws {
-        let json = #"""
-        [
-          {
-            "students": [],
-            "student": {
-              "id": null,
-              "fio": "Василевский Владислав Валерьевич",
-              "subGroup": 0,
-              "subGroupStudent": 2,
-              "lessons": []
-            }
-          }
-        ]
-        """#
-
-        let decoded = try JSONDecoder().decode([PortalGradeBookEntry].self, from: Data(json.utf8))
-        let lessons = decoded.compactMap(\.student).flatMap(\.lessons)
-
-        XCTAssertTrue(lessons.isEmpty)
+    func testPersonalRatingDecodesEmptySubjects() throws {
+        let json = #"{"subjects":[],"deadlines":[],"percentageMarks":[]}"#
+        let decoded = try JSONDecoder().decode(PersonalRatingResponse.self, from: Data(json.utf8))
+        XCTAssertTrue(decoded.lessons.isEmpty)
     }
 
     func testLMSCoursesParseFrontpageCourseListFromHarShape() throws {

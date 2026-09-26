@@ -163,6 +163,8 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         defer { removeDefaults("persistence") }
         let viewModel = ScheduleServiceViewModel(defaults: defaults)
         viewModel.displayMode = .exams
+        let groupSchedule = makePublicSchedule(lessons: [makeLesson(id: "g2", subgroup: 2)])
+        viewModel.applyGroupSchedule(groupSchedule, week: 1, groupNumber: "420602")
         viewModel.subgroupFilter = .subgroup(2)
 
         let restored = ScheduleServiceViewModel(defaults: defaults)
@@ -260,6 +262,75 @@ final class ScheduleServiceViewModelTests: XCTestCase {
         XCTAssertEqual(schedule.orderedDays.flatMap(\.lessons).map(\.id), ["first"])
     }
 
+    func testPinnedGroupAliasPersistsAndKeepsOriginalGroupNumber() {
+        let defaults = makeDefaults("pinned-group-alias")
+        defer { removeDefaults("pinned-group-alias") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+
+        viewModel.togglePinnedGroupName("420602")
+        viewModel.setPinnedGroupAlias("  Илюха-3  ", for: "420602")
+
+        XCTAssertEqual(viewModel.pinnedGroupAlias(for: "420602"), "Илюха-3")
+        XCTAssertEqual(viewModel.pinnedGroupDisplayName(for: "420602"), "Илюха-3")
+        XCTAssertEqual(viewModel.pinnedGroupMenuTitle(for: "420602"), "420602 (Илюха-3)")
+
+        let restored = ScheduleServiceViewModel(defaults: defaults)
+        XCTAssertEqual(restored.pinnedGroupAlias(for: "420602"), "Илюха-3")
+        XCTAssertEqual(restored.pinnedGroupMenuTitle(for: "420602"), "420602 (Илюха-3)")
+
+        restored.setPinnedGroupAlias("   ", for: "420602")
+        XCTAssertNil(restored.pinnedGroupAlias(for: "420602"))
+        XCTAssertEqual(restored.pinnedGroupDisplayName(for: "420602"), "420602")
+    }
+
+    func testSubgroupPreferenceIsStoredSeparatelyForEachGroup() {
+        let defaults = makeDefaults("subgroup-by-group")
+        defer { removeDefaults("subgroup-by-group") }
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        let schedule = makePublicSchedule(lessons: [
+            makeLesson(id: "first", subgroup: 1),
+            makeLesson(id: "second", subgroup: 2)
+        ])
+
+        viewModel.applyGroupSchedule(schedule, week: 1, groupNumber: "420602")
+        viewModel.subgroupFilter = .subgroup(2)
+
+        viewModel.applyGroupSchedule(schedule, week: 1, groupNumber: "420603")
+        XCTAssertEqual(viewModel.subgroupFilter, .all)
+        viewModel.subgroupFilter = .subgroup(1)
+
+        viewModel.applyGroupSchedule(schedule, week: 1, groupNumber: "420602")
+        XCTAssertEqual(viewModel.subgroupFilter, .subgroup(2))
+        viewModel.applyGroupSchedule(schedule, week: 1, groupNumber: "420603")
+        XCTAssertEqual(viewModel.subgroupFilter, .subgroup(1))
+
+        let restored = ScheduleServiceViewModel(defaults: defaults)
+        XCTAssertEqual(restored.subgroupFilter, .subgroup(1))
+        restored.applyGroupSchedule(schedule, week: 1, groupNumber: "420602")
+        XCTAssertEqual(restored.subgroupFilter, .subgroup(2))
+    }
+
+    func testLegacySubgroupPreferenceMigratesOnlyToLastGroup() {
+        let defaults = makeDefaults("subgroup-migration")
+        defer { removeDefaults("subgroup-migration") }
+        defaults.set("420602", forKey: "services.schedule.lastGroup")
+        defaults.set(2, forKey: "services.schedule.subgroupFilter")
+        let schedule = makePublicSchedule(lessons: [
+            makeLesson(id: "first", subgroup: 1),
+            makeLesson(id: "second", subgroup: 2)
+        ])
+
+        let viewModel = ScheduleServiceViewModel(defaults: defaults)
+        XCTAssertEqual(viewModel.subgroupFilter, .subgroup(2))
+        XCTAssertEqual(defaults.integer(forKey: "services.schedule.subgroupFilter.group.420602"), 2)
+        XCTAssertNil(defaults.object(forKey: "services.schedule.subgroupFilter"))
+
+        viewModel.applyGroupSchedule(schedule, week: 1, groupNumber: "420603")
+        XCTAssertEqual(viewModel.subgroupFilter, .all)
+        viewModel.applyGroupSchedule(schedule, week: 1, groupNumber: "420602")
+        XCTAssertEqual(viewModel.subgroupFilter, .subgroup(2))
+    }
+
     func testSubgroupPreferencePreservedAcrossTeacherNavigation() {
         let defaults = makeDefaults("subgroup-preserve")
         defer { removeDefaults("subgroup-preserve") }
@@ -270,7 +341,7 @@ final class ScheduleServiceViewModelTests: XCTestCase {
 
         viewModel.applyGroupSchedule(groupSchedule, week: 1, groupNumber: "420602")
         viewModel.subgroupFilter = .subgroup(2)
-        XCTAssertEqual(defaults.integer(forKey: "services.schedule.subgroupFilter"), 2)
+        XCTAssertEqual(defaults.integer(forKey: "services.schedule.subgroupFilter.group.420602"), 2)
 
         // Switch to teacher schedule
         let teacherSchedule = makePublicSchedule(lessons: [makeLesson(id: "t1")])
@@ -280,8 +351,8 @@ final class ScheduleServiceViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.mode, .teacher)
         XCTAssertEqual(viewModel.subgroupFilter, .all)
-        // Subgroup filter setting for student groups must remain untouched in UserDefaults
-        XCTAssertEqual(defaults.integer(forKey: "services.schedule.subgroupFilter"), 2)
+        // Subgroup choice for the group must remain untouched in UserDefaults.
+        XCTAssertEqual(defaults.integer(forKey: "services.schedule.subgroupFilter.group.420602"), 2)
 
         // Switch back to group schedule
         viewModel.applyGroupSchedule(groupSchedule, week: 1, groupNumber: "420602")

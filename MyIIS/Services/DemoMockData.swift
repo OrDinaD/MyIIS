@@ -113,8 +113,8 @@ struct DemoMockData {
         ]
     )
 
-    static let portalGradeBookLessons: [PortalGradeBookLesson] = [
-        PortalGradeBookLesson(
+    static let ratingLessons: [RatingLesson] = [
+        RatingLesson(
             id: 1,
             dateString: "01.09.2025",
             gradeBookOmissions: 0,
@@ -126,7 +126,7 @@ struct DemoMockData {
             marks: [10],
             controlPoint: "КТ 1"
         ),
-        PortalGradeBookLesson(
+        RatingLesson(
             id: 2,
             dateString: "02.09.2025",
             gradeBookOmissions: 0,
@@ -138,7 +138,7 @@ struct DemoMockData {
             marks: [9, 10],
             controlPoint: "КТ 1"
         ),
-        PortalGradeBookLesson(
+        RatingLesson(
             id: 3,
             dateString: "10.09.2025",
             gradeBookOmissions: 0,
@@ -150,7 +150,7 @@ struct DemoMockData {
             marks: [10],
             controlPoint: "КТ 2"
         ),
-        PortalGradeBookLesson(
+        RatingLesson(
             id: 4,
             dateString: "15.09.2025",
             gradeBookOmissions: 0,
