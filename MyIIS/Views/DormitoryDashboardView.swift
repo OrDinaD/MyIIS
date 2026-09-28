@@ -564,17 +564,11 @@ private struct DormitoryMotionShimmer: View {
 
 @Observable
 @MainActor
-private final class DormitoryCardMotion {
+final class DormitoryCardMotion {
     private(set) var horizontal = 0.0
     private(set) var vertical = 0.0
 
     private let motionManager = CMMotionManager()
-    private let motionQueue: OperationQueue = {
-        let queue = OperationQueue()
-        queue.name = "by.bsuir.myiis.dormitoryMotion"
-        queue.qualityOfService = .userInteractive
-        return queue
-    }()
 
     func start() {
         guard motionManager.isDeviceMotionAvailable, !motionManager.isDeviceMotionActive else {
@@ -582,19 +576,9 @@ private final class DormitoryCardMotion {
         }
 
         motionManager.deviceMotionUpdateInterval = 1.0 / 20.0
-        motionManager.startDeviceMotionUpdates(to: motionQueue) { [weak self] motion, _ in
-            guard let motion else { return }
-
-            let horizontal = Self.clamped(motion.attitude.roll / 0.65)
-            let vertical = Self.clamped(motion.attitude.pitch / 0.65)
-
-            Task { @MainActor [weak self] in
-                guard let self else { return }
-                if abs(self.horizontal - horizontal) > 0.02 || abs(self.vertical - vertical) > 0.02 {
-                    self.horizontal = horizontal
-                    self.vertical = vertical
-                }
-            }
+        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
+            guard let self, let motion else { return }
+            self.applyMotion(roll: motion.attitude.roll, pitch: motion.attitude.pitch)
         }
     }
 
@@ -604,7 +588,17 @@ private final class DormitoryCardMotion {
         vertical = 0
     }
 
-    nonisolated private static func clamped(_ value: Double) -> Double {
+    func applyMotion(roll: Double, pitch: Double) {
+        let horizontal = Self.clamped(roll / 0.65)
+        let vertical = Self.clamped(pitch / 0.65)
+
+        if abs(self.horizontal - horizontal) > 0.02 || abs(self.vertical - vertical) > 0.02 {
+            self.horizontal = horizontal
+            self.vertical = vertical
+        }
+    }
+
+    nonisolated static func clamped(_ value: Double) -> Double {
         min(max(value, -1), 1)
     }
 }

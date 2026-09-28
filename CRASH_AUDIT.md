@@ -183,3 +183,11 @@
 | `AccountSettingsViewModel.isPasswordValid` | Сбой регулярного выражения в `NSPredicate` со спецсимволами при вводе пароля | Замена `NSPredicate` на чистый Swift (`CharacterSet`, `Character`) | `AccountSettingsModelsTests.testPasswordValidation` | `shipped` |
 | `BGAppRefreshTask / AcademicChangeNotificationService` | Вызов `@MainActor` замыкания из системного пула очередей `BGTaskScheduler` | Регистрация с явным `using: .main`, атомарное завершение задачи по expiration | `CrashRegressionTests` (218 тестов) | `shipped` |
 
+---
+
+## 12. Анализ и устранение сбоев версии 1.2.0 (CoreMotion / DormitoryCardMotion)
+
+| Сигнатура сбоя | Первопричина | Исправление | Регрессионный тест | Статус |
+|---|---|---|---|---|
+| `libswift_Concurrency.dylib: _swift_task_checkIsolatedSwift + 48` / `closure #1 in DormitoryCardMotion.start()` (также группировалось Organizer под `UIKitCore: -[UIEventFetcher threadMain]`, `CFNetwork: runForever`, `MyIIS: NO_CRASH_STACK`) | Замыкание обработчика `startDeviceMotionUpdates` внутри `@MainActor final class DormitoryCardMotion` унаследовало акторную изоляцию `@MainActor`, но вызывалось CoreMotion на фоновой `OperationQueue` (`by.bsuir.myiis.dormitoryMotion`). При первом получении данных гироскопа runtime вызывал `_dispatch_assert_queue_fail` -> `SIGTRAP`. | Передача обновлений CoreMotion напрямую в `.main` (`startDeviceMotionUpdates(to: .main)`), вынос вычисления углов в метод `applyMotion(roll:pitch:)`, устранение лишней фоновой очереди. | `CrashRegressionTests.testDormitoryCardMotion_applyMotion_updatesValuesSafelyOnMainActor`, `testDormitoryCardMotion_clamped_boundsValues`, `testDormitoryCardMotion_lifecycle_startStopDoesNotCrash` | `fixed in HEAD`, `regression tested` |
+

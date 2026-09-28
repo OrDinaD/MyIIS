@@ -187,4 +187,41 @@ final class CrashRegressionTests: XCTestCase {
             throw XCTSkip("Keychain entitlement not available in this test environment.")
         }
     }
+
+    // MARK: - 6. DormitoryCardMotion Concurrency and Clamping Regression Tests
+
+    func testDormitoryCardMotion_applyMotion_updatesValuesSafelyOnMainActor() {
+        let motion = DormitoryCardMotion()
+        XCTAssertEqual(motion.horizontal, 0.0)
+        XCTAssertEqual(motion.vertical, 0.0)
+
+        // Simulate roll and pitch updates
+        motion.applyMotion(roll: 0.325, pitch: -0.325)
+        XCTAssertEqual(motion.horizontal, 0.5, accuracy: 0.001)
+        XCTAssertEqual(motion.vertical, -0.5, accuracy: 0.001)
+
+        // Threshold check: small changes under 0.02 must not trigger mutation
+        motion.applyMotion(roll: 0.326, pitch: -0.326)
+        XCTAssertEqual(motion.horizontal, 0.5, accuracy: 0.001)
+        XCTAssertEqual(motion.vertical, -0.5, accuracy: 0.001)
+
+        // Stop resets values
+        motion.stop()
+        XCTAssertEqual(motion.horizontal, 0.0)
+        XCTAssertEqual(motion.vertical, 0.0)
+    }
+
+    func testDormitoryCardMotion_clamped_boundsValues() {
+        XCTAssertEqual(DormitoryCardMotion.clamped(-10.0), -1.0)
+        XCTAssertEqual(DormitoryCardMotion.clamped(10.0), 1.0)
+        XCTAssertEqual(DormitoryCardMotion.clamped(0.42), 0.42, accuracy: 0.0001)
+    }
+
+    func testDormitoryCardMotion_lifecycle_startStopDoesNotCrash() {
+        let motion = DormitoryCardMotion()
+        motion.start()
+        motion.stop()
+        XCTAssertEqual(motion.horizontal, 0.0)
+        XCTAssertEqual(motion.vertical, 0.0)
+    }
 }
