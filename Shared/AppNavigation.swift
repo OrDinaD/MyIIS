@@ -13,6 +13,7 @@ enum AppSection: String, CaseIterable, Hashable {
     case services
 
     // Sub-services
+    case notifications
     case gradebook
     case study
     case diploma
@@ -27,6 +28,18 @@ enum AppSection: String, CaseIterable, Hashable {
     case departments
     case directory
     case support
+}
+
+enum PortalNotificationDestination: Equatable, Sendable {
+    case certificate(number: Int?)
+    case dormitory(applicationNumber: Int?)
+
+    var section: AppSection {
+        switch self {
+        case .certificate: return .study
+        case .dormitory: return .dormitory
+        }
+    }
 }
 
 /// Transfers navigation requests from the App Intents extension to the app
@@ -57,6 +70,7 @@ enum AppIntentNavigationStore {
 class AppRouter {
     var selectedTab: AppTab
     var servicesPath: NavigationPath
+    private(set) var pendingNotificationDestination: PortalNotificationDestination?
 
     static let shared = AppRouter()
     private static let startupTabKey = "initial_startup_tab"
@@ -125,7 +139,7 @@ class AppRouter {
                 tab = .rating
             case .services:
                 tab = .others
-            case .gradebook, .study, .diploma, .group, .headman, .dormitory,
+            case .notifications, .gradebook, .study, .diploma, .group, .headman, .dormitory,
                  .library, .lms, .disciplines, .studyWeeks,
                  .departments, .directory, .support:
                 tab = .others
@@ -161,15 +175,28 @@ class AppRouter {
             selectedTab = .rating
         case .services:
             selectedTab = .others
-        case .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .disciplines, .studyWeeks, .departments, .directory, .support:
+        case .notifications, .gradebook, .study, .diploma, .group, .headman, .dormitory, .library, .lms, .disciplines, .studyWeeks, .departments, .directory, .support:
             selectedTab = .others
             servicesPath.append(section)
         }
     }
 
+    func navigate(toNotification destination: PortalNotificationDestination) {
+        pendingNotificationDestination = destination
+        navigate(to: destination.section)
+    }
+
+    func takeNotificationDestination(for section: AppSection) -> PortalNotificationDestination? {
+        guard let destination = pendingNotificationDestination,
+              destination.section == section else { return nil }
+        pendingNotificationDestination = nil
+        return destination
+    }
+
     func resetForLogout() {
         selectedTab = .schedule
         servicesPath = NavigationPath()
+        pendingNotificationDestination = nil
     }
 
     func handleURL(_ url: URL) {

@@ -146,6 +146,8 @@ struct DormitoryHistorySection: View {
     let isDownloadingFile: Bool
     let onOpenDocument: (DormitoryQueueApplication) -> Void
     let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
+    let focusedApplicationID: Int?
+    let focusPulseVisible: Bool
     @State private var isExpanded = false
 
     var body: some View {
@@ -158,6 +160,8 @@ struct DormitoryHistorySection: View {
                         onOpenDocument: { onOpenDocument(application) },
                         onDownloadApplicationForm: { onDownloadApplicationForm(application) }
                     )
+                    .id("dorm-\(application.id)")
+                    .notificationFocusHighlight(focusedApplicationID == application.id && focusPulseVisible)
                 }
             }
             .padding(.top, 12)
@@ -179,6 +183,12 @@ struct DormitoryHistorySection: View {
             }
         }
         .tint(.secondary)
+        .onAppear {
+            if focusedApplicationID != nil { isExpanded = true }
+        }
+        .onChange(of: focusedApplicationID) { _, id in
+            if id != nil { isExpanded = true }
+        }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -426,7 +436,9 @@ extension View {
                 onEditApplication: { _ in },
                 onDownloadApplicationForm: { _ in },
                 pendingSettlementApplicationID: nil,
-                onPresentSettlementReveal: { _ in }
+                onPresentSettlementReveal: { _ in },
+                focusedApplicationID: nil,
+                focusPulseVisible: false
             )
             .padding()
         }
@@ -449,7 +461,9 @@ extension View {
                 onEditApplication: { _ in },
                 onDownloadApplicationForm: { _ in },
                 pendingSettlementApplicationID: nil,
-                onPresentSettlementReveal: { _ in }
+                onPresentSettlementReveal: { _ in },
+                focusedApplicationID: nil,
+                focusPulseVisible: false
             )
             .padding()
         }
@@ -472,7 +486,9 @@ extension View {
                 onEditApplication: { _ in },
                 onDownloadApplicationForm: { _ in },
                 pendingSettlementApplicationID: nil,
-                onPresentSettlementReveal: { _ in }
+                onPresentSettlementReveal: { _ in },
+                focusedApplicationID: nil,
+                focusPulseVisible: false
             )
             .padding()
         }

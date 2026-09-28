@@ -51,13 +51,13 @@ final class PortalNotificationsViewModel {
         } catch is CancellationError {
             return
         } catch {
-            // The toolbar badge is supplementary and should not interrupt the profile screen.
+            // The unread badge is supplementary and should not interrupt the services screen.
         }
     }
 
     func loadInitial() async {
         guard !hasLoadedInitialData else {
-            await loadUnreadCount()
+            await refresh()
             return
         }
         hasLoadedInitialData = true
@@ -122,6 +122,9 @@ final class PortalNotificationsViewModel {
 
         do {
             try await service.markViewed(ids: [notification.id])
+            if !APIService.isDemoMode {
+                await loadUnreadCount()
+            }
         } catch is CancellationError {
             rollbackReadState(for: notification.id)
         } catch {
@@ -166,6 +169,18 @@ final class PortalNotificationsViewModel {
 
     func clearError() {
         errorMessage = nil
+    }
+
+    func reset() {
+        notifications = []
+        unreadCount = 0
+        totalElements = 0
+        state = .idle
+        errorMessage = nil
+        isMarkingRead = false
+        currentPage = 0
+        hasMorePages = true
+        hasLoadedInitialData = false
     }
 }
 

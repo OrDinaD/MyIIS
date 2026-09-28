@@ -14,6 +14,8 @@ struct DormitoryApplicationsDashboard: View {
     let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
     let pendingSettlementApplicationID: Int?
     let onPresentSettlementReveal: (DormitoryQueueApplication) -> Void
+    let focusedApplicationID: Int?
+    let focusPulseVisible: Bool
 
     private var sortedApplications: [DormitoryQueueApplication] {
         applications.sorted {
@@ -45,6 +47,8 @@ struct DormitoryApplicationsDashboard: View {
                     onDownloadApplicationForm: { onDownloadApplicationForm(currentApplication) },
                     onPresentSettlementReveal: { onPresentSettlementReveal(currentApplication) }
                 )
+                .id("dorm-\(currentApplication.id)")
+                .notificationFocusHighlight(focusedApplicationID == currentApplication.id && focusPulseVisible)
             } else if applications.isEmpty {
                 DormitoryEmptyApplicationsCard()
             }
@@ -63,7 +67,9 @@ struct DormitoryApplicationsDashboard: View {
                     applications: historyApplications,
                     isDownloadingFile: isDownloadingFile,
                     onOpenDocument: onOpenDocument,
-                    onDownloadApplicationForm: onDownloadApplicationForm
+                    onDownloadApplicationForm: onDownloadApplicationForm,
+                    focusedApplicationID: focusedApplicationID,
+                    focusPulseVisible: focusPulseVisible
                 )
             }
         }

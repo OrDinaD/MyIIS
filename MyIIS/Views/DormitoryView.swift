@@ -2,9 +2,15 @@ import QuickLook
 import SwiftUI
 
 struct DormitoryView: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private var router = AppRouter.shared
     @State private var viewModel: DormitoryViewModel
     @State private var previewURL: URL?
     @State private var editorContext: DormitoryApplicationEditorContext?
+    @State private var notificationTarget: PortalNotificationDestination?
+    @State private var focusedApplicationID: Int?
+    @State private var highlightApplicationsSection = false
+    @State private var focusPulseVisible = false
 
     @MainActor
     init(viewModel: DormitoryViewModel? = nil) {
@@ -13,10 +19,15 @@ struct DormitoryView: View {
 
     var body: some View {
         ZStack {
-            ScrollView {
-                dormitoryContent
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    dormitoryContent
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                }
+                .task(id: notificationTarget) {
+                    await focusNotificationTarget(using: proxy)
+                }
             }
             .allowsHitTesting(viewModel.settlementReveal == nil)
 
@@ -44,6 +55,7 @@ struct DormitoryView: View {
         .animation(.snappy(duration: 0.32), value: viewModel.settlementReveal?.id)
         .task {
             await viewModel.loadIfNeeded()
+            notificationTarget = router.takeNotificationDestination(for: .dormitory)
         }
         .refreshable {
             await viewModel.reload()
@@ -120,10 +132,56 @@ struct DormitoryView: View {
                     Task { await downloadApplicationForm(for: application) }
                 },
                 pendingSettlementApplicationID: viewModel.pendingSettlementApplicationID,
-                onPresentSettlementReveal: viewModel.presentSettlementReveal
+                onPresentSettlementReveal: viewModel.presentSettlementReveal,
+                focusedApplicationID: focusedApplicationID,
+                focusPulseVisible: focusPulseVisible
             )
+            .id("dorm-applications")
+            .notificationFocusHighlight(highlightApplicationsSection && focusPulseVisible)
             PrivilegesSection(records: viewModel.privilegeRecords)
         }
+    }
+
+    @MainActor
+    private func focusNotificationTarget(using proxy: ScrollViewProxy) async {
+        guard case .dormitory(let number)? = notificationTarget else { return }
+
+        if let number {
+            let matches = viewModel.applications.filter { $0.number == number }
+            if matches.count == 1, let application = matches.first {
+                focusedApplicationID = application.id
+                try? await Task.sleep(nanoseconds: 150_000_000)
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    proxy.scrollTo("dorm-\(application.id)", anchor: .center)
+                }
+            } else {
+                highlightApplicationsSection = true
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    proxy.scrollTo("dorm-applications", anchor: .top)
+                }
+            }
+        } else {
+            highlightApplicationsSection = true
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo("dorm-applications", anchor: .top)
+            }
+        }
+
+        for _ in 0 ..< (reduceMotion ? 1 : 3) {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                focusPulseVisible = true
+            }
+            try? await Task.sleep(nanoseconds: reduceMotion ? 1_200_000_000 : 350_000_000)
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                focusPulseVisible = false
+            }
+            if !reduceMotion {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+            }
+        }
+        focusedApplicationID = nil
+        highlightApplicationsSection = false
+        notificationTarget = nil
     }
 
     private func openDocument(for application: DormitoryQueueApplication) async {
@@ -188,6 +246,8 @@ private struct ApplicationsSection: View {
     let onDownloadApplicationForm: (DormitoryQueueApplication) -> Void
     let pendingSettlementApplicationID: Int?
     let onPresentSettlementReveal: (DormitoryQueueApplication) -> Void
+    let focusedApplicationID: Int?
+    let focusPulseVisible: Bool
 
     var body: some View {
         DormitoryApplicationsDashboard(
@@ -201,7 +261,9 @@ private struct ApplicationsSection: View {
             onEditApplication: onEditApplication,
             onDownloadApplicationForm: onDownloadApplicationForm,
             pendingSettlementApplicationID: pendingSettlementApplicationID,
-            onPresentSettlementReveal: onPresentSettlementReveal
+            onPresentSettlementReveal: onPresentSettlementReveal,
+            focusedApplicationID: focusedApplicationID,
+            focusPulseVisible: focusPulseVisible
         )
     }
 }

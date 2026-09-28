@@ -3,10 +3,16 @@ import SwiftUI
 @MainActor
 struct StudyView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    private var router = AppRouter.shared
     @State private var viewModel: StudyViewModel
     @State private var isShowingMarkSheetOrder = false
     @State private var isShowingCertificateOrder = false
     @State private var selectedCertificate: CertificateRequest?
+    @State private var notificationTarget: PortalNotificationDestination?
+    @State private var focusedCertificateID: Int?
+    @State private var highlightCertificatesSection = false
+    @State private var focusPulseVisible = false
     @State private var alertMessage: String?
     @State private var showsAlert = false
 
@@ -49,6 +55,7 @@ struct StudyView: View {
         }
         .task {
             await viewModel.load()
+            notificationTarget = router.takeNotificationDestination(for: .study)
         }
     }
 
@@ -65,25 +72,30 @@ struct StudyView: View {
             }
             .padding(.horizontal, 20)
         } else {
-            ScrollView {
-                LazyVStack(spacing: 16) {
-                    if viewModel.isShowingStaleDataWarning {
-                        StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                            await viewModel.refresh()
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 16) {
+                        if viewModel.isShowingStaleDataWarning {
+                            StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
+                                await viewModel.refresh()
+                            }
                         }
+                        certificatesCard
+                        overviewCard
+                        markSheetsCard
+                        omissionApplicationsCard
+                        lmsCard
                     }
-                    certificatesCard
-                    overviewCard
-                    markSheetsCard
-                    omissionApplicationsCard
-                    lmsCard
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 28)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .padding(.bottom, 28)
-            }
-            .refreshable {
-                await viewModel.refresh()
+                .refreshable {
+                    await viewModel.refresh()
+                }
+                .task(id: notificationTarget) {
+                    await focusNotificationTarget(using: proxy)
+                }
             }
         }
     }
@@ -171,11 +183,15 @@ struct StudyView: View {
                                 onOpen: { selectedCertificate = request },
                                 onCancel: { Task { await viewModel.cancelCertificate(request) } }
                             )
+                            .id("certificate-\(request.id)")
+                            .notificationFocusHighlight(focusedCertificateID == request.id && focusPulseVisible)
                         }
                     }
                 }
             }
         )
+        .id("certificates")
+        .notificationFocusHighlight(highlightCertificatesSection && focusPulseVisible)
     }
 
     private var omissionApplicationsCard: some View {
@@ -232,6 +248,46 @@ struct StudyView: View {
                 }
             }
         }
+    }
+
+    private func focusNotificationTarget(using proxy: ScrollViewProxy) async {
+        guard case .certificate(let number)? = notificationTarget else { return }
+
+        if let number {
+            let matches = viewModel.dashboard.certificates.filter { $0.number == number }
+            if matches.count == 1, let certificate = matches.first {
+                focusedCertificateID = certificate.id
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    proxy.scrollTo("certificate-\(certificate.id)", anchor: .center)
+                }
+            } else {
+                highlightCertificatesSection = true
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    proxy.scrollTo("certificates", anchor: .top)
+                }
+            }
+        } else {
+            highlightCertificatesSection = true
+            withAnimation(.easeInOut(duration: 0.35)) {
+                proxy.scrollTo("certificates", anchor: .top)
+            }
+        }
+
+        for _ in 0 ..< (reduceMotion ? 1 : 3) {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                focusPulseVisible = true
+            }
+            try? await Task.sleep(nanoseconds: reduceMotion ? 1_200_000_000 : 350_000_000)
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
+                focusPulseVisible = false
+            }
+            if !reduceMotion {
+                try? await Task.sleep(nanoseconds: 250_000_000)
+            }
+        }
+        focusedCertificateID = nil
+        highlightCertificatesSection = false
+        notificationTarget = nil
     }
 }
 

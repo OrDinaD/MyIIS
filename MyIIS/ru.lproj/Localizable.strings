@@ -354,6 +354,7 @@
 "notifications_error_title" = "Не удалось загрузить уведомления";
 "notifications_mark_all_read" = "Прочитать все";
 "notifications_mark_read_hint" = "Отметить как прочитанное";
+"notifications_open_related_hint" = "Открыть связанный раздел";
 "notifications_marking_read" = "Отмечаем уведомления прочитанными";
 "notifications_no_unread" = "Нет непрочитанных уведомлений";
 "notifications_read" = "Прочитано";

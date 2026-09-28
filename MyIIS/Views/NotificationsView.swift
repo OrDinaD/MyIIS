@@ -121,20 +121,13 @@ struct NotificationsView: View {
 
     @ViewBuilder
     private func notificationButton(_ notification: PortalNotification) -> some View {
-        if notification.isViewed {
-            PortalNotificationRow(notification: notification)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(notification.message)
-                .accessibilityValue(
-                    [
-                        notification.displayDate,
-                        NSLocalizedString("notifications_read", comment: "")
-                    ].joined(separator: ", ")
-                )
-        } else {
+        if notification.destination != nil || !notification.isViewed {
             Button {
-                Task {
-                    await viewModel.markAsRead(notification)
+                if !notification.isViewed {
+                    Task { await viewModel.markAsRead(notification) }
+                }
+                if let destination = notification.destination {
+                    AppRouter.shared.navigate(toNotification: destination)
                 }
             } label: {
                 PortalNotificationRow(notification: notification)
@@ -145,10 +138,30 @@ struct NotificationsView: View {
             .accessibilityValue(
                 [
                     notification.displayDate,
-                    NSLocalizedString("notifications_unread", comment: "")
+                    notification.isViewed
+                        ? NSLocalizedString("notifications_read", comment: "")
+                        : NSLocalizedString("notifications_unread", comment: "")
                 ].joined(separator: ", ")
             )
-            .accessibilityHint(NSLocalizedString("notifications_mark_read_hint", comment: ""))
+            .accessibilityHint(
+                notification.destination == nil
+                    ? NSLocalizedString("notifications_mark_read_hint", comment: "")
+                    : NSLocalizedString(
+                        "notifications_open_related_hint",
+                        value: "Открыть связанный раздел",
+                        comment: ""
+                    )
+            )
+        } else {
+            PortalNotificationRow(notification: notification)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(notification.message)
+                .accessibilityValue(
+                    [
+                        notification.displayDate,
+                        NSLocalizedString("notifications_read", comment: "")
+                    ].joined(separator: ", ")
+                )
         }
     }
 
@@ -178,33 +191,6 @@ struct NotificationsView: View {
         .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
-    }
-}
-
-struct NotificationsToolbarLabel: View {
-    let unreadCount: Int
-
-    var body: some View {
-        Image(systemName: unreadCount > 0 ? "bell.fill" : "bell")
-            .frame(width: 28, height: 28)
-            .overlay(alignment: .topTrailing) {
-                if unreadCount > 0 {
-                    Text(badgeText)
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                        .padding(.horizontal, 4)
-                        .frame(minWidth: 16, minHeight: 16)
-                        .background(.red, in: Capsule())
-                        .offset(x: 7, y: -5)
-                        .accessibilityHidden(true)
-                }
-            }
-    }
-
-    private var badgeText: String {
-        unreadCount > 99 ? "99+" : String(unreadCount)
     }
 }
 

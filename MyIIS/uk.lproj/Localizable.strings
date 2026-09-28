@@ -354,6 +354,7 @@
 "notifications_error_title" = "Не вдалося завантажити сповіщення";
 "notifications_mark_all_read" = "Прочитати всі";
 "notifications_mark_read_hint" = "Позначити як прочитане";
+"notifications_open_related_hint" = "Відкрити пов’язаний розділ";
 "notifications_marking_read" = "Позначаємо сповіщення прочитаними";
 "notifications_no_unread" = "Немає непрочитаних сповіщень";
 "notifications_read" = "Прочитано";

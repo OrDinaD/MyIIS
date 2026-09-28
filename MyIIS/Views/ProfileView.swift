@@ -8,9 +8,7 @@ struct ProfileView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.locale) private var locale
-    @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel = ProfileViewModel()
-    @State private var notificationsViewModel = PortalNotificationsViewModel()
     @State private var showContacts = false
     @State private var showLogoutConfirmation = false
     @State private var showRatingInfo = false
@@ -55,15 +53,6 @@ private extension ProfileView {
         .toolbar(showFullScreenAvatar ? .hidden : .visible, for: .tabBar)
         .statusBarHidden(showFullScreenAvatar)
         .hiddenNavigationBarBackground()
-        .task {
-            await notificationsViewModel.loadUnreadCount()
-        }
-        .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return }
-            Task {
-                await notificationsViewModel.loadUnreadCount()
-            }
-        }
     }
 
     func profileContent(for user: User) -> some View {
@@ -107,25 +96,7 @@ private extension ProfileView {
             }
             .accessibilityLabel(NSLocalizedString("settings_title", comment: ""))
 
-            NavigationLink {
-                NotificationsView(viewModel: notificationsViewModel)
-            } label: {
-                NotificationsToolbarLabel(unreadCount: notificationsViewModel.unreadCount)
-            }
-            .accessibilityLabel(NSLocalizedString("notifications_title", comment: ""))
-            .accessibilityValue(notificationsAccessibilityValue)
         }
-    }
-
-    var notificationsAccessibilityValue: String {
-        guard notificationsViewModel.unreadCount > 0 else {
-            return NSLocalizedString("notifications_no_unread", comment: "")
-        }
-
-        return String(
-            format: NSLocalizedString("notifications_unread_count_format", comment: ""),
-            notificationsViewModel.unreadCount
-        )
     }
 
     var emptyState: some View {

@@ -354,6 +354,7 @@
 "notifications_error_title" = "Notifications couldn't be loaded";
 "notifications_mark_all_read" = "Mark All as Read";
 "notifications_mark_read_hint" = "Mark as read";
+"notifications_open_related_hint" = "Open the related section";
 "notifications_marking_read" = "Marking notifications as read";
 "notifications_no_unread" = "No unread notifications";
 "notifications_read" = "Read";

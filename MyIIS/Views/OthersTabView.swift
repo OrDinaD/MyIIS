@@ -8,6 +8,7 @@ import UIKit
 
 private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
     case profile
+    case notifications
     case gradebook
     case study
     case headman
@@ -32,6 +33,8 @@ private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .profile:
             return NSLocalizedString("tab_profile", comment: "")
+        case .notifications:
+            return NSLocalizedString("notifications_title", comment: "")
         case .gradebook:
             return NSLocalizedString("services_item_markbook", comment: "")
         case .study:
@@ -68,6 +71,8 @@ private enum ServicesDestination: String, CaseIterable, Identifiable, Hashable {
         switch self {
         case .profile:
             return "person.crop.circle"
+        case .notifications:
+            return "bell.badge.fill"
         case .gradebook:
             return "book.closed.fill"
         case .study:
@@ -105,8 +110,10 @@ struct OthersTabView: View {
     @Bindable private var router = AppRouter.shared
     @EnvironmentObject private var authService: AuthenticationService
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @State private var desktopSelection: ServicesDestination?
+    @State private var notificationsViewModel = PortalNotificationsViewModel()
     @State private var showLogin = false
     @State private var isGuestAccountServicesExpanded = false
 
@@ -129,6 +136,24 @@ struct OthersTabView: View {
         .sheet(isPresented: $showLogin) {
             LoginView()
         }
+        .task(id: authService.currentUser?.id) {
+            notificationsViewModel.reset()
+            if isAuthenticated {
+                await notificationsViewModel.loadUnreadCount()
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active, isAuthenticated else { return }
+            Task { await notificationsViewModel.loadUnreadCount() }
+        }
+        .onChange(of: router.selectedTab) { _, tab in
+            guard tab == .others, isAuthenticated else { return }
+            Task { await notificationsViewModel.loadUnreadCount() }
+        }
+        .onChange(of: router.pendingNotificationDestination) { _, destination in
+            guard shouldUseDesktopSplitView, let destination else { return }
+            desktopSelection = destination.section == .study ? .study : .dormitory
+        }
     }
 }
 
@@ -145,6 +170,7 @@ private extension OthersTabView {
             .navigationDestination(for: AppSection.self) { section in
                 switch section {
                 case .profile: ProfileView()
+                case .notifications: NotificationsView(viewModel: notificationsViewModel)
                 case .gradebook: GradebookView()
                 case .study: StudyView()
                 case .diploma: DiplomaServiceView()
@@ -179,6 +205,7 @@ private extension OthersTabView {
     private var mobileServicesContent: some View {
         if isAuthenticated {
             mobileProfileSection
+            mobileNotificationsSection
             mobileAccountServicesSections
             mobileOpenServicesSection
             mobileAboutSection
@@ -214,6 +241,15 @@ private extension OthersTabView {
             }
             .accessibilityLabel(NSLocalizedString("tab_profile", comment: ""))
             .accessibilityIdentifier("serviceLink_profile")
+        }
+    }
+
+    private var mobileNotificationsSection: some View {
+        Section {
+            NavigationLink(value: AppSection.notifications) {
+                serviceRow(for: .notifications)
+            }
+            .accessibilityIdentifier("serviceLink_notifications")
         }
     }
 
@@ -397,6 +433,10 @@ private extension OthersTabView {
                 serviceRow(for: .profile)
                     .tag(ServicesDestination.profile)
             }
+            Section {
+                serviceRow(for: .notifications)
+                    .tag(ServicesDestination.notifications)
+            }
             desktopAccountServicesSections
             desktopOpenServicesSection
             Section {
@@ -502,6 +542,8 @@ private extension OthersTabView {
         switch destination {
         case .profile:
             ProfileView()
+        case .notifications:
+            NotificationsView(viewModel: notificationsViewModel)
         case .lms:
             if enableBetaSections {
                 SEOHomeView()
@@ -578,8 +620,27 @@ private extension OthersTabView {
     }
 
     private func serviceRow(for destination: ServicesDestination) -> some View {
-        ServiceRow(icon: destination.icon, title: destination.title)
+        ServiceRow(
+            icon: destination.icon,
+            title: destination.title,
+            unreadCount: destination == .notifications ? notificationsViewModel.unreadCount : 0
+        )
             .accessibilityLabel(destination.title)
+            .accessibilityValue(
+                destination == .notifications
+                    ? notificationsAccessibilityValue
+                    : ""
+            )
+    }
+
+    private var notificationsAccessibilityValue: String {
+        guard notificationsViewModel.unreadCount > 0 else {
+            return NSLocalizedString("notifications_no_unread", comment: "")
+        }
+        return String(
+            format: NSLocalizedString("notifications_unread_count_format", comment: ""),
+            notificationsViewModel.unreadCount
+        )
     }
 
     private func lockedServiceButton(for destination: ServicesDestination) -> some View {
@@ -607,6 +668,7 @@ private struct ServicesPlaceholderView: View {
 private struct ServiceRow: View {
     let icon: String
     let title: String
+    let unreadCount: Int
 
     var body: some View {
         HStack(spacing: 14) {
@@ -623,6 +685,20 @@ private struct ServiceRow: View {
                 Text(title)
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
+            }
+
+            if unreadCount > 0 {
+                Spacer(minLength: 8)
+                Text(unreadCount > 99 ? "99+" : String(unreadCount))
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.red, in: Capsule())
+                    .accessibilityLabel(String(
+                        format: NSLocalizedString("notifications_unread_count_format", comment: ""),
+                        unreadCount
+                    ))
             }
         }
         .padding(.vertical, 4)

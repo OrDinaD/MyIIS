@@ -354,6 +354,7 @@
 "notifications_error_title" = "Не ўдалося загрузіць апавяшчэнні";
 "notifications_mark_all_read" = "Прачытаць усе";
 "notifications_mark_read_hint" = "Пазначыць як прачытанае";
+"notifications_open_related_hint" = "Адкрыць звязаны раздзел";
 "notifications_marking_read" = "Пазначаем апавяшчэнні прачытанымі";
 "notifications_no_unread" = "Няма непрачытаных апавяшчэнняў";
 "notifications_read" = "Прачытана";
