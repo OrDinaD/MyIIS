@@ -48,6 +48,7 @@ final class StudyViewModel {
             || !dashboard.certificates.isEmpty
             || !dashboard.certificatePlaceSections.isEmpty
             || !dashboard.lmsApplications.isEmpty
+            || !dashboard.omissionApplications.isEmpty
     }
 
     var certificatePlaces: [CertificatePlace] {
@@ -76,7 +77,7 @@ final class StudyViewModel {
 
         do {
             let fetchedDashboard = try await service.fetchDashboard()
-            dashboard = mergedDashboardPreservingVisibleData(fetchedDashboard)
+            dashboard = fetchedDashboard
             lastUpdateTime = Date()
             saveSnapshot()
         } catch is CancellationError {
@@ -89,7 +90,7 @@ final class StudyViewModel {
                 errorMessage = apiError.localizedDescription
             }
         } catch {
-            let fallbackMessage = "Не удалось загрузить раздел «Учеба»."
+            let fallbackMessage = "Не удалось загрузить раздел «Деканат»."
             if hasLoadedContent {
                 isShowingStaleDataWarning = true
                 errorMessage = fallbackMessage
@@ -211,17 +212,6 @@ final class StudyViewModel {
         }
     }
 
-    private func mergedDashboardPreservingVisibleData(_ fetched: StudyDashboard) -> StudyDashboard {
-        StudyDashboard(
-            markSheets: fetched.markSheets.isEmpty ? dashboard.markSheets : fetched.markSheets,
-            markSheetTypes: fetched.markSheetTypes.isEmpty ? dashboard.markSheetTypes : fetched.markSheetTypes,
-            markSheetSubjects: fetched.markSheetSubjects.isEmpty ? dashboard.markSheetSubjects : fetched.markSheetSubjects,
-            certificates: fetched.certificates.isEmpty ? dashboard.certificates : fetched.certificates,
-            certificatePlaceSections: fetched.certificatePlaceSections.isEmpty ? dashboard.certificatePlaceSections : fetched.certificatePlaceSections,
-            lmsApplications: fetched.lmsApplications.isEmpty ? dashboard.lmsApplications : fetched.lmsApplications
-        )
-    }
-
     private func replaceMarkSheet(_ request: MarkSheetRequest) {
         guard let index = dashboard.markSheets.firstIndex(where: { $0.id == request.id }) else { return }
         dashboard.markSheets[index] = request
@@ -311,7 +301,8 @@ extension StudyDashboard {
                 CertificatePlace(name: "иное", id: 16, type: 0)
             ])
         ],
-        lmsApplications: []
+        lmsApplications: [],
+        omissionApplications: []
     )
 }
 #endif

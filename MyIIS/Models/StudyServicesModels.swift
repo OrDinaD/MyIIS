@@ -7,6 +7,41 @@ struct StudyDashboard: Codable, Equatable {
     var certificates: [CertificateRequest]
     var certificatePlaceSections: [CertificatePlaceSection]
     var lmsApplications: [LMSApplication]
+    var omissionApplications: [DeanOmissionApplication]
+
+    private enum CodingKeys: String, CodingKey {
+        case markSheets, markSheetTypes, markSheetSubjects, certificates
+        case certificatePlaceSections, lmsApplications, omissionApplications
+    }
+
+    init(
+        markSheets: [MarkSheetRequest],
+        markSheetTypes: [MarkSheetType],
+        markSheetSubjects: [MarkSheetSubject],
+        certificates: [CertificateRequest],
+        certificatePlaceSections: [CertificatePlaceSection],
+        lmsApplications: [LMSApplication],
+        omissionApplications: [DeanOmissionApplication]
+    ) {
+        self.markSheets = markSheets
+        self.markSheetTypes = markSheetTypes
+        self.markSheetSubjects = markSheetSubjects
+        self.certificates = certificates
+        self.certificatePlaceSections = certificatePlaceSections
+        self.lmsApplications = lmsApplications
+        self.omissionApplications = omissionApplications
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        markSheets = try container.decode([MarkSheetRequest].self, forKey: .markSheets)
+        markSheetTypes = try container.decode([MarkSheetType].self, forKey: .markSheetTypes)
+        markSheetSubjects = try container.decode([MarkSheetSubject].self, forKey: .markSheetSubjects)
+        certificates = try container.decode([CertificateRequest].self, forKey: .certificates)
+        certificatePlaceSections = try container.decode([CertificatePlaceSection].self, forKey: .certificatePlaceSections)
+        lmsApplications = try container.decode([LMSApplication].self, forKey: .lmsApplications)
+        omissionApplications = try container.decodeIfPresent([DeanOmissionApplication].self, forKey: .omissionApplications) ?? []
+    }
 
     static let empty = StudyDashboard(
         markSheets: [],
@@ -14,7 +49,8 @@ struct StudyDashboard: Codable, Equatable {
         markSheetSubjects: [],
         certificates: [],
         certificatePlaceSections: [],
-        lmsApplications: []
+        lmsApplications: [],
+        omissionApplications: []
     )
 }
 
@@ -200,6 +236,14 @@ struct MarkSheetOrderRequest: Encodable, Equatable {
     let subject: MarkSheetOrderSubject
     let absentDate: String?
     let employee: MarkSheetEmployee
+}
+
+struct DeanOmissionApplication: Codable, Equatable, Identifiable {
+    let id: Int
+    let number: Int
+    let status: String
+    let omissionCertificateType: String
+    let rejectionReason: String?
 }
 
 struct CertificateRequest: Codable, Equatable, Identifiable {

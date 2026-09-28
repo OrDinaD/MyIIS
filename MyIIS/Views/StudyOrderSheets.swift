@@ -166,6 +166,8 @@ struct CertificateOrderSheet: View {
     @State private var printType: CertificatePrintType = .ordinary
     @State private var comment = ""
     @State private var count = 1
+    @State private var submissionError: String?
+    @State private var showsSubmissionError = false
 
     private var selectedPlace: CertificatePlace? {
         viewModel.certificatePlaces.first { $0.id == selectedPlaceID }
@@ -176,7 +178,7 @@ struct CertificateOrderSheet: View {
         if selectedPlace.requiresComment && comment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return false
         }
-        return (1 ... 10).contains(count) && !viewModel.isSubmitting
+        return (1 ... 10).contains(count) && !viewModel.isSubmitting && !viewModel.isShowingStaleDataWarning
     }
 
     private var provisionPlace: String {
@@ -191,6 +193,20 @@ struct CertificateOrderSheet: View {
     var body: some View {
         NavigationStack {
             Form {
+                if viewModel.certificatePlaces.isEmpty || viewModel.isShowingStaleDataWarning {
+                    Section {
+                        ContentUnavailableView(
+                            "Нужны свежие данные деканата",
+                            systemImage: "network.slash",
+                            description: Text("Обновите список мест предъявления перед заказом справки.")
+                        )
+                        Button("Повторить загрузку") {
+                            Task { await viewModel.refresh() }
+                        }
+                        .disabled(viewModel.isLoading)
+                    }
+                }
+
                 Section("Параметры") {
                     Picker("Тип печати", selection: $printType) {
                         ForEach(CertificatePrintType.allCases) { type in
@@ -254,6 +270,9 @@ struct CertificateOrderSheet: View {
                 }
             }
             .navigationTitle("Заказ справки")
+            .alert(submissionError ?? "Не удалось заказать справку", isPresented: $showsSubmissionError) {
+                Button("ОК", role: .cancel) {}
+            }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -323,7 +342,12 @@ struct CertificateOrderSheet: View {
         )
 
         if await viewModel.submitCertificate(request) {
+            viewModel.toastMessage = nil
             dismiss()
+        } else {
+            submissionError = viewModel.toastMessage
+            viewModel.toastMessage = nil
+            showsSubmissionError = true
         }
     }
 }

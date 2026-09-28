@@ -6,6 +6,7 @@ struct StudyView: View {
     @State private var viewModel: StudyViewModel
     @State private var isShowingMarkSheetOrder = false
     @State private var isShowingCertificateOrder = false
+    @State private var selectedCertificate: CertificateRequest?
     @State private var alertMessage: String?
     @State private var showsAlert = false
 
@@ -33,10 +34,14 @@ struct StudyView: View {
         .sheet(isPresented: $isShowingCertificateOrder) {
             CertificateOrderSheet(viewModel: viewModel)
         }
+        .sheet(item: $selectedCertificate) { certificate in
+            CertificateDetailSheet(certificate: certificate)
+        }
         .alert(alertMessage ?? "", isPresented: $showsAlert) {
             Button("ОК", role: .cancel) {}
         }
         .onChange(of: viewModel.toastMessage) { _, newValue in
+            guard !isShowingCertificateOrder else { return }
             guard let message = newValue, !message.isEmpty else { return }
             alertMessage = message
             showsAlert = true
@@ -50,8 +55,10 @@ struct StudyView: View {
     @ViewBuilder
     private var content: some View {
         if viewModel.isLoading && !viewModel.hasLoadedContent {
-            ProgressView("Загрузка учебных сервисов...")
+            ProgressView("Загрузка сервисов деканата...")
                 .controlSize(.large)
+                .padding(24)
+                .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         } else if let message = viewModel.errorMessage, !viewModel.hasLoadedContent {
             StudyUnavailableView(message: message) {
                 Task { await viewModel.refresh() }
@@ -65,9 +72,10 @@ struct StudyView: View {
                             await viewModel.refresh()
                         }
                     }
+                    certificatesCard
                     overviewCard
                     markSheetsCard
-                    certificatesCard
+                    omissionApplicationsCard
                     lmsCard
                 }
                 .padding(.horizontal, 16)
@@ -76,14 +84,6 @@ struct StudyView: View {
             }
             .refreshable {
                 await viewModel.refresh()
-            }
-            .overlay(alignment: .top) {
-                if viewModel.isLoading {
-                    ProgressView()
-                        .padding(10)
-                        .background(.thinMaterial, in: Capsule())
-                        .padding(.top, 6)
-                }
             }
         }
     }
@@ -165,15 +165,52 @@ struct StudyView: View {
                     EmptyServiceState(text: "История справок пока пустая.")
                 } else {
                     VStack(spacing: 10) {
-                        ForEach(viewModel.dashboard.certificates.prefix(4)) { request in
-                            CertificateRequestRow(request: request) {
-                                Task { await viewModel.cancelCertificate(request) }
-                            }
+                        ForEach(viewModel.dashboard.certificates) { request in
+                            CertificateRequestRow(
+                                request: request,
+                                onOpen: { selectedCertificate = request },
+                                onCancel: { Task { await viewModel.cancelCertificate(request) } }
+                            )
                         }
                     }
                 }
             }
         )
+    }
+
+    private var omissionApplicationsCard: some View {
+        StudySectionCard(
+            title: "Заявления о пропусках",
+            subtitle: "Обращения, переданные в деканат.",
+            icon: "text.document.fill",
+            tint: .orange,
+            buttonTitle: nil,
+            action: nil
+        ) {
+            if viewModel.dashboard.omissionApplications.isEmpty {
+                EmptyServiceState(text: "Заявлений о пропусках пока нет.")
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(viewModel.dashboard.omissionApplications.prefix(3)) { application in
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(application.omissionCertificateType)
+                                .font(.subheadline.weight(.semibold))
+                            Text("№\(application.number) · \(application.status)")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            if let reason = application.rejectionReason, !reason.isEmpty {
+                                Text(reason)
+                                    .font(.caption)
+                                    .foregroundStyle(.red)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                }
+            }
+        }
     }
 
     private var lmsCard: some View {
@@ -323,42 +360,44 @@ private struct MarkSheetRequestRow: View {
 
 private struct CertificateRequestRow: View {
     let request: CertificateRequest
+    let onOpen: () -> Void
     let onCancel: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            StatusDot(color: statusColor)
-                .padding(.top, 5)
-                .accessibilityHidden(true)
+            Button(action: onOpen) {
+                HStack(alignment: .top, spacing: 12) {
+                    StatusDot(color: statusColor)
+                        .padding(.top, 5)
+                        .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    Text("№" + String(request.number))
-                        .font(.subheadline.weight(.semibold))
-                    Text(request.certificateType)
-                        .font(.caption.weight(.medium))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(Color.blue.opacity(0.12), in: Capsule())
-                }
-                Text(request.provisionPlace)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                HStack(spacing: 8) {
-                    Label(request.dateOrder, systemImage: "calendar")
-                    Text(request.statusText)
-                        .foregroundStyle(statusColor)
-                }
-                .font(.caption)
-                if let reason = request.rejectionReason, !reason.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Text(reason)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 8) {
+                            Text("№" + String(request.number))
+                                .font(.subheadline.weight(.semibold))
+                            Text(request.certificateType)
+                                .font(.caption.weight(.medium))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.blue.opacity(0.12), in: Capsule())
+                        }
+                        Text(request.provisionPlace)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                        HStack(spacing: 8) {
+                            Label(request.dateOrder, systemImage: "calendar")
+                            Text(request.statusText)
+                                .foregroundStyle(statusColor)
+                        }
                         .font(.caption)
-                        .foregroundStyle(.red)
+                    }
+
+                    Spacer(minLength: 8)
                 }
             }
-
-            Spacer(minLength: 8)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Справка №\(request.number), \(request.certificateType), \(request.statusText). Подробнее")
 
             if request.isProcessing {
                 Button("Отменить", role: .destructive, action: onCancel)
@@ -375,6 +414,50 @@ private struct CertificateRequestRow: View {
         case 2: return .orange
         case 3: return .red
         default: return .secondary
+        }
+    }
+}
+
+private struct CertificateDetailSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let certificate: CertificateRequest
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Справка") {
+                    LabeledContent("Номер", value: String(certificate.number))
+                    LabeledContent("Тип", value: certificate.certificateType)
+                    LabeledContent("Место предъявления") {
+                        Text(certificate.provisionPlace)
+                            .multilineTextAlignment(.trailing)
+                    }
+                }
+
+                Section("Состояние") {
+                    LabeledContent("Статус", value: certificate.statusText)
+                    LabeledContent("Дата заказа", value: certificate.dateOrder)
+                    LabeledContent("Дата выдачи", value: certificate.issueDate ?? "Пока не выдана")
+                    if let reason = certificate.rejectionReason, !reason.isEmpty {
+                        LabeledContent("Причина отказа") {
+                            Text(reason)
+                                .multilineTextAlignment(.trailing)
+                        }
+                    }
+                }
+
+                Section("Дополнительно") {
+                    LabeledContent("По инициативе студента", value: certificate.isByStudent ? "Да" : "Нет")
+                    LabeledContent("ID заявки", value: String(certificate.id))
+                }
+            }
+            .navigationTitle("Справка №\(certificate.number)")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Готово") { dismiss() }
+                }
+            }
         }
     }
 }

@@ -29,25 +29,17 @@ final class StudyService: StudyServiceProtocol {
         async let certificatesResult: SectionLoadResult<[CertificateRequest]> = loadSection(path: "certificate", fallback: [])
         async let certificatePlacesResult: SectionLoadResult<[CertificatePlaceSection]> = loadSection(path: "certificate/places", fallback: [])
         async let lmsApplicationsResult: SectionLoadResult<[LMSApplication]> = loadSection(path: "lms/application-history", fallback: [])
+        async let omissionApplicationsResult: SectionLoadResult<[DeanOmissionApplication]> = loadSection(path: "omissions-by-student-application", fallback: [])
 
         let markSheetsStatus = await markSheetsResult.status
-        let markSheetTypesStatus = await markSheetTypesResult.status
-        let markSheetSubjectsStatus = await markSheetSubjectsResult.status
         let certificatesStatus = await certificatesResult.status
         let certificatePlacesStatus = await certificatePlacesResult.status
         let lmsApplicationsStatus = await lmsApplicationsResult.status
+        let omissionApplicationsStatus = await omissionApplicationsResult.status
 
-        let results: [SectionStatus] = [
-            markSheetsStatus,
-            markSheetTypesStatus,
-            markSheetSubjectsStatus,
-            certificatesStatus,
-            certificatePlacesStatus,
-            lmsApplicationsStatus
-        ]
-
-        if results.allSatisfy({ $0.error != nil }), let firstError = results.compactMap(\.error).first {
-            throw firstError
+        if let error = [markSheetsStatus, certificatesStatus, certificatePlacesStatus, lmsApplicationsStatus, omissionApplicationsStatus]
+            .compactMap(\.error).first {
+            throw error
         }
 
         return await StudyDashboard(
@@ -56,7 +48,8 @@ final class StudyService: StudyServiceProtocol {
             markSheetSubjects: markSheetSubjectsResult.value,
             certificates: certificatesResult.value,
             certificatePlaceSections: certificatePlacesResult.value,
-            lmsApplications: lmsApplicationsResult.value
+            lmsApplications: lmsApplicationsResult.value,
+            omissionApplications: omissionApplicationsResult.value
         )
     }
 
@@ -110,7 +103,7 @@ final class StudyService: StudyServiceProtocol {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json, text/plain, */*", forHTTPHeaderField: "Accept")
-        request.setValue("https://iis.bsuir.by/personal-account/study", forHTTPHeaderField: "Referer")
+        request.setValue("https://iis.bsuir.by/personal-account/dean", forHTTPHeaderField: "Referer")
         return request
     }
 }

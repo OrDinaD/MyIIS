@@ -396,6 +396,56 @@ final class APIDecodingBehaviorTests: XCTestCase {
         XCTAssertEqual(dto["provisionPlace"] as? String, "по месту работы родителей (ТЦСОН Островца)")
     }
 
+    func testStudyDashboardRestoresSnapshotBeforeDeanApplicationsWereAdded() throws {
+        let data = try JSONEncoder().encode(StudyDashboard.empty)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "omissionApplications")
+        let oldData = try JSONSerialization.data(withJSONObject: object)
+        let restored = try JSONDecoder().decode(StudyDashboard.self, from: oldData)
+        XCTAssertTrue(restored.omissionApplications.isEmpty)
+    }
+
+    func testDeanOmissionApplicationDecodesHarShapeWithoutPrivateFields() throws {
+        let json = #"""
+        {"id":7,"number":4,"status":"Обрабатывается",
+         "omissionCertificateType":"Заявление","rejectionReason":null,
+         "createdDate":"2026-09-28","dateFrom":"2026-09-27",
+         "dateTo":"2026-09-28","placeOfStay":"личные данные","signature":"подпись"}
+        """#
+        let application = try JSONDecoder().decode(DeanOmissionApplication.self, from: Data(json.utf8))
+        XCTAssertEqual(application.id, 7)
+        XCTAssertEqual(application.omissionCertificateType, "Заявление")
+        let snapshot = try JSONEncoder().encode(application)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: snapshot) as? [String: Any])
+        XCTAssertNil(object["placeOfStay"])
+        XCTAssertNil(object["signature"])
+    }
+
+    func testCertificatePlacesAndOrderResponseDecodeHarShape() throws {
+        let placesJSON = #"""
+        [
+          {"type":"СППС","places":[{"id":8,"name":"в ФСЗН","type":1}]},
+          {"type":"Деканат","places":[{"id":1,"name":"в банк","type":0},{"id":16,"name":"иное","type":0}]},
+          {"type":"Военкомат","places":[{"id":21,"name":"в военкомат","type":2}]}
+        ]
+        """#
+        let sections = try JSONDecoder().decode([CertificatePlaceSection].self, from: Data(placesJSON.utf8))
+        XCTAssertEqual(sections.flatMap(\.places).count, 4)
+        XCTAssertTrue(sections[0].places[0].forcesStampedSeal)
+        XCTAssertTrue(sections[1].places[1].requiresComment)
+        XCTAssertTrue(sections[2].places[0].isMilitary)
+
+        let responseJSON = #"""
+        [{"id":100,"number":1,"provisionPlace":"иное (Университет)",
+          "dateOrder":"28.09.2026","issueDate":null,"certificateType":"гербовая",
+          "status":2,"rejectionReason":null,"isByStudent":true}]
+        """#
+        let requests = try JSONDecoder().decode([CertificateRequest].self, from: Data(responseJSON.utf8))
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(requests[0].provisionPlace, "иное (Университет)")
+        XCTAssertTrue(requests[0].isProcessing)
+    }
+
     func testMarkSheetRequestDecodesStringAndIntNumber() throws {
         let jsonStringNumber = """
         [
