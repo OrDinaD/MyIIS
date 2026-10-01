@@ -27,7 +27,23 @@ struct PinnedSchedulePicker: View {
                             onSelect()
                             Task { await viewModel.openGroupSchedule(group) }
                         } label: {
-                            Label(viewModel.pinnedGroupMenuTitle(for: group), systemImage: "pin.fill")
+                            Label {
+                                ViewThatFits(in: .horizontal) {
+                                    Text(viewModel.pinnedGroupMenuTitle(for: group))
+                                        .fixedSize()
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(viewModel.pinnedGroupDisplayName(for: group))
+                                            .fixedSize(horizontal: false, vertical: true)
+                                        if viewModel.pinnedGroupAlias(for: group) != nil {
+                                            Text("(\(group))")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
+                            } icon: {
+                                Image(systemName: "pin.fill")
+                            }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, 10)
                                 .contentShape(Rectangle())

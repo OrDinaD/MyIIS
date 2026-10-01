@@ -272,11 +272,11 @@ final class ScheduleServiceViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.pinnedGroupAlias(for: "420602"), "Илюха-3")
         XCTAssertEqual(viewModel.pinnedGroupDisplayName(for: "420602"), "Илюха-3")
-        XCTAssertEqual(viewModel.pinnedGroupMenuTitle(for: "420602"), "420602 (Илюха-3)")
+        XCTAssertEqual(viewModel.pinnedGroupMenuTitle(for: "420602"), "Илюха-3 (420602)")
 
         let restored = ScheduleServiceViewModel(defaults: defaults)
         XCTAssertEqual(restored.pinnedGroupAlias(for: "420602"), "Илюха-3")
-        XCTAssertEqual(restored.pinnedGroupMenuTitle(for: "420602"), "420602 (Илюха-3)")
+        XCTAssertEqual(restored.pinnedGroupMenuTitle(for: "420602"), "Илюха-3 (420602)")
 
         restored.setPinnedGroupAlias("   ", for: "420602")
         XCTAssertNil(restored.pinnedGroupAlias(for: "420602"))

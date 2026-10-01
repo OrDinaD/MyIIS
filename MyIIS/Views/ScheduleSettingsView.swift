@@ -5,6 +5,7 @@
 import SwiftUI
 
 struct ScheduleSettingsView: View {
+    var viewModel: ScheduleServiceViewModel? = nil
     @Environment(\.dismiss) private var dismiss
     @AppStorage(ScheduleDisplayPreferences.showsMidPairBreaksKey, store: ScheduleDisplayPreferences.defaults)
     private var showsMidPairBreaks = false
@@ -38,6 +39,9 @@ struct ScheduleSettingsView: View {
         NavigationStack {
             Form {
                 displaySection
+                if let viewModel {
+                    ScheduleSubgroupSelectionSection(viewModel: viewModel)
+                }
                 subgroupSection
                 widgetSection
                 colorsSection
@@ -236,6 +240,44 @@ struct ScheduleSettingsView: View {
         lessonTrackingEnabled = true
         widgetCustomGroup = ""
         resetAllColors()
+    }
+}
+
+private struct ScheduleSubgroupSelectionSection: View {
+    @Bindable var viewModel: ScheduleServiceViewModel
+
+    var body: some View {
+        if viewModel.mode == .group && !viewModel.isSchedulePublicationPending
+            && (viewModel.subgroupFilters.count > 1 || !viewModel.subjectSubgroups.isEmpty) {
+            Section {
+                if viewModel.subgroupFilters.count > 1 {
+                    Picker(
+                        NSLocalizedString("schedule_settings_subgroup_header", value: "Подгруппы", comment: ""),
+                        selection: $viewModel.subgroupFilter
+                    ) {
+                        ForEach(viewModel.subgroupFilters) { filter in
+                            Text(filter.localizedTitle).tag(filter)
+                        }
+                    }
+                }
+                ForEach(viewModel.subjectSubgroups) { subject in
+                    Picker(subject.title, selection: Binding(
+                        get: { viewModel.selectedTeacherID(for: subject) },
+                        set: { viewModel.selectTeacher($0, for: subject) }
+                    )) {
+                        Text(ScheduleSubgroupFilter.all.localizedTitle).tag(nil as Int?)
+                        ForEach(subject.options) { option in
+                            Text(option.title)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .tag(Optional(option.id))
+                        }
+                    }
+                    .pickerStyle(.navigationLink)
+                }
+            } header: {
+                Text(viewModel.scheduleHeaderTitle)
+            }
+        }
     }
 }
 

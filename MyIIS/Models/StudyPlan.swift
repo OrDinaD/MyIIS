@@ -293,7 +293,15 @@ struct DisciplineSchedule: Decodable, Identifiable, Equatable, Sendable {
         isAnnouncement = try container.decodeIfPresent(Bool.self, forKey: .isAnnouncement) ?? false
         isSplit = try container.decodeIfPresent(Bool.self, forKey: .isSplit) ?? false
 
-        let identifierSource = [subjectFullName ?? subject, startLessonTime, endLessonTime, weekNumbers.description].joined(separator: "|")
+        let identityFields: [String] = [
+            subjectFullName ?? subject, startLessonTime, endLessonTime,
+            weekNumbers.sorted().description, String(subgroup), lessonTypeAbbrev,
+            employees.map { String($0.id) }.sorted().joined(separator: ","),
+            auditories.sorted().joined(separator: ","), studentGroups.compactMap(\.name).sorted().joined(separator: ","),
+            lessonDateString ?? "", startLessonDateString ?? "", endLessonDateString ?? "",
+            note ?? "", String(isAnnouncement), String(isSplit)
+        ]
+        let identifierSource = identityFields.map { "\($0.utf8.count):\($0)" }.joined(separator: "|")
         id = identifierSource.isEmpty ? UUID().uuidString : identifierSource
     }
 

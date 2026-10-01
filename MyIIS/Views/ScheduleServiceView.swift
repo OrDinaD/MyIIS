@@ -157,7 +157,7 @@ struct ScheduleServiceView: View {
         }
         .quickLookPreview($scheduleReportURL)
         .sheet(isPresented: $isSettingsSheetPresented) {
-            ScheduleSettingsView()
+            ScheduleSettingsView(viewModel: viewModel)
         }
         .sheet(isPresented: $isLocalScheduleEditorPresented, onDismiss: applyLocalSchedule) {
             LocalScheduleEditorSheet(viewModel: localScheduleViewModel)

@@ -95,9 +95,7 @@ struct ScheduleSuggestionsView: View {
     private func groupRowButton(_ group: StudyGroup, isPinned: Bool) -> some View {
         let alias = isPinned ? pinnedGroupAliases[group.name]?.nilIfBlank : nil
         let details = group.detailsText
-        let subtitle = alias == nil
-            ? details
-            : [group.name, details.nilIfBlank].compactMap { $0 }.joined(separator: " · ")
+        let subtitle = details
         return HStack(spacing: 2) {
             Button {
                 onSelect(group)
@@ -110,11 +108,23 @@ struct ScheduleSuggestionsView: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         HStack(spacing: 6) {
-                            Text(alias ?? group.name)
-                                .font(.headline.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-                                .monospacedDigit()
+                            ViewThatFits(in: .horizontal) {
+                                Text(alias.map { "\($0) (\(group.name))" } ?? group.name)
+                                    .fixedSize()
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(alias ?? group.name)
+                                        .lineLimit(3)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    if alias != nil {
+                                        Text("(\(group.name))")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .monospacedDigit()
 
                             if group.name == accountGroupName {
                                 Text(NSLocalizedString("services_schedule_my_group", comment: ""))

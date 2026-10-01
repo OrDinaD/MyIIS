@@ -102,6 +102,23 @@ enum ScheduleSubgroupFilter: Hashable, Identifiable {
     }
 }
 
+struct ScheduleLanguageSubgroup: Identifiable, Sendable {
+    let id: Int
+    let number: Int
+    let teacherName: String
+
+    var title: String {
+        ScheduleSubgroupFilter.subgroup(number).localizedTitle + " · " + teacherName
+    }
+}
+
+struct ScheduleSubjectSubgroups: Identifiable, Sendable {
+    let id: String
+    let title: String
+    let options: [ScheduleLanguageSubgroup]
+    let lessonTypes: Set<String>
+}
+
 struct ScheduleContinuousDay: Identifiable, Sendable {
     let date: Date
     let weekday: StudyWeekday
@@ -149,7 +166,12 @@ final class ScheduleServiceViewModel {
     private var debouncedQuery = ""
     var groups: [StudyGroup] = []
     var employees: [ScheduleEmployeeDirectoryEntry] = []
-    var schedule: PublicScheduleResponse?
+    var schedule: PublicScheduleResponse? {
+        didSet {
+            subjectSubgroups = Self.makeSubjectSubgroups(schedule)
+            languageSubgroupOptions = subjectSubgroups.first { Self.isLanguageSubject($0.id) }?.options ?? []
+        }
+    }
     private(set) var selectedEmployee: ScheduleEmployeeDirectoryEntry?
     var currentWeekNumber: Int?
     var weekFilter: StudyWeekFilter = .all
@@ -166,6 +188,30 @@ final class ScheduleServiceViewModel {
             }
         }
     }
+    private(set) var subjectSubgroups: [ScheduleSubjectSubgroups] = []
+    private(set) var subjectSubgroupTeacherIDs: [String: Int] = [:]
+    private static let subjectSubgroupDefaultsKey = "services.schedule.subjectSubgroups.group"
+    private(set) var languageSubgroupOptions: [ScheduleLanguageSubgroup] = []
+    var languageSubgroupTeacherID: Int? {
+        didSet {
+            if !isRestoringLanguageSubgroup, mode == .group, let activeGroupNumber {
+                let key = Self.languageSubgroupDefaultsKey + "." + activeGroupNumber
+                if let languageSubgroupTeacherID {
+                    defaults.set(languageSubgroupTeacherID, forKey: key)
+                } else {
+                    defaults.removeObject(forKey: key)
+                }
+            }
+            rebuildContinuousTimeline(reset: true)
+            if let schedule {
+                updateClassScheduleWidgetSnapshot(from: schedule)
+                updateSessionScheduleWidgetSnapshot(from: schedule)
+            }
+        }
+    }
+    private var isRestoringLanguageSubgroup = false
+    private static let languageSubgroupDefaultsKey = "services.schedule.languageSubgroup.group"
+
     var isLoading = false
     var isDownloadingReport = false
     var errorMessage: String?
@@ -228,6 +274,8 @@ final class ScheduleServiceViewModel {
         let weekFilter: StudyWeekFilter
         let displayMode: ScheduleDisplayMode
         let subgroupFilter: ScheduleSubgroupFilter
+        let languageSubgroupTeacherID: Int?
+        let subjectSubgroupTeacherIDs: [String: Int]
         let continuousTimelineDays: [ScheduleContinuousDay]
     }
 
@@ -346,13 +394,15 @@ final class ScheduleServiceViewModel {
         if mode == .group {
             activeGroupNumber = snapshot.query
             subgroupFilter = restoredSubgroupFilter(for: snapshot.query)
+            restoreLanguageSubgroup(for: snapshot.query)
         } else {
             activeGroupNumber = nil
             subgroupFilter = .all
         }
 
         continuousTimelineDays = snapshot.continuousTimelineDays
-        if snapshot.subgroupFilter != subgroupFilter {
+        if snapshot.subgroupFilter != subgroupFilter || snapshot.languageSubgroupTeacherID != languageSubgroupTeacherID
+            || snapshot.subjectSubgroupTeacherIDs != subjectSubgroupTeacherIDs {
             rebuildContinuousTimeline(reset: true)
         }
         hasLoadedInitialData = false
@@ -419,6 +469,7 @@ final class ScheduleServiceViewModel {
         activeGroupNumber = groupNumber
         setMode(.group, preservingQuery: groupNumber)
         subgroupFilter = restoredSubgroupFilter(for: groupNumber)
+        restoreLanguageSubgroup(for: groupNumber)
         sanitizeSubgroupFilter()
         rebuildContinuousTimeline(reset: true)
         saveSnapshot()
@@ -803,7 +854,7 @@ final class ScheduleServiceViewModel {
 
     func pinnedGroupMenuTitle(for groupName: String) -> String {
         guard let alias = pinnedGroupAlias(for: groupName) else { return groupName }
-        return "\(groupName) (\(alias))"
+        return "\(alias) (\(groupName))"
     }
 
     func setPinnedGroupAlias(_ alias: String?, for groupName: String) {
@@ -868,6 +919,7 @@ final class ScheduleServiceViewModel {
         activeGroupNumber = groupNumber
         setMode(.group, preservingQuery: groupNumber)
         subgroupFilter = restoredSubgroupFilter(for: groupNumber)
+        restoreLanguageSubgroup(for: groupNumber)
         sanitizeSubgroupFilter()
         rebuildContinuousTimeline(reset: true)
         persistGroupSelection(groupNumber)
@@ -1014,7 +1066,9 @@ final class ScheduleServiceViewModel {
         let display = rawDisplay.flatMap(ScheduleOtherSubgroupDisplay.init(rawValue:))
             ?? .compact
         return TimelineBuildInput(
-            orderedDays: schedule.orderedDays,
+            orderedDays: schedule.orderedDays.map { day in
+                StudyDaySchedule(weekday: day.weekday, lessons: day.lessons.filter(shouldKeepLanguageLesson))
+            },
             startDate: schedule.startDate,
             endDate: schedule.endDate,
             selectedSubgroup: selectedSubgroup,
@@ -1070,7 +1124,7 @@ final class ScheduleServiceViewModel {
                 let lessons = (lessonsByWeekday[weekday] ?? []).filter { lesson in
                     let keepsSubgroup: Bool
                     if let selectedSubgroup = input.selectedSubgroup {
-                        keepsSubgroup = lesson.subgroup == 0
+                        keepsSubgroup = Self.isLanguageLesson(lesson) || lesson.subgroup == 0
                             || lesson.subgroup == selectedSubgroup
                             || input.includesOtherSubgroups
                     } else {
@@ -1299,6 +1353,9 @@ final class ScheduleServiceViewModel {
     }
 
     func isOtherSubgroupLesson(_ lesson: DisciplineSchedule) -> Bool {
+        if let subject = subjectSubgroup(for: lesson) {
+            return !matchesSubjectSubgroup(lesson, subject: subject)
+        }
         guard case .subgroup(let selected) = subgroupFilter else { return false }
         return lesson.subgroup > 0 && lesson.subgroup != selected
     }
@@ -1308,6 +1365,7 @@ final class ScheduleServiceViewModel {
     }
 
     private func shouldKeepLesson(_ lesson: DisciplineSchedule) -> Bool {
+        if subjectSubgroup(for: lesson) != nil { return shouldKeepLanguageLesson(lesson) }
         guard case .subgroup(let value) = subgroupFilter else { return true }
         if lesson.subgroup == 0 || lesson.subgroup == value {
             return true
@@ -1352,6 +1410,121 @@ final class ScheduleServiceViewModel {
             second: 0,
             of: date
         )
+    }
+
+    var showsLanguageSubgroupPicker: Bool {
+        mode == .group && displayMode != .exams && languageSubgroupOptions.count > 1
+    }
+
+    func subjectSubgroup(for lesson: DisciplineSchedule) -> ScheduleSubjectSubgroups? {
+        guard mode == .group, lesson.subgroup == 0 else { return nil }
+        let key = Self.subjectKey(lesson)
+        return subjectSubgroups.first { $0.id == key && $0.lessonTypes.contains(lesson.lessonTypeAbbrev) }
+    }
+
+    func selectedTeacherID(for subject: ScheduleSubjectSubgroups) -> Int? {
+        let selected = Self.isLanguageSubject(subject.id)
+            ? languageSubgroupTeacherID : subjectSubgroupTeacherIDs[subject.id]
+        return selected.flatMap { id in subject.options.contains { $0.id == id } ? id : nil }
+    }
+
+    func selectTeacher(_ id: Int?, for subject: ScheduleSubjectSubgroups) {
+        if Self.isLanguageSubject(subject.id) {
+            languageSubgroupTeacherID = id
+        } else {
+            subjectSubgroupTeacherIDs[subject.id] = id
+            if mode == .group, let activeGroupNumber {
+                defaults.set(subjectSubgroupTeacherIDs, forKey: Self.subjectSubgroupDefaultsKey + "." + activeGroupNumber)
+            }
+            refreshSubgroupPresentation()
+            if let schedule {
+                updateClassScheduleWidgetSnapshot(from: schedule)
+                updateSessionScheduleWidgetSnapshot(from: schedule)
+            }
+        }
+    }
+
+    func matchesSubjectSubgroup(_ lesson: DisciplineSchedule, subject: ScheduleSubjectSubgroups) -> Bool {
+        guard let selected = selectedTeacherID(for: subject), !lesson.employees.isEmpty else { return true }
+        return lesson.employees.contains { $0.id == selected }
+    }
+
+    func shouldKeepLanguageLesson(_ lesson: DisciplineSchedule) -> Bool {
+        guard let subject = subjectSubgroup(for: lesson),
+              !matchesSubjectSubgroup(lesson, subject: subject) else { return true }
+        let display = defaults.string(forKey: ScheduleDisplayPreferences.otherSubgroupDisplayKey)
+            .flatMap(ScheduleOtherSubgroupDisplay.init(rawValue:)) ?? .compact
+        return display != .hidden
+    }
+
+    private func restoreLanguageSubgroup(for groupNumber: String) {
+        isRestoringLanguageSubgroup = true
+        defer { isRestoringLanguageSubgroup = false }
+        subjectSubgroupTeacherIDs = defaults.dictionary(
+            forKey: Self.subjectSubgroupDefaultsKey + "." + groupNumber
+        ) as? [String: Int] ?? [:]
+        let stored = defaults.object(forKey: Self.languageSubgroupDefaultsKey + "." + groupNumber) as? Int
+        languageSubgroupTeacherID = stored.flatMap { id in
+            languageSubgroupOptions.contains(where: { $0.id == id }) ? id : nil
+        }
+    }
+
+    nonisolated static func subjectKey(_ lesson: DisciplineSchedule) -> String {
+        let fullName = lesson.subjectFullName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return (fullName.isEmpty ? lesson.subject : fullName).trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    nonisolated static func isLanguageSubject(_ key: String) -> Bool {
+        key == "иностранный язык" || key == "английский язык" || key == "иняз"
+    }
+
+    nonisolated static func isLanguageLesson(_ lesson: DisciplineSchedule) -> Bool {
+        lesson.subgroup == 0 && isLanguageSubject(subjectKey(lesson))
+    }
+
+    /// Offer independent choices only for simultaneous, unnumbered classes with distinct teachers.
+    static func makeSubjectSubgroups(_ schedule: PublicScheduleResponse?) -> [ScheduleSubjectSubgroups] {
+        guard let schedule else { return [] }
+        var parallelSubjects: Set<String> = []
+        var parallelTypes: [String: Set<String>] = [:]
+        var titles: [String: String] = [:]
+        for day in schedule.orderedDays {
+            let lessons = day.lessons.filter { $0.subgroup == 0 && !$0.isAnnouncement }
+            for lesson in lessons {
+                let key = subjectKey(lesson)
+                titles[key] = lesson.subjectFullName?.nilIfBlank ?? lesson.subject
+                if lessons.contains(where: { other in
+                    subjectKey(other) == key && other.lessonTypeAbbrev == lesson.lessonTypeAbbrev
+                        && other.startLessonTime == lesson.startLessonTime
+                        && other.endLessonTime == lesson.endLessonTime
+                        && other.lessonDate == lesson.lessonDate
+                        && (lesson.startLessonDate ?? .distantPast) <= (other.endLessonDate ?? .distantFuture)
+                        && (other.startLessonDate ?? .distantPast) <= (lesson.endLessonDate ?? .distantFuture)
+                        && (other.weekNumbers.isEmpty || lesson.weekNumbers.isEmpty
+                            || !Set(other.weekNumbers).isDisjoint(with: lesson.weekNumbers))
+                        && !other.employees.isEmpty && !lesson.employees.isEmpty
+                        && Set(other.employees.map(\.id)).isDisjoint(with: lesson.employees.map(\.id))
+                }) {
+                    parallelSubjects.insert(key)
+                    parallelTypes[key, default: []].insert(lesson.lessonTypeAbbrev)
+                }
+            }
+        }
+        return parallelSubjects.sorted().compactMap { key in
+            let matchingLessons = schedule.orderedDays.flatMap(\.lessons).filter {
+                subjectKey($0) == key && parallelTypes[key]?.contains($0.lessonTypeAbbrev) == true
+            }
+            let teachers = matchingLessons.flatMap(\.employees).reduce(into: [Int: String]()) { result, teacher in
+                if !teacher.fullName.isEmpty { result[teacher.id] = teacher.fullName }
+            }
+            guard teachers.count > 1 else { return nil }
+            let options = teachers.keys.sorted().enumerated().map { index, id in
+                ScheduleLanguageSubgroup(id: id, number: index + 1, teacherName: teachers[id] ?? "")
+            }
+            return ScheduleSubjectSubgroups(
+                id: key, title: titles[key] ?? key, options: options, lessonTypes: parallelTypes[key] ?? []
+            )
+        }
     }
 
     private func persistDisplayMode() {
@@ -1553,6 +1726,8 @@ final class ScheduleServiceViewModel {
             weekFilter: weekFilter,
             displayMode: displayMode,
             subgroupFilter: subgroupFilter,
+            languageSubgroupTeacherID: languageSubgroupTeacherID,
+            subjectSubgroupTeacherIDs: subjectSubgroupTeacherIDs,
             continuousTimelineDays: continuousTimelineDays
         )
     }
@@ -1905,7 +2080,7 @@ extension ScheduleServiceViewModel {
                         lesson.location,
                         lesson.lessonTypeAbbrev,
                         String(lesson.subgroup),
-                        lesson.employees.map(\.fullName).joined(separator: ",")
+                        lesson.employees.map { String($0.id) }.sorted().joined(separator: ",")
                     ].joined(separator: "|")
 
                     if let existingIndex = seenIndexByKey[key] {

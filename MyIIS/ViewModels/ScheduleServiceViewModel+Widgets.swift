@@ -98,6 +98,9 @@ extension ScheduleServiceViewModel {
     }
 
     func shouldKeepLessonForWidget(_ lesson: DisciplineSchedule) -> Bool {
+        if let subject = subjectSubgroup(for: lesson) {
+            return matchesSubjectSubgroup(lesson, subject: subject)
+        }
         guard case .subgroup(let value) = subgroupFilter else { return true }
         return lesson.subgroup == 0 || lesson.subgroup == value
     }
