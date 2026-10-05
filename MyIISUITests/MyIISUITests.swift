@@ -35,13 +35,60 @@ final class MyIISUITests: XCTestCase {
         let teacherMode = app.buttons["Преподаватель"]
         XCTAssertTrue(groupMode.waitForExistence(timeout: 5), "Group lookup mode is missing")
         XCTAssertTrue(teacherMode.waitForExistence(timeout: 5), "Teacher lookup mode is missing")
+        attachScheduleScreenshot(app, name: "Schedule group search")
+        XCTAssertTrue(app.textFields["schedule.search.field"].exists)
+        XCTAssertFalse(app.buttons["Закрыть"].exists, "Search dismisses with a swipe")
         teacherMode.tap()
+        attachScheduleScreenshot(app, name: "Schedule teacher search")
         groupMode.tap()
 
-        let closeButton = app.buttons["Закрыть"]
-        XCTAssertTrue(closeButton.waitForExistence(timeout: 5), "Search sheet must be dismissible")
-        closeButton.tap()
+        let numberFinder = app.buttons["schedule.numberFinder.open"]
+        for _ in 0 ..< 4 where !numberFinder.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(numberFinder.waitForExistence(timeout: 5))
+        numberFinder.tap()
+        XCTAssertTrue(app.buttons["schedule.numberFinder.digit.0"].waitForExistence(timeout: 5))
+        XCTAssertTrue(
+            app.staticTexts["schedule.numberFinder.count"].exists
+                || app.otherElements["schedule.numberFinder.directoryStatus"].exists
+                || app.staticTexts["Загружаем справочник"].exists
+        )
+        for position in 0 ..< 6 {
+            XCTAssertTrue(app.buttons["schedule.numberFinder.digit.\(position)"].exists)
+        }
+        attachScheduleScreenshot(app, name: "Schedule group number finder")
+        app.buttons["Закрыть"].tap()
+        XCTAssertTrue(groupMode.waitForExistence(timeout: 5))
+        for _ in 0 ..< 4 where !app.buttons["schedule.numberFinder.digit.0"].exists {
+            app.swipeUp()
+        }
+        XCTAssertTrue(
+            app.buttons["schedule.numberFinder.digit.0"].waitForExistence(timeout: 5),
+            "An additional pull at the bottom must open the number finder"
+        )
+        app.buttons["Закрыть"].tap()
+        app.swipeDown()
+        app.swipeDown()
+        let field = app.textFields["schedule.search.field"]
+        if field.exists {
+            let handle = app.coordinate(withNormalizedOffset: .zero).withOffset(
+                CGVector(dx: app.frame.midX, dy: field.frame.minY - 28)
+            )
+            handle.press(forDuration: 0.1, thenDragTo: app.coordinate(
+                withNormalizedOffset: CGVector(dx: 0.5, dy: 0.95)
+            ))
+        }
+        XCTAssertFalse(app.textFields["schedule.search.field"].exists)
         XCTAssertTrue(scheduleTab.waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    private func attachScheduleScreenshot(_ app: XCUIApplication, name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     @MainActor

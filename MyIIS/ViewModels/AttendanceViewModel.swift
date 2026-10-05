@@ -152,11 +152,7 @@ final class AttendanceViewModel {
 
     private func loadData(force: Bool) async {
         if isLoading { return }
-        if !force && hasLoadedOnce && sectionErrors.isEmpty {
-            if let last = lastUpdateTime, Date().timeIntervalSince(last) < 300 {
-                return
-            }
-        }
+        if !force && hasLoadedOnce && sectionErrors.isEmpty { return }
 
         isLoading = true
         errorMessage = nil

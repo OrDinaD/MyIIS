@@ -1,424 +1,214 @@
 import SwiftUI
 
 struct HeadmanView: View {
-    @State private var viewModel: HeadmanViewModel
-
-    @MainActor
-    init() {
-        _viewModel = State(initialValue: HeadmanViewModel())
-    }
-
-    @MainActor
-    init(viewModel: HeadmanViewModel) {
-        _viewModel = State(initialValue: viewModel)
-    }
-
-    private var availableModes: [HeadmanViewModel.Mode] {
-        viewModel.canManageResponsibles ? HeadmanViewModel.Mode.allCases : [.byDate, .summary, .weekly]
-    }
+    @State private var model = HeadmanJournalViewModel()
+    @State private var editingLesson: HeadmanJournalData.Lesson?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         List {
-            statusSection
-
-            if viewModel.isShowingStaleDataWarning {
-                Section {
-                    StaleDataBanner(lastUpdateTime: viewModel.lastUpdateTime, errorMessage: viewModel.errorMessage) {
-                        await viewModel.refresh()
-                    }
+            Section {
+                Label("Журнал старосты", systemImage: "book.closed")
+                    .font(.title2.weight(.semibold))
+                    .fontDesign(.serif)
+                Text("Посещаемость и темы занятий из ИИС")
+                    .foregroundStyle(.secondary)
+                if let error = model.error {
+                    Label(error, systemImage: "exclamationmark.triangle")
+                        .foregroundStyle(.red)
+                    Button("Повторить") { Task { await model.reload() } }
+                        .disabled(model.isSaving)
                 }
-                .listRowInsets(EdgeInsets())
-                .listRowBackground(Color.clear)
+                if let success = model.success {
+                    Label(success, systemImage: "checkmark.circle")
+                        .foregroundStyle(.green)
+                }
             }
-
-            if viewModel.hasAccess {
-                modeSection
-
-                switch viewModel.mode {
-                case .byDate:
-                    byDateSection
-                case .summary:
-                    summarySection
-                case .weekly:
-                    weeklySection
-                case .responsibles:
-                    if viewModel.canManageResponsibles {
-                        responsiblesSection
+            if model.accessDenied {
+                ContentUnavailableView(
+                    "Нет доступа", systemImage: "lock",
+                    description: Text("Журнал доступен старосте или назначенному отмечающему. Права определяются аккаунтом ИИС.")
+                )
+            } else {
+                filters
+                if model.isLoading {
+                    ProgressView("Загружаем журнал…")
+                } else if let data = model.data {
+                    switch model.page {
+                    case .attendance:
+                        Section {
+                            HeadmanJournalGrid(students: model.students, data: data) { editingLesson = $0 }
+                        } header: {
+                            Text("Лист учёта посещаемости")
+                        } footer: {
+                            Text("Нажмите на дату, чтобы выставить пропуски. У — уважительная причина, Н — неуважительная.")
+                            Text("Пустая клетка означает отсутствие записи, а не подтверждённое присутствие.")
+                        }
+                    case .topics:
+                        topics(data)
+                    case .summary:
+                        HeadmanJournalSummary(students: model.students, data: data)
                     }
+                } else if !model.isLoading && model.error == nil {
+                    ContentUnavailableView("Нет занятий", systemImage: "book",
+                                           description: Text("Для этого предмета журнал пока пуст."))
                 }
-            } else if !viewModel.isLoadingAccess {
-                noAccessSection
             }
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Староста")
-        .navigationBarTitleDisplayMode(.large)
-        .hiddenNavigationBarBackground()
-        .task {
-            await viewModel.loadInitialData()
+        .task { await model.loadIfNeeded() }
+        .onChange(of: AuthenticationService.shared.currentUser?.id) { _, _ in
+            editingLesson = nil
+            Task { await model.reload() }
         }
-        .refreshable {
-            await viewModel.refresh()
+        .onChange(of: model.data?.topicSubgroups) { _, subgroups in
+            if let subgroups, !subgroups.contains(model.topicSubgroup) {
+                model.topicSubgroup = 0
+            }
         }
-        .onChange(of: viewModel.selectedDate) { _, _ in
-            Task { await viewModel.loadLessonsForSelectedDate() }
+        .refreshable { if !model.isSaving { await model.reload() } }
+        .sheet(item: $editingLesson) { lesson in
+            HeadmanJournalEditor(model: model, lesson: lesson, topicMode: model.page == .topics)
         }
-        .onChange(of: viewModel.canManageResponsibles) { _, canManage in
-            if !canManage, viewModel.mode == .responsibles {
-                viewModel.mode = .byDate
+    }
+
+    private var filters: some View {
+        Section {
+            if !model.options.isEmpty {
+                Picker("Дисциплина", selection: Binding(
+                    get: { model.selectedID ?? model.options[0].id },
+                    set: { id in Task { await model.select(id) } }
+                )) {
+                    ForEach(model.options) { option in Text(option.title).tag(option.id) }
+                }
+                .disabled(model.isSaving)
+                if let teacher = model.selectedOption?.subject.teacherInfo?.fullName {
+                    Label(teacher, systemImage: "person")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if dynamicTypeSize.isAccessibilitySize {
+                pagePicker.pickerStyle(.menu)
+            } else {
+                pagePicker.pickerStyle(.segmented)
             }
         }
     }
 
-    private var statusSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: "crown.fill")
-                        .font(.title2)
-                        .foregroundStyle(.yellow)
-                        .frame(width: 38, height: 38)
-                        .background(.yellow.opacity(0.14), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+    private var pagePicker: some View {
+        Picker("Лист журнала", selection: $model.page) {
+            ForEach(HeadmanJournalViewModel.Page.allCases, id: \.self) { page in
+                Text(LocalizedStringKey(page.rawValue)).tag(page)
+            }
+        }
+    }
 
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text("Журнал старосты")
-                            .font(.headline)
-                        Text(viewModel.hasAccess ? accessSubtitle : String(localized: "Проверяем доступ по данным ИИС."))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+    private func topics(_ data: HeadmanJournalData) -> some View {
+        Section("План проведения занятий") {
+            if !data.topicSubgroups.isEmpty {
+                Picker("Подгруппа для тем", selection: $model.topicSubgroup) {
+                    Text("Все подгруппы").tag(0)
+                    ForEach(data.topicSubgroups, id: \.self) { subgroup in
+                        Text("Подгруппа \(subgroup)").tag(subgroup)
                     }
+                }
+                .disabled(model.isSaving)
+                Text("Общие занятия видны при любом выборе. Тема сохраняется только для выбранного занятия.")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+            if data.topicLessons(subgroup: model.topicSubgroup).isEmpty {
+                Text("Для выбранной подгруппы нет занятий.")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(data.topicLessons(subgroup: model.topicSubgroup)) { lesson in
+                Button { editingLesson = lesson } label: {
+                    HStack(alignment: .top, spacing: 16) {
+                        VStack(alignment: .leading) {
+                            Text(lesson.date).monospacedDigit()
+                            Text("\(lesson.numberOfHours) ч")
+                            Text(lesson.subgroup == 0
+                                 ? String(localized: "Общее занятие")
+                                 : String(localized: "Подгруппа \(lesson.subgroup)"))
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        Text(lesson.topic ?? String(localized: "Тема не заполнена"))
+                            .foregroundStyle(lesson.topic == nil ? .secondary : .primary)
+                        Spacer(minLength: 0)
+                        Image(systemName: "pencil").accessibilityHidden(true)
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(!model.canWrite)
+            }
+        }
+    }
+}
 
-                    Spacer()
+private struct HeadmanJournalGrid: View {
+    let students: [HeadmanJournalStudent]
+    let data: HeadmanJournalData
+    let edit: (HeadmanJournalData.Lesson) -> Void
+    private let records: [Int: [String: HeadmanOmission?]]
+    private let lessons: [HeadmanJournalData.Lesson]
+    @ScaledMetric(relativeTo: .footnote) private var rowHeight: CGFloat = 70
+    @ScaledMetric(relativeTo: .caption) private var headerHeight: CGFloat = 80
+    @ScaledMetric(relativeTo: .footnote) private var nameWidth: CGFloat = 210
+    @ScaledMetric(relativeTo: .caption) private var lessonWidth: CGFloat = 100
 
-                    if viewModel.isLoadingAccess {
-                        ProgressView()
-                    } else {
-                        Text(viewModel.hasAccess ? String(localized: "Доступно") : String(localized: "Нет доступа"))
+    init(students: [HeadmanJournalStudent], data: HeadmanJournalData,
+         edit: @escaping (HeadmanJournalData.Lesson) -> Void) {
+        self.students = students
+        self.data = data
+        self.edit = edit
+        records = Dictionary(data.attendance.map { ($0.studentId, $0.lessonRecords) },
+                             uniquingKeysWith: { _, last in last })
+        lessons = data.lessons.sorted { ($0.date, $0.id) < ($1.date, $1.id) }
+    }
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            VStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    cell("№ · ФИО студента", width: nameWidth)
+                    ForEach(lessons) { lesson in
+                        Button { edit(lesson) } label: {
+                            VStack(spacing: 3) {
+                                Text(lesson.date).monospacedDigit()
+                                Text("\(lesson.numberOfHours) ч")
+                                if lesson.subgroup > 0 { Text("П/г \(lesson.subgroup)") }
+                            }
                             .font(.caption.weight(.semibold))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .foregroundColor(viewModel.hasAccess ? .green : .secondary)
-                            .background((viewModel.hasAccess ? Color.green : Color.secondary).opacity(0.12), in: Capsule())
+                            .frame(width: lessonWidth, height: headerHeight)
+                            .background(Color.accentColor.opacity(0.12))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Занятие \(lesson.date), \(lesson.numberOfHours) часов, подгруппа \(lesson.subgroup)")
+                        .border(Color.secondary.opacity(0.3), width: 0.5)
                     }
                 }
-
-                if let error = viewModel.errorMessage {
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
-
-                if let success = viewModel.successMessage {
-                    Label(success, systemImage: "checkmark.circle.fill")
-                        .font(.footnote)
-                        .foregroundStyle(.green)
-                }
-            }
-            .padding(.vertical, 4)
-        }
-    }
-
-    private var accessSubtitle: String {
-        if viewModel.isGroupHead {
-            return String(localized: "Полный доступ: пропуски, сводная таблица и назначение отмечающих.")
-        }
-        return String(localized: "Доступ отмечающего: можно выставлять пропуски и смотреть сводную.")
-    }
-
-    private var noAccessSection: some View {
-        Section {
-            VStack(alignment: .leading, spacing: 10) {
-                Label("Вкладка доступна только старосте или назначенному отмечающему.", systemImage: "lock.fill")
-                    .font(.headline)
-                Text("Если вы являетесь старостой группы или назначенным отмечающим, обратитесь в деканат для подтверждения полномочий в системе ИИС БГУИР.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.vertical, 8)
-        }
-    }
-
-    private var modeSection: some View {
-        Section {
-            Picker("Режим", selection: $viewModel.mode) {
-                ForEach(availableModes) { mode in
-                    Text(mode.title).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-        }
-    }
-
-    private var byDateSection: some View {
-        Group {
-            Section {
-                DatePicker("Дата занятий", selection: $viewModel.selectedDate, displayedComponents: [.date])
-                    .datePickerStyle(.compact)
-
-                Label(
-                    "Пропуски, выставленные по ошибке, может убрать только преподаватель.",
-                    systemImage: "exclamationmark.triangle.fill"
-                )
-                    .font(.footnote)
-                    .foregroundStyle(.red)
-            }
-
-            Section("Занятия") {
-                if viewModel.isLoadingLessons {
-                    ProgressView("Загружаем занятия...")
-                } else if viewModel.lessonsByDate.isEmpty {
-                    Text("На выбранную дату занятий нет.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    ForEach(viewModel.lessonsByDate) { lesson in
-                        LessonDisclosureRow(lesson: lesson, viewModel: viewModel)
-                    }
-                }
-            }
-        }
-    }
-
-    private var summarySection: some View {
-        Group {
-            Section("Фильтр") {
-                if viewModel.subjectOptions.isEmpty {
-                    Text("Доступные предметы не найдены.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    Picker("Предмет", selection: Binding(
-                        get: { viewModel.selectedSubjectID ?? viewModel.subjectOptions.first?.id ?? 0 },
-                        set: { subjectID in Task { await viewModel.selectSubject(subjectID) } }
-                    )) {
-                        ForEach(viewModel.subjectOptions) { option in
-                            Text(option.title).tag(option.id)
+                ForEach(Array(students.enumerated()), id: \.element.id) { index, student in
+                    HStack(spacing: 0) {
+                        cell("\(index + 1). \(student.fullName)", width: nameWidth)
+                        ForEach(lessons) { lesson in
+                            let record = records[student.id]?[String(lesson.id)].flatMap { $0 }
+                            Text(record.map { "\($0.respectfulOmission == true ? "У" : "Н") \($0.missedHours ?? 0)" } ?? "")
+                                .foregroundStyle(record?.respectfulOmission == true ? Color.green : Color.primary)
+                                .font(.footnote.weight(.medium))
+                                .frame(width: lessonWidth, height: rowHeight)
+                                .border(Color.secondary.opacity(0.3), width: 0.5)
+                                .accessibilityLabel("\(student.fullName), \(lesson.date): \(record?.missedHours.map(String.init) ?? String(localized: "нет записи"))")
                         }
                     }
-                    .pickerStyle(.navigationLink)
-
-                    Picker("Подгруппа", selection: Binding(
-                        get: { viewModel.selectedSubgroup },
-                        set: { subgroup in Task { await viewModel.selectSubgroup(subgroup) } }
-                    )) {
-                        ForEach(viewModel.availableSubgroups, id: \.self) { subgroup in
-                            Text(
-                                subgroup == 0
-                                    ? String(localized: "Вся группа")
-                                    : String(format: String(localized: "%lld подгруппа"), Int64(subgroup))
-                            ).tag(subgroup)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-            }
-
-            Section("Сводная таблица") {
-                if viewModel.isLoadingSummary {
-                    ProgressView("Загружаем сводную...")
-                } else if viewModel.summaryStudents.isEmpty {
-                    Text("По выбранному предмету пропусков нет.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    SummaryTable(students: viewModel.summaryStudents, responsibleStudentIDs: viewModel.responsibleStudentIDs)
+                    .background(index.isMultiple(of: 2) ? Color.clear : Color.secondary.opacity(0.05))
                 }
             }
         }
     }
 
-    private var weeklySection: some View {
-        Group {
-            Section {
-                DatePicker("Неделя", selection: Binding(
-                    get: { viewModel.selectedWeekAnchorDate },
-                    set: { value in Task { await viewModel.selectWeekAnchorDate(value) } }
-                ), displayedComponents: [.date])
-                    .datePickerStyle(.compact)
-
-                Label(viewModel.selectedWeekTitle, systemImage: "calendar")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Недельная сводка") {
-                if viewModel.isLoadingWeekly {
-                    ProgressView("Загружаем неделю...")
-                } else if viewModel.weeklyStudents.isEmpty {
-                    Text("По выбранной неделе данных нет.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    WeeklySummaryTable(students: viewModel.weeklyStudents, responsibleStudentIDs: viewModel.responsibleStudentIDs)
-                }
-            }
-        }
-    }
-
-    private var responsiblesSection: some View {
-        Section {
-            ForEach(viewModel.students.filter { $0.id != viewModel.currentStudentId }) { student in
-                ResponsibleStudentRow(student: student, viewModel: viewModel)
-            }
-        } header: {
-            Text("Отмечающие")
-        } footer: {
-            Text("Изменения отправляются сразу через endpoints назначения и снятия отмечающего.")
-        }
-    }
-}
-
-private struct LessonDisclosureRow: View {
-    let lesson: HeadmanLesson
-    @Bindable var viewModel: HeadmanViewModel
-
-    var body: some View {
-        DisclosureGroup {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(lesson.students) { student in
-                    OmissionStudentRow(lesson: lesson, student: student, viewModel: viewModel)
-                    if student.id != lesson.students.last?.id {
-                        Divider()
-                    }
-                }
-
-                Button {
-                    Task { await viewModel.saveOmissions(for: lesson) }
-                } label: {
-                    Label("Сохранить пропуски", systemImage: "tray.and.arrow.down.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled((viewModel.pendingOmissions[lesson.id] ?? [:]).isEmpty || viewModel.isSaving)
-                .padding(.top, 4)
-            }
-            .padding(.vertical, 8)
-        } label: {
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(color(for: lesson.lessonTypeAbbrev))
-                    .frame(width: 5, height: 46)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(lesson.nameAbbrev)
-                            .font(.headline)
-                        Text(lesson.lessonTypeAbbrev)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    HStack(spacing: 8) {
-                        if let period = lesson.lessonPeriod {
-                            Text("\(period.startTime) - \(period.endTime)")
-                        }
-                        if lesson.subGroup != 0 {
-                            Text("\(lesson.subGroup) подгр.")
-                        }
-                    }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-
-    private func color(for lessonType: String) -> Color {
-        switch lessonType {
-        case "ЛК", "УЛк": return .green
-        case "ЛР", "УЛР": return .orange
-        case "ПЗ", "УПз": return .purple
-        default: return .blue
-        }
-    }
-}
-
-private struct OmissionStudentRow: View {
-    let lesson: HeadmanLesson
-    let student: HeadmanLessonStudent
-    @Bindable var viewModel: HeadmanViewModel
-
-    private var lessonHours: Int {
-        max(lesson.lessonPeriod?.lessonPeriodHours ?? 2, 1)
-    }
-
-    private var pendingHours: Int? {
-        viewModel.pendingHours(lessonId: lesson.id, studentId: student.id)
-    }
-
-    private var existingHours: Int? {
-        student.omission?.missedHours
-    }
-
-    private var isChecked: Bool {
-        existingHours != nil || pendingHours != nil
-    }
-
-    private var isLocked: Bool {
-        existingHours != nil || student.isNotStudying == true || student.inOffsettingValue != nil
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(student.fio)
-                    .font(.body)
-                    .lineLimit(2)
-                Spacer(minLength: 12)
-                Toggle("", isOn: Binding(
-                    get: { isChecked },
-                    set: { checked in
-                        viewModel.setPendingOmission(
-                            lessonId: lesson.id,
-                            studentId: student.id,
-                            hours: checked ? lessonHours : nil
-                        )
-                    }
-                ))
-                .labelsHidden()
-                .disabled(isLocked)
-            }
-
-            HStack(spacing: 10) {
-                if let omission = student.omission {
-                    Label(
-                        omission.respectfulOmission == true
-                            ? String(localized: "Уважительная причина")
-                            : String(
-                                format: String(localized: "%lld ч уже выставлено"),
-                                Int64(omission.missedHours ?? 0)
-                            ),
-                        systemImage: omission.respectfulOmission == true ? "checkmark.seal.fill" : "lock.fill"
-                    )
-                    .foregroundColor(omission.respectfulOmission == true ? .green : .secondary)
-                } else if student.isNotStudying == true {
-                    Label("Не изучает", systemImage: "minus.circle.fill")
-                        .foregroundStyle(.secondary)
-                } else if let value = student.inOffsettingValue {
-                    Label("Перезачтено с оценкой \(value)", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                } else {
-                    Picker("Часы", selection: Binding(
-                        get: { pendingHours ?? lessonHours },
-                        set: { hours in
-                            viewModel.setPendingOmission(lessonId: lesson.id, studentId: student.id, hours: hours)
-                        }
-                    )) {
-                        ForEach(1 ... lessonHours, id: \.self) { hours in
-                            Text("\(hours) ч").tag(hours)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .disabled(!isChecked)
-                }
-
-                Spacer()
-
-                if viewModel.responsibleStudentIDs.contains(student.id) {
-                    Text("отмечающий")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.orange)
-                }
-            }
-            .font(.footnote)
-        }
-        .padding(.vertical, 3)
-        .listRowBackground(viewModel.responsibleStudentIDs.contains(student.id) ? Color.yellow.opacity(0.12) : nil)
+    private func cell(_ text: String, width: CGFloat) -> some View {
+        Text(text).font(.footnote).frame(width: width, height: rowHeight, alignment: .leading)
+            .padding(.horizontal, 6).border(Color.secondary.opacity(0.3), width: 0.5)
     }
 }

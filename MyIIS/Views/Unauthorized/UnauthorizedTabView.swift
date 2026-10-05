@@ -79,9 +79,6 @@ struct UnauthorizedTabView: View {
         Binding(
             get: { selectedTab },
             set: { newTab in
-                if newTab == selectedTab && newTab == .schedule {
-                    NotificationCenter.default.post(name: .scheduleResetToDefaultGroup, object: nil)
-                }
                 selectedTab = newTab
                 switch newTab {
                 case .schedule:

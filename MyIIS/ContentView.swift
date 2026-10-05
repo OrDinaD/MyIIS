@@ -11,7 +11,13 @@ struct ContentView: View {
     /// Получаем доступ к сервису аутентификации из окружения
     @EnvironmentObject var authService: AuthenticationService
     private var router = AppRouter.shared
+    @State private var isOfflineNoticeDismissed = false
+    @State private var showsOfflineDetails = false
     @AppStorage(FirstLaunchView.completionKey) private var hasCompletedFirstLaunch = false
+
+    private func offlineNoticeText(_ key: String) -> String {
+        NSLocalizedString(key, tableName: "OfflineNotice", comment: "")
+    }
 
     var body: some View {
         Group {
@@ -26,15 +32,43 @@ struct ContentView: View {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            if OfflineDataStatus.shared.shouldWarn {
-                Label("offline_saved_data_warning", systemImage: "wifi.exclamationmark")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(8)
-                    .background(.regularMaterial)
-                    .accessibilityIdentifier("offlineDataBanner")
+            if OfflineDataStatus.shared.shouldWarn, !isOfflineNoticeDismissed {
+                HStack(spacing: 8) {
+                    Button {
+                        showsOfflineDetails = true
+                    } label: {
+                        Label(offlineNoticeText("saved_data"), systemImage: "wifi.exclamationmark")
+                            .font(.caption)
+                            .lineLimit(1)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint(offlineNoticeText("details_hint"))
+                    Button {
+                        isOfflineNoticeDismissed = true
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.caption.weight(.semibold))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(offlineNoticeText("dismiss"))
+                }
+                .foregroundStyle(.secondary)
+                .padding(.leading, 16)
+                .background(.regularMaterial)
+                .accessibilityIdentifier("offlineDataBanner")
             }
+        }
+        .alert(offlineNoticeText("saved_data"), isPresented: $showsOfflineDetails) {
+            Button(NSLocalizedString("common_done", value: "Готово", comment: "")) {}
+        } message: {
+            Text(LocalizedStringKey("offline_saved_data_warning"))
+        }
+        .onChange(of: OfflineDataStatus.shared.shouldWarn) { _, shouldWarn in
+            if !shouldWarn { isOfflineNoticeDismissed = false }
         }
         .reduceMotionSensitive()
         .onAppear {

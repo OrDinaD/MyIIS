@@ -125,34 +125,35 @@ struct SessionScheduleWidgetView: View {
         Group {
             if let event = visibleEvents.first {
                 HStack(spacing: 8) {
-                    Capsule()
-                        .fill(classAccentColor(for: event))
-                        .frame(width: 4)
-                        .widgetAccentable()
+                    accessoryProgressStrip(for: event)
 
                     VStack(alignment: .leading, spacing: 1) {
-                        HStack(spacing: 4) {
-                            Image(systemName: event.isActive(at: entry.date) ? "clock.fill" : "calendar")
-                                .font(.caption2.weight(.semibold))
-                            Text(SessionScheduleWidgetPresentation.accessoryStatus(for: event, at: entry.date))
-                                .font(.caption2.weight(.semibold))
-                                .monospacedDigit()
-                                .lineLimit(1)
-                        }
-                        .foregroundStyle(.secondary)
-                        .widgetAccentable()
-
-                        Text(event.title)
-                            .font(.headline.weight(.semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.74)
-                            .privacySensitive()
-
-                        Text(SessionScheduleWidgetPresentation.accessorySubtitle(for: event))
-                            .font(.caption.weight(.medium))
+                        Text(verbatim: "\(event.startTime)–\(event.endTime)")
+                            .font(.caption.weight(.semibold))
+                            .monospacedDigit()
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.primary)
+
+                        HStack(spacing: 5) {
+                            Image(systemName: accessorySymbol(for: event))
+                                .font(.subheadline.weight(.semibold))
+                                .accessibilityLabel(
+                                    LessonTypeCategory.from(lessonTypeAbbrev: event.lessonType).localizedTitle
+                                )
+                            Text(event.title)
+                                .font(.headline.weight(.semibold))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.74)
+                                .privacySensitive()
+                        }
+                        .foregroundStyle(.primary)
+
+                        Text(SessionScheduleWidgetPresentation.accessorySubtitle(for: event))
+                            .font(.caption.weight(.semibold))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.8)
+                            .foregroundStyle(.primary)
                             .privacySensitive()
                     }
                 }
@@ -166,6 +167,27 @@ struct SessionScheduleWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private func accessoryProgressStrip(for event: SessionScheduleWidgetSnapshot.Event) -> some View {
+        let isActive = event.isActive(at: entry.date)
+        let progress = isActive ? min(max(event.progress(at: entry.date) ?? 0, 0), 1) : 1
+
+        return ZStack(alignment: .bottom) {
+            Capsule()
+                .fill(.primary.opacity(isActive ? 0.25 : 1))
+            Capsule()
+                .fill(.primary)
+                .frame(height: 48 * progress)
+        }
+        .frame(width: 7, height: 48)
+        .widgetAccentable()
+        .accessibilityHidden(true)
+    }
+
+    private func accessorySymbol(for event: SessionScheduleWidgetSnapshot.Event) -> String {
+        let category = LessonTypeCategory.from(lessonTypeAbbrev: event.lessonType)
+        return category == .practice ? "hammer.fill" : category.defaultSymbolName
     }
 
     private func classAccentColor(for event: SessionScheduleWidgetSnapshot.Event) -> Color {

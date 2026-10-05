@@ -114,6 +114,7 @@ struct OthersTabView: View {
     @AppStorage("enable_beta_sections") private var enableBetaSections = false
     @State private var desktopSelection: ServicesDestination?
     @State private var notificationsViewModel = PortalNotificationsViewModel()
+    @State private var notificationsAccountID: Int?
     @State private var showLogin = false
     @State private var isGuestAccountServicesExpanded = false
 
@@ -137,7 +138,11 @@ struct OthersTabView: View {
             LoginView()
         }
         .task(id: authService.currentUser?.id) {
-            notificationsViewModel.reset()
+            let accountID = authService.currentUser?.id
+            if notificationsAccountID != accountID {
+                notificationsViewModel.reset()
+                notificationsAccountID = accountID
+            }
             if isAuthenticated {
                 await notificationsViewModel.loadUnreadCount()
             }

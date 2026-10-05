@@ -99,7 +99,7 @@ struct RatingView: View {
             .task(id: user.id) {
                 revealContentIfNeeded()
                 async let rating: () = viewModel.loadRating(for: user)
-                async let attendance: () = omissions.load(userID: user.id)
+                async let attendance: () = omissions.loadIfNeeded(userID: user.id)
                 _ = await (rating, attendance)
 
                 ratingViewOpenCount += 1

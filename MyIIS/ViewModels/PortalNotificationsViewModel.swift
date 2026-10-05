@@ -24,6 +24,7 @@ final class PortalNotificationsViewModel {
     private var currentPage = 0
     private var hasMorePages = true
     private var hasLoadedInitialData = false
+    private var generation = UUID()
 
     init(
         service: PortalNotificationsServicing? = nil,
@@ -46,8 +47,11 @@ final class PortalNotificationsViewModel {
     }
 
     func loadUnreadCount() async {
+        let token = generation
         do {
-            unreadCount = try await service.fetchUnreadCount()
+            let count = try await service.fetchUnreadCount()
+            guard token == generation, !Task.isCancelled else { return }
+            unreadCount = count
         } catch is CancellationError {
             return
         } catch {
@@ -56,29 +60,35 @@ final class PortalNotificationsViewModel {
     }
 
     func loadInitial() async {
-        guard !hasLoadedInitialData else {
-            await refresh()
-            return
-        }
-        hasLoadedInitialData = true
+        guard !hasLoadedInitialData, state == .idle else { return }
         await refresh()
     }
 
     func refresh() async {
+        guard state == .idle, !isMarkingRead else { return }
+        let token = generation
         state = notifications.isEmpty ? .loading : .refreshing
         errorMessage = nil
 
         do {
             let page = try await service.fetchNotifications(page: 0, pageSize: pageSize)
+            guard token == generation, !Task.isCancelled else {
+                if token == generation { state = .idle }
+                return
+            }
+            hasLoadedInitialData = true
             notifications = page.notifications
             totalElements = page.totalElements
             currentPage = 0
             hasMorePages = page.hasNext
-            unreadCount = try await unreadCountOrFallback()
+            let count = try await unreadCountOrFallback()
+            guard token == generation else { return }
+            unreadCount = count
             state = .idle
         } catch is CancellationError {
-            state = .idle
+            if token == generation { state = .idle }
         } catch {
+            guard token == generation else { return }
             state = .idle
             errorMessage = error.localizedDescription
         }
@@ -87,24 +97,28 @@ final class PortalNotificationsViewModel {
     func loadMoreIfNeeded(current notification: PortalNotification) async {
         guard hasMorePages,
               notifications.last?.id == notification.id,
-              state != .loadingMore,
+              state == .idle,
               !isMarkingRead else {
             return
         }
 
+        let token = generation
         state = .loadingMore
         let nextPage = currentPage + 1
 
         do {
             let page = try await service.fetchNotifications(page: nextPage, pageSize: pageSize)
+            guard token == generation else { return }
+            try Task.checkCancellation()
             appendUnique(page.notifications)
             totalElements = page.totalElements
             currentPage = nextPage
             hasMorePages = page.hasNext
             state = .idle
         } catch is CancellationError {
-            state = .idle
+            if token == generation { state = .idle }
         } catch {
+            guard token == generation else { return }
             state = .idle
             errorMessage = error.localizedDescription
         }
@@ -172,6 +186,7 @@ final class PortalNotificationsViewModel {
     }
 
     func reset() {
+        generation = UUID()
         notifications = []
         unreadCount = 0
         totalElements = 0

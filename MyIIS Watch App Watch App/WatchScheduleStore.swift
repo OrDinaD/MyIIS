@@ -4,14 +4,14 @@ import SwiftUI
 import WatchConnectivity
 import WidgetKit
 
-enum WatchScheduleEventKind: String, Codable, Sendable {
+nonisolated enum WatchScheduleEventKind: String, Codable, Sendable {
     case announcement
     case exam
     case consultation
     case other
 }
 
-struct WatchScheduleEvent: Codable, Identifiable, Sendable {
+nonisolated struct WatchScheduleEvent: Codable, Identifiable, Sendable {
     typealias Kind = WatchScheduleEventKind
     let id: String
     let date: Date?
@@ -54,11 +54,17 @@ struct WatchScheduleEvent: Codable, Identifiable, Sendable {
         self.teacherPhotoLink = teacherPhotoLink
     }
 
-    func interval(calendar: Calendar = .current) -> DateInterval? {
+    nonisolated func interval(calendar: Calendar = .current) -> DateInterval? {
         guard let date else { return nil }
         let startParts = startTime.split(separator: ":").compactMap { Int($0) }
         let endParts = endTime.split(separator: ":").compactMap { Int($0) }
-        guard startParts.count == 2, endParts.count == 2 else { return nil }
+        guard startTime.split(separator: ":", omittingEmptySubsequences: false).count == 2,
+              endTime.split(separator: ":", omittingEmptySubsequences: false).count == 2,
+              startParts.count == 2, endParts.count == 2,
+              (0...23).contains(startParts[0]), (0...59).contains(startParts[1]),
+              (0...23).contains(endParts[0]), (0...59).contains(endParts[1]),
+              date.timeIntervalSinceReferenceDate.isFinite,
+              (-62_135_596_800...253_402_300_799).contains(date.timeIntervalSince1970) else { return nil }
 
         var startComponents = calendar.dateComponents([.year, .month, .day], from: date)
         startComponents.hour = startParts[0]
@@ -75,7 +81,7 @@ struct WatchScheduleEvent: Codable, Identifiable, Sendable {
         return DateInterval(start: start, end: end)
     }
 
-    func isCurrent(at date: Date) -> Bool {
+    nonisolated func isCurrent(at date: Date) -> Bool {
         interval()?.contains(date) == true
     }
 
@@ -156,14 +162,14 @@ struct WatchScheduleEvent: Codable, Identifiable, Sendable {
     }
 }
 
-struct WatchDaySection: Identifiable {
+struct WatchDaySection: Identifiable, Sendable {
     let id: String
     let title: String
     let isToday: Bool
     let events: [WatchScheduleEvent]
 }
 
-struct WatchScheduleSnapshot: Codable, Sendable {
+nonisolated struct WatchScheduleSnapshot: Codable, Sendable {
     typealias Event = WatchScheduleEvent
 
     let groupName: String
@@ -172,27 +178,34 @@ struct WatchScheduleSnapshot: Codable, Sendable {
     let events: [Event]
     let updatedAt: Date
 
-    func upcomingEvents(at date: Date) -> [Event] {
+    nonisolated func upcomingEvents(at date: Date) -> [Event] {
         events
-            .filter { ($0.interval()?.end ?? $0.date ?? .distantPast) >= date }
+            .filter { event in
+                guard let eventDate = event.date,
+                      eventDate.timeIntervalSinceReferenceDate.isFinite,
+                      (-62_135_596_800...253_402_300_799).contains(eventDate.timeIntervalSince1970) else {
+                    return false
+                }
+                return (event.interval()?.end ?? eventDate) >= date
+            }
             .sorted {
                 ($0.interval()?.start ?? $0.date ?? .distantFuture) <
                 ($1.interval()?.start ?? $1.date ?? .distantFuture)
             }
     }
 
-    func activeEvent(at date: Date) -> Event? {
+    nonisolated func activeEvent(at date: Date) -> Event? {
         events.first { $0.isCurrent(at: date) }
     }
 
-    func nextUpcomingEvent(after date: Date) -> Event? {
+    nonisolated func nextUpcomingEvent(after date: Date) -> Event? {
         events
             .filter { ($0.interval()?.start ?? $0.date ?? .distantPast) > date }
             .sorted { ($0.interval()?.start ?? .distantFuture) < ($1.interval()?.start ?? .distantFuture) }
             .first
     }
 
-    func daySections(at date: Date, calendar: Calendar = .current) -> [WatchDaySection] {
+    nonisolated func daySections(at date: Date, calendar: Calendar = .current) -> [WatchDaySection] {
         let upcoming = upcomingEvents(at: date)
         guard !upcoming.isEmpty else { return [] }
 
@@ -238,15 +251,17 @@ enum WatchScheduleStore {
     nonisolated static let transferKey = "classScheduleSnapshot"
     nonisolated static let clearTransferKey = "clearClassScheduleSnapshot"
 
-    static func save(_ data: Data) throws {
+    @discardableResult
+    static func save(_ data: Data) throws -> WatchScheduleSnapshot {
         guard let defaults = appGroupDefaults else {
             throw CocoaError(.fileNoSuchFile)
         }
-        _ = try JSONDecoder().decode(WatchScheduleSnapshot.self, from: data)
+        let snapshot = try JSONDecoder().decode(WatchScheduleSnapshot.self, from: data)
         defaults.set(data, forKey: snapshotKey)
+        return snapshot
     }
 
-    static func load() -> WatchScheduleSnapshot? {
+    nonisolated static func load() -> WatchScheduleSnapshot? {
         guard let data = appGroupDefaults?.data(forKey: snapshotKey) else { return nil }
         return try? JSONDecoder().decode(WatchScheduleSnapshot.self, from: data)
     }
@@ -255,7 +270,7 @@ enum WatchScheduleStore {
         appGroupDefaults?.removeObject(forKey: snapshotKey)
     }
 
-    private static var appGroupDefaults: UserDefaults? {
+    nonisolated private static var appGroupDefaults: UserDefaults? {
         UserDefaults(suiteName: appGroupIdentifier) ?? .standard
     }
 }
@@ -266,17 +281,46 @@ final class WatchScheduleReceiver: NSObject, ObservableObject {
 
     @Published private(set) var snapshot: WatchScheduleSnapshot?
     @Published private(set) var connectionError: String?
+    @Published private(set) var activeEvent: WatchScheduleEvent?
+    @Published private(set) var daySections: [WatchDaySection] = []
+    @Published private(set) var snapshotRevision = UUID()
+    private var hasStarted = false
+    private var lastPayload: Data?
+    private var feedGeneration = UUID()
 
-    override init() {
-        snapshot = WatchScheduleStore.load()
-        super.init()
+    func start() async {
+        guard !hasStarted else { return }
+        hasStarted = true
+        await Task.yield()
+        let cached = await Task.detached(priority: .userInitiated) {
+            WatchScheduleStore.load()
+        }.value
+        if lastPayload == nil { snapshot = cached }
+        snapshotRevision = UUID()
+        activate()
+    }
+
+    func prepareFeed(at date: Date) async {
+        let token = UUID()
+        feedGeneration = token
+        guard let snapshot else {
+            activeEvent = nil
+            daySections = []
+            return
+        }
+        let result = await Task.detached(priority: .userInitiated) {
+            (snapshot.activeEvent(at: date), snapshot.daySections(at: date))
+        }.value
+        guard !Task.isCancelled, token == feedGeneration else { return }
+        activeEvent = result.0
+        daySections = result.1
     }
 
     func activate() {
         guard WCSession.isSupported() else { return }
         let session = WCSession.default
         session.delegate = self
-        session.activate()
+        if session.activationState == .notActivated { session.activate() }
 
         accept(session.receivedApplicationContext)
     }
@@ -284,16 +328,23 @@ final class WatchScheduleReceiver: NSObject, ObservableObject {
     private func applyPayload(isClear: Bool, data: Data?) {
         if isClear {
             WatchScheduleStore.clear()
+            lastPayload = nil
+            feedGeneration = UUID()
+            activeEvent = nil
+            daySections = []
             snapshot = nil
+            snapshotRevision = UUID()
             connectionError = nil
             WidgetCenter.shared.reloadAllTimelines()
             return
         }
 
-        guard let data else { return }
+        guard let data, data != lastPayload else { return }
         do {
-            try WatchScheduleStore.save(data)
-            snapshot = WatchScheduleStore.load()
+            snapshot = try WatchScheduleStore.save(data)
+            snapshotRevision = UUID()
+            lastPayload = data
+            feedGeneration = UUID()
             connectionError = nil
             WidgetCenter.shared.reloadAllTimelines()
         } catch {

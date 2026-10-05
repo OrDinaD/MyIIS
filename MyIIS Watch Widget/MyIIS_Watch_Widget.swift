@@ -443,37 +443,7 @@ struct ScheduleWidgetView: View {
     private var circularContent: some View {
         Group {
             if let event = entry.currentEvent {
-                if event.isCurrent(at: entry.date), let interval = event.interval() {
-                    ZStack {
-                        ProgressView(timerInterval: interval.start ... interval.end, countsDown: false)
-                            .progressViewStyle(.circular)
-                            .tint(event.accentColor)
-                            .widgetAccentable()
-                            .labelsHidden()
-
-                        Image(systemName: event.lessonIcon)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(event.accentColor)
-                            .widgetAccentable()
-                    }
-                    .accessibilityLabel(event.title)
-                    .accessibilityValue(Text(timerInterval: interval.start ... interval.end, countsDown: true))
-                } else {
-                    Gauge(value: 0) {
-                        Image(systemName: event.lessonIcon)
-                            .widgetAccentable()
-                    } currentValueLabel: {
-                        Text(event.startTime)
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.55)
-                    }
-                    .gaugeStyle(.accessoryCircular)
-                    .tint(event.accentColor)
-                    .widgetAccentable()
-                    .accessibilityLabel(event.title)
-                    .accessibilityValue(event.startTime)
-                }
+                CircularScheduleDetails(event: event)
             } else {
                 Image(systemName: "checkmark.circle")
                     .font(.title2)
@@ -568,6 +538,60 @@ struct ScheduleWidgetView: View {
     }
 }
 
+// Shared layout for the small circular slots on watch faces.
+private struct CircularScheduleDetails: View {
+    let event: WatchWidgetSnapshot.Event
+
+    private var compactLessonType: String? {
+        guard let type = event.lessonType?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !type.isEmpty else { return nil }
+        switch type.lowercased() {
+        case "лекция", "лк": return "ЛК"
+        case "практика", "практическое занятие", "пз": return "ПЗ"
+        case "лабораторная работа", "лабораторное занятие", "лр": return "ЛР"
+        default: return type
+        }
+    }
+
+    private var timeAndType: String {
+        [compactLessonType, event.startTime]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(event.title)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(event.accentColor)
+                .widgetAccentable()
+                .minimumScaleFactor(0.65)
+
+            if let room = event.shortLocation() {
+                Text(room)
+                    .font(.system(size: 10, weight: .medium))
+                    .minimumScaleFactor(0.75)
+            }
+
+            Text(timeAndType)
+                .font(.system(size: 8, weight: .medium))
+                .monospacedDigit()
+                .minimumScaleFactor(0.8)
+        }
+        .lineLimit(1)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, 3)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(event.title)
+        .accessibilityValue(
+            [event.location, event.lessonType, event.startTime]
+                .compactMap { $0 }
+                .joined(separator: ", ")
+        )
+    }
+}
+
 // MARK: - 2. Dedicated Next Class Widget View
 
 struct NextClassWidgetView: View {
@@ -600,34 +624,13 @@ struct NextClassWidgetView: View {
     private var circularBody: some View {
         Group {
             if let event = nextEvent {
-                ZStack {
-                    AccessoryWidgetBackground()
-                    VStack(spacing: 1) {
-                        Image(systemName: event.lessonIcon)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(event.accentColor)
-                            .widgetAccentable()
-
-                        Text(event.startTime)
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
-
-                        if let room = event.shortLocation() {
-                            Text(room)
-                                .font(.system(size: 9, weight: .medium))
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                        }
-                    }
-                    .padding(2)
-                }
+                CircularScheduleDetails(event: event)
             } else {
                 Image(systemName: "checkmark.circle")
                     .font(.title2)
                     .foregroundStyle(.secondary)
                     .widgetAccentable()
+                    .accessibilityLabel(Text("watch_widget_no_events"))
             }
         }
     }
@@ -867,6 +870,20 @@ struct ClassProgressWidgetView: View {
         .widgetAccentable()
     }
 #endif
+}
+
+#Preview("Расписание — круг", as: .accessoryCircular) {
+    MyIIS_Watch_Widget()
+} timeline: {
+    ScheduleWidgetEntry(date: .now, snapshot: .placeholder())
+    ScheduleWidgetEntry(date: .now, snapshot: .upcomingPlaceholder())
+    ScheduleWidgetEntry(date: .now, snapshot: nil)
+}
+
+#Preview("Следующая пара — круг", as: .accessoryCircular) {
+    NextClassWatchWidget()
+} timeline: {
+    ScheduleWidgetEntry(date: .now, snapshot: .upcomingPlaceholder())
 }
 
 // MARK: - Widget Configurations

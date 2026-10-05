@@ -103,13 +103,14 @@ private struct ModernMainTabView: View {
             get: { router.selectedTab },
             set: { newTab in
                 if newTab == router.selectedTab {
-                    if newTab == .schedule {
-                        NotificationCenter.default.post(name: .scheduleResetToDefaultGroup, object: nil)
-                    } else if newTab == .others {
+                    if newTab == .others {
                         router.servicesPath = NavigationPath()
                     }
                 }
                 router.selectedTab = newTab
+                if newTab == .schedule {
+                    NotificationCenter.default.post(name: .scheduleResetToDefaultGroup, object: nil)
+                }
             }
         )
     }
@@ -161,6 +162,9 @@ private struct LegacyMainTabView: View {
                     router.servicesPath = NavigationPath()
                 }
                 router.selectedTab = newTab
+                if newTab == .schedule {
+                    NotificationCenter.default.post(name: .scheduleResetToDefaultGroup, object: nil)
+                }
             }
         )
     }

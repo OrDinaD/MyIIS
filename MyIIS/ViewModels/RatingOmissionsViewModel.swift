@@ -7,6 +7,7 @@ final class RatingOmissionsViewModel {
     private(set) var isStale = false
     private(set) var updatedAt: Date?
     private var userID: Int?
+    private var hasLoadedOnce = false
     private let api: APIService
     private let defaults: UserDefaults
 
@@ -20,12 +21,18 @@ final class RatingOmissionsViewModel {
         self.defaults = defaults
     }
 
+    func loadIfNeeded(userID: Int) async {
+        if self.userID == userID, hasLoadedOnce, !isStale { return }
+        await load(userID: userID)
+    }
+
     func load(userID: Int, now: Date = Date()) async {
         guard userID > 0 else { return }
         if self.userID != userID {
             hours = nil
             updatedAt = nil
             self.userID = userID
+            hasLoadedOnce = false
         }
         let key = "rating_monthly_omissions.\(userID)"
         if let data = UserDefaultsPayloadStore.load(forKey: key, from: defaults),
@@ -40,6 +47,7 @@ final class RatingOmissionsViewModel {
             hours = Self.currentMonthHours(counts, now: now)
             updatedAt = now
             isStale = false
+            hasLoadedOnce = true
             let snapshot = Snapshot(counts: counts, updatedAt: now)
             if let data = try? JSONEncoder().encode(snapshot) {
                 UserDefaultsPayloadStore.save(data, forKey: key, in: defaults)

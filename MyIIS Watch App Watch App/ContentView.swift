@@ -14,6 +14,9 @@ struct ContentView: View {
                     }
                 }
                 .navigationTitle("watch_schedule_title")
+                .task(id: "\(context.date.timeIntervalSinceReferenceDate)|\(receiver.snapshotRevision)") {
+                    await receiver.prepareFeed(at: context.date)
+                }
             }
         }
     }
@@ -21,8 +24,8 @@ struct ContentView: View {
     // MARK: - Schedule Feed
 
     private func scheduleFeed(_ snapshot: WatchScheduleSnapshot, now: Date) -> some View {
-        let active = snapshot.activeEvent(at: now)
-        let daySections = snapshot.daySections(at: now)
+        let active = receiver.activeEvent
+        let daySections = receiver.daySections
 
         return List {
             // Active Hero Card if currently in class

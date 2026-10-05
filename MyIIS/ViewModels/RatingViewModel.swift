@@ -159,6 +159,11 @@ extension RatingViewModel {
         let resolvedStudentId = normalizeRecordBookNumber(targetRecordBookNumber)
         let cacheStudentId = resolvedStudentId.isEmpty ? "_portal" : resolvedStudentId
 
+        if !force, currentGroup == group, currentStudentId == cacheStudentId,
+           lastUpdateTime != nil, errorMessage == nil {
+            return
+        }
+
         if currentGroup != group || currentStudentId != cacheStudentId {
             clearGradebookData()
             lastUpdateTime = nil
