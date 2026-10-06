@@ -82,8 +82,8 @@
 		F51DCBB62FB09EC400EA90E3 /* Embed ExtensionKit Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = Extensions;
-			dstSubfolderSpec = 1;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
 			files = (
 				F51DCBB12FB09EC400EA90E3 /* MyIISIntents.appex in Embed ExtensionKit Extensions */,
 			);

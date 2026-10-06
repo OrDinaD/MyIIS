@@ -24,6 +24,27 @@ private struct GlassNavigationBarModifier: ViewModifier {
     }
 }
 
+/// Avoids the adaptable sidebar transition leaving an empty column on Mac.
+@available(iOS 18.0, *)
+private struct PlatformTabNavigationModifier: ViewModifier {
+    var customization: Binding<TabViewCustomization>?
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        #if targetEnvironment(macCatalyst)
+        content.tabViewStyle(.tabBarOnly)
+        #else
+        if ProcessInfo.processInfo.isiOSAppOnMac {
+            content.tabViewStyle(.tabBarOnly)
+        } else {
+            content
+                .tabViewStyle(.sidebarAdaptable)
+                .tabViewCustomization(customization)
+        }
+        #endif
+    }
+}
+
 private struct AutomaticTabBarAppearanceModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
@@ -86,6 +107,13 @@ private struct NavigationTopFade: View {
 }
 
 extension View {
+    @available(iOS 18.0, *)
+    func platformTabNavigation(
+        customization: Binding<TabViewCustomization>? = nil
+    ) -> some View {
+        modifier(PlatformTabNavigationModifier(customization: customization))
+    }
+
     func glassNavigationBar() -> some View {
         modifier(GlassNavigationBarModifier())
     }

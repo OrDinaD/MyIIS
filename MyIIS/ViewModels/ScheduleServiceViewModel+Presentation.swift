@@ -281,7 +281,35 @@ extension ScheduleServiceViewModel {
         if let selectedEmployee {
             return selectedEmployee.displayName
         }
+        if schedule == nil, dataSource == .api {
+            switch mode {
+            case .group:
+                if let group = initialGroupNumber { return group }
+            case .teacher:
+                if let name = defaults.string(forKey: Self.lastTeacherNameDefaultsKey)?.nilIfBlank
+                    ?? pinnedTeachers.first?.name {
+                    return name
+                }
+            }
+        }
         return NSLocalizedString("services_schedule_title", comment: "")
+    }
+
+    var initialGroupNumber: String? {
+        defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank
+            ?? pinnedGroupNames.first
+            ?? accountGroupName
+    }
+
+    var displayedGroupNumber: String? {
+        guard mode == .group else { return nil }
+        return schedule?.group?.name.nilIfBlank ?? (schedule == nil ? initialGroupNumber : nil)
+    }
+
+    var hasFinishedLessonsToday: Bool {
+        let calendar = Calendar.current
+        return pastContinuousDays.contains { calendar.isDateInToday($0.date) }
+            && !upcomingContinuousDays.contains { calendar.isDateInToday($0.date) }
     }
 
     var scheduleHeaderSubtitle: String? {

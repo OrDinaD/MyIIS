@@ -1,18 +1,6 @@
 import SwiftUI
 
 extension ScheduleServiceView {
-    func scrollToTodayOrCurrent(proxy: ScrollViewProxy) {
-        if let todayDay = viewModel.upcomingContinuousDays.first(where: { Calendar.current.isDateInToday($0.date) }) {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                proxy.scrollTo(todayDay.id, anchor: .top)
-            }
-        } else if let firstUpcoming = viewModel.upcomingContinuousDays.first {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                proxy.scrollTo(firstUpcoming.id, anchor: .top)
-            }
-        }
-    }
-
     var scheduleDateRange: ClosedRange<Date> {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())

@@ -16,8 +16,6 @@ extension ScheduleServiceViewModel {
         if schedule == nil {
             restorePersistedScheduleIfAvailable()
         }
-        await loadDirectoryIfNeeded(force: false)
-
         if schedule == nil {
             if mode == .group, let group = defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank ?? pinnedGroupNames.first ?? accountGroupName {
                 await loadGroup(group)
@@ -43,6 +41,7 @@ extension ScheduleServiceViewModel {
         }
 
         hasLoadedInitialData = true
+        await loadDirectoryIfNeeded(force: false)
     }
 
     func refreshData() async {

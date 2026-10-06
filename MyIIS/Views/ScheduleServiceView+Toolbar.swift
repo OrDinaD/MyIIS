@@ -7,7 +7,7 @@ extension ScheduleServiceView {
         guard viewModel.mode == .group,
               let accountGroup = viewModel.accountGroupName?.trimmingCharacters(in: .whitespacesAndNewlines),
               !accountGroup.isEmpty else { return false }
-        return viewModel.schedule?.group?.name.trimmingCharacters(in: .whitespacesAndNewlines) == accountGroup
+        return viewModel.displayedGroupNumber == accountGroup
     }
 
     @ToolbarContentBuilder
@@ -31,8 +31,10 @@ extension ScheduleServiceView {
             }
         }
         ToolbarItem(placement: .topBarLeading) {
-            if viewModel.schedule != nil, !isCurrentScheduleUserAccountGroup {
+            if viewModel.displayedGroupNumber != nil || viewModel.selectedEmployee != nil,
+               !isCurrentScheduleUserAccountGroup {
                 pinButton
+                    .allowsHitTesting(viewModel.schedule != nil)
             }
         }
 
@@ -143,7 +145,7 @@ extension ScheduleServiceView {
     }
 
     private var isCurrentSchedulePinned: Bool {
-        if let group = viewModel.schedule?.group?.name {
+        if let group = viewModel.displayedGroupNumber {
             return viewModel.isGroupPinned(group)
         }
         if let employee = viewModel.selectedEmployee, let urlId = employee.urlId {

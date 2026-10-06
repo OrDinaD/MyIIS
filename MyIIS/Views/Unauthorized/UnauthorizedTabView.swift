@@ -31,7 +31,7 @@ struct UnauthorizedTabView: View {
     var body: some View {
         if #available(iOS 18.0, *) {
             baseTabView
-                .tabViewStyle(.sidebarAdaptable)
+                .platformTabNavigation()
                 .onChange(of: router.selectedTab) { _, newValue in syncWithAppTab(newValue) }
                 .onAppear { syncWithAppTab(router.selectedTab) }
         } else {

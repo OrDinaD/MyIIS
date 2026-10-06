@@ -94,8 +94,7 @@ private struct ModernMainTabView: View {
             .customizationID("tab.others")
             .customizationBehavior(.disabled, for: .sidebar, .tabBar)
         }
-        .tabViewStyle(.sidebarAdaptable)
-        .tabViewCustomization($tabCustomization)
+        .platformTabNavigation(customization: $tabCustomization)
     }
 
     private var tabBinding: Binding<AppTab> {

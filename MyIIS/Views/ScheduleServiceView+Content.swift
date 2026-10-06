@@ -33,7 +33,11 @@ extension ScheduleServiceView {
         }
 
         if viewModel.isCurrentModeEmpty {
-            scheduleUnavailableView
+            if viewModel.displayMode == .continuous && viewModel.isLoadingContinuousChunk {
+                scheduleSkeletonView
+            } else {
+                scheduleUnavailableView
+            }
         }
     }
 
@@ -59,9 +63,8 @@ extension ScheduleServiceView {
                 .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
 
-            if viewModel.pastContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) &&
-                !viewModel.upcomingContinuousDays.contains(where: { Calendar.current.isDateInToday($0.date) }) {
-                Text(NSLocalizedString("services_schedule_no_more_today", comment: "На сегодня занятий больше нет 🎉"))
+            if viewModel.hasFinishedLessonsToday {
+                Text(NSLocalizedString("services_schedule_no_more_today", comment: ""))
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
