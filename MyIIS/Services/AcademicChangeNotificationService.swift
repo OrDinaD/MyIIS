@@ -375,6 +375,24 @@ private extension AcademicChangeNotificationService {
     }
 
     private func ensureAuthenticatedIfPossible() async throws -> PersonalProfile {
+        if let user = await MainActor.run(body: { AuthenticationService.shared.currentUser }) {
+            return PersonalProfile(
+                firstName: user.firstName,
+                lastName: user.lastName,
+                middleName: user.middleName,
+                belarusianFirstName: user.belarusianFirstName,
+                belarusianLastName: user.belarusianLastName,
+                belarusianMiddleName: user.belarusianMiddleName,
+                birthDate: user.birthDay,
+                photoUrl: user.photo,
+                course: user.education.course,
+                faculty: user.education.faculty,
+                speciality: user.education.speciality,
+                studentGroup: user.education.group,
+                rating: user.rating
+            )
+        }
+
         do {
             return try await apiService.getPersonalProfile()
         } catch APIError.unauthorized {
