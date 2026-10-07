@@ -98,7 +98,7 @@ final class ScheduleNotificationMonitorService: NSObject {
     private func checkScheduleChanges(for group: String) async {
         do {
             let response = try await api.fetchGroupSchedule(groupNumber: group, preferCachedResponse: false)
-            let newHash = computeScheduleSignature(response)
+            let newHash = Self.computeScheduleSignature(response)
             let previousHash = defaults.string(forKey: "\(Self.lastScheduleHashKey).\(group)")
 
             if let previousHash, !previousHash.isEmpty, previousHash != newHash {
@@ -178,7 +178,7 @@ final class ScheduleNotificationMonitorService: NSObject {
 
     // MARK: - Signature Helpers
 
-    private func computeScheduleSignature(_ schedule: PublicScheduleResponse) -> String {
+    static func computeScheduleSignature(_ schedule: PublicScheduleResponse) -> String {
         var items: [String] = []
         for day in schedule.orderedDays {
             for lesson in day.lessons {
