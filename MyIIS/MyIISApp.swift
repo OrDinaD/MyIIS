@@ -57,6 +57,7 @@ struct MyIISApp: App {
         case .active:
             handlePendingAppIntentNavigation()
             Task {
+                await RemoteNotificationService.shared.registerOnGateway()
                 await ScheduleNotificationMonitorService.shared.checkForUpdates()
             }
             guard authService.isSessionReady,
@@ -83,9 +84,35 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         CrashDiagnosticManager.shared.start()
         AcademicChangeNotificationService.shared.configureAtLaunch()
+        RemoteNotificationService.shared.requestAuthorizationAndRegister()
         Task {
             await ScheduleNotificationMonitorService.shared.checkForUpdates()
         }
         return true
+    }
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        RemoteNotificationService.shared.handleDeviceToken(deviceToken)
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        LogService.shared.log("⚠️ Remote notification registration failed: \(error.localizedDescription)")
+    }
+
+    func application(
+        _ application: UIApplication,
+        didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+        fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+    ) {
+        Task { @MainActor in
+            let result = await RemoteNotificationService.shared.handleRemoteNotification(userInfo)
+            completionHandler(result)
+        }
     }
 }

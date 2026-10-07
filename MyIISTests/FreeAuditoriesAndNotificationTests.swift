@@ -244,4 +244,25 @@ final class FreeAuditoriesAndNotificationTests: XCTestCase {
         XCTAssertEqual(teacherURL?.host, "bsuir.ordinad.xyz")
         XCTAssertEqual(teacherURL?.path, "/api/v1/calendar/employee/ivanov-i-i.ics")
     }
+
+    // MARK: - RemoteNotificationService Tests
+
+    func testRemoteNotificationServiceEndpointsAndTokenHandling() async {
+        guard let testDefaults else { return }
+        let service = RemoteNotificationService(defaults: testDefaults)
+
+        XCTAssertEqual(RemoteNotificationService.registrationEndpoint.absoluteString, "https://bsuir.ordinad.xyz/api/v1/notifications/register")
+        XCTAssertNil(service.currentDeviceToken)
+
+        // Raw bytes for device token
+        let tokenBytes: [UInt8] = [0xde, 0xad, 0xbe, 0xef, 0x01, 0x02, 0x03, 0x04]
+        let deviceTokenData = Data(tokenBytes)
+        service.handleDeviceToken(deviceTokenData)
+
+        XCTAssertEqual(service.currentDeviceToken, "deadbeef01020304")
+
+        // Handle remote notification with silent update
+        let result = await service.handleRemoteNotification(["group": "420603", "action": "schedule_update"])
+        XCTAssertEqual(result, .newData)
+    }
 }

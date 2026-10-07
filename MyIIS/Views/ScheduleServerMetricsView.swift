@@ -4,6 +4,13 @@
 //
 
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
+
+// ==============================================================================
+// MARK: - [DEBUG_TELEMETRY_MODULE] UI ЭКРАН МЕТРИК И ДИАГНОСТИКИ
+// ==============================================================================
 
 struct ScheduleServerMetricsView: View {
     @ObservedObject private var tracker = ScheduleServerMetricsTracker.shared
@@ -14,6 +21,8 @@ struct ScheduleServerMetricsView: View {
     private var selectedServerRaw = ScheduleAPIServer.auto.rawValue
 
     @State private var isClearConfirmationPresented = false
+    @State private var isReportCopied = false
+    @State private var selectedRecordForDetails: ScheduleServerMetricRecord?
 
     private var selectedServer: Binding<ScheduleAPIServer> {
         Binding(
@@ -24,22 +33,34 @@ struct ScheduleServerMetricsView: View {
 
     var body: some View {
         List {
+            networkEnvironmentSection
+            exportAndDiagnosticsSection
             serverSelectionSection
             livePingSection
             summaryComparisonSection
             classHoursAnalysisSection
             recentRecordsSection
         }
-        .navigationTitle(NSLocalizedString("server_metrics_title", value: "Метрики серверов", comment: ""))
+        .navigationTitle(NSLocalizedString("server_metrics_title", value: "Метрики и диагностика", comment: ""))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                if !tracker.records.isEmpty {
-                    Button(role: .destructive) {
-                        isClearConfirmationPresented = true
-                    } label: {
-                        Image(systemName: "trash")
-                            .foregroundStyle(.red)
+                HStack(spacing: 12) {
+                    if !tracker.records.isEmpty {
+                        ShareLink(
+                            item: tracker.generateDetailedReport(),
+                            subject: Text("Диагностический отчет сети MyIIS"),
+                            message: Text("Сетевой отчет MyIIS")
+                        ) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+
+                        Button(role: .destructive) {
+                            isClearConfirmationPresented = true
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundStyle(.red)
+                        }
                     }
                 }
             }
@@ -53,6 +74,150 @@ struct ScheduleServerMetricsView: View {
                 tracker.clearAll()
             }
             Button(NSLocalizedString("common_cancel", value: "Отмена", comment: ""), role: .cancel) {}
+        }
+        .sheet(item: $selectedRecordForDetails) { record in
+            recordDetailSheet(record)
+        }
+    }
+
+    // MARK: - Network Environment Section
+
+    private var networkEnvironmentSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 10) {
+                    Image(systemName: networkIconName(tracker.currentNetwork.connectionType))
+                        .font(.title2)
+                        .foregroundStyle(.tint)
+                        .frame(width: 30)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(tracker.currentNetwork.connectionType)
+                            .font(.headline)
+
+                        Text("Текущее соединение устройства")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    if tracker.currentNetwork.isVPNActive {
+                        HStack(spacing: 4) {
+                            Image(systemName: "lock.shield.fill")
+                            Text("VPN")
+                                .font(.caption.weight(.bold))
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.15), in: Capsule())
+                        .foregroundStyle(.green)
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "shield.slash")
+                            Text("Без VPN")
+                                .font(.caption2)
+                        }
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.secondary.opacity(0.12), in: Capsule())
+                        .foregroundStyle(.secondary)
+                    }
+                }
+
+                if tracker.currentNetwork.isConstrained || tracker.currentNetwork.isExpensive {
+                    HStack(spacing: 6) {
+                        if tracker.currentNetwork.isConstrained {
+                            Label("Low Data Mode", systemImage: "leaf.fill")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.orange)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.orange.opacity(0.12), in: Capsule())
+                        }
+                        if tracker.currentNetwork.isExpensive {
+                            Label("Лимитная сеть", systemImage: "antenna.radiowaves.left.and.right")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.blue)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.blue.opacity(0.12), in: Capsule())
+                        }
+                        Spacer()
+                    }
+                    .padding(.top, 2)
+                }
+            }
+            .padding(.vertical, 4)
+        } header: {
+            Text("Сетевое окружение")
+        } footer: {
+            Text("Телеметрия отслеживает поведение сервера на Wi-Fi, мобильных данных и при включенном VPN для выявления узких мест.")
+        }
+    }
+
+    // MARK: - Export & Diagnostics Section
+
+    private var exportAndDiagnosticsSection: some View {
+        Section {
+            Button {
+                copyReportToClipboard()
+            } label: {
+                HStack {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(isReportCopied ? "Отчет скопирован в буфер!" : "Скопировать полный отчет")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(isReportCopied ? .green : .primary)
+                            Text("Сводка пингов, сравнение сетей, VPN и лог для анализа")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: isReportCopied ? "checkmark.circle.fill" : "doc.on.doc.fill")
+                            .foregroundStyle(isReportCopied ? .green : .blue)
+                            .font(.title3)
+                    }
+
+                    Spacer()
+
+                    if isReportCopied {
+                        Text("Готово")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.green)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+
+            ShareLink(
+                item: tracker.generateDetailedReport(),
+                subject: Text("Диагностический отчет сети MyIIS"),
+                message: Text("Сетевой отчет MyIIS")
+            ) {
+                HStack {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Поделиться отчетом...")
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(.primary)
+                            Text("Отправить текстовый файл или заметку")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundStyle(.purple)
+                            .font(.title3)
+                    }
+                    Spacer()
+                }
+                .padding(.vertical, 2)
+            }
+        } header: {
+            Text("Экспорт телеметрии")
+        } footer: {
+            Text("Скопируйте отчет и отправьте его разработчику в чат — в нем собраны все задержки, статус-коды, влияние VPN и размер трафика.")
         }
     }
 
@@ -193,8 +358,11 @@ struct ScheduleServerMetricsView: View {
                     icon: "bolt.horizontal.fill",
                     color: .green,
                     avgDuration: tracker.averageDuration(for: "gateway"),
+                    minDuration: tracker.minDuration(for: "gateway"),
+                    maxDuration: tracker.maxDuration(for: "gateway"),
                     successRate: tracker.successRate(for: "gateway"),
-                    count: tracker.totalRequests(for: "gateway")
+                    count: tracker.totalRequests(for: "gateway"),
+                    avgBytes: tracker.averageResponseBytes(for: "gateway")
                 )
 
                 serverSummaryCard(
@@ -202,8 +370,11 @@ struct ScheduleServerMetricsView: View {
                     icon: "building.columns.fill",
                     color: .blue,
                     avgDuration: tracker.averageDuration(for: "official"),
+                    minDuration: tracker.minDuration(for: "official"),
+                    maxDuration: tracker.maxDuration(for: "official"),
                     successRate: tracker.successRate(for: "official"),
-                    count: tracker.totalRequests(for: "official")
+                    count: tracker.totalRequests(for: "official"),
+                    avgBytes: tracker.averageResponseBytes(for: "official")
                 )
             }
             .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
@@ -232,8 +403,11 @@ struct ScheduleServerMetricsView: View {
         icon: String,
         color: Color,
         avgDuration: Double?,
+        minDuration: Int?,
+        maxDuration: Int?,
         successRate: Double,
-        count: Int
+        count: Int,
+        avgBytes: Int?
     ) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -249,6 +423,11 @@ struct ScheduleServerMetricsView: View {
                 Text("\(Int(avg)) мс")
                     .font(.title2.weight(.bold))
                     .foregroundStyle(latencyColor(Int(avg)))
+                if let min = minDuration, let max = maxDuration {
+                    Text("\(min) – \(max) мс")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             } else {
                 Text("—")
                     .font(.title2.weight(.bold))
@@ -266,6 +445,18 @@ struct ScheduleServerMetricsView: View {
                 Text("\(count) зап.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
+            }
+
+            if let avgBytes {
+                HStack {
+                    Text("Трафик:")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(ByteCountFormatter.string(fromByteCount: Int64(avgBytes), countStyle: .file))
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
             }
         }
         .padding(12)
@@ -365,7 +556,7 @@ struct ScheduleServerMetricsView: View {
         } header: {
             Text(NSLocalizedString("server_metrics_class_hours_header", value: "Нагрузка по времени суток", comment: ""))
         } footer: {
-            Text(NSLocalizedString("server_metrics_class_hours_footer", value: "Серверы университета испытывают пиковую нагрузку во время занятий. Эта статистика поможет определить оптимальный порог для умного авто-режима.", comment: ""))
+            Text(NSLocalizedString("server_metrics_class_hours_footer", value: "Серверы университета испытывают пиковую нагрузку во время занятий. Эта статистика поможет оценить стабильность шлюза в пике.", comment: ""))
         }
     }
 
@@ -379,8 +570,13 @@ struct ScheduleServerMetricsView: View {
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
             } else {
-                ForEach(tracker.records.prefix(30)) { record in
-                    recordRow(record)
+                ForEach(tracker.records.prefix(40)) { record in
+                    Button {
+                        selectedRecordForDetails = record
+                    } label: {
+                        recordRow(record)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         } header: {
@@ -406,25 +602,54 @@ struct ScheduleServerMetricsView: View {
                 HStack(spacing: 6) {
                     Text(record.serverDisplayName)
                         .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+
+                    if record.isVPN {
+                        Text("VPN")
+                            .font(.system(size: 9, weight: .bold))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(Color.green.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.green)
+                    }
+
                     if record.isClassHour {
                         Text("Пары")
-                            .font(.system(size: 10, weight: .semibold))
-                            .padding(.horizontal, 5)
+                            .font(.system(size: 9, weight: .semibold))
+                            .padding(.horizontal, 4)
                             .padding(.vertical, 1)
                             .background(Color.orange.opacity(0.15), in: Capsule())
                             .foregroundStyle(.orange)
                     }
                 }
+
                 HStack(spacing: 4) {
                     Text(record.endpoint)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                     Text("•")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     Text(formattedTime(record.timestamp))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                    if let size = record.formattedResponseSize {
+                        Text("•")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(size)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let enc = record.contentEncoding {
+                        Text("•")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                        Text(enc)
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.purple)
+                    }
                 }
             }
 
@@ -450,6 +675,101 @@ struct ScheduleServerMetricsView: View {
             }
         }
         .padding(.vertical, 2)
+    }
+
+    // MARK: - Detail Sheet
+
+    private func recordDetailSheet(_ record: ScheduleServerMetricRecord) -> some View {
+        NavigationStack {
+            List {
+                Section("Основное") {
+                    LabeledContent("Сервер", value: record.serverDisplayName)
+                    LabeledContent("Эндпоинт", value: record.endpoint)
+                    LabeledContent("Время", value: formattedTime(record.timestamp))
+                    LabeledContent("Задержка", value: "\(record.durationMs) мс")
+                    LabeledContent("HTTP Статус", value: "\(record.httpStatusCode)")
+                    LabeledContent("Успешно", value: record.isSuccess ? "Да" : "Нет")
+                    if let err = record.errorMessage {
+                        LabeledContent("Ошибка", value: err)
+                    }
+                }
+
+                Section("Сетевое окружение") {
+                    LabeledContent("Тип сети", value: record.connectionType)
+                    LabeledContent("VPN", value: record.isVPN ? "Активен" : "Выключен")
+                    LabeledContent("Лимитная сеть", value: record.isExpensive ? "Да" : "Нет")
+                    LabeledContent("Low Data Mode", value: record.isConstrained ? "Включен" : "Выключен")
+                    LabeledContent("Учебные часы", value: record.isClassHour ? "Да (08:00-19:30)" : "Вне занятий")
+                }
+
+                Section("HTTP Заголовки и данные") {
+                    if let size = record.formattedResponseSize {
+                        LabeledContent("Размер тела", value: size)
+                    }
+                    if let enc = record.contentEncoding {
+                        LabeledContent("Content-Encoding", value: enc)
+                    }
+                    if let timing = record.serverTiming {
+                        LabeledContent("Server-Timing", value: timing)
+                    }
+                    if let cache = record.cacheControl {
+                        LabeledContent("Cache-Control", value: cache)
+                    }
+                    if let url = record.fullURL {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Полный URL:")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(url)
+                                .font(.caption.monospaced())
+                                .textSelection(.enabled)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Детали запроса")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Закрыть") {
+                        selectedRecordForDetails = nil
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    // MARK: - Helpers
+
+    private func copyReportToClipboard() {
+        #if canImport(UIKit)
+        UIPasteboard.general.string = tracker.generateDetailedReport()
+        let feedback = UIImpactFeedbackGenerator(style: .medium)
+        feedback.impactOccurred()
+        #endif
+
+        withAnimation {
+            isReportCopied = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation {
+                isReportCopied = false
+            }
+        }
+    }
+
+    private func networkIconName(_ type: String) -> String {
+        if type.contains("Wi-Fi") {
+            return "wifi"
+        } else if type.contains("Сотовая") || type.contains("Cellular") {
+            return "antenna.radiowaves.left.and.right"
+        } else if type.contains("Ethernet") {
+            return "cable.connector"
+        } else {
+            return "network"
+        }
     }
 
     private func latencyColor(_ ms: Int) -> Color {

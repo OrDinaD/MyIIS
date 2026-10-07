@@ -670,12 +670,22 @@ final class ServiceEndpointsAPI {
 
                 logService.log("Service endpoint response (\(server.rawValue)): status \(httpResponse.statusCode), \(durationMs) ms for \(endpoint.absoluteString)")
 
+                let contentEncoding = httpResponse.value(forHTTPHeaderField: "Content-Encoding")
+                let serverTiming = httpResponse.value(forHTTPHeaderField: "Server-Timing")
+                let cacheControl = httpResponse.value(forHTTPHeaderField: "Cache-Control")
+
+                // [DEBUG_TELEMETRY_MODULE] Замер скорости сервера
                 ScheduleServerMetricsTracker.shared.recordMetric(
                     server: server.rawValue,
                     endpoint: path,
                     durationMs: durationMs,
                     httpStatusCode: httpResponse.statusCode,
-                    isSuccess: true
+                    isSuccess: true,
+                    responseBytes: data.count,
+                    contentEncoding: contentEncoding,
+                    serverTiming: serverTiming,
+                    cacheControl: cacheControl,
+                    fullURL: endpoint.absoluteString
                 )
 
                 return try handleSuccessfulTransport(
@@ -692,13 +702,15 @@ final class ServiceEndpointsAPI {
                 let durationMs = Int(Date().timeIntervalSince(startTime) * 1000)
                 let code = statusCode(from: error)
 
+                // [DEBUG_TELEMETRY_MODULE] Замер сбоя сервера
                 ScheduleServerMetricsTracker.shared.recordMetric(
                     server: server.rawValue,
                     endpoint: path,
                     durationMs: durationMs,
                     httpStatusCode: code,
                     isSuccess: false,
-                    errorMessage: error.localizedDescription
+                    errorMessage: error.localizedDescription,
+                    fullURL: endpoint.absoluteString
                 )
 
                 lastError = error
