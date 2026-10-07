@@ -25,6 +25,19 @@ struct ScheduleSettingsView: View {
     @AppStorage("schedule.widget.customGroup", store: ScheduleDisplayPreferences.defaults)
     private var widgetCustomGroup = ""
 
+    @AppStorage(
+        ScheduleServerConfiguration.serverDefaultsKey,
+        store: ScheduleServerConfiguration.defaults
+    )
+    private var selectedServerRaw = ScheduleAPIServer.auto.rawValue
+
+    private var selectedServer: Binding<ScheduleAPIServer> {
+        Binding(
+            get: { ScheduleAPIServer(rawValue: selectedServerRaw) ?? .auto },
+            set: { selectedServerRaw = $0.rawValue }
+        )
+    }
+
     @State private var isResetConfirmationPresented = false
 
     // Color states
@@ -43,6 +56,7 @@ struct ScheduleSettingsView: View {
                     ScheduleSubgroupSelectionSection(viewModel: viewModel)
                 }
                 subgroupSection
+                serverSection
                 widgetSection
                 colorsSection
                 resetSection
@@ -142,6 +156,51 @@ struct ScheduleSettingsView: View {
                     Text(option.localizedTitle).tag(option.rawValue)
                 }
             }
+        }
+    }
+
+    private var serverSection: some View {
+        Section {
+            Picker(
+                NSLocalizedString("schedule_server_picker_title", value: "Сервер API", comment: ""),
+                selection: selectedServer
+            ) {
+                ForEach(ScheduleAPIServer.allCases) { server in
+                    Label(server.localizedTitle, systemImage: server.iconName)
+                        .tag(server)
+                }
+            }
+            .pickerStyle(.menu)
+
+            NavigationLink {
+                ScheduleServerMetricsView()
+            } label: {
+                HStack {
+                    Label {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(NSLocalizedString("schedule_server_metrics_title", value: "Замеры скорости и метрики", comment: ""))
+                                .fontWeight(.medium)
+                            Text(NSLocalizedString("schedule_server_metrics_desc", value: "Сравнение пинга и времени ответа", comment: ""))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "gauge.with.needle.fill")
+                            .foregroundStyle(.purple)
+                    }
+                    Spacer()
+                    if let summary = ScheduleServerMetricsTracker.shared.lastComparisonSummary {
+                        Text(summary)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        } header: {
+            Text(NSLocalizedString("schedule_server_header", value: "Сервер расписания", comment: ""))
+        } footer: {
+            Text(selectedServer.wrappedValue.subtitle)
+                .font(.caption)
         }
     }
 

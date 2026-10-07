@@ -43,6 +43,10 @@ enum ScheduleEmployeePhotoURL {
         }
 
         guard employeeID > 0 else { return nil }
+        let server = ScheduleServerConfiguration.selectedServer
+        if server == .gateway || server == .auto {
+            return URL(string: "https://bsuir.ordinad.xyz/api/v1/employees/photo/\(employeeID)?format=jpeg")
+        }
         return URL(string: "https://iis.bsuir.by/api/v1/employees/photo/\(employeeID)")
     }
 }
@@ -593,76 +597,151 @@ final class ServiceEndpointsAPI {
         )
     }
 
+    private func targetServers(for path: String) -> [ScheduleAPIServer] {
+        guard ScheduleServerConfiguration.isGatewaySupported(path: path) else {
+            return [.official]
+        }
+        let selected = ScheduleServerConfiguration.selectedServer
+        switch selected {
+        case .auto, .gateway:
+            return [.gateway, .official]
+        case .official:
+            return [.official]
+        }
+    }
+
+    private func statusCode(from error: Error) -> Int {
+        if let apiError = error as? APIError {
+            switch apiError {
+            case .serverError(let code, _):
+                return code
+            case .unauthorized:
+                return 401
+            case .serviceUnavailable:
+                return 503
+            default:
+                return -1
+            }
+        }
+        if let urlError = error as? URLError {
+            return urlError.errorCode
+        }
+        return -1
+    }
+
     private func fetchData(
         path: String,
         queryItems: [URLQueryItem]? = nil,
         preferCachedResponse: Bool = false
     ) async throws -> Data {
-        let request = try makeGETRequest(path: path, queryItems: queryItems)
-        guard let endpoint = request.url else { throw APIError.invalidURL }
+        let canonicalRequest = try makeGETRequest(path: path, queryItems: queryItems)
+        guard let canonicalEndpoint = canonicalRequest.url else { throw APIError.invalidURL }
 
-        if preferCachedResponse, let cached = cachedData(for: request) {
-            logService.log("Service endpoints: using fresh cache for \(endpoint.absoluteString)")
+        if preferCachedResponse, let cached = cachedData(for: canonicalRequest) {
+            logService.log("Service endpoints: using fresh cache for \(canonicalEndpoint.absoluteString)")
             return cached
         }
 
-        let method = request.httpMethod ?? "GET"
-        logService.log("Service endpoint request: \(method) \(endpoint.absoluteString)")
+        let servers = targetServers(for: path)
+        var lastError: Error?
 
-        do {
-            let (data, response) = try await session.data(for: request)
-            let httpResponse = try validatedHTTPResponse(response)
-            logService.log("Service endpoint response: status \(httpResponse.statusCode) for \(endpoint.absoluteString)")
-            return try handleSuccessfulTransport(
-                httpResponse: httpResponse,
-                data: data,
-                request: request
-            )
-        } catch {
-            if isCancellationError(error) {
-                throw CancellationError()
+        for (index, server) in servers.enumerated() {
+            let serverBaseURL = (server == .gateway) ? ScheduleServerConfiguration.gatewayBaseURL : baseURL
+            let endpoint: URL
+            do {
+                endpoint = try endpointURL(baseURL: serverBaseURL, path: path, queryItems: queryItems)
+            } catch {
+                lastError = error
+                continue
             }
 
-            if let apiError = error as? APIError {
-                switch apiError {
-                case .unauthorized:
-                    AuthenticationSessionEvents.reportUnauthorized()
-                    throw apiError
-                case .invalidURL, .invalidResponse, .decodingError:
-                    throw apiError
-                case .serviceUnavailable, .serverError, .networkError:
-                    break
+            var request = URLRequest(url: endpoint)
+            request.httpMethod = "GET"
+            request.timeoutInterval = (server == .gateway) ? 12.0 : 25.0
+            request.setValue("br, gzip, deflate", forHTTPHeaderField: "Accept-Encoding")
+
+            let startTime = Date()
+            logService.log("Service endpoint request (\(server.rawValue)): GET \(endpoint.absoluteString)")
+
+            do {
+                let (data, response) = try await session.data(for: request)
+                let durationMs = Int(Date().timeIntervalSince(startTime) * 1000)
+                let httpResponse = try validatedHTTPResponse(response)
+
+                logService.log("Service endpoint response (\(server.rawValue)): status \(httpResponse.statusCode), \(durationMs) ms for \(endpoint.absoluteString)")
+
+                ScheduleServerMetricsTracker.shared.recordMetric(
+                    server: server.rawValue,
+                    endpoint: path,
+                    durationMs: durationMs,
+                    httpStatusCode: httpResponse.statusCode,
+                    isSuccess: true
+                )
+
+                return try handleSuccessfulTransport(
+                    httpResponse: httpResponse,
+                    data: data,
+                    request: request,
+                    canonicalRequest: canonicalRequest
+                )
+            } catch {
+                if isCancellationError(error) {
+                    throw CancellationError()
+                }
+
+                let durationMs = Int(Date().timeIntervalSince(startTime) * 1000)
+                let code = statusCode(from: error)
+
+                ScheduleServerMetricsTracker.shared.recordMetric(
+                    server: server.rawValue,
+                    endpoint: path,
+                    durationMs: durationMs,
+                    httpStatusCode: code,
+                    isSuccess: false,
+                    errorMessage: error.localizedDescription
+                )
+
+                lastError = error
+
+                if index < servers.count - 1 {
+                    logService.log("⚠️ Server \(server.rawValue) failed for \(path). Falling back to \(servers[index + 1].rawValue)... Error: \(error.localizedDescription)")
+                    continue
                 }
             }
+        }
 
-            if let cached = OfflineResponseCache.loadData(
-                for: request, prefix: Self.cachePrefix, userDefaults: userDefaults,
-                maxAge: request.url?.path.hasSuffix("/schedule/current-week") == true ? Self.currentWeekCacheLifetime : nil,
-                now: now()
-            ) {
-                OfflineDataStatus.shared.usedCache(for: request.url)
-                logService.log("⚠️ Service endpoints: using offline cache for \(endpoint.absoluteString). Original error: \(error.localizedDescription)")
-                return cached
-            }
+        if let cached = OfflineResponseCache.loadData(
+            for: canonicalRequest, prefix: Self.cachePrefix, userDefaults: userDefaults,
+            maxAge: canonicalRequest.url?.path.hasSuffix("/schedule/current-week") == true ? Self.currentWeekCacheLifetime : nil,
+            now: now()
+        ) {
+            OfflineDataStatus.shared.usedCache(for: canonicalRequest.url)
+            logService.log("⚠️ Service endpoints: using offline cache for \(canonicalEndpoint.absoluteString). Original error: \(lastError?.localizedDescription ?? "unknown")")
+            return cached
+        }
 
-            if let apiError = error as? APIError {
-                throw apiError
-            }
+        if let apiError = lastError as? APIError {
+            throw apiError
+        }
 
-            logTransportError(error, endpoint: endpoint)
+        if let error = lastError {
+            logTransportError(error, endpoint: canonicalEndpoint)
             throw APIError.networkError(error)
         }
+
+        throw APIError.networkError(NSError(domain: "ServiceEndpointsAPI", code: -1, userInfo: nil))
     }
 
-    private func makeGETRequest(path: String, queryItems: [URLQueryItem]? = nil) throws -> URLRequest {
-        let endpoint = try endpointURL(path: path, queryItems: queryItems)
+    private func makeGETRequest(baseURL: URL? = nil, path: String, queryItems: [URLQueryItem]? = nil) throws -> URLRequest {
+        let endpoint = try endpointURL(baseURL: baseURL ?? self.baseURL, path: path, queryItems: queryItems)
         var request = URLRequest(url: endpoint)
         request.httpMethod = "GET"
         return request
     }
 
-    private func endpointURL(path: String, queryItems: [URLQueryItem]?) throws -> URL {
-        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+    private func endpointURL(baseURL: URL? = nil, path: String, queryItems: [URLQueryItem]?) throws -> URL {
+        let base = baseURL ?? self.baseURL
+        var components = URLComponents(url: base.appendingPathComponent(path), resolvingAgainstBaseURL: false)
         components?.queryItems = queryItems
         guard let endpoint = components?.url else {
             throw APIError.invalidURL
@@ -685,12 +764,16 @@ final class ServiceEndpointsAPI {
     private func handleSuccessfulTransport(
         httpResponse: HTTPURLResponse,
         data: Data,
-        request: URLRequest
+        request: URLRequest,
+        canonicalRequest: URLRequest? = nil
     ) throws -> Data {
         switch httpResponse.statusCode {
         case 200 ... 299:
-            OfflineDataStatus.shared.refreshed(request.url)
+            OfflineDataStatus.shared.refreshed(canonicalRequest?.url ?? request.url)
             persistCache(data: data, for: request)
+            if let canonicalRequest, canonicalRequest.url != request.url {
+                persistCache(data: data, for: canonicalRequest)
+            }
             return data
         case 401, 403:
             throw APIError.unauthorized(message: NSLocalizedString(
