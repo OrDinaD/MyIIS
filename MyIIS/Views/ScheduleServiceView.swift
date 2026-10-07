@@ -31,6 +31,7 @@ struct ScheduleServiceView: View {
     @State var scheduleScrollPosition: String?
     @State var isPinnedPickerPresented = false
     @State var isComparisonPresented = false
+    @State var isFreeAuditoriesPresented = false
 
     var cardDensity: ScheduleCardDensity {
         ScheduleCardDensity(rawValue: cardDensityRaw) ?? .regular
@@ -192,6 +193,9 @@ struct ScheduleServiceView: View {
         .errorAlert($viewModel.noticeMessage, title: NSLocalizedString("services_schedule_title", comment: ""))
         .sheet(isPresented: $isSearchSheetPresented) {
             ScheduleSearchSheet(viewModel: viewModel, isPresented: $isSearchSheetPresented)
+        }
+        .sheet(isPresented: $isFreeAuditoriesPresented) {
+            FreeAuditoriesView()
         }
         .onReceive(NotificationCenter.default.publisher(for: .scheduleResetToDefaultGroup)) { _ in
             guard !isCurrentScheduleUserAccountGroup || viewModel.mode == .teacher else { return }

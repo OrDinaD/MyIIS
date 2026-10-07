@@ -56,6 +56,26 @@ extension ScheduleServiceView {
                 } label: {
                     Label(ScheduleComparisonCopy.text("title"), systemImage: "rectangle.split.2x1")
                 }
+
+                Button {
+                    isFreeAuditoriesPresented = true
+                } label: {
+                    Label(
+                        NSLocalizedString("free_auditories_menu_title", value: "Свободные аудитории", comment: ""),
+                        systemImage: "door.left.hand.open"
+                    )
+                }
+
+                if let calendarURL = appleCalendarURL {
+                    Button {
+                        UIApplication.shared.open(calendarURL)
+                    } label: {
+                        Label(
+                            NSLocalizedString("schedule_subscribe_apple_calendar", value: "Добавить в Календарь iOS", comment: ""),
+                            systemImage: "calendar.badge.plus"
+                        )
+                    }
+                }
                 Divider()
                 Picker(
                     NSLocalizedString("services_schedule_display_mode", comment: ""),
@@ -163,6 +183,21 @@ extension ScheduleServiceView {
                 viewModel.togglePinnedTeacher(employee)
             }
         }
+    }
+
+    private var appleCalendarURL: URL? {
+        if viewModel.mode == .group,
+           let group = (viewModel.displayedGroupNumber ?? viewModel.schedule?.group?.name)?.trimmingCharacters(in: .whitespacesAndNewlines),
+           let encoded = group.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+           !encoded.isEmpty {
+            return URL(string: "webcal://bsuir.ordinad.xyz/api/v1/calendar/group/\(encoded).ics")
+        } else if viewModel.mode == .teacher,
+                  let urlId = (viewModel.selectedEmployee?.urlId ?? viewModel.schedule?.employee?.urlId)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  let encoded = urlId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed),
+                  !encoded.isEmpty {
+            return URL(string: "webcal://bsuir.ordinad.xyz/api/v1/calendar/employee/\(encoded).ics")
+        }
+        return nil
     }
 }
 

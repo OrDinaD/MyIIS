@@ -22,6 +22,18 @@ struct ScheduleSettingsView: View {
     @AppStorage(ScheduleDisplayPreferences.lessonTrackingEnabledKey, store: ScheduleDisplayPreferences.defaults)
     private var lessonTrackingEnabled = true
 
+    @AppStorage(
+        ScheduleNotificationMonitorService.scheduleChangesEnabledKey,
+        store: UserDefaults(suiteName: AppGroup.identifier) ?? .standard
+    )
+    private var isScheduleChangesNotificationsEnabled = true
+
+    @AppStorage(
+        ScheduleNotificationMonitorService.announcementsEnabledKey,
+        store: UserDefaults(suiteName: AppGroup.identifier) ?? .standard
+    )
+    private var isAnnouncementsNotificationsEnabled = true
+
     @AppStorage("schedule.widget.customGroup", store: ScheduleDisplayPreferences.defaults)
     private var widgetCustomGroup = ""
 
@@ -56,6 +68,7 @@ struct ScheduleSettingsView: View {
                     ScheduleSubgroupSelectionSection(viewModel: viewModel)
                 }
                 subgroupSection
+                notificationsSection
                 serverSection
                 widgetSection
                 colorsSection
@@ -156,6 +169,59 @@ struct ScheduleSettingsView: View {
                     Text(option.localizedTitle).tag(option.rawValue)
                 }
             }
+        }
+    }
+
+    private var notificationsSection: some View {
+        Section {
+            Toggle(isOn: $isScheduleChangesNotificationsEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(NSLocalizedString("schedule_notify_changes_title", value: "Изменения в расписании", comment: ""))
+                            .fontWeight(.medium)
+                        Text(NSLocalizedString("schedule_notify_changes_subtitle", value: "Уведомлять при переносе пар и смене аудиторий вашей группы", comment: ""))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "bell.badge.fill")
+                        .foregroundStyle(.orange)
+                }
+            }
+            .onChange(of: isScheduleChangesNotificationsEnabled) { _, enabled in
+                if enabled {
+                    Task {
+                        await ScheduleNotificationMonitorService.shared.requestAuthorization()
+                    }
+                }
+            }
+
+            Toggle(isOn: $isAnnouncementsNotificationsEnabled) {
+                Label {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(NSLocalizedString("schedule_notify_announcements_title", value: "Объявления группы", comment: ""))
+                            .fontWeight(.medium)
+                        Text(NSLocalizedString("schedule_notify_announcements_subtitle", value: "Уведомления о новых объявлениях деканата и кафедры", comment: ""))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "megaphone.fill")
+                        .foregroundStyle(.blue)
+                }
+            }
+            .onChange(of: isAnnouncementsNotificationsEnabled) { _, enabled in
+                if enabled {
+                    Task {
+                        await ScheduleNotificationMonitorService.shared.requestAuthorization()
+                    }
+                }
+            }
+        } header: {
+            Text(NSLocalizedString("schedule_notifications_header", value: "Уведомления", comment: ""))
+        } footer: {
+            Text(NSLocalizedString("schedule_notifications_footer", value: "Проверка выполняется в фоновом режиме и при запуске приложения.", comment: ""))
+                .font(.caption)
         }
     }
 
@@ -297,6 +363,8 @@ struct ScheduleSettingsView: View {
         cardDensityRaw = ScheduleCardDensity.regular.rawValue
         otherSubgroupRaw = ScheduleOtherSubgroupDisplay.compact.rawValue
         lessonTrackingEnabled = true
+        isScheduleChangesNotificationsEnabled = true
+        isAnnouncementsNotificationsEnabled = true
         widgetCustomGroup = ""
         resetAllColors()
     }

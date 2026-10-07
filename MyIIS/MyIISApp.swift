@@ -56,6 +56,9 @@ struct MyIISApp: App {
         switch phase {
         case .active:
             handlePendingAppIntentNavigation()
+            Task {
+                await ScheduleNotificationMonitorService.shared.checkForUpdates()
+            }
             guard authService.isSessionReady,
                   !authService.isLoading,
                   !authService.isRestoringSession else { return }
@@ -80,6 +83,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         CrashDiagnosticManager.shared.start()
         AcademicChangeNotificationService.shared.configureAtLaunch()
+        Task {
+            await ScheduleNotificationMonitorService.shared.checkForUpdates()
+        }
         return true
     }
 }
