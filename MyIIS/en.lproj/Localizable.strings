@@ -1,3 +1,30 @@
+"password_recovery_title" = "Change password";
+"password_recovery_forgot" = "Forgot password?";
+"password_recovery_expired" = "Your password has expired. Set a new password to sign in to IIS again.";
+"password_recovery_contact" = "Phone or email";
+"password_recovery_contact_description" = "Enter a contact linked to your IIS account. A verification code will be sent there.";
+"password_recovery_find" = "Find account";
+"password_recovery_choose_account" = "Choose an account";
+"password_recovery_other_contact" = "Use another contact";
+"password_recovery_code" = "Verification code";
+"password_recovery_code_description" = "Tap Send code and enter the code received at your linked contact.";
+"password_recovery_send_code" = "Send code";
+"password_recovery_confirm" = "Confirm code";
+"password_recovery_code_valid" = "Code expires in";
+"password_recovery_attempts" = "Sends remaining: %lld";
+"password_recovery_new" = "New password";
+"password_recovery_repeat" = "Repeat new password";
+"password_recovery_save" = "Change password and sign in";
+"password_recovery_requirements" = "Use 8–30 characters: uppercase and lowercase Latin letters, a digit and a special character. Do not include your login.";
+"password_recovery_success" = "Password changed";
+"password_recovery_success_description" = "Use your new password to sign in to IIS.";
+"password_recovery_login_later" = "Your password was changed, but sign-in failed. Close this window and sign in with your new password.";
+"password_recovery_blocked" = "Too many attempts. Wait for the IIS restriction to expire and try again later.";
+"password_recovery_rejected" = "The action failed. Check your entries; request a new code if the old one has expired.";
+"password_recovery_not_found" = "No accounts found for this contact.";
+"password_recovery_code_expired" = "The code has expired. Request a new code.";
+"password_recovery_loading" = "Request in progress";
+
 /* EN */
 "services_schedule_language_subgroup" = "Foreign language";
 "attendance_period_section_title" = "Absence history";

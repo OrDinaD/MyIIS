@@ -3,7 +3,7 @@ import SwiftUI
 struct GradebookView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel: GradebookViewModel
-    @State private var expandedSubjectId: MarkbookMark.ID?
+    @State private var expandedSubjectIDs: Set<MarkbookMark.ID> = []
     @State private var sharePayload: GradebookShareImagePayload?
     @State private var shareErrorMessage: String?
     @State private var isPreparingShareImage = false
@@ -76,10 +76,10 @@ struct GradebookView: View {
             await viewModel.refresh()
         }
         .onChange(of: viewModel.selectedSemesterKey) { _, _ in
-            expandedSubjectId = nil
+            expandedSubjectIDs.removeAll()
         }
         .sensoryFeedback(.selection, trigger: viewModel.selectedSemesterKey)
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.65), trigger: expandedSubjectId)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.65), trigger: expandedSubjectIDs)
         .sensoryFeedback(.success, trigger: sharePayload != nil)
         .sensoryFeedback(.error, trigger: shareErrorMessage != nil)
     }
@@ -233,12 +233,15 @@ struct GradebookView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(viewModel.marksForSelectedSemester) { mark in
-                    MarkRow(mark: mark, isExpanded: expandedSubjectId == mark.id, isCurrentSemester: isCurrentSemesterSelected) {
-                        AccessibilitySupport.update(
-                            reduceMotion: reduceMotion,
-                            animation: .spring(response: 0.3, dampingFraction: 0.7)
-                        ) {
-                            expandedSubjectId = (expandedSubjectId == mark.id) ? nil : mark.id
+                    MarkRow(mark: mark, isExpanded: expandedSubjectIDs.contains(mark.id), isCurrentSemester: isCurrentSemesterSelected) {
+                        var transaction = Transaction()
+                        transaction.disablesAnimations = true
+                        withTransaction(transaction) {
+                            if expandedSubjectIDs.contains(mark.id) {
+                                expandedSubjectIDs.remove(mark.id)
+                            } else {
+                                expandedSubjectIDs.insert(mark.id)
+                            }
                         }
                     }
                 }
@@ -297,58 +300,55 @@ private struct MarkRow: View {
     let onToggle: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if dynamicTypeSize.isAccessibilitySize {
-                VStack(alignment: .leading, spacing: 6) {
-                    subjectTitle
-                    gradeText
+        VStack(alignment: .leading, spacing: 12) {
+            Button(action: onToggle) {
+                Group {
+                    if dynamicTypeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: 8) {
+                            subjectTitle
+                            gradeText
+                        }
+                    } else {
+                        HStack(alignment: .firstTextBaseline, spacing: 12) {
+                            subjectTitle
+                            Spacer(minLength: 8)
+                            gradeText
+                        }
+                    }
                 }
-            } else {
-                HStack(alignment: .top, spacing: 8) {
-                    subjectTitle
-                    Spacer(minLength: 8)
-                    gradeText
-                        .frame(width: 90, alignment: .trailing)
-                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel(mark.subject)
+            .accessibilityValue(String(format: NSLocalizedString("gradebook_grade_accessibility_format", comment: ""), mark.displayGrade))
+            .accessibilityHint(NSLocalizedString(
+                isExpanded ? "gradebook_hide_details_hint" : "gradebook_show_details_hint", comment: ""
+            ))
+            .accessibilityIdentifier("gradebookMark_\(mark.subject)")
 
             if isExpanded {
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: 14) {
                     if mark.hasExpandedFullName {
                         Text(mark.fullSubject)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, -2)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .transaction { $0.animation = nil }
                     }
-
                     markGrid
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .padding(.bottom, 8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+                .transition(.identity)
             }
         }
-        .padding(.vertical, 6)
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onToggle)
-        .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7), value: isExpanded)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel(mark.subject)
-        .accessibilityValue(String(format: NSLocalizedString("gradebook_grade_accessibility_format", comment: ""), mark.displayGrade))
-        .accessibilityHint(
-            NSLocalizedString(
-                isExpanded ? "gradebook_hide_details_hint" : "gradebook_show_details_hint",
-                comment: ""
-            )
-        )
-        .accessibilityIdentifier("gradebookMark_\(mark.subject)")
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction(
-            named: NSLocalizedString(
-                isExpanded ? "gradebook_hide_details_action" : "gradebook_show_details_action",
-                comment: ""
-            )
-        ) {
-            onToggle()
-        }
+        .padding(16)
+        .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 16))
+        .listRowInsets(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 
     private var subjectTitle: some View {
@@ -357,10 +357,10 @@ private struct MarkRow: View {
                 .font(.body.weight(.semibold))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                 .fixedSize(horizontal: false, vertical: true)
-            Image(systemName: "chevron.down")
+            Image(systemName: "chevron.right")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .rotationEffect(.degrees(isExpanded && !reduceMotion ? 180 : 0))
+                .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 .accessibilityHidden(true)
         }
     }
@@ -408,7 +408,8 @@ private struct MarkRow: View {
                 }
             }
         }
-        .font(.footnote)
+        .font(.subheadline)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

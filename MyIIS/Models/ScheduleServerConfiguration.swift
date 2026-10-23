@@ -7,9 +7,9 @@ import Foundation
 
 /// Режим выбора сервера для получения расписания и справочников.
 public enum ScheduleAPIServer: String, CaseIterable, Identifiable, Codable, Sendable {
-    case auto = "auto"
-    case gateway = "gateway"
-    case official = "official"
+    case auto
+    case gateway
+    case official
 
     public var id: String { rawValue }
 
@@ -90,7 +90,7 @@ public enum ScheduleAPIServer: String, CaseIterable, Identifiable, Codable, Send
 
 /// Управление конфигурацией серверов API для расписания.
 public enum ScheduleServerConfiguration {
-    public static let serverDefaultsKey = "services.schedule.selectedServer"
+    public static let serverDefaultsKey = "services.schedule.selectedServer.v2"
     public static let serverDidChangeNotification = Notification.Name("ScheduleServerConfigurationDidChangeNotification")
 
     public static var defaults: UserDefaults {
@@ -101,7 +101,7 @@ public enum ScheduleServerConfiguration {
         get {
             guard let raw = defaults.string(forKey: serverDefaultsKey),
                   let server = ScheduleAPIServer(rawValue: raw) else {
-                return .auto
+                return .official
             }
             return server
         }

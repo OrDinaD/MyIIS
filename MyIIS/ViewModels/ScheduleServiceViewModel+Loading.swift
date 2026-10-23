@@ -16,6 +16,7 @@ extension ScheduleServiceViewModel {
         if schedule == nil {
             restorePersistedScheduleIfAvailable()
         }
+        let restoredSchedule = schedule != nil
         if schedule == nil {
             if mode == .group, let group = defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank ?? pinnedGroupNames.first ?? accountGroupName {
                 await loadGroup(group)
@@ -40,6 +41,13 @@ extension ScheduleServiceViewModel {
             }
         }
 
+        if restoredSchedule {
+            if mode == .group, let group = displayedGroupNumber {
+                await loadGroup(group)
+            } else if let employee = selectedEmployee {
+                await loadEmployee(employee)
+            }
+        }
         hasLoadedInitialData = true
         await loadDirectoryIfNeeded(force: false)
     }
@@ -115,6 +123,9 @@ extension ScheduleServiceViewModel {
         activeScheduleRequestID = requestID
         updateLoadingState()
         recordRecentGroup(trimmed)
+        if !forceRefresh, let cached = api.cachedGroupSchedule(groupNumber: trimmed) {
+            applyGroupSchedule(cached, week: nil, groupNumber: trimmed)
+        }
 
         defer {
             if activeScheduleRequestID == requestID {
@@ -161,6 +172,9 @@ extension ScheduleServiceViewModel {
         updateLoadingState()
         selectedEmployee = employee
         recordRecentTeacher(employee)
+        if !forceRefresh, let cached = api.cachedEmployeeSchedule(urlId: urlId) {
+            applyEmployeeSchedule(cached, week: nil, employee: employee, urlId: urlId)
+        }
 
         defer {
             if activeScheduleRequestID == requestID {

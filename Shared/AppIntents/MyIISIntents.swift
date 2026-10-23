@@ -81,7 +81,7 @@ struct ShowAverageScoreIntent: AppIntent {
     static let title: LocalizedStringResource = "intent_average_title"
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
-    func perform() async throws -> some IntentResult & ReturnsValue<String> {
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
         let data = await MainActor.run {
             MyIISDataStore.loadData()
         }
@@ -107,7 +107,7 @@ struct ShowAbsencesIntent: AppIntent {
     static let title: LocalizedStringResource = "intent_absences_title"
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
-    func perform() async throws -> some IntentResult & ReturnsValue<String> {
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
         let data = await MainActor.run {
             MyIISDataStore.loadData()
         }
@@ -131,7 +131,7 @@ struct ShowGroupIntent: AppIntent {
     static let title: LocalizedStringResource = "intent_group_title"
     static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
 
-    func perform() async throws -> some IntentResult & ReturnsValue<String> {
+    func perform() async throws -> some IntentResult & ReturnsValue<String> & ProvidesDialog {
         let data = await MainActor.run {
             MyIISDataStore.loadData()
         }

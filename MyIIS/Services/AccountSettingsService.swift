@@ -8,10 +8,111 @@ final class AccountSettingsService {
     private let baseURL = URLFactory.require("https://iis.bsuir.by/api/v1")
     private let session: URLSession
     private let logService: LogService
+    private let recoverySession: URLSession
 
-    init(session: URLSession = .shared, logService: LogService = .shared) {
+    init(
+        session: URLSession = .shared,
+        logService: LogService = .shared,
+        recoverySession: URLSession? = nil
+    ) {
         self.session = session
         self.logService = logService
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.urlCache = nil
+        configuration.httpCookieStorage = nil
+        configuration.httpShouldSetCookies = false
+        self.recoverySession = recoverySession ?? URLSession(configuration: configuration)
+    }
+
+    func recoveryAccounts(contact: String) async throws -> [PasswordRecoveryAccount] {
+        let ban = try await recoveryRequest(path: "settings/rate-limit/ban-status", query: [
+            URLQueryItem(name: "endpoint", value: "/settings/contact/accounts-by-contact"),
+            URLQueryItem(name: "method", value: "GET")
+        ])
+        if !ban.isEmpty && String(data: ban, encoding: .utf8) != "null" {
+            throw PasswordRecoveryFailure(key: "password_recovery_blocked")
+        }
+        let data = try await recoveryRequest(path: "settings/contact/accounts-by-contact", query: [
+            URLQueryItem(name: "contactValue", value: contact)
+        ])
+        return try decodeJSON([PasswordRecoveryAccount].self, from: data)
+    }
+
+    func recoveryCodeExpiration(accountID: Int, contact: String) async throws -> Date? {
+        let data = try await recoveryRequest(path: "settings/confirmation-code-expiration-time", query: [
+            URLQueryItem(name: "accountId", value: String(accountID)),
+            URLQueryItem(name: "contactValue", value: contact),
+            URLQueryItem(name: "codeType", value: "Password")
+        ])
+        guard !data.isEmpty, String(data: data, encoding: .utf8) != "null" else { return nil }
+        if let milliseconds = try? JSONDecoder().decode(Double.self, from: data), milliseconds.isFinite {
+            return Date(timeIntervalSince1970: milliseconds / 1000)
+        }
+        let raw = try decodeJSON(String.self, from: data)
+        let formatter = ISO8601DateFormatter()
+        if let date = formatter.date(from: raw) { return date }
+        formatter.formatOptions.insert(.withFractionalSeconds)
+        guard let date = formatter.date(from: raw) else { throw APIError.invalidResponse }
+        return date
+    }
+
+    func recoveryRemainingAttempts(accountID: Int) async throws -> Int {
+        let data = try await recoveryRequest(path: "settings/remaining-attempts", query: [
+            URLQueryItem(name: "accountId", value: String(accountID)),
+            URLQueryItem(name: "attemptType", value: "RECOVERY")
+        ])
+        return try decodeJSON(Int.self, from: data)
+    }
+
+    func sendRecoveryCode(accountID: Int, contact: String) async throws -> Int {
+        let body = PasswordRecoveryContact(accountId: accountID, contactValue: contact)
+        let data = try await recoveryRequest(
+            path: "settings/send-code", body: JSONEncoder().encode(body)
+        )
+        return try decodeJSON(PasswordRecoveryCodeLifetime.self, from: data).codeLifetimeSeconds
+    }
+
+    func confirmRecoveryCode(
+        accountID: Int, contact: String, code: String
+    ) async throws -> PasswordRecoveryConfirmation {
+        let body = PasswordRecoveryCode(accountId: accountID, confirmCode: code, contactValue: contact)
+        let data = try await recoveryRequest(
+            path: "settings/confirm-code", body: JSONEncoder().encode(body)
+        )
+        return try decodeJSON(PasswordRecoveryConfirmation.self, from: data)
+    }
+
+    func setRecoveredPassword(confirmation: PasswordRecoveryConfirmation, password: String) async throws {
+        let body = PasswordRecoveryNewPassword(
+            login: confirmation.login, token: confirmation.token, newPassword: password
+        )
+        _ = try await recoveryRequest(path: "settings/password/new", body: JSONEncoder().encode(body))
+    }
+
+    // Recovery is unauthenticated: no session recovery, offline cache, logging of secrets, or POST retries.
+    private func recoveryRequest(
+        path: String, query: [URLQueryItem] = [], body: Data? = nil
+    ) async throws -> Data {
+        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+        if !query.isEmpty { components?.queryItems = query }
+        guard let url = components?.url else { throw APIError.invalidURL }
+        var request = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 30)
+        request.httpMethod = body == nil ? "GET" : "POST"
+        request.httpBody = body
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
+        do {
+            let (data, response) = try await recoverySession.data(for: request)
+            try Task.checkCancellation()
+            guard let response = response as? HTTPURLResponse else { throw APIError.invalidResponse }
+            guard (200...299).contains(response.statusCode) else {
+                let key = response.statusCode == 429 ? "password_recovery_blocked" : "password_recovery_rejected"
+                throw PasswordRecoveryFailure(key: key)
+            }
+            return data
+        } catch let error as URLError {
+            throw APIError.networkError(error)
+        }
     }
 
     func fetchLastPasswordChange() async throws -> String? {

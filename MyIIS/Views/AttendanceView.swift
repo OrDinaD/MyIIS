@@ -59,13 +59,6 @@ struct AttendanceView: View {
                 onRetry: reloadIfNeeded
             )
 
-            MonthlySummarySection(
-                counts: viewModel.monthlyCounts,
-                isLoading: viewModel.isLoading,
-                errorMessage: viewModel.sectionErrors[.summary],
-                onRetry: reloadIfNeeded
-            )
-
             AllPeriodOmissionsSection(
                 semesters: viewModel.selectedSemesters,
                 periodTerms: viewModel.periodTerms,
@@ -440,73 +433,9 @@ private struct AllPeriodOmissionsSection: View {
     }
 }
 
-private struct AttendanceSemesterCard<Content: View>: View {
-    @State private var isExpanded: Bool
-    let title: String
-    let content: Content
-
-    init(title: String, initiallyExpanded: Bool, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-        _isExpanded = State(initialValue: initiallyExpanded)
-    }
-
-    var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded) {
-            VStack(spacing: 10) {
-                content
-            }
-        } label: {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-        }
-        .disclosureGroupStyle(AttendanceSemesterDisclosureStyle())
-    }
-}
-
-private struct AttendanceSemesterDisclosureStyle: DisclosureGroupStyle {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func makeBody(configuration: Configuration) -> some View {
-        VStack(spacing: 10) {
-            Button {
-                withAnimation(reduceMotion ? nil : .easeOut(duration: 0.18)) {
-                    configuration.isExpanded.toggle()
-                }
-            } label: {
-                HStack(spacing: 12) {
-                    configuration.label
-                    Spacer(minLength: 8)
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
-                        .foregroundStyle(.secondary)
-                        .accessibilityHidden(true)
-                }
-                .padding(.horizontal, 12)
-                .frame(minHeight: 44)
-                .background(
-                    Color(uiColor: .secondarySystemGroupedBackground),
-                    in: RoundedRectangle(cornerRadius: 10, style: .continuous)
-                )
-                .contentShape(RoundedRectangle(cornerRadius: 10))
-            }
-            .buttonStyle(.plain)
-            .accessibilityValue(NSLocalizedString(
-                configuration.isExpanded ? "attendance_semester_expanded" : "attendance_semester_collapsed",
-                comment: ""
-            ))
-            if configuration.isExpanded {
-                configuration.content
-                    .transition(.identity)
-            }
-        }
-        .clipped()
-    }
-}
-
 private struct CertificatesSection: View {
+    @State private var selectedTerm: String?
+    @State private var showsAll = false
     let certificates: [OmissionCertificate]
     let groupedCertificates: [(String, [OmissionCertificate])]
     let faculty: String?
@@ -531,19 +460,62 @@ private struct CertificatesSection: View {
                     InfoBanner(text: NSLocalizedString("attendance_info_banner", comment: ""))
                 }
 
-                ForEach(groupedCertificates, id: \.0) { term, items in
-                    AttendanceSemesterCard(
-                        title: String(format: NSLocalizedString("attendance_term_format", comment: ""), Int(term) ?? 0),
-                        initiallyExpanded: term == groupedCertificates.first?.0
-                    ) {
-                        ForEach(items) { certificate in
-                            CertificateRow(certificate: certificate)
+                HStack {
+                    Picker("Семестр", selection: Binding(
+                        get: { selectedTerm ?? terms.first ?? "" },
+                        set: { selectedTerm = $0; showsAll = false }
+                    )) {
+                        ForEach(terms, id: \.self) { term in
+                            Text(termTitle(term)).tag(term)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .tint(showsAll ? .secondary : .accentColor)
+                    Spacer()
+                    Button("Все") { showsAll = true }
+                        .buttonStyle(.bordered)
+                        .tint(showsAll ? .accentColor : .secondary)
+                        .accessibilityAddTraits(showsAll ? .isSelected : [])
+                }
+                .frame(minHeight: 44)
+
+                VStack(alignment: .leading, spacing: 16) {
+                    ForEach(visibleTerms, id: \.self) { term in
+                        VStack(alignment: .leading, spacing: 10) {
+                            if showsAll {
+                                Text(termTitle(term))
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.horizontal, 4)
+                            }
+                            ForEach(items(for: term)) { certificate in
+                                CertificateRow(certificate: certificate)
+                            }
                         }
                     }
                 }
             }
         }
     }
+    private var terms: [String] {
+        groupedCertificates.map(\.0).sorted { (Int($0) ?? 0) > (Int($1) ?? 0) }
+    }
+
+    private var visibleTerms: [String] {
+        if showsAll { return terms }
+        let selected = selectedTerm.flatMap { terms.contains($0) ? $0 : nil } ?? terms.first
+        return selected.map { [$0] } ?? []
+    }
+
+    private func items(for term: String) -> [OmissionCertificate] {
+        (groupedCertificates.first { $0.0 == term }?.1 ?? [])
+            .sorted { $0.dateFrom > $1.dateFrom }
+    }
+
+    private func termTitle(_ term: String) -> String {
+        String(format: NSLocalizedString("attendance_term_format", comment: ""), Int(term) ?? 0)
+    }
+
 }
 
 private struct CertificateRow: View {

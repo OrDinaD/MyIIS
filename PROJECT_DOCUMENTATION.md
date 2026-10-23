@@ -83,7 +83,7 @@ SwiftUI компоненты. Обычно разделены на сам экр
 *   **Фреймворк UI:** SwiftUI.
 *   **Среда разработки:** Xcode 26.
 *   **Целевая платформа:** iOS 17.0 (Main) / iOS 26 (в будущем).
-*   **CI/CD:** GitHub Actions (автоматическая сборка для SideStore и App Store Connect). Расположено в `.github/workflows/`.
+*   **CI/CD:** GitHub Actions (проверки качества и тесты, сборка и загрузка в App Store Connect). Расположено в `.github/workflows/`.
 *   **Сборка / Автоматизация:** Fastlane.
 
 ---

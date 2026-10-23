@@ -1,3 +1,30 @@
+"password_recovery_title" = "Змяніць пароль";
+"password_recovery_forgot" = "Забылі пароль?";
+"password_recovery_expired" = "Тэрмін дзеяння пароля скончыўся. Усталюйце новы пароль, каб зноў увайсці ў ІІС.";
+"password_recovery_contact" = "Тэлефон або email";
+"password_recovery_contact_description" = "Укажыце кантакт, прывязаны да акаўнта ІІС. На яго прыйдзе код пацвярджэння.";
+"password_recovery_find" = "Знайсці акаўнт";
+"password_recovery_choose_account" = "Выберыце акаўнт";
+"password_recovery_other_contact" = "Указаць іншы кантакт";
+"password_recovery_code" = "Код пацвярджэння";
+"password_recovery_code_description" = "Націсніце «Адправіць код» і ўвядзіце код, атрыманы на прывязаны кантакт.";
+"password_recovery_send_code" = "Адправіць код";
+"password_recovery_confirm" = "Пацвердзіць код";
+"password_recovery_code_valid" = "Код дзейнічае яшчэ";
+"password_recovery_attempts" = "Засталося адпраўленняў: %lld";
+"password_recovery_new" = "Новы пароль";
+"password_recovery_repeat" = "Паўтарыце новы пароль";
+"password_recovery_save" = "Змяніць пароль і ўвайсці";
+"password_recovery_requirements" = "Ад 8 да 30 сімвалаў: лацінскія літары абодвух рэгістраў, лічба і спецыяльны сімвал. Пароль не павінен утрымліваць лагін.";
+"password_recovery_success" = "Пароль зменены";
+"password_recovery_success_description" = "Выкарыстоўвайце новы пароль для ўваходу ў ІІС.";
+"password_recovery_login_later" = "Пароль зменены, але ўвайсці не ўдалося. Закрыйце акно і ўвайдзіце з новым паролем.";
+"password_recovery_blocked" = "Зашмат спроб. Дачакайцеся зняцця абмежавання ІІС і паўтарыце пазней.";
+"password_recovery_rejected" = "Не ўдалося выканаць дзеянне. Праверце даныя; калі код састарэў, запытайце новы.";
+"password_recovery_not_found" = "Акаўнты з такім кантактам не знойдзены.";
+"password_recovery_code_expired" = "Тэрмін дзеяння кода скончыўся. Запытайце новы код.";
+"password_recovery_loading" = "Выконваецца запыт";
+
 /* BE */
 "services_schedule_language_subgroup" = "Замежная мова";
 "attendance_period_section_title" = "Гісторыя пропускаў";

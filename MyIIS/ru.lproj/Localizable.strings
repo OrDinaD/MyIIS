@@ -1,3 +1,30 @@
+"password_recovery_title" = "Сменить пароль";
+"password_recovery_forgot" = "Забыли пароль?";
+"password_recovery_expired" = "Срок действия пароля истёк. Установите новый пароль, чтобы снова войти в ИИС.";
+"password_recovery_contact" = "Телефон или email";
+"password_recovery_contact_description" = "Укажите контакт, привязанный к аккаунту ИИС. На него придёт код подтверждения.";
+"password_recovery_find" = "Найти аккаунт";
+"password_recovery_choose_account" = "Выберите аккаунт";
+"password_recovery_other_contact" = "Указать другой контакт";
+"password_recovery_code" = "Код подтверждения";
+"password_recovery_code_description" = "Нажмите «Отправить код» и введите код, полученный на привязанный контакт.";
+"password_recovery_send_code" = "Отправить код";
+"password_recovery_confirm" = "Подтвердить код";
+"password_recovery_code_valid" = "Код действует ещё";
+"password_recovery_attempts" = "Осталось отправок: %lld";
+"password_recovery_new" = "Новый пароль";
+"password_recovery_repeat" = "Повторите новый пароль";
+"password_recovery_save" = "Сменить пароль и войти";
+"password_recovery_requirements" = "От 8 до 30 символов: латинские буквы обоих регистров, цифра и специальный символ. Пароль не должен содержать логин.";
+"password_recovery_success" = "Пароль изменён";
+"password_recovery_success_description" = "Используйте новый пароль для входа в ИИС.";
+"password_recovery_login_later" = "Пароль изменён, но войти сейчас не удалось. Закройте окно и войдите с новым паролем.";
+"password_recovery_blocked" = "Слишком много попыток. Дождитесь снятия ограничения ИИС и повторите позже.";
+"password_recovery_rejected" = "Не удалось выполнить действие. Проверьте введённые данные; если код устарел, запросите новый.";
+"password_recovery_not_found" = "Аккаунты с таким контактом не найдены.";
+"password_recovery_code_expired" = "Срок действия кода истёк. Запросите новый код.";
+"password_recovery_loading" = "Выполняется запрос";
+
 /* RU */
 "services_schedule_language_subgroup" = "Иностранный язык";
 "attendance_period_section_title" = "История пропусков";

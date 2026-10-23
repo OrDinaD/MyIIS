@@ -130,7 +130,10 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
         }
 
         var parsedDate: Date? {
-            LocalScheduleFormatting.dayFormatter.date(from: date)
+            guard let components = LocalScheduleFormatting.dayComponents(from: date) else { return nil }
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+            return calendar.date(from: components)
         }
 
         var displayTitle: String {
@@ -142,7 +145,7 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
         }
 
         func interval(calendar: Calendar = .current, timeZone: TimeZone) -> DateInterval? {
-            guard let day = parsedDate,
+            guard var dayComponents = LocalScheduleFormatting.dayComponents(from: date),
                   let startComponents = LocalScheduleFormatting.timeComponents(from: startTime),
                   let endComponents = LocalScheduleFormatting.timeComponents(from: endTime) else {
                 return nil
@@ -150,15 +153,27 @@ struct LocalScheduleDocument: Codable, Equatable, Sendable {
 
             var localCalendar = calendar
             localCalendar.timeZone = timeZone
-            var dayComponents = localCalendar.dateComponents([.year, .month, .day], from: day)
+            dayComponents.calendar = localCalendar
             dayComponents.timeZone = timeZone
             dayComponents.hour = startComponents.hour
             dayComponents.minute = startComponents.minute
-            guard let start = localCalendar.date(from: dayComponents) else { return nil }
+            let matchedFields: Set<Calendar.Component> = [.year, .month, .day, .hour, .minute]
+            let expectedStart = DateComponents(
+                year: dayComponents.year, month: dayComponents.month, day: dayComponents.day,
+                hour: dayComponents.hour, minute: dayComponents.minute
+            )
+            guard let start = localCalendar.date(from: dayComponents),
+                  localCalendar.dateComponents(matchedFields, from: start) == expectedStart else { return nil }
 
             dayComponents.hour = endComponents.hour
             dayComponents.minute = endComponents.minute
-            guard let end = localCalendar.date(from: dayComponents), end > start else { return nil }
+            let expectedEnd = DateComponents(
+                year: dayComponents.year, month: dayComponents.month, day: dayComponents.day,
+                hour: dayComponents.hour, minute: dayComponents.minute
+            )
+            guard let end = localCalendar.date(from: dayComponents),
+                  localCalendar.dateComponents(matchedFields, from: end) == expectedEnd,
+                  end > start else { return nil }
             return DateInterval(start: start, end: end)
         }
     }
@@ -280,8 +295,26 @@ enum LocalScheduleFormatting {
         return formatter
     }()
 
+    nonisolated static func dayComponents(from value: String) -> DateComponents? {
+        let parts = value.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 3, parts[0].count == 4, parts[1].count == 2, parts[2].count == 2,
+              parts.allSatisfy({ $0.utf8.allSatisfy { (48 ... 57).contains($0) } }),
+              let year = Int(parts[0]), (1 ... 9_999).contains(year),
+              let month = Int(parts[1]), (1 ... 12).contains(month),
+              let day = Int(parts[2]), (1 ... 31).contains(day) else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let components = DateComponents(timeZone: calendar.timeZone, year: year, month: month, day: day)
+        return components.isValidDate(in: calendar) ? components : nil
+    }
+
     nonisolated static func timeComponents(from value: String) -> DateComponents? {
-        let parts = value.split(separator: ":").compactMap { Int($0) }
+        let fields = value.split(separator: ":", omittingEmptySubsequences: false)
+        guard fields.count == 2,
+              fields.allSatisfy({ !$0.isEmpty && $0.utf8.allSatisfy { (48 ... 57).contains($0) } }) else {
+            return nil
+        }
+        let parts = fields.compactMap { Int($0) }
         guard parts.count == 2,
               (0 ... 23).contains(parts[0]),
               (0 ... 59).contains(parts[1]) else {

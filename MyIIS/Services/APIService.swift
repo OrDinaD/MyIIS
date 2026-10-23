@@ -425,6 +425,11 @@ class APIService {
 
         let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data)
         let message = errorResponse?.msg
+        if statusCode == 401,
+           let payload = try? JSONDecoder().decode(PasswordExpiryResponse.self, from: data),
+           payload.error == "PASSWORD_EXPIRED" {
+            throw APIError.passwordExpired
+        }
 
         switch statusCode {
         case 401:

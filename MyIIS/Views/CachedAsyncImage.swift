@@ -25,11 +25,12 @@ private final class CachedAsyncImageMemoryCache: @unchecked Sendable {
     }
 
     nonisolated static func isMarkedMissing(_ identity: String) -> Bool {
-        missingCache.object(forKey: identity as NSString) != nil
+        guard let expiresAt = missingCache.object(forKey: identity as NSString) else { return false }
+        return expiresAt.doubleValue > Date().timeIntervalSince1970
     }
 
     nonisolated static func markMissing(_ identity: String) {
-        missingCache.setObject(1, forKey: identity as NSString)
+        missingCache.setObject(NSNumber(value: Date().addingTimeInterval(600).timeIntervalSince1970), forKey: identity as NSString)
     }
 
     nonisolated static func clearMissing(_ identity: String) {
@@ -39,6 +40,19 @@ private final class CachedAsyncImageMemoryCache: @unchecked Sendable {
 
 private actor AsyncImagePipeline {
     static let shared = AsyncImagePipeline()
+
+    private let diskCache = URLCache(
+        memoryCapacity: 16 * 1024 * 1024,
+        diskCapacity: 256 * 1024 * 1024,
+        directory: URL.cachesDirectory.appendingPathComponent("MyIISImages", isDirectory: true)
+    )
+    private let session: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 8
+        configuration.timeoutIntervalForResource = 12
+        configuration.urlCache = nil
+        return URLSession(configuration: configuration)
+    }()
 
     private var inFlightTasks: [String: Task<UIImage?, Never>] = [:]
 
@@ -58,49 +72,81 @@ private actor AsyncImagePipeline {
         }
 
         let task = Task<UIImage?, Never> {
-            var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
-            request.timeoutInterval = 8
-
-            if let cached = URLCache.shared.cachedResponse(for: request),
-               let image = downsampleImage(from: cached.data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages) {
-                CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
-                return image
-            }
-
-            guard !Task.isCancelled else { return nil }
-
-            do {
-                let (data, response) = try await URLSession.shared.data(for: request)
-                guard !Task.isCancelled else { return nil }
-
-                if let httpResponse = response as? HTTPURLResponse {
-                    if httpResponse.statusCode == 404 || httpResponse.statusCode == 410 {
-                        CachedAsyncImageMemoryCache.markMissing(cacheIdentity)
-                        return nil
-                    }
-                    guard (200 ... 299).contains(httpResponse.statusCode) else {
-                        return nil
-                    }
-                }
-
-                guard let image = downsampleImage(from: data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages) else {
-                    CachedAsyncImageMemoryCache.markMissing(cacheIdentity)
-                    return nil
-                }
-                guard !Task.isCancelled else { return nil }
-
-                CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
-                URLCache.shared.storeCachedResponse(CachedURLResponse(response: response, data: data), for: request)
-                return image
-            } catch {
-                return nil
-            }
+            await loadUncachedImage(url: url, cacheIdentity: cacheIdentity, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages)
         }
 
         inFlightTasks[cacheIdentity] = task
         let result = await task.value
         inFlightTasks.removeValue(forKey: cacheIdentity)
         return result
+    }
+
+    private func loadUncachedImage(
+        url: URL, cacheIdentity: String, maxPixelSize: CGFloat, rejectBlankImages: Bool
+    ) async -> UIImage? {
+        let cacheKey = cacheIdentity as NSString
+        let canonicalURL = SchedulePhotoRouting.canonicalURL(url)
+        let request = URLRequest(url: canonicalURL)
+        let cached = diskCache.cachedResponse(for: request)
+        let cachedAt = cached?.userInfo?["storedAt"] as? Date ?? .distantPast
+        if let cached, Date().timeIntervalSince(cachedAt) < 7 * 24 * 60 * 60,
+           let image = downsampleImage(from: cached.data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages) {
+            CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
+            return image
+        }
+
+        var urls = [canonicalURL]
+        if await ScheduleServerConfiguration.selectedServer != .official,
+           let gatewayURL = SchedulePhotoRouting.gatewayURL(for: canonicalURL),
+           await ScheduleGatewayHealth.shared.shouldAttempt() {
+            urls.insert(gatewayURL, at: 0)
+        }
+        for candidate in urls {
+            guard !Task.isCancelled else { return nil }
+            let isGateway = candidate.host == "bsuir.ordinad.xyz"
+            var networkRequest = URLRequest(url: candidate, cachePolicy: .reloadIgnoringLocalCacheData)
+            networkRequest.timeoutInterval = isGateway ? 1.5 : 8
+            do {
+                let transport = isGateway ? ScheduleGatewaySession.shared : session
+                let (data, response) = try await transport.data(for: networkRequest)
+                guard !Task.isCancelled else { return nil }
+                guard let http = response as? HTTPURLResponse,
+                      (200 ... 299).contains(http.statusCode),
+                      let image = downsampleImage(from: data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages) else {
+                    if isGateway {
+                        await ScheduleGatewayHealth.shared.failed()
+                        continue
+                    }
+                    if let http = response as? HTTPURLResponse, [404, 410].contains(http.statusCode) {
+                        diskCache.removeCachedResponse(for: request)
+                        CachedAsyncImageMemoryCache.markMissing(cacheIdentity)
+                        return nil
+                    }
+                    break
+                }
+                if isGateway { await ScheduleGatewayHealth.shared.succeeded() }
+                CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
+                diskCache.storeCachedResponse(
+                    CachedURLResponse(response: response, data: data, userInfo: ["storedAt": Date()], storagePolicy: .allowed),
+                    for: request
+                )
+                return image
+            } catch {
+                if Task.isCancelled || (error as? URLError)?.code == .cancelled {
+                    if isGateway { await ScheduleGatewayHealth.shared.cancelled() }
+                    return nil
+                }
+                if isGateway { await ScheduleGatewayHealth.shared.failed() }
+            }
+        }
+        // Keep already downloaded photos available offline, even after their refresh date.
+        if let cached, let image = downsampleImage(
+            from: cached.data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages
+        ) {
+            CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
+            return image
+        }
+        return nil
     }
 
     private func downsampleImage(from data: Data, maxPixelSize: CGFloat, rejectBlankImages: Bool) -> UIImage? {
@@ -179,7 +225,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View, Failure: View>: View {
 
     private var cacheIdentity: String? {
         guard let url else { return nil }
-        return "\(url.absoluteString)#\(Int(maxPixelSize.rounded(.up)))#\(rejectBlankImages)"
+        return "\(SchedulePhotoRouting.canonicalURL(url).absoluteString)#\(Int(maxPixelSize.rounded(.up)))#\(rejectBlankImages)"
     }
 
     private func loadImageIfNeeded() async {

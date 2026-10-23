@@ -13,6 +13,7 @@ struct ContentView: View {
     private var router = AppRouter.shared
     @State private var isOfflineNoticeDismissed = false
     @State private var showsOfflineDetails = false
+    @State private var showsPasswordRecovery = false
     @AppStorage(FirstLaunchView.completionKey) private var hasCompletedFirstLaunch = false
 
     private func offlineNoticeText(_ key: String) -> String {
@@ -61,6 +62,29 @@ struct ContentView: View {
                 .background(.regularMaterial)
                 .accessibilityIdentifier("offlineDataBanner")
             }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if authService.isPasswordExpired {
+                Button {
+                    showsPasswordRecovery = true
+                } label: {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("password_recovery_expired")
+                            .foregroundStyle(.primary)
+                        Text("password_recovery_title")
+                            .fontWeight(.semibold)
+                    }
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(16)
+                }
+                .buttonStyle(.plain)
+                .background(.regularMaterial)
+                .accessibilityIdentifier("passwordExpiredBanner")
+            }
+        }
+        .sheet(isPresented: $showsPasswordRecovery) {
+            PasswordRecoveryView(authService: authService, username: authService.recoveryUsername)
         }
         .alert(offlineNoticeText("saved_data"), isPresented: $showsOfflineDetails) {
             Button(NSLocalizedString("common_done", value: "Готово", comment: "")) {}

@@ -217,6 +217,22 @@ final class CrashRegressionTests: XCTestCase {
         XCTAssertEqual(DormitoryCardMotion.clamped(0.42), 0.42, accuracy: 0.0001)
     }
 
+    func testMotionCallbackFromBackgroundExecutorAndLateDelivery() async {
+        let motion = DormitoryCardMotion()
+        let deliver = motion.makeMotionDelivery()
+        await Task.detached {
+            let handler = DormitoryCardMotion.makeMotionHandler(deliver: deliver)
+            handler(nil, nil)
+            await deliver(0.325, -0.325)
+        }.value
+        XCTAssertEqual(motion.horizontal, 0.5, accuracy: 0.001)
+        XCTAssertEqual(motion.vertical, -0.5, accuracy: 0.001)
+        motion.stop()
+        await Task.detached { await deliver(0.65, 0.65) }.value
+        XCTAssertEqual(motion.horizontal, 0)
+        XCTAssertEqual(motion.vertical, 0)
+    }
+
     func testDormitoryCardMotion_lifecycle_startStopDoesNotCrash() {
         let motion = DormitoryCardMotion()
         motion.start()

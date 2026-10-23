@@ -23,6 +23,7 @@ final class MyIISIntentsTests: XCTestCase {
         let intent = ShowAverageScoreIntent()
         let result = try await intent.perform()
 
+        assertDialogContract(result)
         let value = result.value
         XCTAssertNotNil(value)
         XCTAssertTrue(value?.contains("8,75") == true || value?.contains("8.75") == true)
@@ -32,6 +33,7 @@ final class MyIISIntentsTests: XCTestCase {
         let intent = ShowAverageScoreIntent()
         let result = try await intent.perform()
 
+        assertDialogContract(result)
         let value = result.value
         XCTAssertNotNil(value)
         XCTAssertFalse(value?.isEmpty ?? true)
@@ -56,6 +58,7 @@ final class MyIISIntentsTests: XCTestCase {
         let intent = ShowAbsencesIntent()
         let result = try await intent.perform()
 
+        assertDialogContract(result)
         let value = result.value
         XCTAssertNotNil(value)
         XCTAssertTrue(value?.contains("14") == true)
@@ -65,6 +68,7 @@ final class MyIISIntentsTests: XCTestCase {
         let intent = ShowAbsencesIntent()
         let result = try await intent.perform()
 
+        assertDialogContract(result)
         let value = result.value
         XCTAssertNotNil(value)
         XCTAssertFalse(value?.isEmpty ?? true)
@@ -89,6 +93,7 @@ final class MyIISIntentsTests: XCTestCase {
         let intent = ShowGroupIntent()
         let result = try await intent.perform()
 
+        assertDialogContract(result)
         let value = result.value
         XCTAssertNotNil(value)
         XCTAssertTrue(value?.contains("420603") == true)
@@ -98,6 +103,7 @@ final class MyIISIntentsTests: XCTestCase {
         let intent = ShowGroupIntent()
         let result = try await intent.perform()
 
+        assertDialogContract(result)
         let value = result.value
         XCTAssertNotNil(value)
         XCTAssertFalse(value?.isEmpty ?? true)
@@ -126,6 +132,11 @@ final class MyIISIntentsTests: XCTestCase {
             let staged = AppIntentNavigationStore.takePendingSection()
             XCTAssertEqual(staged, enumCase.appSection, "Failed for section: \(enumCase)")
         }
+    }
+
+    // The opaque result must expose ProvidesDialog to the App Intents executor.
+    private func assertDialogContract<Result: ProvidesDialog>(_ result: Result) {
+        XCTAssertTrue(Result.Dialog.self == IntentDialog.self)
     }
 
     // MARK: - AppShortcuts Tests

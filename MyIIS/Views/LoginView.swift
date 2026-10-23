@@ -6,6 +6,8 @@ import SwiftUI
 
 struct LoginView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @EnvironmentObject private var authService: AuthenticationService
+    @State private var showsPasswordRecovery = false
     @State private var viewModel = LoginViewModel()
     @State private var isPasswordVisible = false
     @FocusState private var focusedField: Field?
@@ -22,6 +24,12 @@ struct LoginView: View {
         }
         .reduceMotionSensitive()
         .animation(reduceMotion ? nil : .easeInOut, value: viewModel.errorMessage)
+        .sheet(isPresented: $showsPasswordRecovery) {
+            PasswordRecoveryView(
+                authService: authService,
+                username: viewModel.username.isEmpty ? authService.recoveryUsername : viewModel.username
+            )
+        }
     }
 
     private var backgroundView: some View {
@@ -198,6 +206,19 @@ struct LoginView: View {
             }
 
             actionButtons
+
+            Button {
+                focusedField = nil
+                viewModel.password = ""
+                showsPasswordRecovery = true
+            } label: {
+                Text(NSLocalizedString(
+                    authService.isPasswordExpired ? "password_recovery_title" : "password_recovery_forgot",
+                    comment: ""
+                ))
+            }
+            .frame(minHeight: 44)
+            .accessibilityIdentifier("passwordRecoveryButton")
         }
         .padding(24)
         .background(

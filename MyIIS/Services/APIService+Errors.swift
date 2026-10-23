@@ -26,7 +26,7 @@ struct NetworkRetryPolicy: Sendable {
                 return true
             case .serverError(let statusCode, _):
                 return statusCode == 408 || statusCode == 429 || (statusCode >= 500 && statusCode < 600)
-            case .unauthorized, .decodingError, .invalidURL, .invalidResponse:
+            case .passwordExpired, .unauthorized, .decodingError, .invalidURL, .invalidResponse:
                 return false
             case .networkError(let underlying):
                 return shouldRetry(error: underlying)
@@ -51,6 +51,7 @@ struct NetworkRetryPolicy: Sendable {
 enum APIError: LocalizedError {
     case invalidURL
     case invalidResponse
+    case passwordExpired
     case unauthorized(message: String)
     case serviceUnavailable(message: String)
     case serverError(statusCode: Int, message: String)
@@ -63,6 +64,8 @@ enum APIError: LocalizedError {
             return NSLocalizedString("api_error_invalid_url", value: "Неверный URL", comment: "")
         case .invalidResponse:
             return NSLocalizedString("api_error_invalid_response", value: "Неверный ответ от сервера", comment: "")
+        case .passwordExpired:
+            return NSLocalizedString("password_recovery_expired", comment: "")
         case .unauthorized(let message):
             return message
         case .serviceUnavailable(let message):

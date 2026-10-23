@@ -39,12 +39,13 @@ extension ScheduleServiceViewModel {
             ?? selectedEmployee?.displayName
             ?? query.nilIfBlank
         guard let groupName = resolvedName, !groupName.isEmpty else { return }
-        if dataSource == .api, let accountGroupName, accountGroupName != groupName, scheduleResponse.employee == nil {
+        if !WidgetScheduleSelection.accepts(groupName, in: WidgetScheduleSelection.defaults) {
             return
         }
 
         let now = Date()
-        var events = continuousTimelineDays
+        guard !isLoadingContinuousChunk else { return }
+        let events = continuousTimelineDays
             .flatMap { day in
                 day.lessons
                     .filter { shouldKeepLessonForWidget($0) }
@@ -52,38 +53,6 @@ extension ScheduleServiceViewModel {
             }
             .filter { $0.isUpcoming(at: now) }
             .sorted(by: Self.widgetEventSortingComparator)
-
-        if events.isEmpty {
-            var calendar = Calendar(identifier: .gregorian)
-            calendar.firstWeekday = 2
-            let today = calendar.startOfDay(for: now)
-            let weekdayComponent = calendar.component(.weekday, from: today)
-            let currentWeekdayOrdinal = (weekdayComponent + 5) % 7
-            let mondayOfCurrentWeek = calendar.date(byAdding: .day, value: -currentWeekdayOrdinal, to: today) ?? today
-            let referenceMonday = currentWeekdayOrdinal == 6
-                ? (calendar.date(byAdding: .day, value: 7, to: mondayOfCurrentWeek) ?? mondayOfCurrentWeek)
-                : mondayOfCurrentWeek
-
-            var fallbackEvents: [SessionScheduleWidgetSnapshot.Event] = []
-            for day in scheduleResponse.orderedDays {
-                let dayOffset: Int
-                switch day.weekday {
-                case .monday: dayOffset = 0
-                case .tuesday: dayOffset = 1
-                case .wednesday: dayOffset = 2
-                case .thursday: dayOffset = 3
-                case .friday: dayOffset = 4
-                case .saturday: dayOffset = 5
-                case .sunday: dayOffset = 6
-                }
-                let dayDate = calendar.date(byAdding: .day, value: dayOffset, to: referenceMonday) ?? today
-                for lesson in day.lessons where shouldKeepLessonForWidget(lesson) {
-                    let event = Self.widgetEvent(from: lesson, on: dayDate)
-                    fallbackEvents.append(event)
-                }
-            }
-            events = fallbackEvents.sorted(by: Self.widgetEventSortingComparator)
-        }
 
         let snapshot = SessionScheduleWidgetSnapshot(
             groupName: groupName,
@@ -111,7 +80,7 @@ extension ScheduleServiceViewModel {
             ?? selectedEmployee?.displayName
             ?? query.nilIfBlank
         guard let groupName = resolvedName, !groupName.isEmpty else { return }
-        if dataSource == .api, let accountGroupName, accountGroupName != groupName, scheduleResponse.employee == nil {
+        if !WidgetScheduleSelection.accepts(groupName, in: WidgetScheduleSelection.defaults) {
             return
         }
 

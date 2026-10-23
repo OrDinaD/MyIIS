@@ -370,6 +370,47 @@ enum SessionScheduleWidgetPresentation {
     }
 }
 
+enum WidgetScheduleSelection {
+    static let groupKey = "schedule.widget.customGroup"
+    static let teacherIDKey = "schedule.widget.teacherID"
+    static let teacherNameKey = "schedule.widget.teacherName"
+    static let accountGroupKey = "schedule.widget.accountGroup"
+
+    static var defaults: UserDefaults { ScheduleDisplayPreferences.defaults }
+
+    struct Target: Equatable {
+        let group: String?
+        let teacherID: String?
+        let title: String?
+    }
+
+    static func target(in defaults: UserDefaults) -> Target {
+        if let teacher = nonEmpty(defaults.string(forKey: teacherIDKey)),
+           let name = nonEmpty(defaults.string(forKey: teacherNameKey)) {
+            return Target(group: nil, teacherID: teacher, title: name)
+        }
+        let group = nonEmpty(defaults.string(forKey: groupKey))
+            ?? nonEmpty(defaults.string(forKey: accountGroupKey))
+            ?? nonEmpty(defaults.string(forKey: "services.schedule.lastGroup"))
+        return Target(group: group, teacherID: nil, title: group)
+    }
+
+    static func accepts(_ title: String, in defaults: UserDefaults) -> Bool {
+        #if os(watchOS)
+        // The paired phone already validates the source before sending a snapshot.
+        guard let expected = target(in: defaults).title else { return true }
+        #else
+        guard let expected = target(in: defaults).title else { return false }
+        #endif
+        return title == expected
+    }
+
+    static func nonEmpty(_ value: String?) -> String? {
+        guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else { return nil }
+        return value
+    }
+}
+
 enum ScheduleWidgetDataStore {
     enum ScheduleType: Sendable {
         case session
@@ -407,7 +448,7 @@ enum ScheduleWidgetDataStore {
     }
 
     static func save(_ snapshot: SessionScheduleWidgetSnapshot, key: String, widgetKind: String) {
-        guard let defaults else { return }
+        guard let defaults, WidgetScheduleSelection.accepts(snapshot.groupName, in: defaults) else { return }
         do {
             let data = try JSONEncoder().encode(snapshot.removingDuplicateEvents())
             _ = UserDefaultsPayloadStore.save(data, forKey: key, in: defaults)
@@ -424,9 +465,9 @@ enum ScheduleWidgetDataStore {
     static func load(key: String) -> SessionScheduleWidgetSnapshot? {
         guard let defaults else { return nil }
         if let data = defaults.data(forKey: key) ?? UserDefaultsPayloadStore.load(forKey: key, from: defaults) {
-            return try? JSONDecoder()
-                .decode(SessionScheduleWidgetSnapshot.self, from: data)
-                .removingDuplicateEvents()
+            guard let snapshot = try? JSONDecoder().decode(SessionScheduleWidgetSnapshot.self, from: data),
+                  WidgetScheduleSelection.accepts(snapshot.groupName, in: defaults) else { return nil }
+            return snapshot.removingDuplicateEvents()
         }
         return nil
     }
@@ -474,12 +515,15 @@ extension SessionScheduleWidgetSnapshot.Event {
         guard let date else { return nil }
 
         func makeDate(from time: String) -> Date? {
-            let parts = time.split(separator: ":").compactMap { Int($0) }
-            guard parts.count == 2 else { return nil }
+            let rawParts = time.split(separator: ":", omittingEmptySubsequences: false)
+            guard rawParts.count == 2,
+                  let hour = Int(rawParts[0]), let minute = Int(rawParts[1]),
+                  (0...23).contains(hour), (0...59).contains(minute),
+                  date.timeIntervalSinceReferenceDate.isFinite else { return nil }
 
             var components = calendar.dateComponents([.year, .month, .day], from: date)
-            components.hour = parts[0]
-            components.minute = parts[1]
+            components.hour = hour
+            components.minute = minute
             return calendar.date(from: components)
         }
 

@@ -142,7 +142,6 @@ final class AttendanceViewModel {
 
     private enum AttendanceSectionFetchResult: Sendable {
         case applications(Result<[OmissionApplication], Error>)
-        case counts(Result<[MonthlyOmissionCount], Error>)
         case certificates(Result<OmissionsByStudentResponse, Error>)
         case allPeriod(Result<[DisrespectfulOmission], Error>)
     }
@@ -169,10 +168,6 @@ final class AttendanceViewModel {
                 return .applications(res)
             }
             group.addTask {
-                let res = await self.resultOf { try await self.apiService.getMonthlyOmissionCounts() }
-                return .counts(res)
-            }
-            group.addTask {
                 let res = await self.resultOf { try await self.apiService.getOmissionsByStudent() }
                 return .certificates(res)
             }
@@ -187,13 +182,6 @@ final class AttendanceViewModel {
                 switch sectionResult {
                 case .applications(let result):
                     self.applyApplicationsResult(
-                        result,
-                        errors: &errors,
-                        sectionErrors: &nextSectionErrors,
-                        loadedSections: &loadedSections
-                    )
-                case .counts(let result):
-                    self.applyCountsResult(
                         result,
                         errors: &errors,
                         sectionErrors: &nextSectionErrors,
@@ -250,7 +238,7 @@ final class AttendanceViewModel {
         }
         sectionErrors = nextSectionErrors
 
-        if loadedSections == 4 {
+        if loadedSections == 3 {
             lastUpdateTime = Date()
             isShowingStaleDataWarning = false
             errorMessage = nil
@@ -291,34 +279,6 @@ final class AttendanceViewModel {
                 }
                 if self.applications.isEmpty {
                     sectionErrors[.applications] = message
-                }
-            }
-        }
-    }
-
-    private func applyCountsResult(
-        _ result: Result<[MonthlyOmissionCount], Error>,
-        errors: inout [String],
-        sectionErrors: inout [Section: String],
-        loadedSections: inout Int
-    ) {
-        switch result {
-        case .success(let counts):
-            monthlyCounts = counts
-            Self.persistWidgetSnapshot(with: counts)
-            loadedSections += 1
-        case .failure(let error):
-            if isNotFoundError(error) {
-                self.monthlyCounts = []
-                loadedSections += 1
-            } else {
-                let message = resolveErrorMessage(error)
-                errors.append(message)
-                if isUnauthorizedError(error) {
-                    isUnauthorized = true
-                }
-                if monthlyCounts.isEmpty {
-                    sectionErrors[.summary] = message
                 }
             }
         }

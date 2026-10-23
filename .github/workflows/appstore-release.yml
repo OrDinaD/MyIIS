@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: testflight-release
   cancel-in-progress: false
@@ -29,13 +33,24 @@ env:
   DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
 jobs:
+  # Tests run on this exact revision before signing credentials are used.
+  preflight:
+    name: Tests · up to 2% failures
+    uses: ./.github/workflows/ios-tests.yml
+    with:
+      max_failure_percent: 2
+
   deploy:
+    needs: preflight
     name: Archive & Upload to TestFlight
     runs-on: macos-26
     timeout-minutes: 35
     steps:
+      # ── 1. Source and toolchain ────────────────────────────────
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Verify Xcode
         shell: bash
@@ -44,6 +59,7 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep iphoneos
 
+      # ── 2. Credentials and release metadata ────────────────────────────────
       - name: Verify upload credentials
         id: credentials
         shell: bash
@@ -132,6 +148,11 @@ jobs:
             VERSION_SOURCE="Xcode project"
           fi
 
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "::error::Release version must contain two or three numeric components."
+            exit 1
+          fi
+
           # A UTC timestamp is monotonic for serialized deploys and does not
           # depend on a manually maintained CURRENT_PROJECT_VERSION value.
           BUILD_NUMBER="$(date -u +%Y%m%d%H%M%S)"
@@ -140,6 +161,7 @@ jobs:
           echo "marketing_version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Resolved version $VERSION from $VERSION_SOURCE; build $BUILD_NUMBER."
 
+      # ── 3. Signing ────────────────────────────────
       - name: Import reusable signing certificate
         id: signing
         if: steps.credentials.outputs.should_upload == 'true'
@@ -204,6 +226,7 @@ jobs:
             CODE_SIGN_IDENTITY="Apple Development" |
             grep -E 'MARKETING_VERSION|CURRENT_PROJECT_VERSION|PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|CODE_SIGN_IDENTITY'
 
+      # ── 4. Archive ────────────────────────────────
       - name: Archive signed app
         if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
@@ -245,6 +268,7 @@ jobs:
           plutil -insert stripSwiftSymbols -bool true build/ExportOptions-TestFlight.plist
           plutil -insert uploadSymbols -bool true build/ExportOptions-TestFlight.plist
 
+      # ── 5. Upload and Apple processing ────────────────────────────────
       - name: Upload to TestFlight
         if: steps.credentials.outputs.should_upload == 'true'
         shell: bash
@@ -282,9 +306,10 @@ jobs:
             --timeout-seconds 900 \
             --poll-interval-seconds 20
 
+      # ── 6. Diagnostics and cleanup ────────────────────────────────
       - name: Upload release diagnostics
         if: ${{ always() && steps.credentials.outputs.should_upload == 'true' }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: testflight-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
@@ -293,8 +318,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Remove temporary signing keychain
-        if: ${{ always() && steps.signing.outcome != 'skipped' }}
+      - name: Remove temporary signing material
+        if: ${{ always() }}
         shell: bash
         run: |
           security delete-keychain "$RUNNER_TEMP/MyIIS-CI.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/MyIIS-CI.p12"
+          rm -rf "$RUNNER_TEMP/appstoreconnect"

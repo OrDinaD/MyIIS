@@ -59,25 +59,7 @@ extension AccountSettingsViewModel {
     }
 
     func isPasswordValid(_ password: String) -> Bool {
-        guard password.count >= 8, password.count <= 30 else { return false }
-        let hasLower = password.contains(where: { ("a"..."z").contains($0) })
-        let hasUpper = password.contains(where: { ("A"..."Z").contains($0) })
-        let hasDigit = password.contains(where: { ("0"..."9").contains($0) })
-        let specialCharacters = Set("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
-        let hasSpecial = password.contains(where: { specialCharacters.contains($0) })
-
-        let allowedCharacters = CharacterSet(
-            charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
-        )
-        let hasOnlyAllowed = password.unicodeScalars.allSatisfy { allowedCharacters.contains($0) }
-
-        guard hasLower, hasUpper, hasDigit, hasSpecial, hasOnlyAllowed else { return false }
-
-        let login = authService.currentUser?.id.description ?? ""
-        if !login.isEmpty && password.localizedCaseInsensitiveContains(login) {
-            return false
-        }
-        return true
+        IISPasswordPolicy.isValid(password, login: authService.currentUser?.id.description ?? "")
     }
 
     func showError(_ title: String, _ message: String) {

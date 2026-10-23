@@ -27,15 +27,6 @@ extension APIService {
         return try await performRequest(request)
     }
 
-    /// Количество пропусков студента по месяцам семестра
-    func getMonthlyOmissionCounts() async throws -> [MonthlyOmissionCount] {
-        if APIService.isDemoMode { return DemoMockData.monthlyOmissionCounts }
-        let endpoint = baseURL.appendingPathComponent("omission-count-by-student-for-semester")
-        let request = URLRequest(url: endpoint)
-        logRequestDetails(request)
-        return try await performRequest(request)
-    }
-
     /// Информация о справках и пропусках по уважительной причине
     func getOmissionsByStudent(term: Int? = nil) async throws -> OmissionsByStudentResponse {
         if APIService.isDemoMode { return DemoMockData.omissionsByStudent }

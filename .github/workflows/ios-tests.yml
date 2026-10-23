@@ -1,0 +1,172 @@
+name: iOS Tests
+
+# Shared by strict CI and the App Store release gate.
+on:
+  workflow_call:
+    inputs:
+      max_failure_percent:
+        description: Maximum percentage of failed executed tests
+        type: number
+        required: false
+        default: 0
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PROJECT_PATH: MyIIS.xcodeproj
+  SCHEME: MyIIS
+  TEST_TARGET: MyIISTests
+  DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+
+jobs:
+  tests:
+    name: Build, Test & Evaluate
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      MAX_FAILURE_PERCENT: ${{ inputs.max_failure_percent }}
+    steps:
+      # ── 1. Source and runtime ──────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Verify tools and threshold
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          jq --version
+          jq -en --argjson limit "$MAX_FAILURE_PERCENT" \
+            '$limit >= 0 and $limit <= 100' >/dev/null
+
+      - name: Select available iPhone simulator
+        id: simulator
+        run: |
+          set -euo pipefail
+          SIMULATOR_ID="$(xcrun simctl list devices available --json | jq -er '
+            [.devices | to_entries[] | select(.key | contains(".iOS-")) |
+             .value[] | select(.isAvailable and (.name | startswith("iPhone")))] |
+            first.udid // error("No available iPhone simulator")
+          ')"
+          echo "id=$SIMULATOR_ID" >> "$GITHUB_OUTPUT"
+
+      # ── 2. Compilation: failures always block ─────────────────────
+      - name: Build test products
+        env:
+          SIMULATOR_ID: ${{ steps.simulator.outputs.id }}
+        run: |
+          set -euo pipefail
+          xcodebuild build-for-testing \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -only-testing:"$TEST_TARGET" \
+            -enableCodeCoverage YES \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="-"
+
+      # ── 3. Tests: preserve the real exit code for evaluation ───────
+      - name: Run unit tests
+        id: run_tests
+        env:
+          SIMULATOR_ID: ${{ steps.simulator.outputs.id }}
+        run: |
+          set -euo pipefail
+          TEST_EXIT_CODE=0
+          xcodebuild test-without-building \
+            -project "$PROJECT_PATH" \
+            -scheme "$SCHEME" \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -only-testing:"$TEST_TARGET" \
+            -enableCodeCoverage YES \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -resultBundlePath "$RUNNER_TEMP/TestResults.xcresult" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="-" || TEST_EXIT_CODE=$?
+          echo "exit_code=$TEST_EXIT_CODE" >> "$GITHUB_OUTPUT"
+          # Evaluation, rather than blanket continue-on-error, decides the gate.
+          exit 0
+
+      # ── 4. Gate: failed / (passed + failed + expected failures) ────
+      - name: Evaluate test failure budget
+        env:
+          TEST_EXIT_CODE: ${{ steps.run_tests.outputs.exit_code }}
+        run: |
+          set -euo pipefail
+          RESULT_PATH="$RUNNER_TEMP/TestResults.xcresult"
+          xcrun xcresulttool get test-results summary --path "$RESULT_PATH" --compact \
+            > "$RUNNER_TEMP/test-summary.json"
+          xcrun xcresulttool get object --legacy --format json --path "$RESULT_PATH" \
+            > "$RUNNER_TEMP/test-action.json"
+
+          jq -e '
+            [.totalTestCount, .passedTests, .failedTests, .skippedTests, .expectedFailures] |
+            all(.[]; type == "number" and . >= 0 and . == floor)
+          ' "$RUNNER_TEMP/test-summary.json" >/dev/null
+          PASSED="$(jq -r .passedTests "$RUNNER_TEMP/test-summary.json")"
+          FAILED="$(jq -r .failedTests "$RUNNER_TEMP/test-summary.json")"
+          SKIPPED="$(jq -r .skippedTests "$RUNNER_TEMP/test-summary.json")"
+          EXPECTED="$(jq -r .expectedFailures "$RUNNER_TEMP/test-summary.json")"
+          TOTAL="$(jq -r .totalTestCount "$RUNNER_TEMP/test-summary.json")"
+          RESULT="$(jq -r .result "$RUNNER_TEMP/test-summary.json")"
+          EXECUTED=$((PASSED + FAILED + EXPECTED))
+          INFRA_ERRORS="$(jq '
+            [.actions._values[] |
+             (.actionResult.issues.errorSummaries._values // [])[]] | length
+          ' "$RUNNER_TEMP/test-action.json")"
+
+          if (( EXECUTED == 0 || TOTAL != EXECUTED + SKIPPED || INFRA_ERRORS > 0 )); then
+            echo "::error::Incomplete test results, no executed tests, or infrastructure errors."
+            exit 1
+          fi
+          if [[ "$TEST_EXIT_CODE" != "0" && "$TEST_EXIT_CODE" != "65" ]]; then
+            echo "::error::Unexpected xcodebuild exit code: $TEST_EXIT_CODE"
+            exit 1
+          fi
+          if [[ "$RESULT" != "Passed" && "$RESULT" != "Failed" && "$RESULT" != "Expected Failure" ]]; then
+            echo "::error::Test run did not complete: $RESULT"
+            exit 1
+          fi
+          if [[ "$TEST_EXIT_CODE" == "65" && "$FAILED" == "0" ]]; then
+            echo "::error::xcodebuild failed without reported failing tests."
+            exit 1
+          fi
+
+          RATE="$(jq -n --argjson failed "$FAILED" --argjson executed "$EXECUTED" \
+            '$failed * 100 / $executed')"
+          ALLOWED="$(jq -n --argjson failed "$FAILED" --argjson executed "$EXECUTED" \
+            --argjson limit "$MAX_FAILURE_PERCENT" '$failed * 100 <= $executed * $limit')"
+          {
+            echo "### Test release gate"
+            echo ""
+            echo "| Passed | Failed | Expected failures | Skipped | Failure rate | Limit | Allowed |"
+            echo "| ---: | ---: | ---: | ---: | ---: | ---: | :---: |"
+            echo "| $PASSED | $FAILED | $EXPECTED | $SKIPPED | $RATE% | $MAX_FAILURE_PERCENT% | $ALLOWED |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [[ "$ALLOWED" != "true" ]]; then
+            echo "::error::Test failure rate $RATE% exceeds $MAX_FAILURE_PERCENT%."
+            exit 1
+          fi
+          if (( FAILED > 0 )); then
+            echo "::warning::$FAILED tests failed ($RATE%); within the $MAX_FAILURE_PERCENT% budget."
+          fi
+
+      # ── 5. Diagnostics: available even when the gate fails ─────────
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: TestResults-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/TestResults.xcresult
+            ${{ runner.temp }}/test-summary.json
+          retention-days: 7
+          if-no-files-found: ignore

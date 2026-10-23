@@ -242,6 +242,15 @@ final class SessionScheduleWidgetTests: XCTestCase {
     }
 
     func testSnapshotRemovesDuplicateWidgetEventsAndPreservesDistinctOccurrences() {
+        let selection = WidgetScheduleSelection.defaults
+        let previousGroup = selection.object(forKey: WidgetScheduleSelection.groupKey)
+        let previousTeacher = selection.object(forKey: WidgetScheduleSelection.teacherIDKey)
+        selection.set("420603", forKey: WidgetScheduleSelection.groupKey)
+        selection.removeObject(forKey: WidgetScheduleSelection.teacherIDKey)
+        defer {
+            selection.set(previousGroup, forKey: WidgetScheduleSelection.groupKey)
+            selection.set(previousTeacher, forKey: WidgetScheduleSelection.teacherIDKey)
+        }
         let date = calendar.date(from: DateComponents(year: 2026, month: 9, day: 8))!
         let event = SessionScheduleWidgetSnapshot.Event(
             id: "shared-model-id",
@@ -285,6 +294,15 @@ final class SessionScheduleWidgetTests: XCTestCase {
     }
 
     func testWidgetDataStoresSaveLoadClear() {
+        let selection = WidgetScheduleSelection.defaults
+        let previousGroup = selection.object(forKey: WidgetScheduleSelection.groupKey)
+        let previousTeacher = selection.object(forKey: WidgetScheduleSelection.teacherIDKey)
+        selection.set("420603", forKey: WidgetScheduleSelection.groupKey)
+        selection.removeObject(forKey: WidgetScheduleSelection.teacherIDKey)
+        defer {
+            selection.set(previousGroup, forKey: WidgetScheduleSelection.groupKey)
+            selection.set(previousTeacher, forKey: WidgetScheduleSelection.teacherIDKey)
+        }
         let event = SessionScheduleWidgetSnapshot.Event(
             id: "test-widget-event",
             date: Date(),
@@ -323,6 +341,15 @@ final class SessionScheduleWidgetTests: XCTestCase {
     }
 
     func testUnifiedScheduleWidgetDataStore() {
+        let selection = WidgetScheduleSelection.defaults
+        let previousGroup = selection.object(forKey: WidgetScheduleSelection.groupKey)
+        let previousTeacher = selection.object(forKey: WidgetScheduleSelection.teacherIDKey)
+        selection.set("unified-group", forKey: WidgetScheduleSelection.groupKey)
+        selection.removeObject(forKey: WidgetScheduleSelection.teacherIDKey)
+        defer {
+            selection.set(previousGroup, forKey: WidgetScheduleSelection.groupKey)
+            selection.set(previousTeacher, forKey: WidgetScheduleSelection.teacherIDKey)
+        }
         let event = SessionScheduleWidgetSnapshot.Event(
             id: "unified-test-event",
             date: Date(),

@@ -569,6 +569,13 @@ final class DormitoryCardMotion {
     private(set) var vertical = 0.0
 
     private let motionManager = CMMotionManager()
+    private let motionQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.maxConcurrentOperationCount = 1
+        queue.qualityOfService = .utility
+        return queue
+    }()
+    private var motionGeneration = UUID()
 
     func start() {
         guard motionManager.isDeviceMotionAvailable, !motionManager.isDeviceMotionActive else {
@@ -576,19 +583,44 @@ final class DormitoryCardMotion {
         }
 
         motionManager.deviceMotionUpdateInterval = 1.0 / 20.0
-        motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
-            guard let self, let motion else { return }
-            self.applyMotion(roll: motion.attitude.roll, pitch: motion.attitude.pitch)
-        }
+        let deliver = makeMotionDelivery()
+        motionManager.startDeviceMotionUpdates(to: motionQueue, withHandler: Self.makeMotionHandler(deliver: deliver))
     }
 
     func stop() {
+        motionGeneration = UUID()
         motionManager.stopDeviceMotionUpdates()
         horizontal = 0
         vertical = 0
     }
 
+    /// The same nonisolated callback bridge is exercised from a background executor in tests.
+    func makeMotionDelivery() -> @Sendable (Double, Double) async -> Void {
+        let generation = UUID()
+        motionGeneration = generation
+        return { [weak self] roll, pitch in
+            await self?.applyMotion(roll: roll, pitch: pitch, generation: generation)
+        }
+    }
+
+    nonisolated static func makeMotionHandler(
+        deliver: @escaping @Sendable (Double, Double) async -> Void
+    ) -> CMDeviceMotionHandler {
+        { motion, _ in
+            guard let motion else { return }
+            let roll = motion.attitude.roll
+            let pitch = motion.attitude.pitch
+            Task { await deliver(roll, pitch) }
+        }
+    }
+
+    private func applyMotion(roll: Double, pitch: Double, generation: UUID) {
+        guard generation == motionGeneration else { return }
+        applyMotion(roll: roll, pitch: pitch)
+    }
+
     func applyMotion(roll: Double, pitch: Double) {
+        guard roll.isFinite, pitch.isFinite else { return }
         let horizontal = Self.clamped(roll / 0.65)
         let vertical = Self.clamped(pitch / 0.65)
 

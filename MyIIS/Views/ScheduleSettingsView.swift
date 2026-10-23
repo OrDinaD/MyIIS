@@ -37,19 +37,9 @@ struct ScheduleSettingsView: View {
     @AppStorage("schedule.widget.customGroup", store: ScheduleDisplayPreferences.defaults)
     private var widgetCustomGroup = ""
 
-    @AppStorage(
-        ScheduleServerConfiguration.serverDefaultsKey,
-        store: ScheduleServerConfiguration.defaults
-    )
-    private var selectedServerRaw = ScheduleAPIServer.auto.rawValue
-
-    private var selectedServer: Binding<ScheduleAPIServer> {
-        Binding(
-            get: { ScheduleAPIServer(rawValue: selectedServerRaw) ?? .auto },
-            set: { selectedServerRaw = $0.rawValue }
-        )
-    }
-
+    @AppStorage(ScheduleServerConfiguration.serverDefaultsKey, store: ScheduleServerConfiguration.defaults)
+    private var selectedServerRaw = ScheduleAPIServer.official.rawValue
+    @State private var showsServerDetails = false
     @State private var isResetConfirmationPresented = false
 
     // Color states
@@ -69,10 +59,13 @@ struct ScheduleSettingsView: View {
                 }
                 subgroupSection
                 notificationsSection
-                serverSection
                 widgetSection
                 colorsSection
                 resetSection
+                serverSection
+            }
+            .sheet(isPresented: $showsServerDetails) {
+                ScheduleServerInfoView()
             }
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(NSLocalizedString("schedule_settings_title", value: "Настройки расписания", comment: ""))
@@ -94,6 +87,31 @@ struct ScheduleSettingsView: View {
                 }
                 Button(NSLocalizedString("common_cancel", comment: ""), role: .cancel) {}
             }
+        }
+    }
+
+    private var serverSection: some View {
+        Section {
+            Picker("Сервер расписания", selection: Binding(
+                get: { selectedServerRaw },
+                set: {
+                    ScheduleServerConfiguration.selectedServer = ScheduleAPIServer(rawValue: $0) ?? .official
+                    selectedServerRaw = $0
+                    ScheduleDisplayPreferences.reloadClassScheduleWidget()
+                }
+            )) {
+                Text("БГУИР").tag(ScheduleAPIServer.official.rawValue)
+                Text("Сервер MyIIS").tag(ScheduleAPIServer.gateway.rawValue)
+            }
+            Button {
+                showsServerDetails = true
+            } label: {
+                Label("Узнать подробнее", systemImage: "info.circle")
+            }
+        } header: {
+            Text("Подключение")
+        } footer: {
+            Text("БГУИР выбран по умолчанию. Сервер MyIIS автоматически переключается на БГУИР, если не отвечает.")
         }
     }
 
@@ -225,73 +243,8 @@ struct ScheduleSettingsView: View {
         }
     }
 
-    private var serverSection: some View {
-        Section {
-            Picker(
-                NSLocalizedString("schedule_server_picker_title", value: "Сервер API", comment: ""),
-                selection: selectedServer
-            ) {
-                ForEach(ScheduleAPIServer.allCases) { server in
-                    Label(server.localizedTitle, systemImage: server.iconName)
-                        .tag(server)
-                }
-            }
-            .pickerStyle(.menu)
-
-            NavigationLink {
-                ScheduleServerMetricsView()
-            } label: {
-                HStack {
-                    Label {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(NSLocalizedString("schedule_server_metrics_title", value: "Замеры скорости и метрики", comment: ""))
-                                .fontWeight(.medium)
-                            Text(NSLocalizedString("schedule_server_metrics_desc", value: "Сравнение пинга и времени ответа", comment: ""))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    } icon: {
-                        Image(systemName: "gauge.with.needle.fill")
-                            .foregroundStyle(.purple)
-                    }
-                    Spacer()
-                    if let summary = ScheduleServerMetricsTracker.shared.lastComparisonSummary {
-                        Text(summary)
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        } header: {
-            Text(NSLocalizedString("schedule_server_header", value: "Сервер расписания", comment: ""))
-        } footer: {
-            Text(selectedServer.wrappedValue.subtitle)
-                .font(.caption)
-        }
-    }
-
     private var widgetSection: some View {
-        Section {
-            TextField(
-                NSLocalizedString("schedule_settings_widget_group_placeholder", value: "Например: 420602 (оставьте пустым для авто)", comment: ""),
-                text: $widgetCustomGroup
-            )
-            .autocorrectionDisabled()
-            .textInputAutocapitalization(.never)
-            .onChange(of: widgetCustomGroup) {
-                ScheduleDisplayPreferences.reloadClassScheduleWidget()
-            }
-        } header: {
-            Text(NSLocalizedString("schedule_settings_widget_group_header", value: "Группа для виджетов", comment: ""))
-        } footer: {
-            Text(
-                NSLocalizedString(
-                    "schedule_settings_widget_group_footer",
-                    value: "По умолчанию в виджетах отображается ваша группа или последнее открытое расписание.",
-                    comment: ""
-                )
-            )
-        }
+        WidgetScheduleSettingsSection()
     }
 
     private var colorsSection: some View {
@@ -358,6 +311,8 @@ struct ScheduleSettingsView: View {
     }
 
     private func resetAllSettings() {
+        selectedServerRaw = ScheduleAPIServer.official.rawValue
+        ScheduleServerConfiguration.selectedServer = .official
         showsMidPairBreaks = false
         hidePastLessons = true
         cardDensityRaw = ScheduleCardDensity.regular.rawValue
@@ -366,6 +321,9 @@ struct ScheduleSettingsView: View {
         isScheduleChangesNotificationsEnabled = true
         isAnnouncementsNotificationsEnabled = true
         widgetCustomGroup = ""
+        WidgetScheduleSelection.defaults.removeObject(forKey: WidgetScheduleSelection.teacherIDKey)
+        WidgetScheduleSelection.defaults.removeObject(forKey: WidgetScheduleSelection.teacherNameKey)
+        Task { await WidgetScheduleRefreshService.shared.refresh(force: true) }
         resetAllColors()
     }
 }

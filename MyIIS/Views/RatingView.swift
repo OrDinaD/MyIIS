@@ -7,7 +7,6 @@ struct RatingView: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.requestReview) private var requestReview
     @State var viewModel: RatingViewModel
-    @State private var omissions = RatingOmissionsViewModel()
     @State private var expandedDisciplineIDs: Set<String> = []
     @State private var hasRevealedContent = false
     @State private var showLoginSheet = false
@@ -77,15 +76,13 @@ struct RatingView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
-                } else if viewModel.isShowingStaleDataWarning || omissions.isStale {
+                } else if viewModel.isShowingStaleDataWarning {
                     Section {
                         StaleDataBanner(
-                            lastUpdateTime: omissions.isStale ? omissions.updatedAt : viewModel.lastUpdateTime,
+                            lastUpdateTime: viewModel.lastUpdateTime,
                             errorMessage: viewModel.errorMessage
                         ) {
-                            async let rating: () = viewModel.refresh(for: user)
-                            async let attendance: () = omissions.load(userID: user.id)
-                            _ = await (rating, attendance)
+                            await viewModel.refresh(for: user)
                         }
                     }
                     .listRowInsets(EdgeInsets())
@@ -98,9 +95,7 @@ struct RatingView: View {
             .listStyle(.insetGrouped)
             .task(id: user.id) {
                 revealContentIfNeeded()
-                async let rating: () = viewModel.loadRating(for: user)
-                async let attendance: () = omissions.loadIfNeeded(userID: user.id)
-                _ = await (rating, attendance)
+                await viewModel.loadRating(for: user)
 
                 ratingViewOpenCount += 1
                 if ratingViewOpenCount == 5 || (ratingViewOpenCount > 5 && ratingViewOpenCount % 20 == 0) {
@@ -109,9 +104,7 @@ struct RatingView: View {
                 }
             }
             .refreshable {
-                async let rating: () = viewModel.refresh(for: user)
-                async let attendance: () = omissions.load(userID: user.id)
-                _ = await (rating, attendance)
+                await viewModel.refresh(for: user)
             }
         } else {
             ContentUnavailableView {
@@ -182,12 +175,6 @@ struct RatingView: View {
             systemImage: "chart.line.uptrend.xyaxis",
             tint: gradeTint(viewModel.gradebookAverage ?? viewModel.students.first?.averageGrade)
         )
-        RatingHeaderMetric(
-            title: NSLocalizedString("rating_unexcused_current_month", comment: ""),
-            value: formattedMissed(omissions.hours),
-            systemImage: "clock.badge.exclamationmark",
-            tint: .orange
-        )
     }
 
     @ViewBuilder
@@ -249,9 +236,7 @@ struct RatingView: View {
 
                 Button(NSLocalizedString("common_retry", comment: "")) {
                     Task {
-                        async let rating: () = viewModel.refresh(for: user)
-                        async let attendance: () = omissions.load(userID: user.id)
-                        _ = await (rating, attendance)
+                        await viewModel.refresh(for: user)
                     }
                 }
                 .buttonStyle(.borderedProminent)

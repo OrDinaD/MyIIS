@@ -52,7 +52,8 @@ enum ScheduleTimelineBuilder {
     ) -> Result {
         let calendar = Calendar.current
         let lessonsByWeekday = Dictionary(
-            uniqueKeysWithValues: input.orderedDays.map { ($0.weekday, $0.lessons) }
+            input.orderedDays.map { ($0.weekday, $0.lessons) },
+            uniquingKeysWith: { $0 + $1 }
         )
         var cursor = calendar.startOfDay(for: start)
         let endDay = calendar.startOfDay(for: end)

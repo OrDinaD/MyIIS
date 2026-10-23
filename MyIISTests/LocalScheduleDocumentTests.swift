@@ -285,6 +285,55 @@ final class LocalScheduleDocumentTests: XCTestCase {
         XCTAssertNil(event.teacherDisplayName)
     }
 
+    func testIntervalPreservesDateAcrossTimeZonesAndMidnight() throws {
+        for zoneID in ["Etc/GMT+1", "America/Los_Angeles", "Europe/Minsk"] {
+            let zone = try XCTUnwrap(TimeZone(identifier: zoneID))
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = zone
+            for date in ["2026-08-20", "2026-01-01", "2024-02-29"] {
+                var event = makeEvent(id: "date-regression", startTime: "00:00", endTime: "23:59")
+                event.date = date
+                let interval = try XCTUnwrap(event.interval(timeZone: zone))
+                let formatter = DateFormatter()
+                formatter.calendar = calendar
+                formatter.locale = Locale(identifier: "en_US_POSIX")
+                formatter.timeZone = zone
+                formatter.dateFormat = "yyyy-MM-dd HH:mm"
+                XCTAssertEqual(formatter.string(from: interval.start), "\(date) 00:00", zoneID)
+                XCTAssertEqual(formatter.string(from: interval.end), "\(date) 23:59", zoneID)
+            }
+        }
+    }
+
+    func testIntervalRejectsMalformedDatesAndTimes() throws {
+        let zone = try XCTUnwrap(TimeZone(identifier: "Europe/Minsk"))
+        for date in ["2026-02-29", "2026-04-31", "0000-01-01", "2026-8-20", "2026-08-20-extra"] {
+            var event = makeEvent(id: "invalid-date")
+            event.date = date
+            XCTAssertNil(event.parsedDate, date)
+            XCTAssertNil(event.interval(timeZone: zone), date)
+            XCTAssertThrowsError(try makeDocument(events: [event]).validated(), date)
+        }
+        for time in ["09::30", "09:bad:30", ":09:30", "09:30:", "24:00", "12:60"] {
+            let event = makeEvent(id: "invalid-time", startTime: time, endTime: "23:59")
+            XCTAssertNil(event.interval(timeZone: zone), time)
+        }
+    }
+
+    func testIntervalRejectsDSTGapAndMeasuresTransition() throws {
+        let zone = try XCTUnwrap(TimeZone(identifier: "America/New_York"))
+        var event = makeEvent(id: "dst", startTime: "02:30", endTime: "04:00")
+        event.date = "2026-03-08"
+        XCTAssertNil(event.interval(timeZone: zone))
+        event.startTime = "01:30"
+        event.endTime = "03:30"
+        XCTAssertEqual(try XCTUnwrap(event.interval(timeZone: zone)).duration, 3_600)
+        event.date = "2026-11-01"
+        event.startTime = "00:30"
+        event.endTime = "02:30"
+        XCTAssertEqual(try XCTUnwrap(event.interval(timeZone: zone)).duration, 10_800)
+    }
+
     func testEventIntervalEdgeCases() {
         let timeZone = TimeZone(identifier: "Europe/Minsk")!
         var event = makeEvent(id: "e1")

@@ -1,3 +1,30 @@
+"password_recovery_title" = "Змінити пароль";
+"password_recovery_forgot" = "Забули пароль?";
+"password_recovery_expired" = "Термін дії пароля минув. Установіть новий пароль, щоб знову ввійти в ІІС.";
+"password_recovery_contact" = "Телефон або email";
+"password_recovery_contact_description" = "Укажіть контакт, прив’язаний до облікового запису ІІС. На нього надійде код підтвердження.";
+"password_recovery_find" = "Знайти обліковий запис";
+"password_recovery_choose_account" = "Виберіть обліковий запис";
+"password_recovery_other_contact" = "Указати інший контакт";
+"password_recovery_code" = "Код підтвердження";
+"password_recovery_code_description" = "Натисніть «Надіслати код» і введіть код, отриманий на прив’язаний контакт.";
+"password_recovery_send_code" = "Надіслати код";
+"password_recovery_confirm" = "Підтвердити код";
+"password_recovery_code_valid" = "Код діє ще";
+"password_recovery_attempts" = "Залишилося надсилань: %lld";
+"password_recovery_new" = "Новий пароль";
+"password_recovery_repeat" = "Повторіть новий пароль";
+"password_recovery_save" = "Змінити пароль і ввійти";
+"password_recovery_requirements" = "Від 8 до 30 символів: латинські літери обох регістрів, цифра та спеціальний символ. Пароль не має містити логін.";
+"password_recovery_success" = "Пароль змінено";
+"password_recovery_success_description" = "Використовуйте новий пароль для входу в ІІС.";
+"password_recovery_login_later" = "Пароль змінено, але ввійти не вдалося. Закрийте вікно та ввійдіть із новим паролем.";
+"password_recovery_blocked" = "Забагато спроб. Дочекайтеся зняття обмеження ІІС і повторіть пізніше.";
+"password_recovery_rejected" = "Не вдалося виконати дію. Перевірте дані; якщо код застарів, запитайте новий.";
+"password_recovery_not_found" = "Облікові записи з таким контактом не знайдено.";
+"password_recovery_code_expired" = "Термін дії коду минув. Запитайте новий код.";
+"password_recovery_loading" = "Виконується запит";
+
 /* UK */
 "services_schedule_language_subgroup" = "Іноземна мова";
 "attendance_period_section_title" = "Історія пропусків";

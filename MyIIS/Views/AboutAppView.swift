@@ -231,35 +231,6 @@ struct AboutAppView: View {
                     }
                 }
 
-                divider
-
-                NavigationLink {
-                    ScheduleServerMetricsView()
-                } label: {
-                    HStack {
-                        Label {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(NSLocalizedString("about_server_metrics", value: "Метрики серверов API", comment: ""))
-                                    .fontWeight(.medium)
-                                Text(NSLocalizedString("about_server_metrics_subtitle", value: "Сравнение скорости БГУИР и Edge-шлюза", comment: ""))
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        } icon: {
-                            Image(systemName: "gauge.with.needle.fill")
-                                .foregroundStyle(.purple)
-                        }
-                        Spacer()
-                        Text(ScheduleServerConfiguration.selectedServer.shortTitle)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                }
             }
 
             Text(

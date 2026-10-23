@@ -10,7 +10,6 @@ final class LocalScheduleViewModel {
     var noticeMessage: String?
 
     private let defaults: UserDefaults
-    private static let installedFixtureDefaultsKey = "local.schedule.fixture.2026-07-28"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -30,12 +29,6 @@ final class LocalScheduleViewModel {
 
     func reload() {
         do {
-            if !defaults.bool(forKey: Self.installedFixtureDefaultsKey),
-               let bundledExample = try LocalScheduleStore.loadBundledExample() {
-                try save(bundledExample)
-                defaults.set(true, forKey: Self.installedFixtureDefaultsKey)
-                return
-            }
             document = try LocalScheduleStore.load()
         } catch {
             errorMessage = error.localizedDescription
@@ -178,6 +171,7 @@ final class LocalScheduleViewModel {
 
     private func publish(_ document: LocalScheduleDocument) {
         let snapshot = document.widgetSnapshot()
+        guard WidgetScheduleSelection.accepts(snapshot.groupName, in: WidgetScheduleSelection.defaults) else { return }
         ClassScheduleWidgetDataStore.save(snapshot)
         WatchScheduleConnectivityService.shared.activate()
         WatchScheduleConnectivityService.shared.send(snapshot)

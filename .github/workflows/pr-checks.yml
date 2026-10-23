@@ -1,5 +1,6 @@
 name: CI Quality & Test Checks
 
+# Triggers
 on:
   push:
     branches:
@@ -20,15 +21,17 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: write
-  checks: write
+
+defaults:
+  run:
+    shell: bash
 
 env:
   PROJECT_PATH: MyIIS.xcodeproj
   SCHEME: MyIIS
-  TEST_TARGET: MyIISTests
   DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
+# Quality checks
 jobs:
   static-analysis:
     name: Lint & Code Style
@@ -36,9 +39,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Verify tools
         run: |
@@ -52,53 +56,24 @@ jobs:
           swiftlint lint --strict --reporter github-actions-logging
 
       - name: Run SwiftFormat Lint
-        run: |
-          set -euo pipefail
-          swiftformat --lint . || true
+        # Existing formatting debt remains advisory, with a visible failed step.
+        continue-on-error: true
+        run: swiftformat --lint .
 
       - name: Git Diff Whitespace Check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           set -euo pipefail
-          git diff --check HEAD~1 || true
+          if [[ -n "$BASE_SHA" && "$BASE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+            git diff --check "$BASE_SHA" HEAD
+          else
+            git show --format= --check HEAD
+          fi
 
+  # Strict feedback for pushes and pull requests.
   unit-tests:
-    name: Build & Run Unit Tests
-    runs-on: macos-26
-    timeout-minutes: 25
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: |
-          set -euo pipefail
-          xcodebuild -version
-
-      - name: Discover iOS Simulator
-        id: simulator
-        run: |
-          set -euo pipefail
-          SIM_NAME=$(xcrun simctl list devices available | grep -E -m 1 "iPhone (17|16|Air)" | sed -E 's/^[[:space:]]+//' | cut -d '(' -f 1 | xargs || echo "iPhone 17")
-          echo "sim_name=$SIM_NAME" >> "$GITHUB_OUTPUT"
-
-      - name: Run xcodebuild test (MyIISTests)
-        run: |
-          set -euo pipefail
-          xcodebuild test \
-            -project "$PROJECT_PATH" \
-            -scheme "$SCHEME" \
-            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.sim_name }}" \
-            -only-testing:"$TEST_TARGET" \
-            -enableCodeCoverage YES \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
-            -resultBundlePath "$RUNNER_TEMP/TestResults.xcresult" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="-"
-
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: TestResults-xcresult
-          path: ${{ runner.temp }}/TestResults.xcresult
-          retention-days: 7
+    name: Unit Tests
+    uses: ./.github/workflows/ios-tests.yml
+    with:
+      max_failure_percent: 0

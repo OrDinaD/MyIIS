@@ -11,6 +11,8 @@ class AuthenticationService: ObservableObject {
     @Published var currentUser: User?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published private(set) var isPasswordExpired = false
+    private(set) var recoveryUsername = ""
     @Published private(set) var isRestoringSession = false
     @Published private(set) var isSessionReady = false
 
@@ -119,6 +121,7 @@ class AuthenticationService: ObservableObject {
         let hasCachedSession = isSilent && currentUser != nil
         isSessionReady = hasCachedSession
         errorMessage = nil
+        isPasswordExpired = false
         var didAuthenticateWithServer = false
         var didCompleteLogin = false
 
@@ -144,6 +147,11 @@ class AuthenticationService: ObservableObject {
                 isSilent: isSilent
             )
             didCompleteLogin = true
+        } catch APIError.passwordExpired {
+            isPasswordExpired = true
+            recoveryUsername = username
+            requireInteractiveLoginAfterSessionExpiry()
+            try? credentialStore.clear()
         } catch let error as APIError {
             handleLoginAPIError(
                 error,
@@ -200,6 +208,8 @@ class AuthenticationService: ObservableObject {
             personalProfile: personalProfile
         )
         currentUser = user
+        recoveryUsername = ""
+        isPasswordExpired = false
         isSessionReady = true
 
         if !isSilent {
@@ -405,7 +415,7 @@ class AuthenticationService: ObservableObject {
         token = nil
         isSessionReady = false
         isRestoringSession = false
-        errorMessage = APIError.unauthorized(
+        errorMessage = isPasswordExpired ? APIError.passwordExpired.localizedDescription : APIError.unauthorized(
             message: NSLocalizedString(
                 "api_error_session_expired",
                 value: "Сессия истекла. Войдите заново.",
@@ -418,6 +428,8 @@ class AuthenticationService: ObservableObject {
     }
 
     func logout() {
+        isPasswordExpired = false
+        recoveryUsername = ""
         sessionRecoveryTask?.cancel()
         sessionRecoveryTask = nil
         self.currentUser = nil

@@ -21,6 +21,10 @@ final class RemoteNotificationService: NSObject {
 
     private let defaults: UserDefaults
     private let session: URLSession
+    private var registrationTask: Task<Void, Never>?
+    private var registrationIdentity: String?
+    private static let confirmedIdentityKey = "services.apns.confirmedIdentity"
+    private static let confirmedAtKey = "services.apns.confirmedAt"
 
     init(
         defaults: UserDefaults? = nil,
@@ -43,10 +47,12 @@ final class RemoteNotificationService: NSObject {
 
     /// Запрос разрешения на уведомления и регистрация устройства в APNs.
     func requestAuthorizationAndRegister() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-            guard granted else { return }
-            Task { @MainActor in
-                UIApplication.shared.registerForRemoteNotifications()
+        Task { @MainActor in
+            do {
+                let granted = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound])
+                if granted { UIApplication.shared.registerForRemoteNotifications() }
+            } catch {
+                LogService.shared.log("APNs authorization request failed: \(error.localizedDescription)")
             }
         }
     }
@@ -79,26 +85,59 @@ final class RemoteNotificationService: NSObject {
         let environment = "production"
         #endif
 
-        let payload: [String: Any] = [
-            "device_token": token,
-            "group": validGroup,
-            "platform": "ios",
-            "environment": environment
-        ]
+        let identity = [token, validGroup, environment].joined(separator: "|")
+        if let currentTask = registrationTask {
+            let currentIdentity = registrationIdentity
+            await currentTask.value
+            if currentIdentity == identity { return }
+            if registrationIdentity == currentIdentity {
+                registrationTask = nil
+                registrationIdentity = nil
+            }
+            await registerOnGateway(token: token, targetGroup: validGroup)
+            return
+        }
+        if defaults.string(forKey: Self.confirmedIdentityKey) == identity,
+           let confirmedAt = defaults.object(forKey: Self.confirmedAtKey) as? Date,
+           Date().timeIntervalSince(confirmedAt) < 24 * 60 * 60 {
+            return
+        }
+        registrationIdentity = identity
+        let task = Task { await sendRegistration(token: token, group: validGroup, environment: environment, identity: identity) }
+        registrationTask = task
+        await task.value
+        if registrationIdentity == identity {
+            registrationTask = nil
+            registrationIdentity = nil
+        }
+    }
 
+    private func sendRegistration(token: String, group: String, environment: String, identity: String) async {
+        let payload = ["device_token": token, "group": group, "platform": "ios", "environment": environment]
         var request = URLRequest(url: Self.registrationEndpoint)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 10
+        request.timeoutInterval = 5
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-            let (_, response) = try await session.data(for: request)
-            if let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) {
-                defaults.set(validGroup, forKey: Self.registeredGroupDefaultsKey)
+        for attempt in 0..<3 {
+            do {
+                let (_, response) = try await session.data(for: request)
+                guard let http = response as? HTTPURLResponse else { return }
+                if (200...299).contains(http.statusCode) {
+                    defaults.set(group, forKey: Self.registeredGroupDefaultsKey)
+                    defaults.set(identity, forKey: Self.confirmedIdentityKey)
+                    defaults.set(Date(), forKey: Self.confirmedAtKey)
+                    return
+                }
+                LogService.shared.log("APNs gateway registration HTTP \(http.statusCode)")
+                guard http.statusCode == 429 || http.statusCode >= 500 else { return }
+            } catch {
+                guard !Task.isCancelled, (error as? URLError)?.code != .cancelled else { return }
+                LogService.shared.log("APNs gateway registration failed: \(error.localizedDescription)")
             }
-        } catch {
-            // Игнорируем сетевые сбои регистрации токена (повторится при следующем запуске)
+            guard attempt < 2 else { return }
+            do { try await Task.sleep(for: .seconds(attempt + 1)) } catch { return }
         }
     }
 
@@ -107,13 +146,16 @@ final class RemoteNotificationService: NSObject {
         let targetGroup = userInfo["group"] as? String
 
         // Запускаем проверку обновлений расписания и объявлений
-        await ScheduleNotificationMonitorService.shared.checkForUpdates(forcedGroup: targetGroup)
+        let hasAlert = (userInfo["aps"] as? [String: Any])?["alert"] != nil
+        let result = await ScheduleNotificationMonitorService.shared.checkForUpdates(
+            forcedGroup: targetGroup, suppressLocalAlerts: hasAlert
+        )
 
         #if canImport(WidgetKit)
         // Обновляем таймлайн виджетов расписания
         WidgetCenter.shared.reloadAllTimelines()
         #endif
 
-        return .newData
+        return result
     }
 }

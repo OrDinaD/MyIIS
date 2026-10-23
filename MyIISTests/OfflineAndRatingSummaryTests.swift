@@ -3,15 +3,6 @@ import XCTest
 
 @MainActor
 final class OfflineAndRatingSummaryTests: XCTestCase {
-    func testCurrentMonthUsesAttendanceCountsInsteadOfJournalOrPreviousMonth() throws {
-        let now = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-09-26T12:00:00Z"))
-        let counts = [
-            MonthlyOmissionCount(month: "08.2026", omissionCount: 4),
-            MonthlyOmissionCount(month: "09.2026", omissionCount: 0)
-        ]
-        XCTAssertEqual(RatingOmissionsViewModel.currentMonthHours(counts, now: now), 0)
-        XCTAssertNil(RatingOmissionsViewModel.currentMonthHours([counts[0]], now: now))
-    }
 
     func testNotificationsStayAvailableOfflineForSameAccount() async throws {
         #if DEBUG
@@ -71,41 +62,4 @@ final class OfflineAndRatingSummaryTests: XCTestCase {
         ), data)
     }
 
-    func testMonthlyCountsSurviveOfflineReloadAndModelRecreation() async throws {
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: UUID().uuidString))
-        let id = Int.random(in: 10000000...99999999)
-        defer { UserDefaultsPayloadStore.clear(forKey: "rating_monthly_omissions.\(id)", from: defaults) }
-        #if DEBUG
-        let previousDemoMode = APIService.isDemoMode
-        APIService.isDemoMode = false
-        defer { APIService.isDemoMode = previousDemoMode }
-        #endif
-        let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [MockURLProtocol.self]
-        let session = URLSession(configuration: config)
-        defer {
-            session.invalidateAndCancel()
-            MockURLProtocol.requestHandler = nil
-        }
-        let api = APIService(session: session)
-        MockURLProtocol.requestHandler = { request in
-            XCTAssertEqual(request.url?.lastPathComponent, "omission-count-by-student-for-semester")
-            let response = try XCTUnwrap(HTTPURLResponse(
-                url: try XCTUnwrap(request.url), statusCode: 200, httpVersion: nil, headerFields: nil
-            ))
-            return (response, Data(#"[{"month":"09.2026","omissionCount":0}]"#.utf8))
-        }
-        let now = try XCTUnwrap(ISO8601DateFormatter().date(from: "2026-09-26T12:00:00Z"))
-        let online = RatingOmissionsViewModel(api: api, defaults: defaults)
-        await online.load(userID: id, now: now)
-        XCTAssertEqual(online.hours, 0)
-        MockURLProtocol.requestHandler = { _ in throw URLError(.notConnectedToInternet) }
-        let restored = RatingOmissionsViewModel(api: api, defaults: defaults)
-        await restored.load(userID: id, now: now.addingTimeInterval(60))
-        XCTAssertEqual(restored.hours, 0)
-        XCTAssertEqual(restored.updatedAt, now)
-        XCTAssertTrue(restored.isStale)
-        await restored.load(userID: id + 1, now: now)
-        XCTAssertNil(restored.hours, "Another account must not inherit cached hours")
-    }
 }

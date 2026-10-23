@@ -1,388 +1,10 @@
 import Foundation
 
-struct LibraryNewsEntry: Codable, Identifiable, Hashable {
-    let id: Int
-    let title: String
-    let link: URL
-    let date: String
-}
-
-struct ScheduleEmployeeDirectoryEntry: Decodable, Identifiable, Hashable {
-    let firstName: String?
-    let lastName: String?
-    let middleName: String?
-    let degree: String?
-    let rank: String?
-    let photoLink: String?
-    let calendarId: String?
-    let id: Int
-    let urlId: String?
-    let fio: String?
-
-    var displayName: String {
-        if let fio, !fio.isEmpty {
-            return fio
-        }
-        let parts = [lastName, firstName, middleName]
-            .compactMap { $0 }
-            .filter { !$0.isEmpty }
-        if parts.isEmpty {
-            return "ID \(id)"
-        }
-        return parts.joined(separator: " ")
-    }
-}
-
-enum ScheduleEmployeePhotoURL {
-    static func make(photoLink: String?, employeeID: Int) -> URL? {
-        if let link = photoLink?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !link.isEmpty {
-            return URL(string: link
-                .replacingOccurrences(of: "http://", with: "https://")
-                .replacingOccurrences(of: "null/", with: "https://iis.bsuir.by/"))
-        }
-
-        guard employeeID > 0 else { return nil }
-        let server = ScheduleServerConfiguration.selectedServer
-        if server == .gateway || server == .auto {
-            return URL(string: "https://bsuir.ordinad.xyz/api/v1/employees/photo/\(employeeID)?format=jpeg")
-        }
-        return URL(string: "https://iis.bsuir.by/api/v1/employees/photo/\(employeeID)")
-    }
-}
-
-struct PublicScheduleResponse: Decodable, Sendable {
-    let employee: DisciplineEmployee?
-    let group: StudyGroup?
-    let exams: [DisciplineSchedule]
-    let startDate: Date?
-    let endDate: Date?
-    let startExamsDate: Date?
-    let endExamsDate: Date?
-    private let scheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
-    private let previousScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
-    private let nextScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
-
-    enum CodingKeys: String, CodingKey {
-        case employee = "employeeDto"
-        case group = "studentGroupDto"
-        case schedules
-        case previousSchedules
-        case nextSchedules
-        case exams
-        case startDate
-        case endDate
-        case startExamsDate
-        case endExamsDate
-    }
-
-    static let publicationPending = PublicScheduleResponse(
-        employee: nil,
-        group: nil,
-        exams: [],
-        startDate: nil,
-        endDate: nil,
-        startExamsDate: nil,
-        endExamsDate: nil,
-        scheduleByWeekday: [:],
-        previousScheduleByWeekday: [:],
-        nextScheduleByWeekday: [:]
-    )
-
-    init(
-        employee: DisciplineEmployee?,
-        group: StudyGroup?,
-        exams: [DisciplineSchedule],
-        startDate: Date?,
-        endDate: Date?,
-        startExamsDate: Date?,
-        endExamsDate: Date?,
-        scheduleByWeekday: [StudyWeekday: [DisciplineSchedule]],
-        previousScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]],
-        nextScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]]
-    ) {
-        self.employee = employee
-        self.group = group
-        self.exams = exams
-        self.startDate = startDate
-        self.endDate = endDate
-        self.startExamsDate = startExamsDate
-        self.endExamsDate = endExamsDate
-        self.scheduleByWeekday = scheduleByWeekday
-        self.previousScheduleByWeekday = previousScheduleByWeekday
-        self.nextScheduleByWeekday = nextScheduleByWeekday
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let dateParser = StudyPlanDateParser.shared
-
-        employee = try container.decodeIfPresent(DisciplineEmployee.self, forKey: .employee)
-        group = try container.decodeIfPresent(StudyGroup.self, forKey: .group)
-
-        let startDateRaw = try container.decodeIfPresent(String.self, forKey: .startDate)
-        let endDateRaw = try container.decodeIfPresent(String.self, forKey: .endDate)
-        let startExamsRaw = try container.decodeIfPresent(String.self, forKey: .startExamsDate)
-        let endExamsRaw = try container.decodeIfPresent(String.self, forKey: .endExamsDate)
-        startDate = dateParser.date(from: startDateRaw)
-        endDate = dateParser.date(from: endDateRaw)
-        startExamsDate = dateParser.date(from: startExamsRaw)
-        endExamsDate = dateParser.date(from: endExamsRaw)
-
-        exams = (try container.decodeIfPresent([DisciplineSchedule].self, forKey: .exams) ?? [])
-            .sorted(by: DisciplineSchedule.sortingComparator)
-
-        let rawSchedules = try container.decodeIfPresent([String: [DisciplineSchedule]].self, forKey: .schedules) ?? [:]
-        let rawPreviousSchedules = try container.decodeIfPresent([String: [DisciplineSchedule]].self, forKey: .previousSchedules) ?? [:]
-        let rawNextSchedules = try container.decodeIfPresent([String: [DisciplineSchedule]].self, forKey: .nextSchedules) ?? [:]
-
-        scheduleByWeekday = Self.mapSchedule(rawSchedules)
-        previousScheduleByWeekday = Self.mapSchedule(rawPreviousSchedules)
-        nextScheduleByWeekday = Self.mapSchedule(rawNextSchedules)
-    }
-
-    var orderedDays: [StudyDaySchedule] {
-        let source = actualScheduleByWeekday
-        return StudyWeekday.displayOrder.compactMap { weekday in
-            guard let lessons = source[weekday], !lessons.isEmpty else { return nil }
-            return StudyDaySchedule(weekday: weekday, lessons: lessons)
-        }
-    }
-
-    var availableWeekNumbers: [Int] {
-        var result = Set<Int>()
-        for day in orderedDays {
-            for lesson in day.lessons {
-                result.formUnion(lesson.weekNumbers)
-            }
-        }
-        for exam in exams {
-            result.formUnion(exam.weekNumbers)
-        }
-        return Array(result).sorted()
-    }
-
-    func isSchedulePublicationPending(referenceDate: Date = Date()) -> Bool {
-        if scheduleByWeekday.isEmpty, nextScheduleByWeekday.isEmpty, exams.isEmpty {
-            return true
-        }
-
-        guard !scheduleByWeekday.isEmpty, nextScheduleByWeekday.isEmpty, exams.isEmpty,
-              let endDate else {
-            return false
-        }
-
-        let calendar = Calendar.current
-        let endExclusive = calendar.date(
-            byAdding: .day,
-            value: 1,
-            to: calendar.startOfDay(for: endDate)
-        ) ?? endDate
-        return referenceDate >= endExclusive
-    }
-
-    private var actualScheduleByWeekday: [StudyWeekday: [DisciplineSchedule]] {
-        if !scheduleByWeekday.isEmpty {
-            return scheduleByWeekday
-        }
-        if !nextScheduleByWeekday.isEmpty {
-            return nextScheduleByWeekday
-        }
-        return [:]
-    }
-
-    private static func mapSchedule(_ rawValue: [String: [DisciplineSchedule]]) -> [StudyWeekday: [DisciplineSchedule]] {
-        var mapped: [StudyWeekday: [DisciplineSchedule]] = [:]
-        for (weekdayRaw, lessons) in rawValue {
-            guard let weekday = StudyWeekday(rawValue: weekdayRaw) else { continue }
-            mapped[weekday] = lessons.sorted(by: DisciplineSchedule.sortingComparator)
-        }
-        return mapped
-    }
-}
-
-enum ServiceJSONValue: Codable, Hashable {
-    case string(String)
-    case int(Int)
-    case double(Double)
-    case bool(Bool)
-    case object([String: ServiceJSONValue])
-    case array([ServiceJSONValue])
-    case null
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-
-        if container.decodeNil() {
-            self = .null
-        } else if let value = try? container.decode(Bool.self) {
-            self = .bool(value)
-        } else if let value = try? container.decode(Int.self) {
-            self = .int(value)
-        } else if let value = try? container.decode(Double.self) {
-            self = .double(value)
-        } else if let value = try? container.decode(String.self) {
-            self = .string(value)
-        } else if let value = try? container.decode([String: ServiceJSONValue].self) {
-            self = .object(value)
-        } else if let value = try? container.decode([ServiceJSONValue].self) {
-            self = .array(value)
-        } else {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported JSON value")
-        }
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-
-        switch self {
-        case .string(let value):
-            try container.encode(value)
-        case .int(let value):
-            try container.encode(value)
-        case .double(let value):
-            try container.encode(value)
-        case .bool(let value):
-            try container.encode(value)
-        case .object(let value):
-            try container.encode(value)
-        case .array(let value):
-            try container.encode(value)
-        case .null:
-            try container.encodeNil()
-        }
-    }
-
-    var scalarText: String? {
-        switch self {
-        case .string(let value):
-            return value
-        case .int(let value):
-            return String(value)
-        case .double(let value):
-            return String(format: "%.2f", value)
-        case .bool(let value):
-            return value ? "true" : "false"
-        case .null, .object, .array:
-            return nil
-        }
-    }
-
-    var shortText: String {
-        switch self {
-        case .string(let value):
-            return value
-        case .int(let value):
-            return String(value)
-        case .double(let value):
-            return String(format: "%.2f", value)
-        case .bool(let value):
-            return value ? "Да" : "Нет"
-        case .array(let values):
-            return "Массив (\(values.count))"
-        case .object(let object):
-            return "Объект (\(object.count) полей)"
-        case .null:
-            return "—"
-        }
-    }
-}
-
-struct ServiceJSONObject: Codable, Hashable {
-    let fields: [String: ServiceJSONValue]
-
-    init(fields: [String: ServiceJSONValue]) {
-        self.fields = fields
-    }
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        self.fields = try container.decode([String: ServiceJSONValue].self)
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(fields)
-    }
-}
-
-struct ServiceJSONObjectPage: Decodable, Equatable {
-    let content: [ServiceJSONObject]
-    let totalElements: Int
-    let totalPages: Int
-    let number: Int
-    let size: Int
-    let isLast: Bool
-    let isEmpty: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case content
-        case totalElements
-        case totalPages
-        case number
-        case size
-        case isLast = "last"
-        case isEmpty = "empty"
-    }
-}
-
-extension ServiceJSONObject {
-    var stableID: String {
-        if let id = fields["id"]?.scalarText {
-            return id
-        }
-        if let title = fields["title"]?.scalarText {
-            return title
-        }
-        let chunks = fields
-            .sorted { $0.key < $1.key }
-            .map { "\($0.key)=\($0.value.shortText)" }
-        return chunks.joined(separator: "|")
-    }
-
-    var primaryText: String {
-        if let value = fields["title"]?.scalarText, !value.isEmpty {
-            return value
-        }
-        if let value = fields["name"]?.scalarText, !value.isEmpty {
-            return value
-        }
-        if let value = fields["content"]?.scalarText, !value.isEmpty {
-            return value
-        }
-        if let value = fields["description"]?.scalarText, !value.isEmpty {
-            return value
-        }
-        if let value = fields["text"]?.scalarText, !value.isEmpty {
-            return value
-        }
-        return stableID
-    }
-
-    var secondaryText: String? {
-        if let value = fields["status"]?.scalarText, !value.isEmpty {
-            return value
-        }
-        if let value = fields["date"]?.scalarText, !value.isEmpty {
-            return value
-        }
-        if let value = fields["createdDate"]?.scalarText, !value.isEmpty {
-            return value
-        }
-        return nil
-    }
-
-    var detailPairs: [(String, String)] {
-        fields
-            .filter { !$0.key.hasPrefix("_") }
-            .sorted { $0.key < $1.key }
-            .map { ($0.key, $0.value.shortText) }
-    }
-}
-
 final class ServiceEndpointsAPI {
     private let baseURL: URL
     private let session: URLSession
+    private let gatewaySession: URLSession
+    private let gatewayHealth: ScheduleGatewayHealth
     private let logService: LogService
     private let userDefaults: UserDefaults
     private let now: () -> Date
@@ -394,12 +16,16 @@ final class ServiceEndpointsAPI {
     init(
         baseURL: URL = URLFactory.require("https://iis.bsuir.by/api/v1"),
         session: URLSession = .shared,
+        gatewaySession: URLSession? = nil,
+        gatewayHealth: ScheduleGatewayHealth = .shared,
         logService: LogService = .shared,
         userDefaults: UserDefaults = .standard,
         now: @escaping () -> Date = Date.init
     ) {
         self.baseURL = baseURL
         self.session = session
+        self.gatewaySession = gatewaySession ?? (session === URLSession.shared ? ScheduleGatewaySession.shared : session)
+        self.gatewayHealth = gatewayHealth
         self.logService = logService
         self.userDefaults = userDefaults
         self.now = now
@@ -527,7 +153,7 @@ final class ServiceEndpointsAPI {
     func cachedGroupSchedule(groupNumber: String) -> PublicScheduleResponse? {
         guard let request = try? makeGETRequest(path: "schedule", queryItems: [
             URLQueryItem(name: "studentGroup", value: groupNumber)
-        ]), let data = cachedData(for: request) else {
+        ]), let data = cachedData(for: request, allowExpired: true) else {
             return nil
         }
         return try? JSONDecoder().decode(PublicScheduleResponse.self, from: data)
@@ -535,7 +161,7 @@ final class ServiceEndpointsAPI {
 
     func cachedEmployeeSchedule(urlId: String) -> PublicScheduleResponse? {
         guard let request = try? makeGETRequest(path: "employees/schedule/\(urlId)"),
-              let data = cachedData(for: request) else {
+              let data = cachedData(for: request, allowExpired: true) else {
             return nil
         }
         return try? JSONDecoder().decode(PublicScheduleResponse.self, from: data)
@@ -597,17 +223,14 @@ final class ServiceEndpointsAPI {
         )
     }
 
-    private func targetServers(for path: String) -> [ScheduleAPIServer] {
-        guard ScheduleServerConfiguration.isGatewaySupported(path: path) else {
+    private func targetServers(for path: String) async -> [ScheduleAPIServer] {
+        guard ScheduleServerConfiguration.selectedServer != .official,
+              baseURL == ScheduleServerConfiguration.officialBaseURL,
+              ScheduleServerConfiguration.isGatewaySupported(path: path),
+              await gatewayHealth.shouldAttempt(at: now()) else {
             return [.official]
         }
-        let selected = ScheduleServerConfiguration.selectedServer
-        switch selected {
-        case .auto, .gateway:
-            return [.gateway, .official]
-        case .official:
-            return [.official]
-        }
+        return [.gateway, .official]
     }
 
     private func statusCode(from error: Error) -> Int {
@@ -642,82 +265,23 @@ final class ServiceEndpointsAPI {
             return cached
         }
 
-        let servers = targetServers(for: path)
+        let servers = await targetServers(for: path)
         var lastError: Error?
 
-        for (index, server) in servers.enumerated() {
-            let serverBaseURL = (server == .gateway) ? ScheduleServerConfiguration.gatewayBaseURL : baseURL
-            let endpoint: URL
+        for server in servers {
             do {
-                endpoint = try endpointURL(baseURL: serverBaseURL, path: path, queryItems: queryItems)
-            } catch {
-                lastError = error
-                continue
-            }
-
-            var request = URLRequest(url: endpoint)
-            request.httpMethod = "GET"
-            request.timeoutInterval = (server == .gateway) ? 12.0 : 25.0
-            request.setValue("br, gzip, deflate", forHTTPHeaderField: "Accept-Encoding")
-
-            let startTime = Date()
-            logService.log("Service endpoint request (\(server.rawValue)): GET \(endpoint.absoluteString)")
-
-            do {
-                let (data, response) = try await session.data(for: request)
-                let durationMs = Int(Date().timeIntervalSince(startTime) * 1000)
-                let httpResponse = try validatedHTTPResponse(response)
-
-                logService.log("Service endpoint response (\(server.rawValue)): status \(httpResponse.statusCode), \(durationMs) ms for \(endpoint.absoluteString)")
-
-                let contentEncoding = httpResponse.value(forHTTPHeaderField: "Content-Encoding")
-                let serverTiming = httpResponse.value(forHTTPHeaderField: "Server-Timing")
-                let cacheControl = httpResponse.value(forHTTPHeaderField: "Cache-Control")
-
-                // [DEBUG_TELEMETRY_MODULE] Замер скорости сервера
-                ScheduleServerMetricsTracker.shared.recordMetric(
-                    server: server.rawValue,
-                    endpoint: path,
-                    durationMs: durationMs,
-                    httpStatusCode: httpResponse.statusCode,
-                    isSuccess: true,
-                    responseBytes: data.count,
-                    contentEncoding: contentEncoding,
-                    serverTiming: serverTiming,
-                    cacheControl: cacheControl,
-                    fullURL: endpoint.absoluteString
-                )
-
-                return try handleSuccessfulTransport(
-                    httpResponse: httpResponse,
-                    data: data,
-                    request: request,
-                    canonicalRequest: canonicalRequest
-                )
+                return try await fetchFromServer(server, path: path, queryItems: queryItems, canonicalRequest: canonicalRequest)
             } catch {
                 if isCancellationError(error) {
+                    if server == .gateway { await gatewayHealth.cancelled() }
                     throw CancellationError()
                 }
-
-                let durationMs = Int(Date().timeIntervalSince(startTime) * 1000)
-                let code = statusCode(from: error)
-
-                // [DEBUG_TELEMETRY_MODULE] Замер сбоя сервера
-                ScheduleServerMetricsTracker.shared.recordMetric(
-                    server: server.rawValue,
-                    endpoint: path,
-                    durationMs: durationMs,
-                    httpStatusCode: code,
-                    isSuccess: false,
-                    errorMessage: error.localizedDescription,
-                    fullURL: endpoint.absoluteString
-                )
-
                 lastError = error
-
-                if index < servers.count - 1 {
-                    logService.log("⚠️ Server \(server.rawValue) failed for \(path). Falling back to \(servers[index + 1].rawValue)... Error: \(error.localizedDescription)")
-                    continue
+                if server == .gateway {
+                    await gatewayHealth.failed(at: now())
+                } else if case APIError.unauthorized = error {
+                    AuthenticationSessionEvents.reportUnauthorized()
+                    throw error
                 }
             }
         }
@@ -742,6 +306,67 @@ final class ServiceEndpointsAPI {
         }
 
         throw APIError.networkError(NSError(domain: "ServiceEndpointsAPI", code: -1, userInfo: nil))
+    }
+
+    private func fetchFromServer(
+        _ server: ScheduleAPIServer,
+        path: String,
+        queryItems: [URLQueryItem]?,
+        canonicalRequest: URLRequest
+    ) async throws -> Data {
+        let serverURL = server == .gateway ? ScheduleServerConfiguration.gatewayBaseURL : baseURL
+        let endpoint = try endpointURL(baseURL: serverURL, path: path, queryItems: queryItems)
+        var request = URLRequest(url: endpoint, cachePolicy: .reloadIgnoringLocalCacheData)
+        request.httpMethod = "GET"
+        request.timeoutInterval = server == .gateway ? 1.5 : 10
+        let started = Date()
+        do {
+            let transport = server == .gateway ? gatewaySession : session
+            let (data, response) = try await transport.data(for: request)
+            let http = try validatedHTTPResponse(response)
+            if server == .gateway, (200 ... 299).contains(http.statusCode) {
+                try validateGatewayData(data, path: path)
+            }
+            let result = try handleSuccessfulTransport(
+                httpResponse: http, data: data, request: request, canonicalRequest: canonicalRequest
+            )
+            if server == .gateway { await gatewayHealth.succeeded() }
+            ScheduleServerMetricsTracker.shared.recordMetric(
+                server: server.rawValue, endpoint: path,
+                durationMs: Int(Date().timeIntervalSince(started) * 1000),
+                httpStatusCode: http.statusCode, isSuccess: true, responseBytes: data.count,
+                contentEncoding: http.value(forHTTPHeaderField: "Content-Encoding"),
+                serverTiming: http.value(forHTTPHeaderField: "Server-Timing"),
+                cacheControl: http.value(forHTTPHeaderField: "Cache-Control"), fullURL: endpoint.absoluteString
+            )
+            return result
+        } catch {
+            if !isCancellationError(error) {
+                ScheduleServerMetricsTracker.shared.recordMetric(
+                    server: server.rawValue, endpoint: path,
+                    durationMs: Int(Date().timeIntervalSince(started) * 1000),
+                    httpStatusCode: statusCode(from: error), isSuccess: false,
+                    errorMessage: error.localizedDescription, fullURL: endpoint.absoluteString
+                )
+            }
+            throw error
+        }
+    }
+
+    private func validateGatewayData(_ data: Data, path: String) throws {
+        let decoder = JSONDecoder()
+        if path == "schedule" || path.hasPrefix("employees/schedule/") {
+            _ = try decoder.decode(PublicScheduleResponse.self, from: data)
+        } else if path == "schedule/current-week" {
+            let week = try decoder.decode(Int.self, from: data)
+            guard (1...4).contains(week) else { throw APIError.invalidResponse }
+        } else if path == "student-groups" {
+            _ = try decoder.decode([StudyGroup].self, from: data)
+        } else if path == "employees/all" {
+            _ = try decoder.decode([ScheduleEmployeeDirectoryEntry].self, from: data)
+        } else {
+            _ = try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed])
+        }
     }
 
     private func makeGETRequest(baseURL: URL? = nil, path: String, queryItems: [URLQueryItem]? = nil) throws -> URLRequest {
@@ -782,10 +407,7 @@ final class ServiceEndpointsAPI {
         switch httpResponse.statusCode {
         case 200 ... 299:
             OfflineDataStatus.shared.refreshed(canonicalRequest?.url ?? request.url)
-            persistCache(data: data, for: request)
-            if let canonicalRequest, canonicalRequest.url != request.url {
-                persistCache(data: data, for: canonicalRequest)
-            }
+            persistCache(data: data, for: canonicalRequest ?? request)
             return data
         case 401, 403:
             throw APIError.unauthorized(message: NSLocalizedString(
@@ -818,12 +440,12 @@ final class ServiceEndpointsAPI {
         OfflineResponseCache.persist(data: data, for: request, prefix: Self.cachePrefix, userDefaults: userDefaults, cachedAt: now())
     }
 
-    private func cachedData(for request: URLRequest) -> Data? {
+    private func cachedData(for request: URLRequest, allowExpired: Bool = false) -> Data? {
         OfflineResponseCache.loadData(
             for: request,
             prefix: Self.cachePrefix,
             userDefaults: userDefaults,
-            maxAge: cacheLifetime(for: request),
+            maxAge: allowExpired ? nil : cacheLifetime(for: request),
             now: now()
         )
     }
@@ -831,6 +453,9 @@ final class ServiceEndpointsAPI {
     private func cacheLifetime(for request: URLRequest) -> TimeInterval {
         if request.url?.path.hasSuffix("/schedule/current-week") == true {
             return Self.currentWeekCacheLifetime
+        }
+        if request.url?.path.hasSuffix("/schedule") == true || request.url?.path.contains("/employees/schedule/") == true {
+            return 5 * 60
         }
         return Self.responseCacheLifetime
     }

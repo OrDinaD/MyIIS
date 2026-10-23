@@ -36,6 +36,10 @@ struct MyIISApp: App {
             .onAppear {
                 handlePendingAppIntentNavigation()
             }
+            .task(id: authService.currentUser?.education.group) {
+                await WidgetScheduleRefreshService.shared.updateAccountGroup(authService.currentUser?.education.group)
+                await RemoteNotificationService.shared.registerOnGateway()
+            }
             .onChange(of: scenePhase) { _, phase in
                 handleScenePhaseChange(phase)
             }
@@ -57,8 +61,11 @@ struct MyIISApp: App {
         case .active:
             handlePendingAppIntentNavigation()
             Task {
-                await RemoteNotificationService.shared.registerOnGateway()
+                async let widgetRefresh: Void = WidgetScheduleRefreshService.shared.refresh()
+                async let registration: Void = RemoteNotificationService.shared.registerOnGateway()
                 await ScheduleNotificationMonitorService.shared.checkForUpdates()
+                await registration
+                await widgetRefresh
             }
             guard authService.isSessionReady,
                   !authService.isLoading,
