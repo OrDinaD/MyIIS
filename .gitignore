@@ -182,3 +182,7 @@ skarnik_check.py
 *.xcdistributionlogs
 fastlane/screenshots/screenshots.html
 
+
+# Hygiene audit 2026-10-24
+server/
+.agy/
