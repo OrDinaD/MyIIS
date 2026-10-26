@@ -6,6 +6,10 @@ private final class PendingImageURLProtocol: URLProtocol {
     override static func canInit(with request: URLRequest) -> Bool { true }
     override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
+        // Signal that the refresh owns a task before the test invalidates its session.
+        NotificationCenter.default.post(
+            name: Notification.Name("AsyncImagePipelineTests.requestStarted"), object: request.url
+        )
         // Deliberately leave the request pending, as on a stalled connection.
     }
     override func stopLoading() {}
@@ -32,6 +36,13 @@ final class AsyncImagePipelineTests: XCTestCase {
         configuration.protocolClasses = [PendingImageURLProtocol.self]
         let session = URLSession(configuration: configuration)
         defer { session.invalidateAndCancel() }
+        let refreshStarted = expectation(description: "Background refresh has started")
+        let observer = NotificationCenter.default.addObserver(
+            forName: Notification.Name("AsyncImagePipelineTests.requestStarted"), object: nil, queue: nil
+        ) { notification in
+            if notification.object as? URL == url { refreshStarted.fulfill() }
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
         let pipeline = AsyncImagePipeline(diskCache: cache, session: session)
         let loaded = expectation(description: "Cached photo loads without waiting for the network")
         let task = Task {
@@ -42,6 +53,7 @@ final class AsyncImagePipelineTests: XCTestCase {
             loaded.fulfill()
         }
         await fulfillment(of: [loaded], timeout: 2)
+        await fulfillment(of: [refreshStarted], timeout: 2)
         task.cancel()
     }
 }

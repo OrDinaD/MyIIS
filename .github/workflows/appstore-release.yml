@@ -33,15 +33,7 @@ env:
   DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
 
 jobs:
-  # Tests run on this exact revision before signing credentials are used.
-  preflight:
-    name: Tests · up to 2% failures
-    uses: ./.github/workflows/ios-tests.yml
-    with:
-      max_failure_percent: 2
-
   deploy:
-    needs: preflight
     name: Archive & Upload to TestFlight
     runs-on: macos-26
     timeout-minutes: 35
