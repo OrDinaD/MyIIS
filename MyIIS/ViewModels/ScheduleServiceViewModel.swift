@@ -9,7 +9,9 @@ final class ScheduleServiceViewModel {
     var mode: ScheduleLookupMode = .group {
         didSet {
             if oldValue != mode {
-                defaults.set(mode.rawValue, forKey: Self.selectedModeDefaultsKey)
+                if persistsLookupMode {
+                    defaults.set(mode.rawValue, forKey: Self.selectedModeDefaultsKey)
+                }
                 if shouldResetQueryOnModeChange {
                     query = ""
                 }
@@ -98,6 +100,7 @@ final class ScheduleServiceViewModel {
     let authService: AuthenticationService
     let defaults: UserDefaults
     let usesSharedSnapshotCache: Bool
+    let persistsLookupMode: Bool
     var hasLoadedInitialData = false
     var activeGroupNumber: String?
     var shouldResetQueryOnModeChange = true
@@ -145,8 +148,10 @@ final class ScheduleServiceViewModel {
     init(
         api: ServiceEndpointsAPI? = nil,
         authService: AuthenticationService? = nil,
-        defaults: UserDefaults? = nil
+        defaults: UserDefaults? = nil,
+        persistsLookupMode: Bool = true
     ) {
+        self.persistsLookupMode = persistsLookupMode
         self.api = api ?? ServiceEndpointsAPI()
         self.authService = authService ?? .shared
         self.usesSharedSnapshotCache = defaults == nil
@@ -166,12 +171,12 @@ final class ScheduleServiceViewModel {
             }
         }
 
-        if let selectedModeRaw = self.defaults.string(forKey: Self.selectedModeDefaultsKey),
+        if persistsLookupMode, let selectedModeRaw = self.defaults.string(forKey: Self.selectedModeDefaultsKey),
            let selectedMode = ScheduleLookupMode(rawValue: selectedModeRaw) {
             mode = selectedMode
         }
 
-        if mode == .group,
+        if persistsLookupMode, mode == .group,
            let lastGroup = self.defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank {
             activeGroupNumber = lastGroup
             subgroupFilter = restoredSubgroupFilter(for: lastGroup)
@@ -183,9 +188,9 @@ final class ScheduleServiceViewModel {
         pinnedTeachers = Self.loadStoredTeachers(forKey: Self.pinnedTeachersDefaultsKey, from: self.defaults)
         recentTeachers = Self.loadStoredTeachers(forKey: Self.recentTeachersDefaultsKey, from: self.defaults)
 
-        if mode == .group, let lastGroup = self.defaults.string(forKey: Self.lastGroupDefaultsKey) {
+        if persistsLookupMode, mode == .group, let lastGroup = self.defaults.string(forKey: Self.lastGroupDefaultsKey) {
             query = lastGroup
-        } else if mode == .teacher, let lastTeacherName = self.defaults.string(forKey: Self.lastTeacherNameDefaultsKey) {
+        } else if persistsLookupMode, mode == .teacher, let lastTeacherName = self.defaults.string(forKey: Self.lastTeacherNameDefaultsKey) {
             query = lastTeacherName
         }
 

@@ -46,6 +46,31 @@ final class ScheduleStartupPresentationTests: XCTestCase {
         XCTAssertFalse(model.hasFinishedLessonsToday)
     }
 
+    func testTeacherToolbarUsesInitialsAndKeepsFullAccessibleTitle() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(ScheduleLookupMode.teacher.rawValue, forKey: ScheduleServiceViewModel.selectedModeDefaultsKey)
+        defaults.set("Константинопольский Александр Александрович", forKey: ScheduleServiceViewModel.lastTeacherNameDefaultsKey)
+        let model = ScheduleServiceViewModel(defaults: defaults)
+        XCTAssertEqual(model.scheduleToolbarTitle, "Константинопольский А. А.")
+        XCTAssertEqual(model.scheduleHeaderTitle, "Константинопольский Александр Александрович")
+
+        defaults.set("Иванов И.И.", forKey: ScheduleServiceViewModel.lastTeacherNameDefaultsKey)
+        XCTAssertEqual(model.scheduleToolbarTitle, "Иванов И.И.")
+    }
+
+    func testWidgetPickerDoesNotRestoreOrOverwriteBrowsingSelection() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(ScheduleLookupMode.teacher.rawValue, forKey: ScheduleServiceViewModel.selectedModeDefaultsKey)
+        defaults.set("Последний преподаватель", forKey: ScheduleServiceViewModel.lastTeacherNameDefaultsKey)
+        let model = ScheduleServiceViewModel(defaults: defaults, persistsLookupMode: false)
+        XCTAssertEqual(model.mode, .group)
+        XCTAssertTrue(model.query.isEmpty)
+        XCTAssertEqual(defaults.string(forKey: ScheduleServiceViewModel.selectedModeDefaultsKey), ScheduleLookupMode.teacher.rawValue)
+        XCTAssertEqual(defaults.string(forKey: ScheduleServiceViewModel.lastTeacherNameDefaultsKey), "Последний преподаватель")
+    }
+
     private func makeDefaults() throws -> (UserDefaults, String) {
         let suite = "ScheduleStartupPresentationTests.\(UUID().uuidString)"
         return (try XCTUnwrap(UserDefaults(suiteName: suite)), suite)

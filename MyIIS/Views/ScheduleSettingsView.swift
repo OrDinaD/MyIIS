@@ -34,9 +34,6 @@ struct ScheduleSettingsView: View {
     )
     private var isAnnouncementsNotificationsEnabled = true
 
-    @AppStorage("schedule.widget.customGroup", store: ScheduleDisplayPreferences.defaults)
-    private var widgetCustomGroup = ""
-
     @AppStorage(ScheduleServerConfiguration.serverDefaultsKey, store: ScheduleServerConfiguration.defaults)
     private var selectedServerRaw = ScheduleAPIServer.official.rawValue
     @State private var showsServerDetails = false
@@ -320,9 +317,10 @@ struct ScheduleSettingsView: View {
         lessonTrackingEnabled = true
         isScheduleChangesNotificationsEnabled = true
         isAnnouncementsNotificationsEnabled = true
-        widgetCustomGroup = ""
-        WidgetScheduleSelection.defaults.removeObject(forKey: WidgetScheduleSelection.teacherIDKey)
-        WidgetScheduleSelection.defaults.removeObject(forKey: WidgetScheduleSelection.teacherNameKey)
+        WidgetScheduleSelection.useAccountGroup(in: WidgetScheduleSelection.defaults)
+        ClassScheduleWidgetDataStore.clear()
+        SessionScheduleWidgetDataStore.clear()
+        WatchScheduleConnectivityService.shared.clear()
         Task { await WidgetScheduleRefreshService.shared.refresh(force: true) }
         resetAllColors()
     }

@@ -99,14 +99,6 @@ struct ScheduleServiceView: View {
             .toolbar {
                 toolbarContent
             }
-            .overlay(alignment: .top) {
-                if viewModel.activeScheduleRequestID != nil, viewModel.schedule != nil {
-                    scheduleLoadingBanner
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .allowsHitTesting(false)
-                }
-            }
             .overlay {
                 if viewModel.isDownloadingReport {
                     ProgressView(NSLocalizedString("services_schedule_report_downloading", comment: ""))

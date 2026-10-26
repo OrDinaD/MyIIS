@@ -391,8 +391,31 @@ enum WidgetScheduleSelection {
         }
         let group = nonEmpty(defaults.string(forKey: groupKey))
             ?? nonEmpty(defaults.string(forKey: accountGroupKey))
-            ?? nonEmpty(defaults.string(forKey: "services.schedule.lastGroup"))
         return Target(group: group, teacherID: nil, title: group)
+    }
+
+    @discardableResult
+    static func updateAccountGroup(_ group: String?, in defaults: UserDefaults) -> Bool {
+        let before = target(in: defaults)
+        let normalized = nonEmpty(group)
+        let previous = nonEmpty(defaults.string(forKey: accountGroupKey))
+        defaults.set(normalized, forKey: accountGroupKey)
+        if previous != nil, previous != normalized {
+            defaults.removeObject(forKey: groupKey)
+            defaults.removeObject(forKey: teacherIDKey)
+            defaults.removeObject(forKey: teacherNameKey)
+        }
+        if nonEmpty(defaults.string(forKey: groupKey)) == nil,
+           nonEmpty(defaults.string(forKey: teacherIDKey)) == nil {
+            defaults.set(normalized, forKey: groupKey)
+        }
+        return before != target(in: defaults)
+    }
+
+    static func useAccountGroup(in defaults: UserDefaults) {
+        defaults.set(nonEmpty(defaults.string(forKey: accountGroupKey)), forKey: groupKey)
+        defaults.removeObject(forKey: teacherIDKey)
+        defaults.removeObject(forKey: teacherNameKey)
     }
 
     static func accepts(_ title: String, in defaults: UserDefaults) -> Bool {

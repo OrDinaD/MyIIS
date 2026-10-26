@@ -9,117 +9,84 @@ struct WidgetScheduleSettingsSection: View {
     private var teacherName = ""
     @AppStorage(WidgetScheduleSelection.accountGroupKey, store: WidgetScheduleSelection.defaults)
     private var accountGroup = ""
-    @State private var isEditing = false
-    @State private var draft = ""
-    @State private var teacherMode = false
-    @State private var teachers: [ScheduleEmployeeDirectoryEntry] = []
-    @State private var errorMessage: String?
-    @State private var isLoadingTeachers = false
+    @State private var isSelecting = false
+    @State private var pickerModel = ScheduleServiceViewModel(persistsLookupMode: false)
 
     var body: some View {
         Section {
-            if isEditing {
-                Picker("Источник", selection: $teacherMode) {
-                    Text("Группа").tag(false)
-                    Text("Преподаватель").tag(true)
-                }
-                .pickerStyle(.segmented)
-                TextField(teacherMode ? "Фамилия преподавателя" : "Номер группы", text: $draft)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                if teacherMode {
-                    teacherResults
-                } else {
-                    Button("Сохранить группу") { saveGroup() }
-                        .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                Button("Отмена", role: .cancel) { isEditing = false; errorMessage = nil }
-                if let errorMessage { Text(errorMessage).foregroundStyle(.red) }
-            } else {
+            Button {
+                pickerModel.query = ""
+                pickerModel.mode = teacherID.isEmpty ? .group : .teacher
+                isSelecting = true
+            } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(WidgetScheduleSelection.target(in: WidgetScheduleSelection.defaults).title ?? "Не выбрано")
+                        Text(teacherID.isEmpty ? (customGroup.nilIfBlank ?? accountGroup.nilIfBlank ?? "Не выбрано") : teacherName)
                             .font(.headline)
-                        Text(teacherID.isEmpty ? "Группа" : "Преподаватель")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .foregroundStyle(.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(NSLocalizedString(
+                            teacherID.isEmpty ? "services_schedule_mode_group" : "services_schedule_mode_teacher", comment: ""
+                        ))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button {
-                        draft = customGroup.isEmpty ? accountGroup : customGroup
-                        teacherMode = !teacherID.isEmpty
-                        if teacherMode { draft = teacherName }
-                        isEditing = true
-                    } label: {
-                        Image(systemName: "pencil")
-                    }
-                    .accessibilityLabel("Изменить расписание виджета")
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
                 }
-                if !customGroup.isEmpty || !teacherID.isEmpty {
-                    Button("Использовать группу аккаунта") {
-                        customGroup = ""
-                        teacherID = ""
-                        teacherName = ""
-                        refresh()
-                    }
-                    .disabled(accountGroup.isEmpty)
+            }
+            .accessibilityHint("Изменить расписание виджета")
+
+            if !teacherID.isEmpty || (!customGroup.isEmpty && customGroup != accountGroup) {
+                Button("Использовать группу аккаунта") {
+                    WidgetScheduleSelection.useAccountGroup(in: WidgetScheduleSelection.defaults)
+                    refresh()
                 }
+                .disabled(accountGroup.isEmpty)
             }
         } header: {
             Text("Расписание в виджетах")
         } footer: {
             Text("По умолчанию — группа вашего аккаунта. Выбранная группа или преподаватель закреплены для виджетов и не меняются при просмотре других расписаний.")
         }
-        .task(id: teacherMode) {
-            guard teacherMode, teachers.isEmpty else { return }
-            isLoadingTeachers = true
-            defer { isLoadingTeachers = false }
-            do {
-                teachers = try await ServiceEndpointsAPI().fetchAllEmployees()
-            } catch {
-                errorMessage = "Не удалось загрузить преподавателей. Проверьте подключение и попробуйте снова."
-            }
-        }
-    }
-
-    @ViewBuilder private var teacherResults: some View {
-        if isLoadingTeachers {
-            ProgressView("Загружаем преподавателей…")
-        } else {
-            ForEach(filteredTeachers, id: \.id) { teacher in
-                Button(teacher.displayName) {
-                    guard let urlID = teacher.urlId, !urlID.isEmpty else { return }
-                    teacherID = urlID
-                    teacherName = teacher.displayName
-                    customGroup = ""
-                    isEditing = false
-                    refresh()
+        .sheet(isPresented: $isSelecting) {
+            NavigationStack {
+                ScheduleSearchSheet(
+                    viewModel: pickerModel,
+                    isPresented: $isSelecting,
+                    onSelectGroup: selectGroup,
+                    onSelectTeacher: selectTeacher
+                )
+                .navigationTitle("Расписание в виджетах")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(NSLocalizedString("common_cancel", comment: "")) { isSelecting = false }
+                    }
                 }
             }
-            if !draft.isEmpty, filteredTeachers.isEmpty, errorMessage == nil {
-                Text("Преподаватель не найден").foregroundStyle(.secondary)
+        }
+        .task {
+            if let group = AuthenticationService.shared.currentUser?.education.group {
+                await WidgetScheduleRefreshService.shared.updateAccountGroup(group)
             }
         }
     }
 
-    private var filteredTeachers: [ScheduleEmployeeDirectoryEntry] {
-        let query = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return [] }
-        return Array(teachers.filter {
-            $0.urlId != nil && $0.displayName.localizedCaseInsensitiveContains(query)
-        }.prefix(12))
-    }
-
-    private func saveGroup() {
-        let group = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard (4...12).contains(group.count), group.allSatisfy({ $0.isASCII && $0.isNumber }) else {
-            errorMessage = "Введите номер группы цифрами."
-            return
-        }
-        customGroup = group
+    private func selectGroup(_ group: StudyGroup) {
+        customGroup = group.name
         teacherID = ""
         teacherName = ""
-        errorMessage = nil
-        isEditing = false
+        refresh()
+    }
+
+    private func selectTeacher(_ teacher: ScheduleEmployeeDirectoryEntry) {
+        guard let urlID = teacher.urlId?.nilIfBlank else { return }
+        teacherName = teacher.displayName
+        teacherID = urlID
+        customGroup = ""
         refresh()
     }
 

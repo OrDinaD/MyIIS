@@ -38,22 +38,33 @@ private final class CachedAsyncImageMemoryCache: @unchecked Sendable {
     }
 }
 
-private actor AsyncImagePipeline {
+actor AsyncImagePipeline {
     static let shared = AsyncImagePipeline()
 
-    private let diskCache = URLCache(
-        memoryCapacity: 16 * 1024 * 1024,
-        diskCapacity: 256 * 1024 * 1024,
-        directory: URL.cachesDirectory.appendingPathComponent("MyIISImages", isDirectory: true)
-    )
-    private let session: URLSession = {
+    private let diskCache: URLCache
+    private let session: URLSession
+
+    init(
+        diskCache: URLCache = URLCache(
+            memoryCapacity: 16 * 1024 * 1024,
+            diskCapacity: 256 * 1024 * 1024,
+            directory: URL.cachesDirectory.appendingPathComponent("MyIISImages", isDirectory: true)
+        ),
+        session: URLSession? = nil
+    ) {
+        self.diskCache = diskCache
+        self.session = session ?? Self.makeSession()
+    }
+
+    private static func makeSession() -> URLSession {
         let configuration = URLSessionConfiguration.default
         configuration.timeoutIntervalForRequest = 8
         configuration.timeoutIntervalForResource = 12
         configuration.urlCache = nil
         return URLSession(configuration: configuration)
-    }()
+    }
 
+    private var refreshTasks: [String: Task<Void, Never>] = [:]
     private var inFlightTasks: [String: Task<UIImage?, Never>] = [:]
 
     func loadImage(for url: URL, cacheIdentity: String, maxPixelSize: CGFloat, rejectBlankImages: Bool) async -> UIImage? {
@@ -89,12 +100,33 @@ private actor AsyncImagePipeline {
         let request = URLRequest(url: canonicalURL)
         let cached = diskCache.cachedResponse(for: request)
         let cachedAt = cached?.userInfo?["storedAt"] as? Date ?? .distantPast
-        if let cached, Date().timeIntervalSince(cachedAt) < 7 * 24 * 60 * 60,
+        if let cached,
            let image = downsampleImage(from: cached.data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages) {
             CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
+            if Date().timeIntervalSince(cachedAt) >= 7 * 24 * 60 * 60,
+               refreshTasks[cacheIdentity] == nil {
+                // A slow refresh must never delay a photo that is already available.
+                refreshTasks[cacheIdentity] = Task {
+                    _ = await downloadImage(
+                        url: canonicalURL, cacheIdentity: cacheIdentity,
+                        maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages
+                    )
+                    refreshTasks.removeValue(forKey: cacheIdentity)
+                }
+            }
             return image
         }
+        return await downloadImage(
+            url: canonicalURL, cacheIdentity: cacheIdentity,
+            maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages
+        )
+    }
 
+    private func downloadImage(
+        url canonicalURL: URL, cacheIdentity: String, maxPixelSize: CGFloat, rejectBlankImages: Bool
+    ) async -> UIImage? {
+        let cacheKey = cacheIdentity as NSString
+        let request = URLRequest(url: canonicalURL)
         var urls = [canonicalURL]
         if await ScheduleServerConfiguration.selectedServer != .official,
            let gatewayURL = SchedulePhotoRouting.gatewayURL(for: canonicalURL),
@@ -138,13 +170,6 @@ private actor AsyncImagePipeline {
                 }
                 if isGateway { await ScheduleGatewayHealth.shared.failed() }
             }
-        }
-        // Keep already downloaded photos available offline, even after their refresh date.
-        if let cached, let image = downsampleImage(
-            from: cached.data, maxPixelSize: maxPixelSize, rejectBlankImages: rejectBlankImages
-        ) {
-            CachedAsyncImageMemoryCache.setImage(image, forKey: cacheKey)
-            return image
         }
         return nil
     }

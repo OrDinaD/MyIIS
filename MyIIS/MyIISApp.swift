@@ -36,7 +36,8 @@ struct MyIISApp: App {
             .onAppear {
                 handlePendingAppIntentNavigation()
             }
-            .task(id: authService.currentUser?.education.group) {
+            .task(id: "\(authService.currentUser?.education.group ?? "")|\(authService.isRestoringSession)") {
+                guard authService.currentUser != nil || !authService.isRestoringSession else { return }
                 await WidgetScheduleRefreshService.shared.updateAccountGroup(authService.currentUser?.education.group)
                 await RemoteNotificationService.shared.registerOnGateway()
             }

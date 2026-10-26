@@ -28,12 +28,16 @@ extension ScheduleServiceViewModel {
             employees = Self.filteredEmployeeDirectory(cachedEmployees)
         }
 
+        let requestedMode = mode
         isDirectoryLoading = true
         updateLoadingState()
         defer {
             isDirectoryLoading = false
             updateLoadingState()
             hasLoadedInitialData = true
+            if mode != requestedMode {
+                Task { await loadDirectoryIfNeeded(force: false) }
+            }
         }
 
         do {

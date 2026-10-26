@@ -88,6 +88,57 @@ final class WidgetSourceRegressionTests: XCTestCase {
         XCTAssertNil(reversed.interval(calendar: calendar))
     }
 
+    func testMissingSelectionIsSeededFromProfileAndIgnoresBrowsingHistory() {
+        let defaults = WidgetScheduleSelection.defaults
+        defaults.set("111111", forKey: "services.schedule.lastGroup")
+        XCTAssertNil(WidgetScheduleSelection.target(in: defaults).title)
+
+        WidgetScheduleSelection.updateAccountGroup(" 420603 ", in: defaults)
+        XCTAssertEqual(defaults.string(forKey: WidgetScheduleSelection.groupKey), "420603")
+        defaults.set("222222", forKey: "services.schedule.lastGroup")
+        save("420603")
+        save("222222")
+        XCTAssertEqual(ScheduleWidgetDataStore.load(key: key)?.groupName, "420603")
+    }
+
+    func testMigrationRepairsEmptyFieldForAlreadyKnownAccount() {
+        let defaults = WidgetScheduleSelection.defaults
+        defaults.set("420603", forKey: WidgetScheduleSelection.accountGroupKey)
+        WidgetScheduleSelection.updateAccountGroup("420603", in: defaults)
+        XCTAssertEqual(defaults.string(forKey: WidgetScheduleSelection.groupKey), "420603")
+    }
+
+    func testMigrationPreservesExplicitTeacherAndGroupSelections() {
+        let defaults = WidgetScheduleSelection.defaults
+        defaults.set("teacher-id", forKey: WidgetScheduleSelection.teacherIDKey)
+        defaults.set("Преподаватель", forKey: WidgetScheduleSelection.teacherNameKey)
+        WidgetScheduleSelection.updateAccountGroup("420603", in: defaults)
+        XCTAssertEqual(WidgetScheduleSelection.target(in: defaults).teacherID, "teacher-id")
+        defaults.removeObject(forKey: WidgetScheduleSelection.teacherIDKey)
+        defaults.set("222222", forKey: WidgetScheduleSelection.groupKey)
+        WidgetScheduleSelection.updateAccountGroup("420603", in: defaults)
+        XCTAssertEqual(WidgetScheduleSelection.target(in: defaults).group, "222222")
+    }
+
+    func testReturningToAccountGroupPersistsItAndRejectsPreviousTeacher() {
+        let defaults = WidgetScheduleSelection.defaults
+        defaults.set("420603", forKey: WidgetScheduleSelection.accountGroupKey)
+        defaults.set("teacher-id", forKey: WidgetScheduleSelection.teacherIDKey)
+        defaults.set("Преподаватель", forKey: WidgetScheduleSelection.teacherNameKey)
+        WidgetScheduleSelection.useAccountGroup(in: defaults)
+        XCTAssertEqual(defaults.string(forKey: WidgetScheduleSelection.groupKey), "420603")
+        XCTAssertNil(WidgetScheduleSelection.target(in: defaults).teacherID)
+        XCTAssertFalse(WidgetScheduleSelection.accepts("Преподаватель", in: defaults))
+    }
+
+    func testChangingAccountGroupResetsOldOverrideToNewAccount() {
+        let defaults = WidgetScheduleSelection.defaults
+        defaults.set("420603", forKey: WidgetScheduleSelection.accountGroupKey)
+        defaults.set("222222", forKey: WidgetScheduleSelection.groupKey)
+        XCTAssertTrue(WidgetScheduleSelection.updateAccountGroup("420604", in: defaults))
+        XCTAssertEqual(defaults.string(forKey: WidgetScheduleSelection.groupKey), "420604")
+    }
+
     private func save(_ title: String) {
         ScheduleWidgetDataStore.save(
             SessionScheduleWidgetSnapshot(

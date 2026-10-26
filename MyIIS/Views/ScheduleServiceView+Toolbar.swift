@@ -17,11 +17,17 @@ extension ScheduleServiceView {
                 isPinnedPickerPresented = true
             } label: {
                 HStack(spacing: 4) {
-                    Text(viewModel.scheduleHeaderTitle).lineLimit(1)
+                    Text(viewModel.scheduleToolbarTitle)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .layoutPriority(-1)
                     Image(systemName: "chevron.down").font(.caption2)
                 }
                 .font(.headline)
+                .frame(maxWidth: 160)
+                .clipped()
             }
+            .accessibilityLabel(viewModel.scheduleHeaderTitle)
             .accessibilityIdentifier("schedulePinnedPicker")
             .popover(isPresented: $isPinnedPickerPresented) {
                 PinnedSchedulePicker(viewModel: viewModel) {
@@ -173,6 +179,27 @@ extension ScheduleServiceView {
                 viewModel.togglePinnedTeacher(employee)
             }
         }
+    }
+}
+
+#Preview("Long teacher name") {
+    let defaults = UserDefaults(suiteName: "MyIIS.Preview.TeacherToolbar")!
+    defaults.set(ScheduleLookupMode.teacher.rawValue, forKey: ScheduleServiceViewModel.selectedModeDefaultsKey)
+    let model = ScheduleServiceViewModel(defaults: defaults)
+    let employee = ScheduleEmployeeDirectoryEntry(
+        firstName: "Александр", lastName: "Константинопольский", middleName: "Александрович",
+        degree: nil, rank: nil, photoLink: nil, calendarId: nil,
+        id: 1, urlId: "preview", fio: nil
+    )
+    model.selectedEmployee = employee
+    return NavigationStack {
+        ScrollView {
+            ScheduleTeacherHeader(employee: employee)
+                .padding()
+        }
+        .navigationTitle(model.scheduleHeaderTitle)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { ScheduleServiceView(viewModel: model).toolbarContent }
     }
 }
 

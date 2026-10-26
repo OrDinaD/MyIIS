@@ -4,6 +4,8 @@ import SwiftUI
 struct ScheduleSearchSheet: View {
     @Bindable var viewModel: ScheduleServiceViewModel
     @Binding var isPresented: Bool
+    var onSelectGroup: ((StudyGroup) -> Void)?
+    var onSelectTeacher: ((ScheduleEmployeeDirectoryEntry) -> Void)?
     @State private var showsAllGroups = false
     @State private var showsNumberFinder = false
     @State private var pullProgress: CGFloat = 0
@@ -70,7 +72,7 @@ struct ScheduleSearchSheet: View {
         .fullScreenCover(isPresented: $showsNumberFinder) {
             ScheduleGroupNumberFinder(viewModel: viewModel) { group in
                 isPresented = false
-                Task { await viewModel.loadGroup(group.name) }
+                selectGroup(group)
             }
         }
         .task { await viewModel.loadDirectoryIfNeeded(force: false) }
@@ -108,6 +110,22 @@ struct ScheduleSearchSheet: View {
                     )
                 )
             }
+        }
+    }
+
+    private func selectGroup(_ group: StudyGroup) {
+        if let onSelectGroup {
+            onSelectGroup(group)
+        } else {
+            Task { await viewModel.loadGroup(group.name) }
+        }
+    }
+
+    private func selectTeacher(_ teacher: ScheduleEmployeeDirectoryEntry) {
+        if let onSelectTeacher {
+            onSelectTeacher(teacher)
+        } else {
+            Task { await viewModel.loadEmployee(teacher) }
         }
     }
 
@@ -193,7 +211,7 @@ struct ScheduleSearchSheet: View {
                     showsAllGroups: showsAllGroups,
                     onSelect: { group in
                         isPresented = false
-                        Task { await viewModel.loadGroup(group.name) }
+                        selectGroup(group)
                     },
                     onTogglePin: { group in
                         viewModel.togglePinnedGroup(group)
@@ -213,7 +231,7 @@ struct ScheduleSearchSheet: View {
                     isWaitingForQuery: viewModel.isTeacherSearchQueryTooShort,
                     onSelect: { employee in
                         isPresented = false
-                        Task { await viewModel.loadEmployee(employee) }
+                        selectTeacher(employee)
                     },
                     onTogglePin: { employee in
                         viewModel.togglePinnedTeacher(employee)

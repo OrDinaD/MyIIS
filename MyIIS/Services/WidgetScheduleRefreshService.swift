@@ -6,10 +6,21 @@ final class WidgetScheduleRefreshService {
     private var revision = UUID()
     private var lastRefresh: Date?
     private var lastTarget: String?
-    private let api = ServiceEndpointsAPI()
+    private let api: ServiceEndpointsAPI
+    private let defaults: UserDefaults
+    private let publish: ((SessionScheduleWidgetSnapshot, SessionScheduleWidgetSnapshot) -> Void)?
+
+    init(
+        api: ServiceEndpointsAPI? = nil,
+        defaults: UserDefaults? = nil,
+        publish: ((SessionScheduleWidgetSnapshot, SessionScheduleWidgetSnapshot) -> Void)? = nil
+    ) {
+        self.api = api ?? ServiceEndpointsAPI()
+        self.defaults = defaults ?? WidgetScheduleSelection.defaults
+        self.publish = publish
+    }
 
     func refresh(force: Bool = false) async {
-        let defaults = WidgetScheduleSelection.defaults
         let target = WidgetScheduleSelection.target(in: defaults)
         guard let title = target.title else { return }
         let identity = target.teacherID.map { "teacher:\($0)" } ?? "group:\(title)"
@@ -21,7 +32,7 @@ final class WidgetScheduleRefreshService {
             let response: PublicScheduleResponse
             if let teacherID = target.teacherID {
                 response = try await api.fetchEmployeeSchedule(urlId: teacherID, preferCachedResponse: !force)
-                guard response.employee?.fullName == title else { return }
+                if let responseID = response.employee?.urlId, responseID != teacherID { return }
             } else {
                 response = try await api.fetchGroupSchedule(groupNumber: title, preferCachedResponse: !force)
                 guard response.group?.name == title else { return }
@@ -56,7 +67,7 @@ final class WidgetScheduleRefreshService {
                 ScheduleTimelineBuilder.buildTimelineChunk(input: input, cursor: nil, now: now).days
             }.value
             guard !Task.isCancelled, revision == requestID,
-                  WidgetScheduleSelection.accepts(title, in: defaults) else { return }
+                  WidgetScheduleSelection.target(in: defaults) == target else { return }
             let events = days.flatMap { day in
                 day.lessons.map { ScheduleServiceViewModel.widgetEvent(from: $0, on: day.date) }
             }.filter { $0.isUpcoming(at: now) }.sorted(by: ScheduleServiceViewModel.widgetEventSortingComparator)
@@ -64,15 +75,14 @@ final class WidgetScheduleRefreshService {
                 groupName: title, startDate: response.startDate, endDate: response.endDate,
                 events: Array(events.prefix(80)), updatedAt: now
             )
-            ClassScheduleWidgetDataStore.save(snapshot)
             let exams = response.exams.filter(keep).map {
                 ScheduleServiceViewModel.widgetEvent(from: $0, on: $0.lessonDate ?? $0.startLessonDate)
             }.filter { $0.isUpcoming(at: now) }.sorted(by: ScheduleServiceViewModel.widgetEventSortingComparator)
-            SessionScheduleWidgetDataStore.save(SessionScheduleWidgetSnapshot(
+            let examSnapshot = SessionScheduleWidgetSnapshot(
                 groupName: title, startDate: response.startExamsDate, endDate: response.endExamsDate,
                 events: Array(exams.prefix(80)), updatedAt: now
-            ))
-            WatchScheduleConnectivityService.shared.send(snapshot)
+            )
+            publishSnapshots(snapshot, exams: examSnapshot)
             lastTarget = identity
             lastRefresh = now
         } catch {
@@ -80,20 +90,26 @@ final class WidgetScheduleRefreshService {
         }
     }
 
+    private func publishSnapshots(_ schedule: SessionScheduleWidgetSnapshot, exams: SessionScheduleWidgetSnapshot) {
+        if let publish {
+            publish(schedule, exams)
+        } else {
+            ClassScheduleWidgetDataStore.save(schedule)
+            SessionScheduleWidgetDataStore.save(exams)
+            WatchScheduleConnectivityService.shared.send(schedule)
+        }
+    }
+
     func updateAccountGroup(_ group: String?) async {
-        let defaults = WidgetScheduleSelection.defaults
-        let normalized = WidgetScheduleSelection.nonEmpty(group)
-        let previous = defaults.string(forKey: WidgetScheduleSelection.accountGroupKey)
-        defaults.set(normalized, forKey: WidgetScheduleSelection.accountGroupKey)
-        if previous != normalized {
-            // Overrides belong to the account that chose them.
-            defaults.removeObject(forKey: WidgetScheduleSelection.groupKey)
-            defaults.removeObject(forKey: WidgetScheduleSelection.teacherIDKey)
-            defaults.removeObject(forKey: WidgetScheduleSelection.teacherNameKey)
+        let changed = WidgetScheduleSelection.updateAccountGroup(group, in: defaults)
+        if changed {
+            revision = UUID()
+            lastRefresh = nil
+            lastTarget = nil
             ClassScheduleWidgetDataStore.clear()
             SessionScheduleWidgetDataStore.clear()
             WatchScheduleConnectivityService.shared.clear()
         }
-        await refresh(force: previous != normalized)
+        await refresh(force: changed)
     }
 }

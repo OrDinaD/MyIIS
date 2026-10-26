@@ -295,6 +295,16 @@ extension ScheduleServiceViewModel {
         return NSLocalizedString("services_schedule_title", comment: "")
     }
 
+    var scheduleToolbarTitle: String {
+        guard mode == .teacher else { return scheduleHeaderTitle }
+        let parts = scheduleHeaderTitle.split(whereSeparator: { $0.isWhitespace })
+        guard let surname = parts.first, parts.count > 1 else { return scheduleHeaderTitle }
+        let initials = parts.dropFirst().map { part in
+            part.contains(".") ? String(part) : part.first.map { "\($0)." } ?? ""
+        }
+        return ([String(surname)] + initials).joined(separator: " ")
+    }
+
     var initialGroupNumber: String? {
         defaults.string(forKey: Self.lastGroupDefaultsKey)?.nilIfBlank
             ?? pinnedGroupNames.first

@@ -39,35 +39,6 @@ extension ScheduleServiceView {
         .padding(.vertical, 24)
     }
 
-    var scheduleLoadingBanner: some View {
-        HStack(spacing: 12) {
-            ProgressView()
-                .controlSize(.small)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(NSLocalizedString(
-                    "services_schedule_loading_selection",
-                    value: "Загружаем выбранное расписание…",
-                    comment: ""
-                ))
-                .font(.subheadline.weight(.semibold))
-
-                Text(NSLocalizedString(
-                    "services_schedule_loading_network_hint",
-                    value: "При медленной сети это может занять немного времени.",
-                    comment: ""
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .accessibilityElement(children: .combine)
-    }
-
     var scheduleInitialErrorView: some View {
         ContentUnavailableView {
             Label(
