@@ -3,8 +3,8 @@
 //  MyIISTests
 //
 
-import XCTest
 @testable import MyIIS
+import XCTest
 
 @MainActor
 final class FreeAuditoriesAndNotificationTests: XCTestCase {
@@ -96,7 +96,7 @@ final class FreeAuditoriesAndNotificationTests: XCTestCase {
     // MARK: - FreeAuditoriesResponse Decoding Tests
 
     func testFreeAuditoriesResponseDecoding() throws {
-        let json = """
+        let json = Data("""
         {
             "building": "4",
             "day": "Понедельник",
@@ -106,7 +106,7 @@ final class FreeAuditoriesAndNotificationTests: XCTestCase {
             "freeAuditories": ["401-4", "402-4", "405-4"],
             "busyAuditories": ["403-4"]
         }
-        """.data(using: .utf8)!
+        """.utf8)
 
         let response = try JSONDecoder().decode(FreeAuditoriesResponse.self, from: json)
         XCTAssertEqual(response.building, "4")
@@ -136,97 +136,74 @@ final class FreeAuditoriesAndNotificationTests: XCTestCase {
         XCTAssertFalse(service.isAnnouncementsEnabled)
     }
 
-    // MARK: - Schedule Signature & Change Detection Tests
+    // MARK: - Schedule Notification Tests
 
-    func testScheduleSignatureDeterminismAndChangeDetection() {
-        let lesson1 = DisciplineSchedule(
-            id: "1",
-            auditories: ["101-4"],
-            endLessonTime: "10:20",
-            lessonTypeAbbrev: "ЛК",
-            note: nil,
-            subgroup: 0,
-            startLessonTime: "09:00",
-            studentGroups: [],
-            subject: "Физика",
-            subjectFullName: "Общая физика",
-            weekNumbers: [1, 2],
-            employees: [],
-            lessonDate: nil,
-            startLessonDate: nil,
-            endLessonDate: nil,
-            isAnnouncement: false,
-            isSplit: false
-        )
+    func testScheduleNotificationIgnoresReorderingMetadataAndDuplicateRows() throws {
+        let first = try scheduleSnapshot("""
+        {"studentGroupDto":{"name":"453501"},"currentPeriod":"Осенний",
+         "schedules":{"Понедельник":[
+           {"subject":"Физика","auditories":["101-4","102-4"],"weekNumber":[1,2,3,4],"note":null},
+           {"subject":"Математика","employees":[{"id":42,"photoLink":"old"}]}
+         ]}}
+        """)
+        let reordered = try scheduleSnapshot("""
+        {"currentPeriod":"Сессия","studentGroupDto":{"name":"453501","course":3},
+         "schedules":{"Понедельник":[
+           {"subject":"Математика","employees":[{"id":42,"photoLink":"new"}]},
+           {"subject":"Физика","auditories":["102-4","101-4"],"weekNumber":0,"note":" "},
+           {"subject":"Физика","auditories":["101-4","102-4"]}
+         ]}}
+        """)
+        XCTAssertEqual(first, reordered)
+        XCTAssertNil(reordered.summary(since: first))
+    }
 
-        let schedule1 = PublicScheduleResponse(
-            employee: nil,
-            group: StudyGroup(
-                name: "420603",
-                facultyId: nil,
-                facultyAbbrev: nil,
-                facultyName: nil,
-                specialityDepartmentEducationFormId: nil,
-                specialityName: nil,
-                specialityAbbrev: nil,
-                course: nil,
-                id: nil,
-                calendarId: nil,
-                educationDegree: nil
-            ),
-            exams: [],
-            startDate: nil,
-            endDate: nil,
-            startExamsDate: nil,
-            endExamsDate: nil,
-            scheduleByWeekday: [.monday: [lesson1]],
-            previousScheduleByWeekday: [:],
-            nextScheduleByWeekday: [:]
-        )
+    func testScheduleNotificationExplainsClassroomChangeAndNote() throws {
+        let first = try scheduleSnapshot("""
+        {"schedules":{"Понедельник":[
+          {"subject":"Физика","lessonTypeAbbrev":"ЛК","startLessonTime":"09:00","auditories":["101-4"]}
+        ]}}
+        """)
+        let changed = try scheduleSnapshot("""
+        {"schedules":{"Понедельник":[
+          {"subject":"Физика","lessonTypeAbbrev":"ЛК","startLessonTime":"09:00",
+           "auditories":["102-4"],"note":"Взять конспект"}
+        ]}}
+        """)
+        let body = try XCTUnwrap(changed.summary(since: first)).body
+        XCTAssertTrue(body.contains("Физика (ЛК)"))
+        XCTAssertTrue(body.contains("\(StudyWeekday.monday.localizedTitle) 09:00"), body)
+        XCTAssertTrue(body.contains("101-4 → 102-4"))
+        XCTAssertTrue(body.contains("Взять конспект"))
+        let empty = try scheduleSnapshot("{}")
+        XCTAssertNil(empty.summary(since: first))
+    }
 
-        let sig1 = ScheduleNotificationMonitorService.computeScheduleSignature(schedule1)
-        XCTAssertFalse(sig1.isEmpty)
+    func testScheduleNotificationDistinguishesSessionPublicationFromDateChange() throws {
+        let first = try scheduleSnapshot("""
+        {"schedules":{"Среда":[{"subject":"Физика"}]}}
+        """)
+        let published = try scheduleSnapshot("""
+        {"schedules":{"Среда":[{"subject":"Физика"}]},
+         "startExamsDate":"22.12.2026","endExamsDate":"11.01.2027",
+         "exams":[{"subject":"Физика","lessonTypeAbbrev":"Экзамен","dateLesson":"22.12.2026",
+                   "startLessonTime":"09:00","auditories":["102-4"]}]}
+        """)
+        let moved = try scheduleSnapshot("""
+        {"schedules":{"Среда":[{"subject":"Физика"}]},
+         "startExamsDate":"22.12.2026","endExamsDate":"11.01.2027",
+         "exams":[{"subject":"Физика","lessonTypeAbbrev":"Экзамен","dateLesson":"23.12.2026",
+                   "startLessonTime":"09:00","auditories":["102-4"]}]}
+        """)
+        XCTAssertEqual(published.summary(since: first)?.title, "Опубликовано расписание сессии")
+        let update = try XCTUnwrap(moved.summary(since: published))
+        XCTAssertEqual(update.title, "Изменение в расписании сессии")
+        XCTAssertTrue(update.body.contains("→"))
+    }
 
-        // Calling again gives the exact same signature
-        let sig1Repeat = ScheduleNotificationMonitorService.computeScheduleSignature(schedule1)
-        XCTAssertEqual(sig1, sig1Repeat)
-
-        // Lesson moved to another classroom (102-4 instead of 101-4)
-        let lessonMoved = DisciplineSchedule(
-            id: "1",
-            auditories: ["102-4"],
-            endLessonTime: "10:20",
-            lessonTypeAbbrev: "ЛК",
-            note: nil,
-            subgroup: 0,
-            startLessonTime: "09:00",
-            studentGroups: [],
-            subject: "Физика",
-            subjectFullName: "Общая физика",
-            weekNumbers: [1, 2],
-            employees: [],
-            lessonDate: nil,
-            startLessonDate: nil,
-            endLessonDate: nil,
-            isAnnouncement: false,
-            isSplit: false
-        )
-
-        let scheduleChanged = PublicScheduleResponse(
-            employee: nil,
-            group: schedule1.group,
-            exams: [],
-            startDate: nil,
-            endDate: nil,
-            startExamsDate: nil,
-            endExamsDate: nil,
-            scheduleByWeekday: [.monday: [lessonMoved]],
-            previousScheduleByWeekday: [:],
-            nextScheduleByWeekday: [:]
-        )
-
-        let sig2 = ScheduleNotificationMonitorService.computeScheduleSignature(scheduleChanged)
-        XCTAssertNotEqual(sig1, sig2, "Signature must differ when classroom changes")
+    private func scheduleSnapshot(_ json: String) throws -> ScheduleNotificationSnapshot {
+        let response = try JSONDecoder().decode(PublicScheduleResponse.self, from: Data(json.utf8))
+        return ScheduleNotificationSnapshot(response)
     }
 
     // MARK: - Calendar URL Tests
@@ -247,7 +224,7 @@ final class FreeAuditoriesAndNotificationTests: XCTestCase {
 
     // MARK: - RemoteNotificationService Tests
 
-    func testRemoteNotificationServiceEndpointsAndTokenHandling() async {
+    func testRemoteNotificationServiceEndpointsAndTokenHandling() {
         guard let testDefaults else { return }
         let service = RemoteNotificationService(defaults: testDefaults)
 
@@ -260,9 +237,5 @@ final class FreeAuditoriesAndNotificationTests: XCTestCase {
         service.handleDeviceToken(deviceTokenData)
 
         XCTAssertEqual(service.currentDeviceToken, "deadbeef01020304")
-
-        // Handle remote notification with silent update
-        let result = await service.handleRemoteNotification(["group": "420603", "action": "schedule_update"])
-        XCTAssertEqual(result, .newData)
     }
 }

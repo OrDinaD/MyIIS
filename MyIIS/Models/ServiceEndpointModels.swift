@@ -141,13 +141,18 @@ struct PublicScheduleResponse: Decodable, Sendable {
         nextScheduleByWeekday = Self.mapSchedule(rawNextSchedules)
     }
 
-    var orderedDays: [StudyDaySchedule] {
-        let source = actualScheduleByWeekday
-        return StudyWeekday.displayOrder.compactMap { weekday in
+    var orderedDays: [StudyDaySchedule] { Self.orderedDays(from: actualScheduleByWeekday) }
+
+    private static func orderedDays(from source: [StudyWeekday: [DisciplineSchedule]]) -> [StudyDaySchedule] {
+        StudyWeekday.displayOrder.compactMap { weekday in
             guard let lessons = source[weekday], !lessons.isEmpty else { return nil }
             return StudyDaySchedule(weekday: weekday, lessons: lessons)
         }
     }
+
+    var notificationDays: [StudyDaySchedule] { Self.orderedDays(from: scheduleByWeekday) }
+
+    var notificationNextDays: [StudyDaySchedule] { Self.orderedDays(from: nextScheduleByWeekday) }
 
     var availableWeekNumbers: [Int] {
         var result = Set<Int>()

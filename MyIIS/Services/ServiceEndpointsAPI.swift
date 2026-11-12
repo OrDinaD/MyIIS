@@ -121,12 +121,14 @@ final class ServiceEndpointsAPI {
 
     func fetchGroupSchedule(
         groupNumber: String,
-        preferCachedResponse: Bool = true
+        preferCachedResponse: Bool = true,
+        allowsOfflineFallback: Bool = true
     ) async throws -> PublicScheduleResponse {
         let data = try await fetchData(
             path: "schedule",
             queryItems: [URLQueryItem(name: "studentGroup", value: groupNumber)],
-            preferCachedResponse: preferCachedResponse
+            preferCachedResponse: preferCachedResponse,
+            allowsOfflineFallback: allowsOfflineFallback
         )
         do {
             return try JSONDecoder().decode(PublicScheduleResponse.self, from: data)
@@ -255,7 +257,8 @@ final class ServiceEndpointsAPI {
     private func fetchData(
         path: String,
         queryItems: [URLQueryItem]? = nil,
-        preferCachedResponse: Bool = false
+        preferCachedResponse: Bool = false,
+        allowsOfflineFallback: Bool = true
     ) async throws -> Data {
         let canonicalRequest = try makeGETRequest(path: path, queryItems: queryItems)
         guard let canonicalEndpoint = canonicalRequest.url else { throw APIError.invalidURL }
@@ -286,7 +289,7 @@ final class ServiceEndpointsAPI {
             }
         }
 
-        if let cached = OfflineResponseCache.loadData(
+        if allowsOfflineFallback, let cached = OfflineResponseCache.loadData(
             for: canonicalRequest, prefix: Self.cachePrefix, userDefaults: userDefaults,
             maxAge: canonicalRequest.url?.path.hasSuffix("/schedule/current-week") == true ? Self.currentWeekCacheLifetime : nil,
             now: now()

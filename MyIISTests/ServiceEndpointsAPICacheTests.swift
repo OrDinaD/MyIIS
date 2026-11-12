@@ -116,6 +116,28 @@ final class ServiceEndpointsAPICacheTests: XCTestCase {
         XCTAssertEqual(cachedWeek, 4)
     }
 
+    func testScheduleMonitorCanRejectOfflineCacheWithoutChangingNormalBrowsing() async throws {
+        let api = makeAPI(now: Date())
+        MockURLProtocol.requestHandler = { request in
+            let body = Data(#"{"studentGroupDto":{"name":"453501"}}"#.utf8)
+            return (Self.response(for: request, statusCode: 200), body)
+        }
+        _ = try await api.fetchGroupSchedule(groupNumber: "453501", preferCachedResponse: false)
+        MockURLProtocol.requestHandler = { _ in throw URLError(.notConnectedToInternet) }
+
+        let offline = try await api.fetchGroupSchedule(groupNumber: "453501", preferCachedResponse: false)
+        XCTAssertEqual(offline.group?.name, "453501")
+
+        do {
+            _ = try await api.fetchGroupSchedule(
+                groupNumber: "453501", preferCachedResponse: false, allowsOfflineFallback: false
+            )
+            XCTFail("A background check must not compare a stale response")
+        } catch APIError.networkError {
+            // Expected.
+        }
+    }
+
     func testAnnouncementsViewModelRestoresCachedSnapshotAndUpdates() async throws {
         let cacheKey = "AnnouncementsServiceViewModel.snapshot"
         let testData = [ServiceJSONObject(fields: ["title": .string("Тест"), "content": .string("Описание")])]

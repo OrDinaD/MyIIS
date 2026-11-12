@@ -513,13 +513,11 @@ extension AcademicChangeNotificationService: UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        guard
-            response.actionIdentifier == UNNotificationDefaultActionIdentifier,
-            let destination = response.notification.request.content.userInfo["destination"] as? String,
-            let section = AppSection(rawValue: destination)
-        else {
-            return
-        }
+        guard response.actionIdentifier == UNNotificationDefaultActionIdentifier else { return }
+        let payload = response.notification.request.content.userInfo
+        let section = (payload["destination"] as? String).flatMap(AppSection.init(rawValue:))
+            ?? ((payload["action"] as? String) == "schedule_update" ? .schedule : nil)
+        guard let section else { return }
 
         await MainActor.run {
             AppRouter.shared.navigate(to: section)

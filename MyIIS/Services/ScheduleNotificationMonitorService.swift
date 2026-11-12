@@ -3,7 +3,6 @@
 //  MyIIS
 //
 
-import CryptoKit
 import Foundation
 import UIKit
 import UserNotifications
@@ -15,7 +14,8 @@ final class ScheduleNotificationMonitorService: NSObject {
 
     static let scheduleChangesEnabledKey = "services.schedule.notifications.scheduleChanges"
     static let announcementsEnabledKey = "services.schedule.notifications.announcements"
-    private static let lastScheduleHashKey = "services.schedule.notifications.lastHash.v2"
+    private static let scheduleSnapshotKey = "services.schedule.notifications.snapshot.v1"
+    private static let legacyScheduleHashKey = "services.schedule.notifications.lastHash.v2"
     private static let seenAnnouncementIDsKey = "services.schedule.notifications.seenAnnouncements"
     private static let lastCheckTimestampKey = "services.schedule.notifications.lastCheck"
 
@@ -122,36 +122,38 @@ final class ScheduleNotificationMonitorService: NSObject {
 
     private func checkScheduleChanges(for group: String, suppressLocalAlerts: Bool) async -> UIBackgroundFetchResult {
         do {
-            let response = try await api.fetchGroupSchedule(groupNumber: group, preferCachedResponse: false)
-            let newHash = Self.computeScheduleSignature(response)
-            let previousHash = defaults.string(forKey: "\(Self.lastScheduleHashKey).\(group)")
+            let response = try await api.fetchGroupSchedule(
+                groupNumber: group, preferCachedResponse: false, allowsOfflineFallback: false
+            )
+            let snapshot = ScheduleNotificationSnapshot(response)
+            guard !snapshot.lessons.isEmpty else { return .noData }
 
-            if !suppressLocalAlerts, let previousHash, !previousHash.isEmpty, previousHash != newHash {
-                // Найдено изменение в расписании!
-                let content = UNMutableNotificationContent()
-                content.title = NSLocalizedString("schedule_change_alert_title", value: "Изменение в расписании", comment: "")
-                content.body = String(
-                    format: NSLocalizedString(
-                        "schedule_change_alert_body",
-                        value: "Обновлено расписание занятий для группы %@. Проверьте актуальные аудитории.",
-                        comment: ""
-                    ),
-                    group
-                )
-                content.sound = .default
-                content.badge = 1
+            let key = "\(Self.scheduleSnapshotKey).\(group)"
+            let previous = UserDefaultsPayloadStore.load(forKey: key, from: defaults)
+                .flatMap { try? JSONDecoder().decode(ScheduleNotificationSnapshot.self, from: $0) }
+            guard previous != snapshot else { return .noData }
+            let data = try JSONEncoder().encode(snapshot)
+            UserDefaultsPayloadStore.save(data, forKey: key, in: defaults)
+            defaults.removeObject(forKey: "\(Self.legacyScheduleHashKey).\(group)")
 
-                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
-                let request = UNNotificationRequest(
-                    identifier: "schedule_change_\(group)_\(Date().timeIntervalSince1970)",
-                    content: content,
-                    trigger: trigger
-                )
-                try? await notificationCenter.add(request)
-            }
+            guard !suppressLocalAlerts, let previous,
+                  let summary = snapshot.summary(since: previous) else { return .newData }
+            let content = UNMutableNotificationContent()
+            content.title = summary.title
+            content.subtitle = String(localized: "Группа \(group)")
+            content.body = summary.body
+            content.sound = .default
+            content.badge = 1
+            content.threadIdentifier = "schedule-\(group)"
+            content.userInfo = ["destination": AppSection.schedule.rawValue]
 
-            defaults.set(newHash, forKey: "\(Self.lastScheduleHashKey).\(group)")
-            return previousHash == newHash ? .noData : .newData
+            let request = UNNotificationRequest(
+                identifier: "schedule-change-\(UUID().uuidString)",
+                content: content,
+                trigger: nil
+            )
+            try? await notificationCenter.add(request)
+            return .newData
         } catch {
             return .failed
         }
@@ -204,31 +206,178 @@ final class ScheduleNotificationMonitorService: NSObject {
         }
     }
 
-    // MARK: - Signature Helpers
+}
 
-    static func computeScheduleSignature(_ schedule: PublicScheduleResponse) -> String {
-        var items = schedule.orderedDays.flatMap { day in
-            day.lessons.map { lessonSignature($0, day: String(day.weekday.rawValue)) }
-        }
-        items += schedule.exams.map { lessonSignature($0, day: "exam") }
-        items += [schedule.startDate, schedule.endDate, schedule.startExamsDate, schedule.endExamsDate]
-            .map { String($0?.timeIntervalSince1970 ?? 0) }
-        let data = (try? JSONEncoder().encode(items.sorted())) ?? Data()
-        return SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+struct ScheduleNotificationSnapshot: Codable, Equatable {
+    enum Period: String, Codable { case current, next, exam }
+
+    struct Key: Codable, Hashable {
+        let period: Period
+        let subject: String
+        let kind: String
+        let subgroup: Int
     }
 
-    private static func lessonSignature(_ lesson: DisciplineSchedule, day: String) -> String {
-        let fields: [String] = [
-            day, lesson.subject, lesson.subjectFullName ?? "", lesson.lessonTypeAbbrev,
-            lesson.startLessonTime, lesson.endLessonTime, String(lesson.subgroup),
-            lesson.auditories.sorted().joined(separator: "|"),
-            lesson.weekNumbers.sorted().map(String.init).joined(separator: ","),
-            lesson.employees.map { String($0.id) }.sorted().joined(separator: ","),
-            lesson.note ?? "", String(lesson.lessonDate?.timeIntervalSince1970 ?? 0),
-            String(lesson.startLessonDate?.timeIntervalSince1970 ?? 0),
-            String(lesson.endLessonDate?.timeIntervalSince1970 ?? 0)
-        ]
-        let data = (try? JSONEncoder().encode(fields)) ?? Data()
-        return data.base64EncodedString()
+    struct Lesson: Codable, Hashable {
+        let key: Key
+        let weekday: String?
+        let date: Date?
+        let firstDate: Date?
+        let lastDate: Date?
+        let start: String
+        let end: String
+        let rooms: String
+        let weeks: [Int]
+        let teachers: [Int]
+        let note: String
+
+        init(_ lesson: DisciplineSchedule, period: Period, weekday: StudyWeekday? = nil) {
+            key = Key(period: period, subject: lesson.title, kind: lesson.lessonTypeAbbrev, subgroup: lesson.subgroup)
+            self.weekday = weekday?.rawValue
+            date = lesson.lessonDate
+            firstDate = lesson.startLessonDate
+            lastDate = lesson.endLessonDate
+            start = lesson.startLessonTime
+            end = lesson.endLessonTime
+            rooms = Set(lesson.auditories.map(Self.cleaned).filter { !$0.isEmpty }).sorted().joined(separator: ", ")
+            let activeWeeks = Set(lesson.weekNumbers.filter { (1...4).contains($0) })
+            weeks = activeWeeks.count == 4 ? [] : activeWeeks.sorted()
+            teachers = Set(lesson.employees.map(\.id).filter { $0 > 0 }).sorted()
+            note = Self.cleaned(lesson.note ?? "")
+        }
+
+        var slot: String {
+            let day = date.map(ScheduleNotificationSnapshot.dayLabel) ?? StudyWeekday(rawValue: weekday ?? "")?.localizedTitle
+            return [day, start.nilIfBlank].compactMap { $0 }.joined(separator: " ")
+        }
+
+        var label: String {
+            let subject = key.kind.isEmpty || key.subject == key.kind ? key.subject : "\(key.subject) (\(key.kind))"
+            let subgroup = key.subgroup > 0 ? String(localized: "подгр. \(key.subgroup)") : nil
+            let period = key.period == .next ? String(localized: "след. период") : nil
+            return [slot.nilIfBlank, subject, subgroup, period].compactMap { $0 }.joined(separator: " · ")
+        }
+
+        var roomLabel: String {
+            rooms.isEmpty ? "" : String(localized: ", ауд. \(rooms)")
+        }
+
+        func details(since old: Self) -> String {
+            var changes: [String] = []
+            if slot != old.slot {
+                changes.append("\(old.slot) → \(slot)")
+            } else if end != old.end {
+                changes.append(String(localized: "окончание: \(old.end.nilIfBlank ?? "—") → \(end.nilIfBlank ?? "—")"))
+            }
+            if rooms != old.rooms {
+                changes.append(String(localized: "ауд. \(old.rooms.nilIfBlank ?? "—") → \(rooms.nilIfBlank ?? "—")"))
+            }
+            if weeks != old.weeks {
+                changes.append(String(localized: "учебные недели: \(Self.weekLabel(old.weeks)) → \(Self.weekLabel(weeks))"))
+            }
+            if firstDate != old.firstDate || lastDate != old.lastDate {
+                let first = firstDate.map(ScheduleNotificationSnapshot.dayLabel) ?? "—"
+                let last = lastDate.map(ScheduleNotificationSnapshot.dayLabel) ?? "—"
+                changes.append(String(localized: "период: \(first) – \(last)"))
+            }
+            if teachers != old.teachers {
+                changes.append(String(localized: "изменился преподаватель"))
+            }
+            if note != old.note {
+                changes.append(note.isEmpty ? String(localized: "примечание убрано") : String(localized: "примечание: \(note)"))
+            }
+            return changes.joined(separator: "; ")
+        }
+
+        private static func weekLabel(_ weeks: [Int]) -> String {
+            weeks.isEmpty ? String(localized: "все") : weeks.map(String.init).joined(separator: ", ")
+        }
+
+        private static func cleaned(_ value: String) -> String {
+            value.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+    }
+
+    struct Summary {
+        let title: String
+        let body: String
+    }
+
+    let lessons: Set<Lesson>
+    let examStart: Date?
+    let examEnd: Date?
+
+    init(_ schedule: PublicScheduleResponse) {
+        lessons = Set(
+            schedule.notificationDays.flatMap { day in
+                day.lessons.filter { !$0.isAnnouncement }.map { Lesson($0, period: .current, weekday: day.weekday) }
+            } + schedule.notificationNextDays.flatMap { day in
+                day.lessons.filter { !$0.isAnnouncement }.map { Lesson($0, period: .next, weekday: day.weekday) }
+            } + schedule.exams.filter { !$0.isAnnouncement }.map { Lesson($0, period: .exam) }
+        )
+        examStart = schedule.startExamsDate
+        examEnd = schedule.endExamsDate
+    }
+
+    func summary(since old: Self) -> Summary? {
+        guard !lessons.isEmpty, !old.lessons.isEmpty else { return nil }
+        let added = Dictionary(grouping: lessons.subtracting(old.lessons), by: \.key)
+        let removed = Dictionary(grouping: old.lessons.subtracting(lessons), by: \.key)
+        let keys = Set(added.keys).union(removed.keys)
+        var examLines: [String] = []
+        var otherLines: [String] = []
+        for key in keys {
+            let lines = Self.changeLines(added: added[key] ?? [], removed: removed[key] ?? [])
+            if key.period == .exam {
+                examLines += lines
+            } else {
+                otherLines += lines
+            }
+        }
+
+        let publishedExams = has(.exam) && !old.has(.exam)
+        let publishedNext = has(.next) && !old.has(.next)
+        let title: String
+        if publishedExams {
+            title = String(localized: "Опубликовано расписание сессии")
+        } else if publishedNext {
+            title = String(localized: "Опубликовано расписание на следующий период")
+        } else if !examLines.isEmpty && otherLines.isEmpty {
+            title = String(localized: "Изменение в расписании сессии")
+        } else {
+            title = String(localized: "Изменение в расписании")
+        }
+
+        var body: [String] = []
+        if has(.exam), let examStart, let examEnd,
+           publishedExams || examStart != old.examStart || examEnd != old.examEnd {
+            body.append(String(localized: "Сессия: \(Self.dayLabel(examStart)) – \(Self.dayLabel(examEnd))"))
+        }
+        let lines = examLines.sorted() + otherLines.sorted()
+        guard !lines.isEmpty || !body.isEmpty else { return nil }
+        body += lines.prefix(2).map { $0.count > 150 ? String($0.prefix(149)) + "…" : $0 }
+        if lines.count > 2 {
+            body.append(String(localized: "И ещё: \(lines.count - 2)"))
+        }
+        return Summary(title: title, body: body.joined(separator: "\n"))
+    }
+
+    private func has(_ period: Period) -> Bool {
+        lessons.contains { $0.key.period == period }
+    }
+
+    private static func changeLines(added: [Lesson], removed: [Lesson]) -> [String] {
+        if added.count == 1, removed.count == 1, let new = added.first, let old = removed.first {
+            let details = new.details(since: old)
+            if !details.isEmpty {
+                return ["\(new.label): \(details)"]
+            }
+        }
+        return added.map { String(localized: "Добавлено: \($0.label)\($0.roomLabel)") }
+            + removed.map { String(localized: "Убрано: \($0.label)\($0.roomLabel)") }
+    }
+
+    private static func dayLabel(_ date: Date) -> String {
+        date.formatted(.dateTime.day().month(.abbreviated))
     }
 }
